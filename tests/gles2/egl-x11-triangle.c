@@ -29,6 +29,7 @@
 #include <unistd.h>
 
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
