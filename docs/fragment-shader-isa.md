@@ -356,13 +356,13 @@ Data write instruction controls write of values contained in the row registers R
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
-| 16..31 | ???                     |
+| 16..31 | unknown - bit 17 is a don't-care, bit 16 kills the write |
 |     15 | source registers select |
-| 11..14 | ???                     |
+| 11..14 | ??? - bit 14 is functional, see below |
 |     10 | stencil write           |
-|   6..9 | ???                     |
+|   6..9 | ??? - no effect on hardware |
 |   2..5 | render target index     |
-|      1 | ???                     |
+|      1 | ??? - setting it suppresses the write |
 |      0 | enable                  |
 
 #### Source registers select:
@@ -488,18 +488,45 @@ special targets (rt0 depth, rt1 color, rt2 stencil). `gl_FragData[1]` compiles
 to render target **5**, which confirms the documented `5..12 = MRT n+1` mapping
 and shows MRT outputs are offset past the fixed depth/color/stencil slots.
 
-Two bits inside the documented unknown range 16..31 correlate with the target
-class rather than being constant:
+#### DW - verified by executing on the GPU
 
-| bit | observed on                                              |
-|----:|:---------------------------------------------------------|
-|  16 | the depth (rt0) store only                               |
-|  17 | every non-depth store (rt1, rt2, rt3, rt5)               |
-|   7 | the rt3 store                                            |
-|  10 | the rt2 store (matches the documented "stencil write")   |
+Everything below was measured by assembling single-bit variants of a known-good
+word and running them on the Tegra 20, rather than by reading compiler output.
+The probe writes `r2/r3` as `(1, 0, 1, 0)`, so a correct rt1 colour store yields
+`0xFF00FF00`; the clear colour reads back as `0x4C4C4C4C`; and a store whose
+payload is all zero yields `0x00000000`. The textual `store rt1, r2, r3`
+assembles to `0x00028005`, and injecting that word as raw data reproduces the
+textual result exactly - so the field model above is confirmed end to end.
 
-These look like per-path write-enable flags, but they are an observed
-correlation, not proven semantics.
+| flip        | result     | meaning |
+|:------------|:-----------|:--------|
+| bit 0 clear | `4C4C4C4C` | `enable` - nothing is written without it |
+| bits 2..5   | `4C4C4C4C` | `render target index` - the write goes to another target |
+| bit 15 clear| `00000000` | `src_regs_select` works: R0-R1 (zero here) are stored |
+| bit 14 set  | `00000000` | functional, but not a register-pair select (below) |
+| bit 1 set   | `4C4C4C4C` | suppresses the colour write |
+| bit 16 set  | `4C4C4C4C` | suppresses the colour write |
+| bit 17 clear| `FF00FF00` | **not required** (below) |
+| 6..9, 11..13, 18..31 set | `FF00FF00` | no observable effect |
+
+**Bit 17 is a don't-care.** Compiler output sets it on every non-depth store and
+Grate's assembler hardcodes `unk_16_31 = 2` for every store, which is exactly
+this bit. Clearing it changes nothing on hardware, so the constant is harmless
+but not a requirement.
+
+**Bits 1 and 16 suppress the write.** Both reproduce reliably. Bit 16 is the one
+the compiler sets only on the depth (rt0) store, which suggests it designates
+the depth target, but with colour readback only we cannot separate "suppressed"
+from "diverted to another target".
+
+**Bit 14 is functional but is not a wider `src_regs_select`.** With either
+R0-R1, R2-R3, R4-R5 or R6-R7 holding the payload, setting bit 14 makes the store
+write an all-zero payload. So bits 14..15 are not a straightforward pair index
+over the low row registers.
+
+This also corrects the compiler-corpus note that used to be here: bit 7 was seen
+on the rt3 store, but setting it on an rt1 store has no effect at all, so it is
+not a general target-class flag.
 
 #### PSEQ
 
@@ -511,6 +538,7 @@ usually travel together. No other bits are set.
 
 #### Still open
 
-- the exact meaning of DW bits 16 and 17
+- what DW bit 14 does (zero payload) and what bits 1/16 gate; reading back the
+  depth and stencil surfaces would separate "suppressed" from "redirected"
 - TEX bits 6..9, 11 and 13..31 (zero in every sample gathered so far)
 - `sampler_index` behaviour with several samplers used simultaneously
