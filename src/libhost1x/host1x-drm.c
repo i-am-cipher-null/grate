@@ -59,8 +59,8 @@ struct drm_bo {
 	struct drm *drm;
 
 	struct {
-		uint32_t mapping_id;
-		uint32_t channel_ctx;
+		uint32_t mapping;
+		uint32_t context;
 	} mappings[2];
 };
 
@@ -666,13 +666,13 @@ static void drm_bo_free(struct host1x_bo *bo)
 		unsigned int i;
 
 		for (i = 0; i < 2; i++) {
-			if (drm_bo->mappings[i].mapping_id == 0)
+			if (drm_bo->mappings[i].mapping == 0)
 				break;
 
 			memset(&unmap_args, 0, sizeof(unmap_args));
-			unmap_args.channel_ctx =
-				drm_bo->mappings[i].channel_ctx;
-			unmap_args.mapping_id = drm_bo->mappings[i].mapping_id;
+			unmap_args.context =
+				drm_bo->mappings[i].context;
+			unmap_args.mapping = drm_bo->mappings[i].mapping;
 
 			ioctl(drm_bo->drm->fd, DRM_IOCTL_TEGRA_CHANNEL_UNMAP,
 			      &unmap_args);
@@ -803,7 +803,7 @@ static struct host1x_bo *drm_bo_import(struct host1x *host1x,
 }
 
 static int drm_bo_map(struct host1x_bo *host1x_bo, struct drm_channel *channel,
-		      uint32_t *mapping_id)
+		      uint32_t *mapping)
 {
 	struct drm_tegra_channel_map args;
 	struct drm_bo *bo = to_drm_bo(host1x_bo);
@@ -813,12 +813,12 @@ static int drm_bo_map(struct host1x_bo *host1x_bo, struct drm_channel *channel,
 		return 0;
 
 	for (i = 0; i < 2; i++) {
-		if (bo->mappings[i].channel_ctx == channel->context) {
-			*mapping_id = bo->mappings[i].mapping_id;
+		if (bo->mappings[i].context == channel->context) {
+			*mapping = bo->mappings[i].mapping;
 			return 0;
 		}
 
-		if (bo->mappings[i].mapping_id == 0)
+		if (bo->mappings[i].mapping == 0)
 			free_i = i;
 	}
 
@@ -826,8 +826,9 @@ static int drm_bo_map(struct host1x_bo *host1x_bo, struct drm_channel *channel,
 		return -EBUSY;
 
 	memset(&args, 0, sizeof(args));
-	args.channel_ctx = channel->context;
+	args.context = channel->context;
 	args.handle = bo->base.handle;
+	args.flags = DRM_TEGRA_CHANNEL_MAP_READ_WRITE;
 
 	err = ioctl(channel->drm->fd, DRM_IOCTL_TEGRA_CHANNEL_MAP, &args);
 	if (err < 0) {
@@ -836,10 +837,10 @@ static int drm_bo_map(struct host1x_bo *host1x_bo, struct drm_channel *channel,
 		return -errno;
 	}
 
-	bo->mappings[free_i].channel_ctx = channel->context;
-	bo->mappings[free_i].mapping_id = args.mapping_id;
+	bo->mappings[free_i].context = channel->context;
+	bo->mappings[free_i].mapping = args.mapping;
 
-	*mapping_id = args.mapping_id;
+	*mapping = args.mapping;
 
 	return 0;
 }
@@ -917,7 +918,7 @@ static int drm_channel_open(struct drm *drm, uint32_t class, uint64_t *channel)
 		if (err < 0)
 			return -errno;
 
-		*channel = args.channel_ctx;
+		*channel = args.context;
 	} else {
 		struct drm_tegra_open_channel args;
 
@@ -946,9 +947,9 @@ static int drm_channel_submit2(struct host1x_client *client,
 	int err;
 
 	memset(&args, 0, sizeof(args));
-	args.channel_ctx = channel->context;
-	args.syncpt_incr.id = job->syncpt;
-	args.syncpt_incr.num_incrs = job->syncpt_incrs;
+	args.context = channel->context;
+	args.syncpt.id = job->syncpt;
+	args.syncpt.increments = job->syncpt_incrs;
 
 	cmds = calloc(job->num_pushbufs, sizeof(*bufs));
 	if (!cmds)
@@ -999,7 +1000,7 @@ static int drm_channel_submit2(struct host1x_client *client,
 			struct host1x_pushbuf_reloc *r = &pushbuf->relocs[j];
 
 			err = drm_bo_map(r->target_bo, channel,
-					 &next_buf->mapping_id);
+					 &next_buf->mapping);
 			if (err < 0) {
 				free(bufs);
 				free(cmds);
@@ -1020,14 +1021,14 @@ static int drm_channel_submit2(struct host1x_client *client,
 			     errno);
 		err = -errno;
 	} else {
-		channel->fence = args.syncpt_incr.fence_value;
+		channel->fence = args.syncpt.value;
 		err = 0;
 	}
 
 	free(bufs);
 	free(cmds);
 
-	return 0;
+	return err;
 }
 
 static int drm_channel_submit(struct host1x_client *client,
@@ -1251,7 +1252,7 @@ static void drm_channel_exit(struct drm_channel *channel)
 		struct drm_tegra_channel_close args;
 
 		memset(&args, 0, sizeof(args));
-		args.channel_ctx = channel->context;
+		args.context = channel->context;
 
 		err =  ioctl(channel->drm->fd, DRM_IOCTL_TEGRA_CHANNEL_CLOSE, &args);
 		if (err < 0)
@@ -1397,6 +1398,8 @@ struct host1x *host1x_drm_open(struct host1x_options *options)
 
 	if (fd < 0) {
 		fd = open("/dev/dri/card0", O_RDWR);
+		if (fd < 0)
+			fd = open("/dev/dri/renderD128", O_RDWR);
 		if (fd < 0)
 			return NULL;
 	}
