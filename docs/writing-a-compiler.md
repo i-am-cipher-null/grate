@@ -347,7 +347,9 @@ Other forwarding facts, from existing working tests rather than new probes:
 1. ~~**TEX result -> ALU distance.**~~ - **closed**, see 4.3: the sample is
    visible to the ALU in the same batch and in the next one, and ALU-computed
    fp20 coordinates reach the unit one batch later. The only remaining TEX
-   question is `LOD` selection itself (see 9.2), not scheduling.
+   question is `LOD` selection itself, not scheduling - partly closed since:
+   the bias operand works and computed LOD clamps at 0 (section 10.4), while
+   explicit LOD (bit 13) still has no way to be set from the assembler.
 2. **Cycle cost of a partially filled batch.** The schedule word count field is
    2 bits and `count = 0` still takes one cycle, so a batch with fewer than 3
    ALU packets probably still costs the same. Unverified. If it does *not*, the
@@ -513,6 +515,12 @@ What a backend must therefore produce per varying:
 linker's row field is 6 bits, `TRAM_SETUP` allows up to 127 rows), and what
 happens when a varying is read in two different batches (whether `ipl` may be
 repeated, or whether the value must be kept in a row register).
+
+The harness also cannot currently verify the chain end to end: reading an `ipl`
+slot populated through `filter_quad_linker.txt` yields values that are not the
+interpolated attribute (section 10.3), while `linker_vs_tests.txt` does work.
+Until that is resolved, varying-path conclusions have to come from the shaders
+that already have expected values.
 
 ## 7. Uniforms and constants
 
@@ -709,9 +717,71 @@ Making it discriminating needs three things, all of which bit me once:
   coordinate and half of the sample destination, and folding the two together
   makes the coordinate read as 0.
 
-Also note `tools/assembler` now guards its attribute bindings: a shader with no
-`color` attribute used to get `grate_3d_ctx_vertex_attrib_float_pointer(ctx, -1,
-...)`, which corrupts the draw. With `filter_quad_*.txt` the harness still
-rasterises nothing (the framebuffer stays at the clear colour) even with the
-`texcoord` attribute bound, so the `filter_quad` route is not usable yet - the
-standalone probes above are.
+### 10.3 Why `filter_quad` rasterised nothing
+
+The `filter_quad_*` assets were unusable for two harness reasons, neither of
+which is about the ISA:
+
+1. **The attribute guard was wrong.** The `if (location >= 0)` test for `color`
+   had been inserted *before* `location` was reassigned, so it tested the
+   *position* attribute's location. `filter_quad_vs.txt` declares no `color`
+   attribute, so the draw still got
+   `vertex_attrib_float_pointer(ctx, -1, ...)`. Each binding is now guarded after
+   its own lookup.
+2. **`mvp` was never set.** `filter_quad_vs.txt` computes `gl_Position` as
+   `DP4 a[0], c[0..3]` and the harness supplies no vertex constants, so the
+   exported `w` was 0: a degenerate triangle, which rasterises nothing and
+   leaves the framebuffer at the clear colour. `tools/assembler` now takes
+   `--vs_mat4 '["mvp"]=(16 floats)'`, which writes all 16 floats through
+   `grate_3d_ctx_set_vertex_uniform` (that call already accepted `nb = 16`).
+
+With both fixed the shipped trio works:
+
+| probe | result | reading |
+|:--|:--|:--|
+| `filter_quad_vs` + `filter_quad_fs`, no `mvp` | `0x4C4C4C4C` | clear colour: nothing rasterised |
+| same, `mvp` = identity | `0x00000000` | rasterised, TEX ran, result reached DW |
+| `vs_mov` + `filter_quad_fs` (no uniform at all) | `0x00000000` | the fragment half needs no vs uniforms |
+
+`asm_tests.sh` now carries the identity-`mvp` case as a regression: any value
+differing from the `0x4C4C4C4C` clear proves the triangle reached the DW unit.
+
+**But the coordinates it delivers are still wrong.** Storing the `ipl` results
+directly (`r0` into `r2`, `r1` into `r3`, then `DW: store rt1, r2, r3`) gives `s`
+between `0x05` and `0x10` and `t = 0xFF` over the quad, where the bound attribute
+is a 0..1 ramp in both components. So TEX executes and its result reaches DW, but
+what it samples with is not the interpolated `texcoord`. Coordinates written *by
+the ALU* do arrive correctly (section 4.3, and the two-tone probes), so the
+defect is in the varying path - linker -> TRAM -> `ipl` - not in TEX.
+
+Differences worth testing first: `fs_vs_tests.txt` reads a varying the same way
+and *does* produce its expected gradient, and its linker swizzles
+(`tram0.yxzw`, where `filter_quad_linker.txt` uses `tram0.xyzw`); and the
+`texcoord` attribute is bound with 2 components while the vs reads `a[1].xyzw`.
+Note that the `filter_quad` path therefore cannot yet answer questions that need
+varying texture coordinates - use the ALU-fed probes for those.
+
+### 10.4 LOD bias is functional, and computed LOD clamps at 0
+
+`--mipmap` was added (generates the chain, `NEAREST_MIPMAP_NEAREST`, `max_lod`
+11) so `filter_quad_fs`'s `txb` could be driven. Its bias comes from `r3`, fed
+from the `lod_bias` fragment uniform:
+
+| bias | mipmapping | result across the frame |
+|:--|:--|:--|
+| 0, 0.5, 1, 2, 4 | on | `0x00000000` |
+| 8 | on | `0x00545454`, uniform |
+| 8 | off | `0x00000000` |
+
+So the bias operand is real (bit 12 plus the `r3` source, as documented), and it
+is inert when no mip chain is bound. The crossing point is consistent with
+`LOD = log2(texels-per-pixel) + bias`, clamped at 0: a 4x4 texture on a 256x256
+quad is magnified 64x, so the computed LOD is `log2(4/256) = -6` and sits at 0
+for any bias up to 6 - which is why 4 stays at level 0 while 8 reaches the small
+mips. The exact last-mip content (`0x54` rather than the `0x7F` a box average
+would give) is not established, because the coordinate defect above means every
+pixel samples the same texel.
+
+Still untested: **explicit LOD** (bit 13, the encoder's `IR_TEX_B13`). The
+assembler only knows `tex` and `txb`, so no test can set that bit yet; a raw-word
+form for `TEX:` would open it the way `DW:` already has one.

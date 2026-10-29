@@ -92,6 +92,14 @@ init fails and the assembler continues headless. `tools/assembler` has no
 to its own directory, so it must be run from - or copied into - the build tree
 where `tools/assembler` exists.
 
+The build tree keeps its **own copy** (`~/build/grate/tests/grate/asm_tests.sh`),
+so an edit under `src/grate/tests/` changes nothing until it is copied over. That
+is worth remembering because the stale copy cheerfully reports `All tests passed`
+for a file that no longer parses, or for a case that was never added: copy first,
+then `sh -n` the result. To prove a new case actually executes, break its
+`--expected` on purpose - the suite must start failing with `exit=1` - then
+restore it. A suite that passes both ways is not running the case.
+
 ## Raw instruction-word experiments
 
 `tools/assembler` takes `--result`, which always prints the result word:
