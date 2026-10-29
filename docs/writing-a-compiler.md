@@ -258,6 +258,8 @@ four-value calibration (`r2.h = 0.25`, `r2.l = 0.5`, `r3.h = 0.75`,
 | TEX -> ALU, same batch | 0 | `0x7F007F00` | works - the sample is already visible |
 | TEX -> ALU, next batch | 1 batch | `0x7F007F00` | works |
 | TEX -> DW, same batch | 0 | `0x40404040` | works |
+| ALU -> TEX coordinates, fp20 in `r0` | 1 batch | `0xFFFFFFFF` / `0x00000000` | works - right half vs left half of a two-tone texture |
+| ALU -> TEX coordinates, fx10 half only | 1 batch | `0x00000000` either way | **not used** - see below |
 
 So:
 
@@ -301,6 +303,22 @@ Two further facts about the batch, both structural rather than measured:
 * TEX and DW address the pixel-packet row registers only (`r0..r3`), so a
   sampled value that a later stage needs must be live in the current row.
 
+**Texture coordinates are read as `fp20`, and ALU-written coordinates do reach
+the unit.** With a two-tone 4x4 texture (left half black, right half white),
+writing `s = 0.875` into `r0` as fp20 in one batch and sampling in the next
+returns `0xFFFFFFFF`; writing `0.125` returns `0x00000000`. The same writes done
+as an fx10 half (`r0.l*` or `r0.*h`) sample the same texel regardless of the
+value, which is what the ISA reference says: the coordinate registers are
+consumed as fp20.
+
+This retracts an earlier conclusion in this document. A first probe reported
+that coordinates "never took effect", but it was writing the coordinate as an
+fx10 half *and* using `r2` as both the third coordinate and the TEX destination;
+both mistakes make the coordinate read as 0. So the coordinate path works, and
+since ALU cannot precede TEX within a batch (stage order), the compiler must
+assume **one batch of latency between computing a coordinate and using it** - a
+scheduling constraint, not a hazard.
+
 This is consistent with the ALU being a 4-stage pipeline where each packet is
 one cycle and `alu0..alu3` are the actual pipeline latches: within a batch,
 packet *k+1* is issued before packet *k* retires, so only the latches carry
@@ -327,17 +345,9 @@ Other forwarding facts, from existing working tests rather than new probes:
 **Open:**
 
 1. ~~**TEX result -> ALU distance.**~~ - **closed**, see 4.3: the sample is
-   visible to the ALU in the same batch and in the next one. What is *not*
-   closed is the other direction, ALU-computed coordinates: a probe that wrote
-   `s = 0.875` and `s = 0.125` into `r0` from the ALU always sampled the same
-   texel, with either coordinate and with either one or two batches between the
-   write and the fetch. The probe differs from the working textured test in one
-   way - it has no `MFU ipl` and therefore no barycentric setup - so either the
-   coordinate registers are not consumed the way the encoding suggests, or the
-   fetch needs the MFU stage to have produced a valid pixel packet first. This
-   needs a probe built on the `filter_quad_fs.txt` skeleton (ipl-fetched
-   coordinates, then an ALU modification of one component), not a from-scratch
-   one.
+   visible to the ALU in the same batch and in the next one, and ALU-computed
+   fp20 coordinates reach the unit one batch later. The only remaining TEX
+   question is `LOD` selection itself (see 9.2), not scheduling.
 2. **Cycle cost of a partially filled batch.** The schedule word count field is
    2 bits and `count = 0` still takes one cycle, so a batch with fewer than 3
    ALU packets probably still costs the same. Unverified. If it does *not*, the
@@ -457,9 +467,25 @@ concluded, wrongly, that `MIN`/`MAX` were broken. `fp20` is
 | `2^31` | `0x7C000` |
 | `2^32` (max exponent) | `0x7E000` |
 
-Still open: what happens when arithmetic *overflows* `2^32` - wrap, saturate, or
-the largest finite value - and whether `-0.0` and `+0.0` compare equal. Both need
-a chain that brings an overflowing product back into range, which was not run.
+**Overflow saturates; it does not wrap and it does not clamp at `2^32`.**
+Products that exceed the range behave like a value at the top of the format:
+
+| chain | exact would give | measured |
+|:--|:--|:--|
+| `2^31 * 4 = 2^33`, then 17 x 0.25 (`/2^34`) | 0.5 | `0x7F` = 0.5 |
+| `2^32`, then 16 x 0.25 (`/2^32`) | 1.0 | `0xFF` = 1.0 (control) |
+| `2^31 * 2^31 = 2^62`, then 31 x 0.25 (`/2^62`) | 1.0 | `0x00` |
+
+A clamp at `2^32` would have given `0.25` in the first row; a wrap to zero would
+have given `0x00` there. The third row rules out exact continuation. The only
+model consistent with all three is saturation at the largest finite value, which
+is `2^32 * (2 - 2^-12)`, i.e. just below `2^33` - that is why the first row is
+numerically indistinguishable from exact arithmetic at 8-bit output precision.
+For a compiler this is the friendly behaviour: no NaN, no wrap, so `min`/`max`
+clamps behave as written.
+
+Still open: whether `-0.0` and `+0.0` compare equal, which the 8-bit output path
+cannot observe, and the exact saturation value to more than 8 bits of precision.
 
 **8-bit output conversion is `round(x * 255)` with halves rounding down.**
 Calibration values `0.5 -> 0x7F` (127, not 128) and `0.125 -> 0x20` (32, not 31)
@@ -671,8 +697,21 @@ EXEC
 ```
 
 with `--texture --result`. Because the texture is flat, garbage coordinates are
-harmless - they clamp to the edge - which is what makes the probe small. Two
-caveats for anyone extending it: `grate_texture_clear()` on its own worked
-(flat grey sampled as `0x40404040`), while a second `grate_texture_clear_rect()`
-to make a two-tone texture produced a sample that followed neither coordinate,
-so the two-tone variant is not yet trustworthy.
+harmless - they clamp to the edge - which is what makes the probe small.
+
+Making it discriminating needs three things, all of which bit me once:
+
+* `grate_texture_clear()` then `grate_texture_clear_rect()` for the two-tone
+  variant - this does work; a failed coordinate probe is not the texture's fault;
+* the coordinate must be written as **fp20** (`.lh` destination, or a plain
+  register source), never as an fx10 half;
+* do not use the TEX destination register as a coordinate. `r2` is both the third
+  coordinate and half of the sample destination, and folding the two together
+  makes the coordinate read as 0.
+
+Also note `tools/assembler` now guards its attribute bindings: a shader with no
+`color` attribute used to get `grate_3d_ctx_vertex_attrib_float_pointer(ctx, -1,
+...)`, which corrupts the draw. With `filter_quad_*.txt` the harness still
+rasterises nothing (the framebuffer stays at the clear colour) even with the
+`texcoord` attribute bound, so the `filter_quad` route is not usable yet - the
+standalone probes above are.
