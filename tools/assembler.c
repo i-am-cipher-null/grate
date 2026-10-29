@@ -74,6 +74,12 @@ static const unsigned short indices[] = {
 	0, 1, 2, 1, 2, 3,
 };
 
+static const float texcoords[] = {
+	0.0f, 0.0f,
+	0.0f, 1.0f,
+	1.0f, 0.0f,
+	1.0f, 1.0f,
+};
 static int parse_command_line(struct vs_asm_test *test, int argc, char *argv[])
 {
 	int ret;
@@ -337,10 +343,19 @@ int main(int argc, char *argv[])
 
 	/* Setup colors attribute */
 
+	if (location >= 0) {
 	location = grate_get_attribute_location(program, "color");
 	bo = grate_create_attrib_bo_from_data(grate, colors);
 	grate_3d_ctx_vertex_attrib_float_pointer(ctx, location, 4, bo);
 	grate_3d_ctx_enable_vertex_attrib_array(ctx, location);
+
+	}
+	location = grate_get_attribute_location(program, "texcoord");
+	if (location >= 0) {
+		bo = grate_create_attrib_bo_from_data(grate, texcoords);
+		grate_3d_ctx_vertex_attrib_float_pointer(ctx, location, 2, bo);
+		grate_3d_ctx_enable_vertex_attrib_array(ctx, location);
+	}
 
 	/* Setup render target */
 
