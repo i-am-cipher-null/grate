@@ -239,26 +239,67 @@ same batch get consecutive addresses.
 ### 4.3 Forwarding: measured, and it is unusual
 
 This is the part a scheduler must get right, and it was previously unknown. All
-measurements use the Grate assembler harness (section 10). The probe writes
-fx10 `0.25` (= `0x40`) through `u0.l`, so a successful forward shows up as
-`0x40` in the corresponding channel; the result word is the raw RT1 RGBA readback.
+measurements use the Grate assembler harness (section 10).
+
+The probe writes fx10 `0.25` (= `0x40`) through `u0.l`. The readback word is
+little-endian, so the channels decode as
+`A << 24 | B << 16 | G << 8 | R` with `R = r2.low`, `G = r2.high`,
+`B = r3.low`, `A = r3.high` - the documented order. That was confirmed with a
+four-value calibration (`r2.h = 0.25`, `r2.l = 0.5`, `r3.h = 0.75`,
+`r3.l = 0.125` -> `0xBF20407F`) before any of the results below were read.
 
 | Producer -> consumer | Distance | Result | Meaning |
 |:--|:--|:--|:--|
 | ALU (packet 1) -> DW (same batch) | 0 | `0x40004000` | works |
 | ALU0 -> ALU1, same packet (`alu0` as source) | 0 | `0x40004000` | works |
-| ALU (packet 1) -> ALU (packet 2, same batch), reading **`r3.h`** | 1 packet | `0x40000000` | **stale** - `r2` was not written |
+| ALU (packet 1) -> ALU (packet 2, same batch), reading **`r3.h`** | 1 packet | `0x40000000` | read is fresh, but the **earlier write is lost** |
 | ALU (packet 1) -> ALU (packet 2, same batch), reading **`alu0.h`** | 1 packet | `0x40004000` | works |
 | ALU (batch N) -> ALU (batch N+1), reading **`r3.h`** | 1 batch | `0x40004000` | works |
+| TEX -> ALU, same batch | 0 | `0x7F007F00` | works - the sample is already visible |
+| TEX -> ALU, next batch | 1 batch | `0x7F007F00` | works |
+| TEX -> DW, same batch | 0 | `0x40404040` | works |
 
 So:
 
-> **Row/global registers do not forward between ALU packets inside one batch; the
-> `alu0..alu3` result registers do. Register writes do forward between batches.**
+> **Intra-batch, the row/global register file is not a safe data path; the
+> `alu0..alu3` result registers are. Between batches, register writes do commit.**
 
-`0x40000000` is the diagnostic: `r3` did get its new value (alpha = `0x40`),
-while `r2`, computed from a read of `r3.h`, is zero - the read saw the old
-contents.
+The `0x40000000` case is worth stating precisely, because a first reading of it
+is misleading. Packet 1 writes `r3.h = 0.25`; packet 2 reads `r3.h` and writes
+`r2.h`. The framebuffer then shows `G = 0x40` (so packet 2's read **did** see the
+new value - the read is forwarded) and `A = 0x00` (so `r3.h` is *zero* by the
+time the DW stage reads it). In other words the reader gets the value through a
+bypass, and the pending register-file write of that same register is suppressed.
+The read is not stale; the **writeback is dropped**.
+
+That reproduces identically on two consecutive runs, so it is deterministic, not
+noise. Whether it is exactly "bypass cancels the writeback" or something subtler
+in the ALU writeback arbitration is unresolved, but the compiler rule is the
+same either way: **never read, in one packet, a row/global register written by an
+earlier packet in the same batch** - chain through `aluN` instead, and let the
+chain tail write the register.
+
+`aluN` cannot be a *destination* in the assembler grammar; the ALU slot number
+implicitly names the latch, so a probe writes a row register and reads the
+slot's latch by number. That is also how a backend must model it: the latch is a
+property of the slot, not of an operand.
+
+**Texture results are the exception: they are visible to the ALU in the batch
+that issued the fetch.** A probe that samples a 4x4 grey texture
+(`0x40404040`, i.e. 0.251) and doubles one component in the same batch returns
+`0x7F` per channel (0.5), and the same probe with the ALU moved to the next
+batch returns the identical word. So a scheduler does **not** have to pad
+distance after a TEX, which removes the largest suspected source of stall
+padding from the design.
+
+Two further facts about the batch, both structural rather than measured:
+
+* the stage order inside one batch is fixed - PSEQ, MFU, TEX, ALU, DW - and the
+  assembler grammar enforces it (writing `TEX:` after `ALU:` is a syntax error).
+  Consequently **ALU -> TEX within one batch is impossible**, and computed
+  texture coordinates always cost a batch boundary;
+* TEX and DW address the pixel-packet row registers only (`r0..r3`), so a
+  sampled value that a later stage needs must be live in the current row.
 
 This is consistent with the ALU being a 4-stage pipeline where each packet is
 one cycle and `alu0..alu3` are the actual pipeline latches: within a batch,
@@ -285,23 +326,35 @@ Other forwarding facts, from existing working tests rather than new probes:
 
 **Open:**
 
-1. **TEX result -> ALU distance.** TEX->DW in the same batch works, but ALU
-   reads of sampled data were never probed. This matters because any texture
-   fetch followed by arithmetic (`mix`, modulation, lighting) is exactly the
-   pattern. *Experiment:* TEX into `r2,r3` in batch N, ALU read of `r2`/`r3` in
-   batch N and N+1, store both; needs a texture bound, so the Grate assembler
-   harness (which has no texture setup) is not enough - use the Mesa driver with
-   a debug fs, or extend `tools/assembler`.
+1. ~~**TEX result -> ALU distance.**~~ - **closed**, see 4.3: the sample is
+   visible to the ALU in the same batch and in the next one. What is *not*
+   closed is the other direction, ALU-computed coordinates: a probe that wrote
+   `s = 0.875` and `s = 0.125` into `r0` from the ALU always sampled the same
+   texel, with either coordinate and with either one or two batches between the
+   write and the fetch. The probe differs from the working textured test in one
+   way - it has no `MFU ipl` and therefore no barycentric setup - so either the
+   coordinate registers are not consumed the way the encoding suggests, or the
+   fetch needs the MFU stage to have produced a valid pixel packet first. This
+   needs a probe built on the `filter_quad_fs.txt` skeleton (ipl-fetched
+   coordinates, then an ALU modification of one component), not a from-scratch
+   one.
 2. **Cycle cost of a partially filled batch.** The schedule word count field is
    2 bits and `count = 0` still takes one cycle, so a batch with fewer than 3
    ALU packets probably still costs the same. Unverified. If it does *not*, the
    scheduler gains a second dimension (fill vs latency).
-3. **`pseq_to_dw_exec_nb`** (register `0x546`, bits 6..25). The assembler
-   defaults it to 1, the blob emits other values and `sky_fs.txt` uses 3. It is
-   almost certainly the pipeline depth between the PSEQ stage and the DW stage
-   in batches, i.e. the constant a scheduler needs to know when the *first*
-   store may be issued. Obtaining it from the blob (how the value is computed as
-   a function of the shader) is the cleanest route.
+3. **`pseq_to_dw_exec_nb`** (register `0x546`, bits 6..25) - **not compiler
+derived**, which closes the question in the useful direction. Dumping every
+   register write in the blob's fragment command stream (`cgc -F -R`) shows only
+   `0x500` (PSEQ flush) and `0x806` (ALU complement) besides the six data
+   uploads: the blob **never writes `0x546`**, nor `0xe20`/`0xe21`. So
+   `pseq_to_dw_exec_nb`, `ALU_BUFFER_SIZE` and `TRAM_SETUP` are driver state, set
+   per draw outside the shader binary, not values a compiler computes.
+
+   Sweeping it on hardware (`1, 3, 8, 16`) produces bit-identical, correct output
+   for a single-batch shader (`0xBF004000` every time), so it is a pipeline-depth
+   tuning knob rather than an exact requirement - consistent with the assembler
+   defaulting to 1 while `sky_fs.txt` uses 3. A scheduler does not need it to be
+   *correct*; only a performance model would care.
 4. **`alu_buffer_size` interaction**: how many rows may be live simultaneously
    and whether the row registers beyond the configured size alias or are
    undefined.
@@ -345,6 +398,73 @@ is a good sanity check to copy into the driver.
 
 `ALU_BUFFER_SIZE` also needs a second magic write (`0x501`), and T114 needs the
 `0x547` pair; both are already in `grate_3d_set_alu_buffer_size()`.
+
+### 4.5 Arithmetic semantics, measured
+
+Same harness, same calibration as 4.3. Two probes per question, with the
+operands swapped, so that "returns source 0" and "returns the special value"
+can be told apart.
+
+**`CMP` (assembler mnemonic `CSEL`) is `(rA*rB < 0) ? rB : (rC*rD)`.**
+
+| rA | rB | rC | rD | result | reading |
+|:--|:--|:--|:--|:--|:--|
+| -0.25 | -0.25 | 0.25 | 1 | `0x40` (0.25) | product is +, so the false branch ran - `rA < 0` would have been true |
+| 0.25 | -0.25 | 0.25 | 1 | `0x00` (-0.25) | product is -, true branch ran |
+| -0.25 | 0.5 | 0.25 | 1 | `0x7F` (0.5) | true branch yields **`rB`**, not `rA*rB` (which would be -0.125 -> 0) |
+
+So the reference's `(rA < 0) ? rB : (rC*rD)` is wrong in the *condition*, and
+right in the *result*: the sign tested is the one of `rA*rB`, which is what makes
+`CMP` symmetric with `MIN`/`MAX` (`min(rA*rB, rC*rD)`).
+
+**Finite `MIN`/`MAX` order correctly.** `MIN(0.75, 0.25) = 0.25`,
+`MAX(0.75, 0.25) = 0.75`.
+
+**`fp20` has no infinity and no NaN. The maximum exponent (`0x3F`) is the
+finite value `2^32`, and arithmetic on it is ordinary arithmetic.**
+
+That was measured with a chain rather than a single operation, because one
+multiply cannot tell "finite" from "saturating": start at the value, multiply
+by `0.25` repeatedly across batches, and see whether it lands on an exact power
+of two.
+
+| start | steps x 0.25 | predicted if finite | measured |
+|:--|:--|:--|:--|
+| `0x7C000` (exp 62 = `2^31`) | 16 | `2^31 * 2^-32 = 0.5` | `0x7F` = 0.5 |
+| `0x7E000` (exp 63) | 17 | `2^32 * 2^-34 = 0.25` | `0x40` = 0.25 |
+
+An infinity or a NaN would not survive seventeen multiplies and arrive exactly
+on `0.25`; a saturating format would have stuck at its maximum. Control chains
+from `0.25` (1, 2, 3 steps -> `0x10001000`, `0x04000400`, `0x01000100`) confirm
+the chain mechanism itself.
+
+`MIN`/`MAX` therefore order correctly at the top of the format:
+`MIN(2^32, 0.25) = 0.25` and `MAX(2^32, 0.25) = 2^32`, identical in both
+argument orders.
+
+**Beware the constants.** Getting this wrong is easy and produces convincing
+nonsense - the first attempt at this experiment used `0x3E000` as "0.25" and
+concluded, wrongly, that `MIN`/`MAX` were broken. `fp20` is
+`(1 + mantissa/8192) * 2^(exp-31)`, so:
+
+| value | fp20 |
+|:--|:--|
+| 0.125 | `0x38000` |
+| 0.25 | `0x3A000` |
+| 0.5 | `0x3C000` |
+| 1.0 | `0x3E000` |
+| 2.0 | `0x40000` |
+| `2^31` | `0x7C000` |
+| `2^32` (max exponent) | `0x7E000` |
+
+Still open: what happens when arithmetic *overflows* `2^32` - wrap, saturate, or
+the largest finite value - and whether `-0.0` and `+0.0` compare equal. Both need
+a chain that brings an overflowing product back into range, which was not run.
+
+**8-bit output conversion is `round(x * 255)` with halves rounding down.**
+Calibration values `0.5 -> 0x7F` (127, not 128) and `0.125 -> 0x20` (32, not 31)
+rules out both `trunc(x*256)` and plain round-half-up. Relevant to a backend only
+because it means a shader cannot rely on `1.0` landing on `0xFF` via `x*256`.
 
 ## 6. I/O: varyings and the linker program
 
@@ -426,15 +546,14 @@ Missing for a complete backend:
 
 ### 9.2 Needed for correct code, unknown today
 
-4. `MIN`/`MAX`/`CMP` NaN and signed-zero behaviour, and whether `MIN`/`MAX`
-   saturate.
+4. ~~`MIN`/`MAX`/`CMP` semantics~~ - partly settled, see 4.5. Finite `MIN`/`MAX`
+   order correctly and `CMP` compares the **first product**, not `rA`. Still
+   open: signed zero, and values with the saturated `fp20` exponent.
 5. Whether `saturate` on the destination clamps before or after the result
    scale, and whether it works on fx10 halves.
-6. The exact `CMP` predicate: the reference says `(rA < 0) ? rB : (rC * rD)`,
-   the assembler calls it `CSEL`; whether `rA * rB` (rather than `rA`) is the
-   comparison input is **not settled** - opcode 3 is documented as
-   `(rA < 0) ? rB : (rC*rD)` but the operand encoding has both `rA` and `rB`
-   participating in the multiply for opcodes 0..2.
+6. ~~The exact `CMP` predicate~~ - **settled**: it is
+   `(rA*rB < 0) ? rB : (rC*rD)`. The reference's `(rA < 0)` reading is wrong on
+   hardware, and the true branch is `rB`, not the product. See 4.5.
 7. `RECIP`/`RSQ`/`LG2`/`EX2`/`SQRT`/`SIN`/`COS` accuracy and their input ranges;
    `PRE*` + main is a two-op sequence, so what the `PRE` result means (and
    whether it may be stored and reused) matters for selection.
@@ -522,13 +641,38 @@ Measured (`u0.l = 0.25` -> fx10 `0x40`; RT is RGBA8888 with `r2.l`=R,
 
 | shader | result | reading |
 |:--|:--|:--|
+| calibration (4 distinct values) | `0xBF20407F` | channel order and 8-bit conversion pinned down |
 | expA | `0x40004000` | baseline correct |
 | expB | `0x40004000` | cross-batch forward works |
-| expC | `0x40000000` | `r3.h` read was stale (G channel unwritten) |
+| expC | `0x40000000` | read forwarded (`G=0x40`) but `r3.h` writeback lost (`A=0`) |
 | expD2 | `0x40004000` | `alu0` forward works across packets |
 | expE2 (ALU0 -> ALU1 in one packet via `alu0.h`) | `0x40004000` | same-packet forward works |
+| `fs_uniform.txt` control | `0x19334C66` | matches the suite's expected value, validating the model |
 
 Note `aluN` cannot be a *destination* in the assembler grammar
 (`ALU_DST_REG` accepts only `rN`, `gN`, `uN`, `lp`, CR and `kill`); the ALU slot
 number implicitly names the latch, so the probe writes a row register and reads
 the slot's latch by number.
+
+### 10.2 Texture probes
+
+`tools/assembler` had no texture support, which is why TEX was untested. It now
+has a `--texture` option that binds a 4x4 `RGBA8888` linear texture to sampler 0
+and clears it to a chosen colour; the probes above use it:
+
+```
+EXEC
+	TEX:	tex r0, r1, tex0, r0, r1, r2
+	ALU:
+		ALU0:	MAD  r2.*h,  r0.l * 2,  #1,  #0,  #1
+		ALU1:	MAD  r3.*h,  r0.l * 2,  #1,  #0,  #1
+	DW:	store rt1, r2, r3
+;
+```
+
+with `--texture --result`. Because the texture is flat, garbage coordinates are
+harmless - they clamp to the edge - which is what makes the probe small. Two
+caveats for anyone extending it: `grate_texture_clear()` on its own worked
+(flat grey sampled as `0x40404040`), while a second `grate_texture_clear_rect()`
+to make a two-tone texture produced a sample that followed neither coordinate,
+so the two-tone variant is not yet trustworthy.
