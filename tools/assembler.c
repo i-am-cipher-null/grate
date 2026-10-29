@@ -46,6 +46,7 @@ struct vs_asm_test {
 	uint32_t expected_result;
 	bool has_expected;
 	bool test_only;
+	bool print_result;
 
 	struct vs_uniform vs_uniforms[256];
 	unsigned vs_uniforms_nb;
@@ -89,6 +90,7 @@ static int parse_command_line(struct vs_asm_test *test, int argc, char *argv[])
 			{"testonly",	no_argument, NULL, 0},
 			{"vs_uniform",	required_argument, NULL, 0},
 			{"fs_uniform",	required_argument, NULL, 0},
+			{"result",	no_argument, NULL, 0},
 			{ /* Sentinel */ }
 		};
 		int option_index = 0;
@@ -143,6 +145,9 @@ static int parse_command_line(struct vs_asm_test *test, int argc, char *argv[])
 				}
 				test->fs_uniforms_nb++;
 				break;
+			case 7:
+				test->print_result = true;
+				break;
 			default:
 				return 0;
 			}
@@ -158,6 +163,7 @@ static int parse_command_line(struct vs_asm_test *test, int argc, char *argv[])
 			fprintf(stderr, "\t--lnk path : linker asm path\n");
 			fprintf(stderr, "\t--expected 0x00000000 : perform the test\n");
 			fprintf(stderr, "\t--testonly : don't show the rendered result\n");
+			fprintf(stderr, "\t--result : print the result word always\n");
 			fprintf(stderr, "\t-h : this help\n");
 			return 0;
 		}
@@ -363,6 +369,9 @@ int main(int argc, char *argv[])
 		return 1;
 
 	result = fb_data[0];
+
+	if (test.print_result)
+		fprintf(stdout, "result 0x%08X\n", result);
 
 	if (test.has_expected && test.expected_result != result) {
 		for (i = 0; i < options.width * options.height; i += 4)
