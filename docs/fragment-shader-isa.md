@@ -2,6 +2,8 @@
 
 The Tegra fragment shader ISA is not as straight forward as [[Vertex Shader ISA]].
 
+For what a fragment-shader *compiler* needs from this encoding - and what is still unknown - see [[Writing a Compiler]].
+
 The fragment shader is separated into five different instruction streams:
 
 * PSEQ - fetching data from the memory and feeding it to the pipeline as registers data or instructions
