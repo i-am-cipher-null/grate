@@ -23,6 +23,7 @@
 #include <getopt.h>
 #include <libgen.h>
 #include <locale.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "grate.h"
@@ -39,6 +40,11 @@ struct fs_uniform {
 	float value;
 };
 
+struct vs_mat4 {
+	char name[256];
+	float values[16];
+};
+
 struct vs_asm_test {
 	char *vs_path;
 	char *fs_path;
@@ -48,6 +54,10 @@ struct vs_asm_test {
 	bool test_only;
 	bool print_result;
 	bool texture;
+	bool mipmap;
+
+	struct vs_mat4 vs_mat4s[16];
+	unsigned vs_mat4s_nb;
 
 	struct vs_uniform vs_uniforms[256];
 	unsigned vs_uniforms_nb;
@@ -99,6 +109,8 @@ static int parse_command_line(struct vs_asm_test *test, int argc, char *argv[])
 			{"fs_uniform",	required_argument, NULL, 0},
 			{"result",	no_argument, NULL, 0},
 			{"texture",	no_argument, NULL, 0},
+			{"vs_mat4",	required_argument, NULL, 0},
+			{"mipmap",	no_argument, NULL, 0},
 			{ /* Sentinel */ }
 		};
 		int option_index = 0;
@@ -159,6 +171,40 @@ static int parse_command_line(struct vs_asm_test *test, int argc, char *argv[])
 			case 8:
 				test->texture = true;
 				break;
+			case 10:
+				test->mipmap = true;
+				break;
+			case 9: {
+				struct vs_mat4 *m = &test->vs_mat4s[test->vs_mat4s_nb];
+				char *p = strchr(optarg, '=');
+				unsigned n = 0;
+
+				if (sscanf(optarg, "[\"%255[^\"]\"]", m->name) != 1 || !p) {
+					fprintf(stderr, "failed to parse \"vs_mat4\" argument %s\n",
+						optarg);
+					return 0;
+				}
+
+				p++;
+				while (*p && *p != '(')
+					p++;
+				if (*p == '(')
+					p++;
+
+				while (*p && *p != ')' && n < 16) {
+					m->values[n++] = strtod(p, &p);
+					while (*p == ',' || *p == ' ')
+						p++;
+				}
+
+				if (n != 16) {
+					fprintf(stderr, "vs_mat4 %s: expected 16 values, got %u\n",
+						m->name, n);
+					return 0;
+				}
+				test->vs_mat4s_nb++;
+				break;
+			}
 			default:
 				return 0;
 			}
@@ -314,6 +360,16 @@ int main(int argc, char *argv[])
 			return 1;
 		grate_texture_clear(grate, tex, 0xFFFFFFFF);
 		grate_texture_clear_rect(grate, tex, 0x00000000, 0, 0, 2, 4);
+
+		if (test.mipmap) {
+			if (grate_texture_generate_mipmap(grate, tex))
+				return 1;
+			grate_texture_set_min_filter(tex,
+					GRATE_TEXTURE_NEAREST_MIPMAP_NEAREST);
+			grate_texture_set_mag_filter(tex, GRATE_TEXTURE_NEAREST);
+			grate_texture_set_max_lod(tex, 11);
+		}
+
 		ctx->textures[0] = tex;
 	}
 
@@ -337,19 +393,23 @@ int main(int argc, char *argv[])
 	/* Setup vertices attribute */
 
 	location = grate_get_attribute_location(program, "position");
-	bo = grate_create_attrib_bo_from_data(grate, vertices);
-	grate_3d_ctx_vertex_attrib_float_pointer(ctx, location, 4, bo);
-	grate_3d_ctx_enable_vertex_attrib_array(ctx, location);
+	if (location >= 0) {
+		bo = grate_create_attrib_bo_from_data(grate, vertices);
+		grate_3d_ctx_vertex_attrib_float_pointer(ctx, location, 4, bo);
+		grate_3d_ctx_enable_vertex_attrib_array(ctx, location);
+	}
 
 	/* Setup colors attribute */
 
-	if (location >= 0) {
 	location = grate_get_attribute_location(program, "color");
-	bo = grate_create_attrib_bo_from_data(grate, colors);
-	grate_3d_ctx_vertex_attrib_float_pointer(ctx, location, 4, bo);
-	grate_3d_ctx_enable_vertex_attrib_array(ctx, location);
-
+	if (location >= 0) {
+		bo = grate_create_attrib_bo_from_data(grate, colors);
+		grate_3d_ctx_vertex_attrib_float_pointer(ctx, location, 4, bo);
+		grate_3d_ctx_enable_vertex_attrib_array(ctx, location);
 	}
+
+	/* Setup texcoords attribute */
+
 	location = grate_get_attribute_location(program, "texcoord");
 	if (location >= 0) {
 		bo = grate_create_attrib_bo_from_data(grate, texcoords);
@@ -380,6 +440,20 @@ int main(int argc, char *argv[])
 
 		grate_3d_ctx_set_vertex_uniform(ctx, loc, 4,
 						test.vs_uniforms[i].values);
+	}
+
+	for (i = 0; i < test.vs_mat4s_nb; i++) {
+		int loc = grate_get_vertex_uniform_location(
+					program, test.vs_mat4s[i].name);
+
+		if (loc < 0) {
+			fprintf(stderr, "vs_mat4 \"%s\" not found\n",
+				test.vs_mat4s[i].name);
+			continue;
+		}
+
+		grate_3d_ctx_set_vertex_uniform(ctx, loc, 16,
+						test.vs_mat4s[i].values);
 	}
 
 	for (i = 0; i < test.fs_uniforms_nb; i++) {
