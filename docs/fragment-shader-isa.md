@@ -429,3 +429,88 @@ These seems to be for GoForce (based on filing dates):
 - [EP1665165: "Pixel processing system and method"](https://patents.google.com/patent/EP1665165)
 - [US8711155: "Early kill removal graphics processing system and method"](https://patents.google.com/patent/US8711155)
 - [US7199799: "Interleaving of pixels for low power programmable processor"](https://patents.google.com/patent/US7199799)
+
+## Verification against the proprietary compiler
+
+The observations below were obtained by using NVIDIA's own compiler as an
+oracle rather than by re-deriving the encoding from Grate's tables. `tools/cgc`
+links against `libcgdrv.so` when the blob is available (`src/libcgc/dummy.c` is
+only linked in its absence), so the emitted bits are authoritative. Raw bit
+dumps come from `cgc -F -r -U`.
+
+#### Instruction word order (important)
+
+For the 64-bit ALU and MFU words, the **first** 32-bit halfword printed by
+`cgc -r` is the *high* half (bits 63..32) and the second is the low half
+(bits 31..0), so the value is `(word0 << 32) | word1`. The 32-bit PSEQ, TEX and
+DW words are a single low word.
+
+Confirmed by `exp2()` emitting `0e400000 00000000`, which decodes to opcode 9
+(PREEX2) and register 3: `preexp r3`.
+
+#### MFU interpolation slots depend on precision
+
+The opcode (54..57) and register (58..63) fields are confirmed. What the
+existing tables don't capture is that the number of `var0..3` interpolation
+slots consumed depends on the declared precision of the varying:
+
+| varying declaration   | interpolation slots                              |
+|:----------------------|:-------------------------------------------------|
+| `mediump vec2 v`      | two fp20 slots (`t0.fp20` in var2 *and* var3)     |
+| `lowp vec2 v`         | one packed fx10 slot (`t0.fx10` in var2 only)     |
+
+So a lowp varying packs two components into a single slot while a mediump one
+does not. Anything sizing TRAM rows or counting interpolation slots needs to
+account for this.
+
+The barycentric wiring is also confirmed by the same dumps: mul0 is
+(dst=1 barycentric weight, src0=10 sfu result, src1=11 barycentric coef 0) and
+mul1 is (dst=1, src0=10, src1=12 barycentric coef 1).
+
+#### TEX
+
+For `texture2D(s, uv)` the emitted word is `0x00000430` with
+`sampler_index=0`, `src_regs_select=1`, `sample_dst_regs_select=1` and
+`enable=1` (bit 10). Every bit in the documented `???` ranges - 6..9, 11, 13..31
+- as well as the bias bit (12) was **zero**. These ranges therefore appear to be
+reserved rather than carrying undocumented flags for a plain 2D fetch without
+bias.
+
+Note when probing samplers: `sampler_index` is the *linked* sampler slot, not
+source declaration order. Declaring two samplers and using only the second still
+emits `s0`, because the unused sampler is optimized away and the survivor is
+renumbered.
+
+#### DW
+
+The render target field (bits 2..5) is confirmed, as is the hardwiring of the
+special targets (rt0 depth, rt1 color, rt2 stencil). `gl_FragData[1]` compiles
+to render target **5**, which confirms the documented `5..12 = MRT n+1` mapping
+and shows MRT outputs are offset past the fixed depth/color/stencil slots.
+
+Two bits inside the documented unknown range 16..31 correlate with the target
+class rather than being constant:
+
+| bit | observed on                                              |
+|----:|:---------------------------------------------------------|
+|  16 | the depth (rt0) store only                               |
+|  17 | every non-depth store (rt1, rt2, rt3, rt5)               |
+|   7 | the rt3 store                                            |
+|  10 | the rt2 store (matches the documented "stencil write")   |
+
+These look like per-path write-enable flags, but they are an observed
+correlation, not proven semantics.
+
+#### PSEQ
+
+A framebuffer fetch (`GL_NV_shader_framebuffer_fetch`) compiles to
+`load rt2` = `0x00820008`: bits 16..19 hold the render target index (value 2,
+matching the disassembler's `rt2`), `dest_regs_select` (bit 1) is 0 meaning
+R0-R1, and bits 3 and 23 are both set - consistent with the note above that they
+usually travel together. No other bits are set.
+
+#### Still open
+
+- the exact meaning of DW bits 16 and 17
+- TEX bits 6..9, 11 and 13..31 (zero in every sample gathered so far)
+- `sampler_index` behaviour with several samplers used simultaneously
