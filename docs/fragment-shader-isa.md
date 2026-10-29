@@ -3,6 +3,7 @@
 The Tegra fragment shader ISA is not as straight forward as [[Vertex Shader ISA]].
 
 The fragment shader is separated into five different instruction streams:
+
 * PSEQ - fetching data from the memory and feeding it to the pipeline as registers data or instructions
 * MFU - multi-function unit, varying interpolate and special functions
 * TEX - texture lookups
@@ -176,6 +177,7 @@ The returned fragment position X register value is accumulated by 8192.0, fragme
 #### Registers:
 
 Patents:
+
 * https://www.google.com/patents/US7659909
 * https://www.google.com/patents/US8599208
 
@@ -231,7 +233,6 @@ The MFU unit can fetch and interpolate 4 component vectors per instruction and/o
 | 14..20 | var2     |
 |  7..13 | var1     |
 |   0..6 | var0     |
-
 | opcode | Mnemonic | Meaning                      | pseudo-code         |
 |-------:|:--------:|:-----------------------------|:--------------------|
 |      0 |    NOP   | No operation                 |                     |
@@ -256,7 +257,6 @@ The varying id corresponds to the TRAM component: var0 is TRAM.x, var1 is TRAM.y
 | 3..6 | TRAM index to fetch from |
 | 1..2 | opcode                   |
 |    0 | saturate                 |
-
 | opcode | Mnemonic | Meaning                        |
 |-------:|:--------:|:-------------------------------|
 |      0 |   NOP    | No operation                   |
@@ -331,7 +331,6 @@ The TEX instruction takes the texture coordinates and LOD bias from the first ro
 |      4 | texcoords / lod regs select           |
 |   0..3 | sampler index                         |
 
-
 #### Texture coordinates and LOD registers select:
 
 The texture coordinate components (S, T, R) and level-of-detail bias are loaded from the row registers as fp20's.
@@ -356,14 +355,14 @@ Data write instruction controls write of values contained in the row registers R
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
-| 16..31 | unknown - bit 17 is a don't-care, bit 16 kills the write |
+| 16..31 | 16..17 = render target class (1 = depth, 2 = other); 18..31 unknown |
 |     15 | source registers select |
 | 11..14 | ??? - bit 14 is functional, see below |
 |     10 | stencil write           |
 |   6..9 | ??? - no effect on hardware |
 |   2..5 | render target index     |
-|      1 | ??? - setting it suppresses the write |
-|      0 | enable                  |
+|      1 | write mode bit 1 (see 0..1) |
+|      0 | write mode bit 0 (1 = render target write) |
 
 #### Source registers select:
 
@@ -415,12 +414,14 @@ Note: bit 3 and bit 23 seems to usually be set together. It's not known which on
 ## More patents
 
 These seems to be for Tegra:
+
 - [US8314803: "Buffering deserialized pixel data in a graphics processor unit pipeline"](https://patents.google.com/patent/US8314803)
 - [US9183607: "Scoreboard cache coherence in a graphics pipeline"](https://patents.google.com/patent/US9183607)
 - [US7808512: "Bounding region accumulation for graphics rendering"](https://patents.google.com/patent/US7808512)
 - [US8441497: "Interpolation of vertex attributes in a graphics processor"](https://patents.google.com/patent/US8441497)
 
 These seems to be for GoForce (based on filing dates):
+
 - [US7969446: "Method for operating low power programmable processor"](https://patents.google.com/patent/US7969446)
 - [US8749576: "Method and system for implementing multiple high precision and low precision interpolators for a graphics pipeline"](https://patents.google.com/patent/US8749576)
 - [EP1759380: "Low power programmable processor"](https://patents.google.com/patent/EP1759380)
@@ -472,6 +473,7 @@ mul1 is (dst=1, src0=10, src1=12 barycentric coef 1).
 For `texture2D(s, uv)` the emitted word is `0x00000430` with
 `sampler_index=0`, `src_regs_select=1`, `sample_dst_regs_select=1` and
 `enable=1` (bit 10). Every bit in the documented `???` ranges - 6..9, 11, 13..31
+
 - as well as the bias bit (12) was **zero**. These ranges therefore appear to be
 reserved rather than carrying undocumented flags for a plain 2D fetch without
 bias.
@@ -500,24 +502,47 @@ textual result exactly - so the field model above is confirmed end to end.
 
 | flip        | result     | meaning |
 |:------------|:-----------|:--------|
-| bit 0 clear | `4C4C4C4C` | `enable` - nothing is written without it |
+| bit 0 clear | `4C4C4C4C` | mode 0 - nothing is written |
 | bits 2..5   | `4C4C4C4C` | `render target index` - the write goes to another target |
 | bit 15 clear| `00000000` | `src_regs_select` works: R0-R1 (zero here) are stored |
 | bit 14 set  | `00000000` | functional, but not a register-pair select (below) |
-| bit 1 set   | `4C4C4C4C` | suppresses the colour write |
-| bit 16 set  | `4C4C4C4C` | suppresses the colour write |
-| bit 17 clear| `FF00FF00` | **not required** (below) |
+| bit 1 set   | `4C4C4C4C` | mode 3 = spill store; colour untouched |
+| bits 16..17 | see below | render target class; 3 is invalid |
 | 6..9, 11..13, 18..31 set | `FF00FF00` | no observable effect |
 
-**Bit 17 is a don't-care.** Compiler output sets it on every non-depth store and
-Grate's assembler hardcodes `unk_16_31 = 2` for every store, which is exactly
-this bit. Clearing it changes nothing on hardware, so the constant is harmless
-but not a requirement.
+**Bit 17 is the low bit of the 16..17 class field, not an independent flag.**
+Compiler output sets it on every non-depth store because that field carries `2`
+for non-depth targets, and Grate's assembler hardcodes `unk_16_31 = 2`, which is
+exactly that value. Setting it on an otherwise valid word changes nothing.
 
-**Bits 1 and 16 suppress the write.** Both reproduce reliably. Bit 16 is the one
-the compiler sets only on the depth (rt0) store, which suggests it designates
-the depth target, but with colour readback only we cannot separate "suppressed"
-from "diverted to another target".
+**Bits 1 and 0 are a mode field, not an enable.** The compiler decompile
+(`docs/compiler-internals.md`) shows DW `[1:0]` is a 2-bit write mode: 1 = render
+target write, 2 = spill write of one register, 3 = spill write of several. Setting
+bit 1 turns the store into a *spill* store aimed at the spill buffer, so the colour
+surface stays at the clear colour; it is not a disable. Bit 0 alone (mode 1) is the
+ordinary render-target write, and mode 0 writes nothing. Colour readback cannot
+tell modes 0, 2 and 3 apart, because all three leave the colour buffer untouched,
+so this split was invisible to the bit-flip sweep and only became visible through
+the decompile.
+
+**Bits 16..17 are a render-target class field, not two flags.** The compiler's
+`dw_enc_src()` returns `1` when the render-target index is 0 (depth) and `2`
+otherwise, at payload bits 6..7, which are DW bits 16..17. Measured on hardware
+with a colour store aimed at rt1:
+
+| field value | compiler emits for | result at rt1 |
+|:--|:--|:--|
+| 0 | never | `FF00FF00` (written) |
+| 1 | depth (rt index 0) | `4C4C4C4C` (colour untouched) |
+| 2 | every other target | `FF00FF00` (written) |
+| 3 | never | `4C4C4C4C` (colour untouched) |
+
+So the earlier reading of this as "bit 16 kills the write, bit 17 is a don't-care"
+was an artefact of single-bit flips on a 2-bit field: setting bit 16 alone
+produces value 3, which is invalid, and clearing bit 17 produces value 0, which
+the hardware accepts. The compiler only ever emits 1 or 2.
+Bit 10 (stencil write) set on an rt1 colour store changes nothing, so it only
+matters for the stencil target.
 
 **Bit 14 is functional but is not a wider `src_regs_select`.** With either
 R0-R1, R2-R3, R4-R5 or R6-R7 holding the payload, setting bit 14 makes the store
@@ -538,7 +563,8 @@ usually travel together. No other bits are set.
 
 #### Still open
 
-- what DW bit 14 does (zero payload) and what bits 1/16 gate; reading back the
-  depth and stencil surfaces would separate "suppressed" from "redirected"
+- what DW bit 14 does (zero payload); reading back the depth and stencil
+  surfaces would settle where modes 1 and 3 actually write
+
 - TEX bits 6..9, 11 and 13..31 (zero in every sample gathered so far)
 - `sampler_index` behaviour with several samplers used simultaneously

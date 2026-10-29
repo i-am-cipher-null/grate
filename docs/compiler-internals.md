@@ -163,10 +163,292 @@ str   r5, [r4, #0x58]
 So bit 15 is not built as part of the field layout; it is applied afterwards as
 a patch on a word that was packed elsewhere.
 
+## The encoder entry point
+
+A prior manual decompile (kept in the tree) reconstructs the dispatcher as
+`encode_ar20_shader_instruction_record()`. It is called once per IR record and
+dispatches on `(info->sched & 0xff) >> 5`:
+
+| value | unit |
+|------:|:-----|
+| 0 | PSEQ |
+| 1 | MFU |
+| 2 | TEX |
+| 3 | ALU |
+| 4 | DW |
+| 5 | an undocumented unit (4 packed relative slot offsets) |
+
+Stream layout: the 32-bit streams (PSEQ, TEX, DW, schedule words) have one
+header dword, so record `i` lives at index `i + 1`. The 64-bit streams (MFU, ALU)
+have a 4-byte header and then 8-byte words stored **high dword first**. ALU
+embedded-constant words are the exception: low dword first.
+
+Helper map, which is what makes this address range (the one originally asked
+about) legible:
+
+| Symbol | Address |
+|:--|:--|
+| `dest_code` | `0x2aed6c` |
+| `tex_coord_code` | `0x2aede4` |
+| `alu_enc_operand` | `0x2af078` |
+| `alu_enc_rd_unary` | `0x2af190` |
+| `alu_enc_rd` | `0x2af284` |
+| `dw_enc_src` | `0x2af330` |
+| `dw_enc_src_spill1` | `0x2af4d8` |
+| `dw_enc_src_spillN` | `0x2af5c4` |
+| `spill_force_single` | `0x2af6a0` |
+| `alu_flush_batch` | `0x2af6f0` |
+| `release_alu_insn` | `0x2b6720` |
+| `pack_alu_const` | `0x2e6490` |
+| `alu_rc_rd_only` | `0x2a1ed8` |
+
+### Correction to the earlier notes in this file
+
+`0x2af6f0` is **`alu_flush_batch`, a real function**, not the tail of its
+predecessor. An earlier revision of this document claimed otherwise and had the
+Ghidra database entry deleted as "mis-detected" - that was wrong, and the
+decompile of it (writing per-row flags from the `read_mask`/`write_mask` at
+context `+0x6c`/`+0x6e`) confirms the helper's role.
+
+### DW drains `[31:10]` from a helper
+
+`encode_dw` writes only the low ten bits itself:
+
+```
+[1:0]   mode: 1 = render target write, 2 = spill write (single reg),
+              3 = spill write (multi reg)   <- bit 0 is NOT a plain enable
+[5:2]   render target index
+[6]     set for spill modes, and for RT writes given last-operand flag 0x200
+[7]     derived: set iff render target index == 3 (coverage)
+[8]     spill modes
+[31:10] returned by dw_enc_src() / dw_enc_src_spill1() / dw_enc_src_spillN()
+```
+
+`0x2af330` starts by `memset`-ing `0xc0` bytes at context `+0x4dc` and walking
+`prog->slots` (`prog_t+0x60`), testing `slot->index == 4` (`res_desc+4`, render
+target 4 = spill) and reading `desc->type` (`res_desc+0xc`). That independently
+corroborates the `res_desc`/`prog_t` offsets used by the reconstruction.
+
+Decoding `dw_enc_src()`'s return value `r` (DW bit n is `r` bit n-10):
+
+| DW bits | source in the decompile |
+|:--|:--|
+| 10 | `r` bit 0 - stencil-ish flag |
+| 11 | `r` bit 1 - `(operand2 >> 17) & 3` |
+| 14 | `r` bit 4 - set when `(opcode & 0xffffefff) == 0xf4` |
+| 15 | `r` bit 5 - `src_regs_select` |
+| 16..17 | `r` bits 6..7 - render target class: `1` if `desc->index == 0`, else `2` |
+| 18,19,23,25 | `r` bits 8,9,13,15 - slices of an operand word |
+
+Bits 18/19/23/25 are rendered by the decompiler as `(w2 & mask) >> shift`, which
+would always be zero; the intended form is almost certainly `(w2 >> shift) &
+mask`, so treat those four as "some operand bits" rather than as exact fields.
+
+Hardware confirms 16..17 is a 2-bit class field (1 = depth, 2 = everything else,
+3 invalid), and that on a colour store bits 10..14 and 18..31 of the payload have
+no observable effect - they exist for the stencil/spill/other paths.
+
+## Scheduling
+
+Two different things get called "scheduling" here and they live in different
+places: `0x2af724` does **register lifetime bookkeeping**, while the `sched`
+word itself is assigned by the pass that builds the IR bins. The rules below are
+read from the disassembly - the decompiler output for `0x2af724` is not usable
+(forcing a 1692-byte body makes it lose the prologue and emit `unaff_r4`/`unaff_r5`
+for most of it).
+
+### The sched word
+
+```
+sched = (bin << 8) | (unit << 5) | row        row: 0..31, unit: 0..5
+```
+
+`row` is 5 bits and `unit` 3 bits, so a bin holds at most 32 slots per unit. The
+encoder recovers them as `(sched & 0xff) >> 5` and `(sched - bin_base) >> 8`, and
+the record index inside a bin is `slots_per_bin * bin + row` (`slots_per_bin` at
+`layout+0x18`).
+
+Bins are a linked list of `{next@0, ?@4, base@8, limit@0xc}`. A record advances
+to the next bin when `bin->limit < sched`.
+
+### 0x2af724 - register lifetime release
+
+Frame: `push {r4-r9, sl, fp, lr}`, `sub sp, sp, #668`, return at `0x2afdbc`.
+
+Setup:
+
+* five parallel 48-entry dword arrays at context `+8`, `+0xc8`, `+0x188`,
+  `+0x248`, `+0x308` (loop counter `cmp lr, #48`, base `add r0, r0, #4`). All are
+  zeroed except the third, which is filled with `0x1869f` (99999) - an
+  unset/infinite marker rather than a count;
+* a 32-entry table of 20-byte (5-word) records inside the frame at `sp+0x20`,
+  indexed by node index, with an explicit `cmp r7, #31` / `bgt` overflow guard;
+* walks three intrusive lists hanging off `+0x10`, `+0x58`, `+0x5c`.
+
+The release walk (`0x2afbd0`-`0x2afd10`) goes over the operand array **backwards
+in 12-byte steps**, which confirms `sizeof(ir_operand) == 12`:
+
+```
+ldr   r3, [r5, #-12]        @ operand w0
+ubfx  r2, r3, #24, #4       @ kind = w0[27:24]
+cmp   r2, #1                @ OPD_KIND_VREG
+bic   r0, r3, #0xff000000   @ index = w0[23:0]
+ldr   r1, [prog, #4]        @ prog->regs
+ldr   r4, [r1, r0, lsl #2]  @ -> ir_reg
+ldr   r1, [r4, #0x4c]
+cmp   r1, #5                @ only kind == 5 tracks a hardware register
+ldr   r3, [r4, #0x1c]
+sub   r3, r3, #1
+str   r3, [r4, #0x1c]       @ use counter--, free hwreg when it hits 0
+```
+
+On reaching zero it consults `hwreg` (`ir_reg+0x58`) and updates tables at
+`base+0xcc` and `base+0x30c`. Two guards skip work: `tst w1, #0xc000000` on the
+operand, and `tst [ir_reg+0x3c], #0x40000`. A second counter lives at
+`ir_reg+0x68` and is drained the same way.
+
+So the ordering rule the scheduler enforces is a last-use rule: a hardware
+register slot is only returned when the backward walk reaches the instruction
+that consumes it last.
+
+### 0x2af6f0 - alu_flush_batch
+
+Called when an ALU batch ends, with a relative bin number. It writes one
+schedule word per ALU row at `slots_per_bin*rel_bin + 1 + row`, and only handles a
+second row when `slots_per_bin > 1`.
+
+The 16-bit `read_mask` (`ctx+0x6c`) and `write_mask` (`ctx+0x6e`) are split into
+two bytes covering two consecutive ALU rows: the first row is written from the
+high byte, the second from the low byte. Per row:
+
+```
+bit 29 = (read_mask_byte != 0) || (write_mask_byte != 0 && write_mask_byte != 0xff)
+bit 30 = (write_mask_byte != 0)
+```
+
+The `!= 0xff` special case means "writes some but not all of the bank" is
+tracked separately from "writes everything".
+
+### Per-unit grouping
+
+* **ALU** - four slots per packet (`info->slot` 0..3), `info->pkt_minus1` is the
+  packet count minus one, and `info->link` lets two records share one packet. The
+  schedule word layout depends on `hw->wide_alu_sched`: normal is
+  `count[1:0]` / `addr[7:2]`, wide is `count[10:8]` / `addr[22:16]`. Queued
+  instructions are released through `release_alu_insn` when `sched` changes.
+* **MFU** - consecutive records whose `sched` word is equal share a single 64-bit
+  word; the schedule word carries enable in bit 0 and the running count in
+  `[7:2]`.
+* **DW / TEX / PSEQ** - one 32-bit word per record, no grouping.
+
+### What is *not* established
+
+No latency or stall model was recovered. Nothing found so far encodes "N cycles
+between issue of X and Y"; the only ordering constraints visible are the last-use
+rule, the four-slot ALU packet limit and the per-bin capacity of 32 slots per
+unit. Treat any claim about actual hardware timing as still open.
+
+## The 128-bit packer at 0x1c6648
+
+The whole binary contains exactly **one** call to it, at `0x1c6d1c`:
+
+```
+1c6d0c: mov  r0, r8            @ dst
+1c6d10: mov  r1, sl            @ src
+1c6d14: add  r7, r7, #1
+1c6d18: add  sl, sl, #200      @ src stride 0xc8
+1c6d1c: bl   1c6648
+1c6d20: cmp  r4, r7
+1c6d24: add  r8, r8, #16       @ dst stride 16 = 4 words
+1c6d28: bgt  1c6d0c
+```
+
+So it turns a **200-byte node into a 16-byte (128-bit) record**. Right after the
+loop the caller makes an indirect call through a vtable (`ldr r3,[r5,#0xb0];
+blx r3`) and returns 0 or 1.
+
+This does not look like a per-unit instruction encoder: there is no batching, no
+slot/packet state and no write into any of the context streams (`pseq`/`mfu`/
+`alu`/`dw`). It reads a flat struct and emits a fixed-size serialisation. Given
+that, the most plausible reading is a *descriptor* record (vertex input /
+attribute / stream descriptor) rather than a unit opcode, but that remains a
+guess.
+
+### Ghidra cannot currently decompile this region
+
+`0x1c6648` decompiles to nonsense - a switch on a stack byte,
+`switchD_001c6714_default`, calls to `FUN_001c5950` - that disagrees with objdump
+at every address. Cause: an earlier run created a bogus function entry at
+`0x1c6650` (mid-function); the instruction objects decoded from that offset stayed
+in the listing, and the later `createFunction` reused them. The fix is to
+`clearListing()` over the range before re-disassembling.
+
+objdump is authoritative here: its chain starts at `0x1c6648`, which is exactly
+where the single `bl` lands, and ends at `pop {r4-r9, sl, fp}` / `bx lr` at
+`0x1c67f4`. The field table derived from it stands.
+
+## Assembler limitation
+
+The fragment grammar only accepts `ALU0..ALU3`, so `alu_buffer_size = 2` cannot be
+used to get eight ALU slots:
+
+```
+fs: line 11: syntax error     # ALU4
+```
+
+One ALU instruction writes a single half-register per slot, so four slots cannot
+populate all eight halves of `r0..r3`. That blocks the experiment needed to pin
+down DW bit 14 - which still always yields a zero payload and is not a pair
+select over `r0..r7`.
+
+## The 0x1869f sentinel is general, not scheduler-specific
+
+`0x1869f` (99999) is materialised at **31 sites** in `.text` as
+`movw rX, #34463` + `movt rX, #1`, always as a *value to be stored*; there are
+**zero** immediate compares against it (`grep 'cmp.*#34463'` finds nothing - the
+comparisons are register-to-register). Representative users:
+
+* `0x23f528` - loaded once and copied into several stack slots that initialise a
+  local structure;
+* `0x25995c` - after `(x + 7) >> 3` (round up, divide by 8) it does
+  `movwne r2, #0x869f` / `movtne r2, #1`, i.e. "compute an aligned count and, if
+  it is non-zero, use 99999";
+* `0x1ee8ec`, `0x25a67c` - loaded as a loop initialiser that is then spilled.
+
+So it is the compiler's generic "no value / infinite" constant, used well beyond
+the scheduler. That answers half of the open question: the five 48-entry arrays in
+`0x2af724` are seeded with it so that unvisited entries read as *unreachable*
+rather than as zero, but the sentinel itself carries no scheduler-specific
+meaning.
+
+## Still unresolved: the packer's identity
+
+What *is* pinned down about the caller: it is the function at **0x1c67fc** -
+neither `0x1c6800` nor `0x1c6498`. A `bl 0x1c67fc` from `0x1c0e68` confirms it,
+and the code begins `ldr r3, [r0, #0x348]` *before* `push {r4-r9, sl, fp, lr}` at
+`0x1c6800`. This compiler hoists an argument load ahead of the prologue - the
+packer does the same at `0x1c6648` (`ldr r2, [r1, #0x2c]`, `push` at `0x1c664c`).
+Taking `0x1c6800` as the entry makes `r3` look uninitialised inside the body
+(`ldr r3, [r3, #0xb4]` at `0x1c680c`), which is how the mistake was caught.
+
+Decompiling either function still fails, and the failure modes are now understood:
+
+* `0x1c6648` produces C that models the entry with a *conditional predecessor*
+  (`in_ZR` as an input parameter, impossible for a real entry). This survives
+  `clearCodeUnits()` plus re-disassembly, so Ghidra's flow-based decode really
+  does disagree with objdump's linear decode here;
+* `0x1c67fc` produces a single call (`FUN_000f0918()`) for a 1360-byte body, in
+  the analysed project *and* in a fresh project imported with `-noanalysis`.
+
+objdump therefore remains the only usable view of this code, and the packer's
+field table stands on it.
+
 ## Open questions
 
 * which unit the `0x1c6648` 128-bit packer belongs to;
-* the encoder for the fragment DW instruction proper - only the patch sites above
-  are located so far;
-* the meaning of the `0x1869f` sentinel and the five 48-entry arrays in the
-  scheduler.
+* which payload bits of `dw_enc_src()` the hardware consumes, now measured: on a
+  colour store, 15 (`src_regs_select`) and 16..17 (the render target class field)
+  are used; 10 and 14 belong to the stencil path and IR opcode `0xf4`; 11..13 and
+  18..31 showed no effect at all;
+* what the five 48-entry arrays in `0x2af724` are indexed by (the sentinel itself
+  is now understood - see above);
