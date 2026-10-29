@@ -47,6 +47,7 @@ struct vs_asm_test {
 	bool has_expected;
 	bool test_only;
 	bool print_result;
+	bool texture;
 
 	struct vs_uniform vs_uniforms[256];
 	unsigned vs_uniforms_nb;
@@ -91,6 +92,7 @@ static int parse_command_line(struct vs_asm_test *test, int argc, char *argv[])
 			{"vs_uniform",	required_argument, NULL, 0},
 			{"fs_uniform",	required_argument, NULL, 0},
 			{"result",	no_argument, NULL, 0},
+			{"texture",	no_argument, NULL, 0},
 			{ /* Sentinel */ }
 		};
 		int option_index = 0;
@@ -147,6 +149,9 @@ static int parse_command_line(struct vs_asm_test *test, int argc, char *argv[])
 				break;
 			case 7:
 				test->print_result = true;
+				break;
+			case 8:
+				test->texture = true;
 				break;
 			default:
 				return 0;
@@ -294,6 +299,17 @@ int main(int argc, char *argv[])
 	/* Setup context */
 
 	ctx = grate_3d_alloc_ctx(grate);
+	if (test.texture) {
+		struct grate_texture *tex;
+
+		tex = grate_create_texture(grate, 4, 4, PIX_BUF_FMT_RGBA8888,
+					   PIX_BUF_LAYOUT_LINEAR);
+		if (!tex)
+			return 1;
+		grate_texture_clear(grate, tex, 0xFFFFFFFF);
+		grate_texture_clear_rect(grate, tex, 0x00000000, 0, 0, 2, 4);
+		ctx->textures[0] = tex;
+	}
 
 	grate_3d_ctx_bind_program(ctx, program);
 	grate_3d_ctx_set_depth_range(ctx, 0.0f, 1.0f);
