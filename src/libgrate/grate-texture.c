@@ -72,7 +72,12 @@ struct grate_texture *grate_create_texture(struct grate *grate,
 
 	pitch = PIX_BUF_FORMAT_BYTES(format) * width;
 	pitch = pitch / PIX_BUF_FORMAT_TEXEL_WIDTH(format);
-	pitch = ALIGN(pitch, PIX_BUF_FORMAT_ALIGNMENT(format));
+	/*
+	 * The 3D sampler has no pitch field: it derives the row stride from
+	 * the width and format, so the allocation must be tightly packed.
+	 * Aligning the pitch up (64 bytes for RGBA8888) makes every texture
+	 * narrower than 16 texels read the wrong rows.
+	 */
 
 	tex->pixbuf = host1x_pixelbuffer_create(grate->host1x, width, height,
 						pitch, format, layout);

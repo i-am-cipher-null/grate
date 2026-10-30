@@ -176,7 +176,7 @@ dispatches on `(info->sched & 0xff) >> 5`:
 | 2 | TEX |
 | 3 | ALU |
 | 4 | DW |
-| 5 | an undocumented unit (4 packed relative slot offsets) |
+| 5 | an undocumented unit (4 packed relative slot offsets) - **no host upload register on AR20**, so the stream is unreachable; see [writing-a-compiler.md](writing-a-compiler.md) 9.4 |
 
 Stream layout: the 32-bit streams (PSEQ, TEX, DW, schedule words) have one
 header dword, so record `i` lives at index `i + 1`. The 64-bit streams (MFU, ALU)

@@ -1,0 +1,20 @@
+/*
+ * ALU batch-fill probe, baseline: 1 batch with 1 ALU packet.
+ * Run with GRATE_DRAW_COUNT=<n> and compare against the other fill_* files.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.uniforms
+	[0].l = "u0";
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u0.l,  #1,  #0,  #1
+		ALU1:	MAD  r2.*h,  u0.l,  #1,  #0,  #1
+		ALU2:	MAD  r3.l*,  u0.l,  #1,  #0,  #1
+		ALU3:	MAD  r3.*h,  u0.l,  #1,  #0,  #1
+	DW:	store rt1, r2, r3
+;

@@ -69,11 +69,13 @@ Consequences for a NIR backend, and they are not optional:
   to register 76. It also has a driver-side effect: the host must switch the
   stencil test to late (`0x40f = 0x60` instead of `0x48`, see
   `grate_3d_set_late_test()`) and set the `discards_fragment` flag.
-* **Derivatives, and therefore `textureGrad`/`textureLod` with computed
-  gradients, are out of reach** unless computed per-quad by hand: there is no
-  quad/neighbour data path. Texture LOD is chosen by the TEX unit itself
-  (`TEX` uses the unit's own LOD selection, `TXB` takes an explicit bias from
-  `r3`).
+* **Derivatives, and therefore `textureGrad`, are out of reach** unless
+  computed per-quad by hand: there is no quad/neighbour data path. Texture LOD
+  is chosen by the TEX unit itself (`TEX` uses the unit's own LOD selection,
+  `TXB` takes a bias from `r3`), and it can also be forced outright: TEX bit 13
+  with bit 12 clear reads an *absolute* LOD from `r3` (section 10.4). So
+  `textureLod` with a LOD the shader can compute is expressible; only the
+  implicit-gradient form is not.
 
 The blob behaves the same way: the ISA reference notes that the multi-pass
 program-sequencer recirculation is "not used in practice, BLOB driver gives up on
@@ -177,6 +179,7 @@ a `lowp vec2` into one interpolation slot and a `mediump vec2` into two
 | `fcmp`/`slt`/`sge` | `CMP` + condition code | result is `0.0`/`1.0`, not a mask |
 | `bcsel`/`select` on `a < 0` | `CSEL` | only for `< 0`; other comparisons need a compare first |
 | `tex`/`txb` | `TEX`/`TXB` | coords must be in `r0..r3` |
+| `textureLod` | `TEX` with bit 13, LOD in `r3` | bit 12 must be clear; only reachable through a raw word today (section 10.4) |
 | `store_output` | `DW` | payload must be in `r2/r3` or `r0/r1` |
 | `load_input` (varying) | `MFU ipl` | one `var` slot per component; precision decides slot count |
 | `load_frag_coord` | `posx`/`posy` + the `r3` z expansion | z needs the documented `1/1000 + max(0,r3.low)/4000 + max(0,r3.high)/4` sequence, i.e. ~6 ALU slots |
@@ -332,6 +335,46 @@ ALU latch, and only one consumer per latch per packet boundary. In practice this
 means scheduling ALU into packets as *chains* (`alu0 -> alu1 -> alu2 -> alu3`)
 with the chain tail written back to a row/global register.
 
+**Half selection is the part that bites.** A bare `fp20` source read takes the
+**high** half of the pair: with `r2.lo = 0.25` and `r2.hi = 1.0`,
+`MAD r3.*h, r2, #1, #0` returns `1.0`. The low half is only addressable as an
+*fx10* operand - `r2.l` / `r2.h` read the halves as 1.10 fixed point, and the
+same probe reads 0.25 through `r2.l` and 1.0 through `r2.h`. The destination side
+is independent: `.l*` writes the low half only, `.*h` the high half only, and
+`.lh` writes **both** (`ALU_DST` in `fragment_asm.y` computes
+`low = l1||l2`, `high = h1||h2`). So a value a later batch must read as fp20 has
+to be written in the high half - `.*h` or, as every working test shader does,
+`.lh`. A `.l*`-only write is invisible to a later fp20 operand read. That one
+rule explains a whole family of probes that appeared to "lose" values.
+
+**Operand rC silently reads zero when rA or rB is a row register.** Measured
+with `MAD r3.*h, rA, rB, rC`, which computes `rA*rB + rC`, all rows fed so the
+exact answer is `1*1 + (-0.5) = 0.5`:
+
+| rA | rB | rC | result | reading |
+|:--|:--|:--|:--|:--|
+| `u4`=1.0 | `u5`=1.0 | `u6`=-0.5 | `0x7F` = 0.5 | works |
+| `u4`=1.0 | `#1` | `u6`=-0.5 | `0x7F` = 0.5 | works |
+| `r2`=1.0 | `u5`=1.0 | `u6`=-0.5 | `0xFF` = 1.0 | **c dropped** |
+| `r2`=1.0 | `#1` | `u6`=-0.5 | `0xFF` = 1.0 | **c dropped** |
+| `u4`=1.0 | `r2`=1.0 | `u6`=-0.5 | `0xFF` = 1.0 | **c dropped** |
+
+An *immediate* rC is still honoured when a row register is in rA/rB - that is
+what `MAD r3.l*, r2, #1, -#1` in `fs_mfu_tests.txt` relies on. The rule for a
+backend is therefore: **with a row-register source, the constant addend must be
+an immediate (`#0`, `#1`, `-#1`) or an embedded constant, never a uniform.** A
+uniform rC is read as 0 and the shader is silently wrong by one addend. Nothing
+about it looks wrong at assembly time, which makes this the most dangerous item
+found so far.
+
+**`(other)` sends, `(this)` receives, and only to the adjacent packet.**
+`(other)` is bit 61 on packet *k*, `(this)` is bit 60 on packet *k+1* of the same
+batch. The receiver computes `rA*rB + acc`, so the accumulator **replaces** rC: a
+receiver written `MAD r3.*h, #0, #1, 0.1` returns the sender's result (measured
+0.25 and 0.5), never 0.1. Reversing the order transfers nothing (0.1 survives),
+and a receiver in the next batch gets no handoff. It is a within-batch chaining
+mechanism that complements `aluN` rather than replacing it.
+
 Other forwarding facts, from existing working tests rather than new probes:
 
 * MFU interpolation -> ALU, same batch: works (`fs_vs_tests.txt`).
@@ -348,12 +391,11 @@ Other forwarding facts, from existing working tests rather than new probes:
    visible to the ALU in the same batch and in the next one, and ALU-computed
    fp20 coordinates reach the unit one batch later. The only remaining TEX
    question is `LOD` selection itself, not scheduling - partly closed since:
-   the bias operand works and computed LOD clamps at 0 (section 10.4), while
-   explicit LOD (bit 13) still has no way to be set from the assembler.
-2. **Cycle cost of a partially filled batch.** The schedule word count field is
-   2 bits and `count = 0` still takes one cycle, so a batch with fewer than 3
-   ALU packets probably still costs the same. Unverified. If it does *not*, the
-   scheduler gains a second dimension (fill vs latency).
+   the bias operand works and computed LOD clamps at 0, and explicit LOD is
+   TEX bit 13 with bit 12 clear (section 10.4).
+2. ~~**Cycle cost of a partially filled batch.**~~ - **measured**, see 4.6: a
+   batch costs about 14x an extra ALU packet, so how full it is barely
+   matters and the scheduler does *not* gain a second dimension.
 3. **`pseq_to_dw_exec_nb`** (register `0x546`, bits 6..25) - **not compiler
 derived**, which closes the question in the useful direction. Dumping every
    register write in the blob's fragment command stream (`cgc -F -R`) shows only
@@ -494,6 +536,134 @@ Calibration values `0.5 -> 0x7F` (127, not 128) and `0.125 -> 0x20` (32, not 31)
 rules out both `trunc(x*256)` and plain round-half-up. Relevant to a backend only
 because it means a shader cannot rely on `1.0` landing on `0xFF` via `x*256`.
 
+### 4.6 Batch-fill cost, measured
+
+**Known.** `GRATE_DRAW_COUNT` draws the same full-screen quad n times and
+reports the wall time of the draw loop plus the readback sync. Seven shaders in
+`tests/grate/asm/perf/` differ only in batch structure, and they share one fx10
+epilogue that stores `0x40404040` for `u0 = 0.25`, so every run also proves the
+shader itself executed. Median of three runs, 100 draws of a 256x256 quad
+(65536 fragments):
+
+| shader | batches | ALU packets | ms / draw |
+|:--|--:|--:|--:|
+| `fill_1b_1p` | 1 | 2 | 1.25 |
+| `fill_4b_4p` | 4 | 4 | 2.01 |
+| `fill_4b_12p` | 4 | 12 | 2.08 |
+| `fill_12b_12p` | 12 | 12 | 4.24 |
+| `fill_4b_12p_8nop` | 12 | 12 (+8 empty) | 4.29 |
+| `cost_texnop_12b` | 12 | 2 | 4.25 |
+| `cost_mfu_12b` | 12 | 2 | 4.31 |
+
+Subtracting pairs (run-to-run spread is about +/-10%, so these are
+order-of-magnitude terms rather than precise constants):
+
+| term | cost per draw | per fragment |
+|:--|--:|--:|
+| one extra batch | 0.27 ms | 4.1 ns |
+| one extra ALU packet | 0.006-0.02 ms | 0.1-0.3 ns |
+
+> **A batch is charged whether it is full, half full or empty, and it costs the
+> same whichever unit fills it.** Three comparisons say so:
+>
+> * `fill_4b_12p` and `fill_12b_12p` execute the *same 12 ALU packets*: 2.08 vs
+>   4.24 ms/draw. The only difference is the grouping.
+> * `fill_4b_12p_8nop` adds 8 batches whose ALU schedule `count` is 0 (they hold
+>   nothing but a disabled TEX word): 4.29 ms/draw, indistinguishable from
+>   `fill_12b_12p`'s 4.24. **`count = 0` is not cheaper than `count = 1`.**
+> * `cost_texnop_12b` (11 idle batches) and `cost_mfu_12b` (11 MFU batches) land
+>   at 4.25 and 4.31 against the ALU version's 4.24, all within 1.6%. The cost
+>   is the batch pass itself - one PSEQ step over the fragments - not the work
+>   inside it.
+
+Consequences for the scheduler:
+
+* packing ALU to three packets per batch is the single biggest win available,
+  well ahead of any operand-level trick: a 12-packet shader is twice as fast in
+  4 batches as in 12;
+* splitting a batch to gain latency (say, to pass a value through the register
+  file instead of an ALU latch) costs a *whole* batch, so it only pays when it
+  removes at least one other batch;
+* padding a short batch with NOPs is free, but *merging* two short batches is
+  what saves time - which makes the 64-batch budget a harder limit than the 256
+  ALU slots.
+
+At the ~300 MHz this GPU runs at, 4.1 ns is ~1.2 cycles per fragment per batch,
+about 5 cycles per fragment across four pixel pipes: a fixed per-batch pipeline
+cost. That also fits the two neighbouring observations - `pseq_to_dw_exec_nb`
+changes nothing about correctness (4.4 item 3), because the batch pass is a
+fixed cost regardless of how the pipeline is tuned, and the blob "gives up on
+large shaders" instead of recirculating them.
+
+The clock itself is **not measurable** here: this system mounts no debugfs at
+all (`/sys/kernel/debug` does not exist), there is no `clk_summary`, no
+`/sys/devices/*/clocks` and no GPU clock line in `dmesg`, and the account is
+non-root. So the cycle figures assume the 300 MHz T20 nominal; across the
+plausible 250-333 MHz range the batch costs 1.1-1.5 cycles per fragment.
+
+#### Which unit costs: the MFU does
+
+Same harness, 13 batches each with the work in the first 12, medians of three
+runs of 100 draws:
+
+| work per batch | ms/draw |
+|:--|--:|
+| nothing (epilogue only) | 4.77 |
+| 3 ALU packets | 4.37 |
+| 1 MFU word | 4.63 |
+| 3 MFU words | 10.18 |
+| 3 MFU + 3 ALU | 10.10 |
+| 1 TEX sample | 4.45 |
+| 3 MFU + 1 TEX sample | 10.06 |
+
+> **A batch costs the maximum over its units, not the sum.** Adding 33 ALU
+> packets to an MFU-bound batch changes nothing (10.18 -> 10.10) and adding 11
+> TEX samples to one changes nothing either (10.18 -> 10.06). Both hide under
+> the MFU completely.
+
+> **The MFU is the scarce resource, and only from the second word per batch.**
+> One SFU word per batch is fully hidden (4.50 against 4.67 empty), two cost
+> +2.59 ms/draw and three +5.64. So **every SFU op beyond the first in its batch
+> costs ~3.4 ns per fragment** - about one cycle at 300 MHz, i.e. one issue
+> slot.
+>
+> The cost is the same for every op: `rcp`, `rsq`, `lg2`, `ex2`, `sqrt`, `sin`,
+> `cos`, `frc`, `preex2`, `presin` and `precos` at three words per batch all land
+> between 10.02 and 10.31 ms/draw, a 1.5% spread. A `PRE`+main pair therefore
+> costs two slots and neither half is cheap. An MFU word with no SFU op in it
+> (`ipl` only) is free, so the pipeline that costs is the SFU, not the MFU word
+> itself.
+>
+> Two consequences that are easy to get backwards:
+>
+> * **packing SFU ops together beats spreading them.** A second SFU op costs
+>   ~3.4 ns/fragment while an extra batch costs ~4.1 ns/fragment, so splitting
+>   three transcendentals across three batches is *slower* than keeping them in
+>   one - capped, of course, at three MFU words per batch;
+> * **emulating one of them in ALU is a real win.** `1 SFU + 3 ALU` measures at
+>   the empty baseline (4.52), so going from two SFU words per batch to one
+>   saves the whole 2.6 ms/draw, provided the replacement fits in three ALU
+>   packets. What can be emulated is limited: `fract` and `exp2` have no ALU
+>   equivalent at all (no floor/trunc, no bit operations), so the candidates are
+>   `sin`/`cos`/`rcp`-style polynomial chains.
+
+Resolution caveat: the ALU and TEX terms sit at the noise floor (+/-0.4
+ms/draw over 100 draws), so "free" means "under 0.02 ms/draw per packet", not
+exactly zero. The SFU numbers are well clear of that floor.
+
+The per-unit shaders are generated rather than committed, because they differ
+only in which body fills the first 12 of 13 batches:
+
+```
+hdr() { printf 'alu_buffer_size = 1\npseq_to_dw_exec_nb = 1\n\n.uniforms\n\t[0].l = "u0";\n\n.asm\n'; }
+body() { for i in $(seq 12); do printf 'EXEC\n'; eval "$1"; printf ';\n'; done; }
+mfu3() { printf '\tMFU:\tsfu: frc r3\n\tMFU:\tsfu: frc r3\n\tMFU:\tsfu: frc r3\n'; }
+```
+
+appended to the thirteen-batch epilogue used by `tests/grate/asm/perf/`; the
+TEX variants take the coordinates from fp20 uniforms in batch 1 and end with a
+plain `DW: store rt1, r2, r3`.
+
 ## 6. I/O: varyings and the linker program
 
 **Known** ([[Shader Linking]]): each *linked* varying is two words at `0x300` -
@@ -516,11 +686,9 @@ linker's row field is 6 bits, `TRAM_SETUP` allows up to 127 rows), and what
 happens when a varying is read in two different batches (whether `ipl` may be
 repeated, or whether the value must be kept in a row register).
 
-The harness also cannot currently verify the chain end to end: reading an `ipl`
-slot populated through `filter_quad_linker.txt` yields values that are not the
-interpolated attribute (section 10.3), while `linker_vs_tests.txt` does work.
-Until that is resolved, varying-path conclusions have to come from the shaders
-that already have expected values.
+The chain is verified end to end at least for two components: `filter_quad`
+renders its texture's two-tone split exactly (section 10.3), so the linked
+varying reaches `ipl`, and `ipl` reaches the pixel packet.
 
 ## 7. Uniforms and constants
 
@@ -566,25 +734,32 @@ Missing for a complete backend:
 
 ### 9.1 Blocks the backend from being written
 
-1. **Scheduling/forwarding model** - partly closed (section 4.3). Still needed:
-   TEX->ALU latency, cycle cost of a partially filled batch, and
-   `pseq_to_dw_exec_nb` semantics (4.4).
+1. **Scheduling/forwarding model** - mostly closed (sections 4.3, 4.6). Still
+   needed: `pseq_to_dw_exec_nb` semantics (4.4).
 2. **Register allocation over a 16-fp20 file with ALU-latch-side chaining** -
    the encoding is known, the *policy* is not. Nothing is known about whether
    `g0..g7` have any cost penalty, or whether row registers beyond
-   `alu_buffer_size` alias.
-3. **TEX operand plumbing** - coordinates must be in `r0..r3`; what happens if a
-   shader needs a texture fetch whose coordinates currently live in a global
-   register (copy cost, and whether the copy can be in the same batch)? Not
-   measured.
+   `alu_buffer_size` alias. **Partly measured**: at `alu_buffer_size = 1`, all of
+   `r4..r15` are distinct from `r0..r3` and from each other, so the file is not
+   silently remapped onto four registers. But `alu_buffer_size = 2` **hangs the
+   GPU** for a shader that touches only `r0..r3`, reproducibly, while 1 and 3
+   run - so size 2 is unusable and size 3 is the alternative to size 1.
+3. ~~TEX operand plumbing~~ - **settled**: coordinates must be in `r0..r3`, and
+   an ALU in the *previous* batch can write them, which is how
+   `tests/grate/asm/tex_cross_batch.txt` feeds `s` and `t` from uniforms. The
+   same batch cannot, because the ALU stage runs after TEX (section 10.3). Still
+   open: the cycle cost of the copy, and whether the copy can share its batch
+   with the ALU work that produces it.
 
 ### 9.2 Needed for correct code, unknown today
 
 4. ~~`MIN`/`MAX`/`CMP` semantics~~ - partly settled, see 4.5. Finite `MIN`/`MAX`
    order correctly and `CMP` compares the **first product**, not `rA`. Still
    open: signed zero, and values with the saturated `fp20` exponent.
-5. Whether `saturate` on the destination clamps before or after the result
-   scale, and whether it works on fx10 halves.
+5. ~~Whether `saturate` clamps before or after the result scale~~ - **settled,
+   and it is the unusual order: the scale is applied first.** `(sat)(/2)` on
+   `1.5` gives `0.75` (scale -> 0.75, then saturate), not `0.5`. `(/2)` alone
+   works (`0.5 -> 0.25`). Still open: whether saturate also clamps fx10 writes.
 6. ~~The exact `CMP` predicate~~ - **settled**: it is
    `(rA*rB < 0) ? rB : (rC*rD)`. The reference's `(rA < 0)` reading is wrong on
    hardware, and the true branch is `rB`, not the product. See 4.5.
@@ -592,23 +767,47 @@ Missing for a complete backend:
    `PRE*` + main is a two-op sequence, so what the `PRE` result means (and
    whether it may be stored and reused) matters for selection.
 8. fp20 conversion rounding on ALU results: the assembler truncates; the
-   hardware is **not** verified to.
+   hardware is **not** verified to. The probe that would settle it is designed
+   and its mechanism is confirmed working - `4096*1.0 + (-4095.5)` returns
+   exactly `0x7F`, so an amplified 1-ulp difference is visible at 8-bit output
+   precision - but the tie value cannot be routed through a row register at
+   `alu_buffer_size = 1`: a 3-batch chain (`x = 1+eps`, `x-1`, `(x-1)*4096`)
+   returns 0 even for its own control (`eps = 0.25`, which should be `0xFF`),
+   and the store sees the first batch's register as 0. So the blocker is the
+   register round-trip across two batch boundaries, not the arithmetic. Note
+   that rC must be an immediate here (see 4.3), so the subtract needs `-#1` and
+   the multiply needs the uniform in rB. Next step: chain through `aluN`
+   lookalikes via `recv`/`send` instead of the register file, or retry at a
+   larger `alu_buffer_size` (but 2 hangs - see 9.1).
 
 ### 9.3 Needed for performance only
 
-9. Whether the 4 ALU slots of a packet may include a NOP cheaply, i.e. whether
-   `count` in the schedule word even matters for ALU (section 4.4 item 2).
-10. Whether `MFU` and `ALU` really run in parallel for the same batch (the
-    pipeline diagram says yes, stage 2 and stage 4).
-11. Whether a TEX and a DW in the same batch can target different pixels safely
-    when the DW payload comes from the ALU rather than from the TEX.
+9. ~~Whether the 4 ALU slots of a packet may include a NOP cheaply~~ -
+   **settled**: `count` barely matters, the batch itself is what costs
+   (section 4.6).
+10. ~~Whether `MFU` and `ALU` really run in parallel for the same batch~~ -
+    **settled**: MFU, ALU and TEX all overlap and a batch costs the maximum over
+    them; every SFU op costs the same (~3.4 ns/fragment beyond the first in its
+    batch); and the limit is per batch rather than per word (section 4.6).
+11. ~~Whether a TEX and a DW in the same batch can be independent~~ -
+    **settled: yes.** A batch holding a `tex` into `r2/r3` plus a store of
+    ALU-produced values returns exactly the ALU values (`0x7F407F40`), so a DW
+    can run alongside a TEX as long as it does not consume the sample.
 
 ### 9.4 Documentation debt that blocks nothing
 
-12. The undocumented unit 5 (four packed relative slot offsets, see
-    [[Compiler Internals]]); the compiler emits words for it, and nothing in the
-    driver or the assembler produces them. Its absence has not broken anything,
-    so it is presumably a sync/timing stream.
+12. ~~The undocumented unit 5 (four packed relative slot offsets)~~ - **it has
+    no host upload register on AR20, so it is not a gap that can be closed.**
+    The FP class exposes a register for exactly six streams - PSEQ
+    (`0x540`/`0x541`), MFU schedule (`0x600`/`0x601`), MFU (`0x603`/`0x604`), TEX
+    (`0x700`/`0x701`), ALU schedule (`0x800`/`0x801`), ALU (`0x803`/`0x804` plus
+    the complement at `0x806`), DW (`0x900`/`0x901`) - plus `0xe22`, and there
+    is **no register at all between `0x901` and `0xe22`** (the complete list is
+    in `include/tgr_3d.xml.h`). The blob's own fragment dump (`cgc -F -R`)
+    uploads those same six streams and nothing else. So the encoder's `sync` and
+    `sync_pre` buffers are dead code on this chip - the shared encoder most
+    likely serves a later chip that does have the register. Nothing to probe
+    until such a chip turns up.
 13. DW bit 14 (always a zero payload when set) and the packer at `0x1c6648`.
 
 ## 10. Reproducing the measurements in 4.3
@@ -713,9 +912,16 @@ Making it discriminating needs three things, all of which bit me once:
   variant - this does work; a failed coordinate probe is not the texture's fault;
 * the coordinate must be written as **fp20** (`.lh` destination, or a plain
   register source), never as an fx10 half;
-* do not use the TEX destination register as a coordinate. `r2` is both the third
-  coordinate and half of the sample destination, and folding the two together
-  makes the coordinate read as 0.
+* use a texture at least 16 texels wide, or bind a mip chain; narrower ones are
+  misaddressed by the sampler and read mostly black whatever the coordinates
+  are, which looks exactly like a coordinate bug (section 10.3);
+* put `TEX:` before `ALU:` in the `EXEC` block. The grammar only accepts pipeline
+  order, and `ALU:` first is a parse error that exits 1 without printing
+  `--result` - see [hardware-testing.md](hardware-testing.md).
+
+The destination/coordinate overlap is not a problem: `filter_quad_fs.txt` uses
+`txb r2, r3, tex0, r0, r1, r2, r3`, with `r2` as the third coordinate and half
+the destination, and it samples correctly.
 
 ### 10.3 Why `filter_quad` rasterised nothing
 
@@ -746,42 +952,159 @@ With both fixed the shipped trio works:
 `asm_tests.sh` now carries the identity-`mvp` case as a regression: any value
 differing from the `0x4C4C4C4C` clear proves the triangle reached the DW unit.
 
-**But the coordinates it delivers are still wrong.** Storing the `ipl` results
-directly (`r0` into `r2`, `r1` into `r3`, then `DW: store rt1, r2, r3`) gives `s`
-between `0x05` and `0x10` and `t = 0xFF` over the quad, where the bound attribute
-is a 0..1 ramp in both components. So TEX executes and its result reaches DW, but
-what it samples with is not the interpolated `texcoord`. Coordinates written *by
-the ALU* do arrive correctly (section 4.3, and the two-tone probes), so the
-defect is in the varying path - linker -> TRAM -> `ipl` - not in TEX.
+**The coordinates were never the problem.** An earlier round concluded otherwise
+from a handful of framebuffer reads, but both reasons were artefacts of the
+probe. The decisive measurement is the whole frame with a mip chain bound
+(`--mipmap`, `lod_bias` 0): **32768 white and 32764 black pixels and nothing
+else** - exactly the two-tone split of the bound texture. So the interpolated
+`texcoord` does reach TEX and the sample does reach DW.
 
-Differences worth testing first: `fs_vs_tests.txt` reads a varying the same way
-and *does* produce its expected gradient, and its linker swizzles
-(`tram0.yxzw`, where `filter_quad_linker.txt` uses `tram0.xyzw`); and the
-`texcoord` attribute is bound with 2 components while the vs reads `a[1].xyzw`.
-Note that the `filter_quad` path therefore cannot yet answer questions that need
-varying texture coordinates - use the ALU-fed probes for those.
+What made every probe read black was the texture setup:
 
-### 10.4 LOD bias is functional, and computed LOD clamps at 0
+| setup | whole frame |
+|:--|:--|
+| mip chain bound, `lod_bias` 0 | 32768 white / 32764 black - correct two-tone |
+| mip chain bound, `lod_bias` 8 | 65532 x `0x00545454` - a small mip |
+| **no** mip chain, `lod_bias` 0 | 57340 black / 8192 white - wrong |
 
-`--mipmap` was added (generates the chain, `NEAREST_MIPMAP_NEAREST`, `max_lod`
-11) so `filter_quad_fs`'s `txb` could be driven. Its bias comes from `r3`, fed
-from the `lod_bias` fragment uniform:
+A 4x4 texture with no mip chain bound samples through this harness as *mostly
+black* (1/8 white instead of 1/2) whatever the coordinates are, so a black
+result says nothing about the coordinate path. The cause is texture row
+addressing, a driver bug rather than a probe artefact: `grate_3d_set_texture_desc()`
+writes no pitch at all, so the texture unit derives the row stride itself and
+always uses `width * bpp`. `grate_create_texture()` allocated a pitch aligned up
+to 64 bytes, so for a 4-texel-wide texture the sampler read row `y` at offset
+`y * 16` while the data sat at `y * 64`. Colouring rows separately shows it
+directly (16-high texture, `s = 0.7`, pitch forced per run):
 
-| bias | mipmapping | result across the frame |
-|:--|:--|:--|
-| 0, 0.5, 1, 2, 4 | on | `0x00000000` |
-| 8 | on | `0x00545454`, uniform |
-| 8 | off | `0x00000000` |
+| texture | width*bpp | allocated pitch | rows read |
+|:--|--:|--:|:--|
+| 4x16 | 16 | 16 | `B G R W B G R W` - correct |
+| 4x16 | 16 | 32 | `B . G . R . W .` - row `y` returns row `y/2` |
+| 4x16 | 16 | 64 | row `y` returns row `y/4` |
+| 8x16 | 32 | 32 | correct |
+| 8x16 | 32 | 64 | row `y` returns row `y/2` |
+| 16x16 | 64 | 64 | correct |
+| 16x16 | 64 | 128 | row `y` returns row `y/2` |
 
-So the bias operand is real (bit 12 plus the `r3` source, as documented), and it
-is inert when no mip chain is bound. The crossing point is consistent with
-`LOD = log2(texels-per-pixel) + bias`, clamped at 0: a 4x4 texture on a 256x256
-quad is magnified 64x, so the computed LOD is `log2(4/256) = -6` and sits at 0
-for any bias up to 6 - which is why 4 stays at level 0 while 8 reaches the small
-mips. The exact last-mip content (`0x54` rather than the `0x7F` a box average
-would give) is not established, because the coordinate defect above means every
-pixel samples the same texel.
+Doubling the pitch halves the row index, so the stride really is `width * bpp`
+and the padding is invisible to the sampler. Fixed by allocating a tight pitch
+in `grate_create_texture()`; 4x4 through 16x16 then read every row correctly and
+`filter_quad` renders the two-tone frame at 4x4 with no mip chain.
 
-Still untested: **explicit LOD** (bit 13, the encoder's `IR_TEX_B13`). The
-assembler only knows `tex` and `txb`, so no test can set that bit yet; a raw-word
-form for `TEX:` would open it the way `DW:` already has one.
+**Block-compressed formats follow the same law.** For DXT1/ETC1 the derived
+stride is `width * bpp / texel_width` = one 8-byte block per four texels, i.e.
+`width / 4` blocks per row, which is exactly what a tight allocation provides.
+With `GRATE_TEX_FORMAT=dxt1` a 16x16 texture whose block rows are red, green,
+blue and white samples it row for row:
+
+| t | texel row | rgba8888 | dxt1 | etc1 |
+|:--|--:|:--|:--|:--|
+| 0.03125 | 0 | `0x000000FF` red | `0xFF0000FF` red | `0xFF0000FD` red |
+| 0.09375 | 1 | `0x0000FF00` green | red (same block row) | red |
+| 0.15625 | 2 | `0x00FF0000` blue | red | - |
+| 0.21875 | 3 | `0xFFFFFFFF` white | red | - |
+| 0.34375 | 5 | - | green | `0xFF02FF02` green |
+
+DXT1 returns alpha `0xFF` (the block format has no alpha channel) and ETC1 is
+off by one or two in a channel - both as expected from the codecs. A wider
+pitch misaddresses it identically: at pitch 48 block row 3 lands on block row
+2's data (blue), at pitch 64 it lands in the zero padding (black). One loose
+end: ETC1 at pitch 64 returned white rather than the black DXT1 gets from the
+same padding, so an all-zero block is not neutral: DXT1 decodes it to (0,0,0)
+and ETC1 to (2,2,2) (`0xFF020202`).
+
+With the sampler still striding 32 bytes, block row 3 sits at byte 96, so at
+pitch `p` it reads whatever data block row `96/p` holds:
+
+| pitch | 32 | 48 | 64 | 96 |
+|:--|:--|:--|:--|:--|
+| dxt1 | white (row 3) | blue (row 2) | black (padding) | green (row 1) |
+| etc1 | white (row 3) | blue (row 2) | `0xFF020202` (padding) | green (row 1) |
+
+Both formats follow that arithmetic exactly, which is the cleanest confirmation
+that the row stride is `width * bpp / 4` and that any pitch in the descriptor is
+ignored. An earlier run reported ETC1 as white at pitch 64; that was a harness
+bug - `etc1_encode_image()` writes its rows contiguously, so the upload left the
+block rows at a 32-byte stride while claiming the pixelbuffer's pitch. A bound mip
+chain is laid out with `ALIGN(width * bpp, 16)` per level, which is tight for
+the sizes that matter, so `--mipmap` hid the bug rather than working around
+anything about mip *selection*.
+
+For the record, cross-batch delivery is fine: `tex_cross_batch.txt` writes the
+coordinates with the ALU in one batch and samples in the next, and the sampled
+texel follows `s` and `t` exactly. What a shader cannot do is write coordinates
+and sample them in the *same* batch - the `ALU:` stage runs after `TEX:`, which
+the assembler grammar enforces.
+
+Two other suspicions were ruled out by direct comparison. `tram0.xyzw`
+(`filter_quad_linker.txt`) versus `tram0.yxzw` (`linker_vs_tests.txt`) only swaps
+the two components. And the vertex shader's export form makes no difference at
+all: full destination mask, masked source, or exporting from `r0` instead of
+`r63` all produce bit-identical frames.
+
+### 10.4 LOD bias is functional, and the computed LOD clamps at 0
+
+`--mipmap` was added (generates the chain, `NEAREST_MIPMAP_NEAREST`, `max_lod` 11)
+so `filter_quad_fs`'s `txb` could be driven. Its bias comes from `r3`, fed from
+the `lod_bias` fragment uniform. Whole-frame counts, one row per bias:
+
+| bias | black | white | other |
+|-----:|------:|------:|------:|
+| 0, 2, 4, 5, 6 | 32764 | 32768 | 0 |
+| 7 | 0 | 0 | every pixel |
+| 8, 12 | 0 | 0 | every pixel |
+
+Rows 0-6 are the *base level*, pixel for pixel - 32764 black and 32768 white is
+exactly the texture's two-tone split. The output changes for the first time at
+bias 7, and from 8 on it is a single uniform colour.
+
+That transition is where the arithmetic puts it. A 4x4 texture across a 256x256
+quad is magnified 64x, so the derivative-based LOD is `log2(4/256) = -6`; adding
+the bias and clamping at 0 moves the first level change to bias 7 and to nothing
+earlier. Therefore:
+
+* the bias operand is real - bit 12 plus the `r3` source, exactly as the TEX
+  word table says;
+* the computed LOD is *clamped* at 0 rather than wrapped: biases 0..6 give
+  identical frames, not a progression;
+* the bias is inert with no mip chain bound (bias 8 with mipmapping off still
+  renders the two-tone frame - the "no mip chain" row in 10.3).
+
+Not established: which level is actually reached, and what the small mips
+contain. `grate_texture_generate_mipmap` does not produce a plain box average at
+this size - bias 7 changes *every* pixel instead of preserving the two-tone
+split, and the uniform value at bias 8 is `0x00545454`, not the `0x7F7F7F7F` a
+50/50 average would give. Colour alone pins the transition, not the level.
+
+**Explicit LOD is TEX bit 13, and it only works with bit 12 clear.**
+
+`TEX:` accepts a raw word (`TEX: <hex>`), so
+`tests/grate/asm/tex_explicit_lod.txt` starts from the word that
+`txb r2, r3, tex0, r0, r1, r2, r3` assembles to (`0x1420`) and flips single
+bits. The quad magnifies a 4x4 texture 64x, so the computed LOD is
+`log2(4/256) = -6` and clamps to 0; the ALU writes `u0` into `r3`.
+
+| word | bit 12 | bit 13 | lod = 0 | lod = 2 | lod = 5 |
+|:--|:--:|:--:|:--|:--|:--|
+| `0x0420` | - | - | two-tone | two-tone | two-tone |
+| `0x1420` (`txb`) | bias | - | two-tone | two-tone | two-tone |
+| `0x2420` | - | **LOD** | two-tone | `0x00545454` | `0x00545454` |
+| `0x3420` | bias | LOD | two-tone | two-tone | two-tone |
+
+"two-tone" is 8191 black / 8192 white, the level-0 frame; `0x00545454` is the
+flat colour of the 1x1 mip.
+
+So bit 13 makes `r3` an **absolute** LOD, bits 12 and 13 are mutually
+exclusive, and **bit 12 wins when both are set**. The `txb` row is also the
+cleanest confirmation of the clamp: `-6 + 5` is still negative, which is why
+bias 5 looks identical to bias 0 here, and why the shipped `filter_quad` probe
+needs bias 7 before anything changes.
+
+`lod = 2` and `lod = 5` give the same colour because a 4x4 chain has only
+levels 0, 1 and 2 - level 2 is already 1x1, so everything deeper reads it.
+
+For selection: `textureLod` becomes `TEX` with bit 13 and the LOD in `r3`,
+`texture` with a bias becomes `TXB`, and `textureGrad` remains impossible
+(section 2.1). `asm_tests.sh` now carries the bit-13 case as a regression
+(`0x00545454`).

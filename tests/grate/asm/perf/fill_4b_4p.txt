@@ -1,0 +1,33 @@
+/*
+ * ALU batch-fill probe: 4 ALU packets, one per batch (4 batches).
+ * Same packet count as fill_1b_1p plus three extra batches, so the difference
+ * is the cost of three batches that carry no extra ALU work.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.uniforms
+	[0].l = "u0";
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0,  #1
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r1.lh,  u0,  #1,  #0,  #1
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.lh,  u0,  #1,  #0,  #1
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u0.l,  #1,  #0,  #1
+		ALU1:	MAD  r2.*h,  u0.l,  #1,  #0,  #1
+		ALU2:	MAD  r3.l*,  u0.l,  #1,  #0,  #1
+		ALU3:	MAD  r3.*h,  u0.l,  #1,  #0,  #1
+	DW:	store rt1, r2, r3
+;

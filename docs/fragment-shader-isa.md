@@ -2,8 +2,6 @@
 
 The Tegra fragment shader ISA is not as straight forward as [[Vertex Shader ISA]].
 
-For what a fragment-shader *compiler* needs from this encoding - and what is still unknown - see [[Writing a Compiler]].
-
 The fragment shader is separated into five different instruction streams:
 
 * PSEQ - fetching data from the memory and feeding it to the pipeline as registers data or instructions
@@ -165,6 +163,17 @@ The returned fragment position X register value is accumulated by 8192.0, fragme
 |     1 | negate                |
 |     0 | scale by two          |
 
+Two measured restrictions that the bit layout does not show:
+
+* a bare fp20 read of a row register takes the **high** half of the pair. The low
+  half is only addressable as fx10 (`rN.l` / `rN.h`, read as 1.10 fixed point).
+  Writing a destination as `.l*` alone therefore produces a value a later fp20
+  operand cannot see; the working test shaders all write `.lh`, which writes both
+  halves (`.l*` = low only, `.*h` = high only).
+* if rA or rB names a row register, **rC reads as zero when it names a uniform**.
+  Immediates (`#0`, `#1`, `-#1`) are still honoured. See [[Writing a Compiler]]
+  section 4.3 for the measurement.
+
 #### Operand rD:
 
 |   Bits | Meaning                      |
@@ -210,6 +219,15 @@ When the "recv" bit is set, operand rC is overridden with the accumulation value
 | ALU1: | ALU1 += ALU0    | ALU0 += ALU1     |
 | ALU2: | ALU2 += ALU1    | ALU0 += ALU2     |
 | ALU3: | ALU3 += ALU2    | ALU2 += ALU3     |
+
+Measured on AR20 with `MAD` probes: the handoff is **pairwise and adjacent**. A
+packet with `send` set (assembler `(other)`, bit 61) publishes its result to the
+next packet, and a packet with `recv` (`(this)`, bit 60) uses it *in place of*
+rC: `MAD r3.*h, #0, #1, 0.1` with recv returns the sender's value (0.25 and 0.5
+were measured), never 0.1. Reversing the order - recv on the earlier packet -
+transfers nothing, and a recv in the following batch gets no value either. Read
+the table above as "the current packet's rC is overridden by the previous
+packet's sent result", not as a per-slot sum into ALU0.
 
 #### Addition disable
 
@@ -324,7 +342,8 @@ The TEX instruction takes the texture coordinates and LOD bias from the first ro
 
 |   Bits | Meaning                               |
 |-------:|:--------------------------------------|
-| 13..31 | ???                                   |
+| 14..31 | ???                                   |
+|     13 | explicit LOD, see below               |
 |     12 | enable bias                           |
 |     11 | ???                                   |
 |     10 | enable                                |
@@ -341,6 +360,24 @@ The texture coordinate components (S, T, R) and level-of-detail bias are loaded 
 |-------:|:-----------------------------|
 |      1 | R2, R3, R0, R1               |
 |      0 | R0, R1, R2, R3               |
+
+#### LOD bias vs. explicit LOD (bits 12 and 13)
+
+The fourth register from that select (R3, or R1 when the select is 1) carries a
+level of detail. Which kind depends on bits 12 and 13, and they do not combine:
+
+| bit 13 | bit 12 | meaning |
+|-------:|-------:|:--------|
+| 0 | 0 | LOD comes from the unit's own derivative estimate, the register is ignored |
+| 0 | 1 | **bias**: the estimated LOD plus the register, clamped at 0 (what `TXB` emits) |
+| 1 | 0 | **explicit**: the register *is* the LOD, no estimate involved |
+| 1 | 1 | bias wins - bit 13 is ignored |
+
+Measured on hardware with a 4x4 two-tone texture magnified 64x (estimated LOD
+-6) and the register set to 2: with bit 13 clear the frame is the level-0
+two-tone image, with bit 13 set and bit 12 clear it is the flat 1x1 mip
+(`0x00545454`). Full table in
+[writing-a-compiler.md](writing-a-compiler.md) section 10.4.
 
 #### Sampled data destination registers select:
 
@@ -474,11 +511,12 @@ mul1 is (dst=1, src0=10, src1=12 barycentric coef 1).
 
 For `texture2D(s, uv)` the emitted word is `0x00000430` with
 `sampler_index=0`, `src_regs_select=1`, `sample_dst_regs_select=1` and
-`enable=1` (bit 10). Every bit in the documented `???` ranges - 6..9, 11, 13..31
+`enable=1` (bit 10). Every bit in the documented `???` ranges - 6..9, 11, 14..31
 
 - as well as the bias bit (12) was **zero**. These ranges therefore appear to be
 reserved rather than carrying undocumented flags for a plain 2D fetch without
-bias.
+bias. Bit 13 is no longer in that set: it is explicit LOD (see the TEX section),
+and the blob emits it for `textureLod`.
 
 Note when probing samplers: `sampler_index` is the *linked* sampler slot, not
 source declaration order. Declaring two samplers and using only the second still
@@ -565,8 +603,16 @@ usually travel together. No other bits are set.
 
 #### Still open
 
+- why rC reads as zero for a uniform beside a row-register rA/rB. Either the
+  operand-read port allocation or an assembler encoding quirk; disassembling a
+  packet that does it would separate the two.
+- fp20 rounding of ALU results. The amplification probe works mechanically
+  (`4096*1.0 + (-4095.5)` returns exactly `0x7F`), but the tie value has to pass
+  through a row register, and every 3-batch chain tried so far returns 0 - see
+  [[Writing a Compiler]] 9.2 item 8 for the state of it.
 - what DW bit 14 does (zero payload); reading back the depth and stencil
   surfaces would settle where modes 1 and 3 actually write
 
-- TEX bits 6..9, 11 and 13..31 (zero in every sample gathered so far)
+- TEX bits 6..9, 11 and 14..31 (zero in every sample gathered so far; bit 13 is
+  explicit LOD)
 - `sampler_index` behaviour with several samplers used simultaneously

@@ -1,0 +1,54 @@
+/*
+ * Per-batch cost probe, MFU: 11 batches each holding one MFU word, then the
+ * usual ALU+store epilogue. Compare against fill_12b_12p.txt (11 ALU batches
+ * plus the epilogue) to see whether the per-batch cost depends on the unit.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.uniforms
+	[0].l = "u0";
+
+.asm
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	MFU:	sfu: frc r0
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u0.l,  #1,  #0,  #1
+		ALU1:	MAD  r2.*h,  u0.l,  #1,  #0,  #1
+		ALU2:	MAD  r3.l*,  u0.l,  #1,  #0,  #1
+		ALU3:	MAD  r3.*h,  u0.l,  #1,  #0,  #1
+	DW:	store rt1, r2, r3
+;

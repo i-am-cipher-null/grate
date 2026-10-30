@@ -20,13 +20,17 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <byteswap.h>
 #include <getopt.h>
 #include <libgen.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
+#include "etc1.h"
 #include "grate.h"
+#include "libgrate-private.h"
 #include "grate-3d.h"
 #include "tgr_3d.xml.h"
 
@@ -229,6 +233,169 @@ static int parse_command_line(struct vs_asm_test *test, int argc, char *argv[])
 	return 1;
 }
 
+/*
+ * Block-compressed test textures.
+ *
+ * The sampler has no pitch field (docs/hardware-testing.md), so it walks rows
+ * at width * bpp / texel_width, which for a 4x4-block format is one 8-byte
+ * block per 4 texels: width / 4 blocks per block row. GRATE_TEX_FORMAT=dxt1
+ * or =etc1 fills block row b with a single solid colour, cycling blue, green,
+ * red, white like GRATE_TEX_ROWCOLOR, so block-row addressing is readable.
+ */
+static uint16_t rgb565(unsigned colour)
+{
+	unsigned r = colour & 0xff;
+	unsigned g = (colour >> 8) & 0xff;
+	unsigned b = (colour >> 16) & 0xff;
+
+	return ((r * 31 / 255) << 11) | ((g * 63 / 255) << 5) | (b * 31 / 255);
+}
+
+static int setup_rgba_texture(struct grate *grate, struct grate_texture *tex,
+			      int tex_w, int tex_h, bool mipmap)
+{
+	grate_texture_clear(grate, tex, 0xFFFFFFFF);
+	grate_texture_clear_rect(grate, tex, 0x00000000, 0, 0,
+				 tex_w / 2, tex_h);
+
+	if (getenv("GRATE_TEX_ROWCOLOR")) {
+		static const unsigned row_color[4] = {
+			0x000000FF, 0x0000FF00, 0x00FF0000, 0xFFFFFFFF,
+		};
+		int y;
+
+		for (y = 0; y < tex_h; y++)
+			grate_texture_clear_rect(grate, tex,
+						 row_color[y & 3],
+						 0, y, tex_w, 1);
+	}
+
+	if (getenv("GRATE_TEX_ROWCHECK")) {
+		int y;
+
+		grate_texture_clear(grate, tex, 0xFFFFFFFF);
+		for (y = 1; y < tex_h; y += 2)
+			grate_texture_clear_rect(grate, tex, 0,
+						 0, y, tex_w, 1);
+	}
+
+	if (mipmap) {
+		if (grate_texture_generate_mipmap(grate, tex))
+			return -1;
+		grate_texture_set_min_filter(tex,
+				GRATE_TEXTURE_NEAREST_MIPMAP_NEAREST);
+		grate_texture_set_mag_filter(tex, GRATE_TEXTURE_NEAREST);
+		grate_texture_set_max_lod(tex, 11);
+	}
+
+	return 0;
+}
+
+static int upload_block_texture(struct grate *grate,
+				struct grate_texture *tex,
+				unsigned width, unsigned height,
+				enum pixel_format format)
+{
+	static const unsigned row_color[4] = {
+		0x000000FF, 0x0000FF00, 0x00FF0000, 0xFFFFFFFF,
+	};
+	unsigned bw = (width + 3) / 4, bh = (height + 3) / 4;
+	/* lay the blocks out at the pixbuf's pitch so load_data can memcpy */
+	unsigned pitch = tex->pixbuf->pitch, b, x, y;
+	void *data;
+	int err;
+
+	if (pitch < bw * 8)
+		return -1;
+
+	data = calloc(bh, pitch);
+	if (!data)
+		return -1;
+
+	if (format != PIX_BUF_FMT_DXT1 && format != PIX_BUF_FMT_ETC1) {
+		free(data);
+		return -1;
+	}
+
+	/* GRATE_TEX_ZERO leaves the surface all zero, to see what the sampler
+	 * makes of a block of zero bytes. */
+	if (!getenv("GRATE_TEX_ZERO")) {
+		if (format == PIX_BUF_FMT_DXT1) {
+			for (b = 0; b < bh; b++) {
+				uint32_t *blk =
+					(uint32_t *)((char *)data + b * pitch);
+				uint16_t c = rgb565(row_color[b & 3]);
+
+				/* colour0 == colour1 == c, all indices 0: solid */
+				for (x = 0; x < bw; x++) {
+					blk[x * 2 + 0] = c | ((uint32_t)c << 16);
+					blk[x * 2 + 1] = 0;
+				}
+			}
+		} else {
+			unsigned char *src = malloc(width * height * 3);
+			unsigned char *enc;
+
+			if (!src) {
+				free(data);
+				return -1;
+			}
+
+			enc = calloc(bh, bw * 8);
+			if (!enc) {
+				free(src);
+				free(data);
+				return -1;
+			}
+
+			for (y = 0; y < height; y++) {
+				for (x = 0; x < width; x++) {
+					unsigned colour = row_color[(y / 4) & 3];
+					unsigned char *px =
+						src + (y * width + x) * 3;
+
+					px[0] = colour;
+					px[1] = colour >> 8;
+					px[2] = colour >> 16;
+				}
+			}
+
+			/* encodes contiguously, so copy block row by row */
+			err = etc1_encode_image(src, width, height, 3,
+						width * 3, enc);
+			free(src);
+			if (err) {
+				free(enc);
+				free(data);
+				return -1;
+			}
+
+			/* GR3D wants the blocks byte-swapped (grate-texture.c) */
+			for (b = 0; b < bh; b++) {
+				for (x = 0; x < bw; x++) {
+					uint64_t *bp = (uint64_t *)
+						(enc + b * bw * 8) + x;
+					uint64_t a = bswap_32(*bp >> 32);
+					uint64_t c = bswap_32(*bp);
+					uint64_t w = (c << 32) | a;
+
+					memcpy((char *)data + b * pitch +
+					       x * 8, &w, 8);
+				}
+			}
+
+			free(enc);
+		}
+	}
+
+	err = host1x_pixelbuffer_load_data(grate->host1x, tex->pixbuf, data,
+					   pitch, bh * pitch, format,
+					   PIX_BUF_LAYOUT_LINEAR);
+	free(data);
+
+	return err;
+}
+
 static void dump_raw(struct grate_shader *vs,
 		     struct grate_shader *fs,
 		     struct grate_shader *linker,
@@ -353,21 +520,59 @@ int main(int argc, char *argv[])
 	ctx = grate_3d_alloc_ctx(grate);
 	if (test.texture) {
 		struct grate_texture *tex;
+		const char *tex_env = getenv("GRATE_TEX_SIZE");
+		const char *fmt_env = getenv("GRATE_TEX_FORMAT");
+		enum pixel_format fmt = PIX_BUF_FMT_RGBA8888;
+		int tex_w = 4, tex_h = 4;
 
-		tex = grate_create_texture(grate, 4, 4, PIX_BUF_FMT_RGBA8888,
+		if (tex_env)
+			sscanf(tex_env, "%dx%d", &tex_w, &tex_h);
+
+		if (fmt_env) {
+			if (!strcmp(fmt_env, "dxt1"))
+				fmt = PIX_BUF_FMT_DXT1;
+			else if (!strcmp(fmt_env, "etc1"))
+				fmt = PIX_BUF_FMT_ETC1;
+			else {
+				fprintf(stderr, "unknown GRATE_TEX_FORMAT \"%s\"\n",
+					fmt_env);
+				return 1;
+			}
+
+			if ((tex_w & 3) || (tex_h & 3)) {
+				fprintf(stderr, "GRATE_TEX_FORMAT needs multiples of 4\n");
+				return 1;
+			}
+		}
+
+		tex = grate_create_texture(grate, tex_w, tex_h, fmt,
 					   PIX_BUF_LAYOUT_LINEAR);
 		if (!tex)
 			return 1;
-		grate_texture_clear(grate, tex, 0xFFFFFFFF);
-		grate_texture_clear_rect(grate, tex, 0x00000000, 0, 0, 2, 4);
+		if (getenv("GRATE_TEX_PITCH")) {
+			unsigned tex_pitch = atoi(getenv("GRATE_TEX_PITCH"));
 
-		if (test.mipmap) {
-			if (grate_texture_generate_mipmap(grate, tex))
+			host1x_pixelbuffer_free(tex->pixbuf);
+			tex->pixbuf = host1x_pixelbuffer_create(grate->host1x,
+							tex_w, tex_h, tex_pitch,
+							fmt,
+							PIX_BUF_LAYOUT_LINEAR);
+			if (!tex->pixbuf)
 				return 1;
-			grate_texture_set_min_filter(tex,
-					GRATE_TEXTURE_NEAREST_MIPMAP_NEAREST);
-			grate_texture_set_mag_filter(tex, GRATE_TEXTURE_NEAREST);
-			grate_texture_set_max_lod(tex, 11);
+		}
+
+		if (fmt == PIX_BUF_FMT_RGBA8888) {
+			if (setup_rgba_texture(grate, tex, tex_w, tex_h, test.mipmap))
+				return 1;
+		} else {
+			/* gr2d cannot fill a block-compressed surface */
+			if (test.mipmap) {
+				fprintf(stderr, "GRATE_TEX_FORMAT has no mipmap path\n");
+				return 1;
+			}
+
+			if (upload_block_texture(grate, tex, tex_w, tex_h, fmt))
+				return 1;
 		}
 
 		ctx->textures[0] = tex;
@@ -427,7 +632,7 @@ int main(int argc, char *argv[])
 
 	bo = grate_create_attrib_bo_from_data(grate, indices);
 
-	if (!test.test_only) {
+	if (!test.test_only || getenv("GRATE_DUMP_RAW")) {
 		dump_raw(vs, fs, linker, program);
 		dump_asm(vs, fs, linker);
 	}
@@ -464,14 +669,32 @@ int main(int argc, char *argv[])
 						  &test.fs_uniforms[i].value);
 	}
 
-	grate_3d_draw_elements(ctx, TGR3D_PRIMITIVE_TYPE_TRIANGLES,
-			       bo, TGR3D_INDEX_MODE_UINT16,
-			       ARRAY_SIZE(indices));
-	grate_flush(grate);
+	{
+		const char *draw_env = getenv("GRATE_DRAW_COUNT");
+		unsigned draws = draw_env ? atoi(draw_env) : 1;
+		struct timespec t0, t1;
 
-	fb_data = grate_framebuffer_data(fb, true);
-	if (!fb_data)
-		return 1;
+		if (!draws)
+			draws = 1;
+
+		clock_gettime(CLOCK_MONOTONIC, &t0);
+		for (i = 0; i < (int)draws; i++)
+			grate_3d_draw_elements(ctx, TGR3D_PRIMITIVE_TYPE_TRIANGLES,
+					       bo, TGR3D_INDEX_MODE_UINT16,
+					       ARRAY_SIZE(indices));
+		grate_flush(grate);
+
+		fb_data = grate_framebuffer_data(fb, true);
+		clock_gettime(CLOCK_MONOTONIC, &t1);
+
+		if (!fb_data)
+			return 1;
+
+		if (draws > 1)
+			fprintf(stdout, "draws=%u elapsed_ms=%.3f\n", draws,
+				(t1.tv_sec - t0.tv_sec) * 1000.0 +
+				(t1.tv_nsec - t0.tv_nsec) / 1000000.0);
+	}
 
 	result = fb_data[0];
 
