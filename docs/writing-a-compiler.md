@@ -289,6 +289,14 @@ implicitly names the latch, so a probe writes a row register and reads the
 slot's latch by number. That is also how a backend must model it: the latch is a
 property of the slot, not of an operand.
 
+**Caution on the latch names.** A direct probe in this session did *not*
+reproduce the `alu0 -> ALU1` hop: reading `alu0` from ALU1 returned 0, while
+reading `alu1` from ALU2 returned the value packet **ALU0** had written. The
+forwarding fact - same-batch chaining through latches works - still holds, but
+the assembler mnemonic `aluN` seems to be offset by one slot from the packet
+whose result it names. Treat the `N` as unverified until a dedicated probe
+settles the mapping.
+
 **Texture results are the exception: they are visible to the ALU in the batch
 that issued the fetch.** A probe that samples a 4x4 grey texture
 (`0x40404040`, i.e. 0.251) and doubles one component in the same batch returns
@@ -366,6 +374,11 @@ an immediate (`#0`, `#1`, `-#1`) or an embedded constant, never a uniform.** A
 uniform rC is read as 0 and the shader is silently wrong by one addend. Nothing
 about it looks wrong at assembly time, which makes this the most dangerous item
 found so far.
+
+A row register in rC is not read either: `MAD r3.*h, u4, #0, r2` with `r2 = 0.25`
+and `u4 = 1` returns 0 rather than 0.25. So rC must be a uniform or an immediate
+whenever a row register is involved; only rA and rB can come from the row file
+beside a constant.
 
 **`(other)` sends, `(this)` receives, and only to the adjacent packet.**
 `(other)` is bit 61 on packet *k*, `(this)` is bit 60 on packet *k+1* of the same
@@ -779,6 +792,17 @@ Missing for a complete backend:
    the multiply needs the uniform in rB. Next step: chain through `aluN`
    lookalikes via `recv`/`send` instead of the register file, or retry at a
    larger `alu_buffer_size` (but 2 hangs - see 9.1).
+   Also tried, also failing: chaining through the `aluN` latches inside one batch,
+   and padding every batch to four packets (no change at all). The latch probe
+   turned up something worth flagging on its own: with
+   `ALU0: MAD r2.*h, u0`, `ALU1: MAD r3.*h, alu0`, `ALU2: MAD r3.l*, alu1`,
+   `ALU3: MAD r2.l*, alu2`, the value written to `r3.lo` by ALU2 was `u0` - the
+   result of **packet ALU0** - while ALU1's read of `alu0` returned 0. So the
+   latch name appears to be offset by one slot from the packet that writes it.
+   A second oddity: `MAD r3.*h, r2, #1, -#1` left the value unchanged (0.75
+   stayed 0.75) *and* landed it in `r3.lo` instead of `r3.hi`, i.e. the `-#1`
+   spelling perturbs more than the addend. Both need their own probe before the
+   chain can be trusted - see the caution in 4.3.
 
 ### 9.3 Needed for performance only
 

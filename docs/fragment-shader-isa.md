@@ -277,6 +277,24 @@ The varying id corresponds to the TRAM component: var0 is TRAM.x, var1 is TRAM.y
 | 3..6 | TRAM index to fetch from |
 | 1..2 | opcode                   |
 |    0 | saturate                 |
+
+Measured: a first probe that linked one export to `tram0`, `tram3`, `tram7` or
+`tram15` and fetched the matching `tN` returned the same data for all four - but
+that is an artefact: the linker row and the fetch index were moved **together**,
+so every run read a row that had just been written. A two-row probe that writes
+rows 0 and 7 at once and then fetches both returns **different** data at the two
+fetches (`0x7F` at row 0, `0x28` at row 7), so the rows are separately
+addressable and do not alias.
+
+Caveat on that probe: its control, which feeds both rows from the *same* export
+and should therefore read equal, also returned those two different values. So
+the two rows demonstrably hold different data, but exactly how the second `LINK`
+line's component mapping interacts with the first is not yet pinned down - a
+clean test needs two genuinely different vertex exports.
+
+What *is* settled is that **the same varying can be interpolated again in a later
+batch**: an `ipl` of `t0` in batch 1 and again in batch 2 returns identical
+values in both halves, so re-reading a varying costs a fetch but breaks nothing.
 | opcode | Mnemonic | Meaning                        |
 |-------:|:--------:|:-------------------------------|
 |      0 |   NOP    | No operation                   |
@@ -603,6 +621,9 @@ usually travel together. No other bits are set.
 
 #### Still open
 
+- how a second `LINK` line's component mapping interacts with the first. A
+two-row probe shows rows 0 and 7 hold different data, but its same-source
+  control did not read equal.
 - why rC reads as zero for a uniform beside a row-register rA/rB. Either the
   operand-read port allocation or an assembler encoding quirk; disassembling a
   packet that does it would separate the two.
