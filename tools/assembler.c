@@ -456,6 +456,7 @@ int main(int argc, char *argv[])
 	struct grate_3d_ctx *ctx;
 	struct host1x_pixelbuffer *pixbuf;
 	struct host1x_pixelbuffer *depth = NULL;
+	struct host1x_pixelbuffer *stencil = NULL;
 	struct host1x_bo *bo;
 	uint32_t *fb_data;
 	uint32_t result;
@@ -595,6 +596,30 @@ int main(int argc, char *argv[])
 		ctx->textures[0] = tex;
 	}
 
+	if (getenv("GRATE_STENCIL")) {
+		stencil = host1x_pixelbuffer_create(grate->host1x,
+						    options.width, options.height,
+						    options.width,
+						    PIX_BUF_FMT_S8,
+						    PIX_BUF_LAYOUT_LINEAR);
+		if (!stencil) {
+			fprintf(stderr, "stencil buffer alloc failed\n");
+			return 1;
+		}
+		grate_3d_ctx_bind_stencil_buffer(ctx, stencil);
+		if (getenv("GRATE_STENCIL_TEST")) {
+			grate_3d_ctx_perform_stencil_test(ctx, true);
+			grate_3d_ctx_set_stencil_func(ctx,
+				GRATE_3D_CTX_STENCIL_TEST_FRONT,
+				GRATE_3D_CTX_STENCIL_TEST_ALWAYS, 0, 0xff);
+			grate_3d_ctx_set_stencil_ops(ctx,
+				GRATE_3D_CTX_STENCIL_TEST_FRONT,
+				GRATE_3D_CTX_STENCIL_OP_KEEP,
+				GRATE_3D_CTX_STENCIL_OP_KEEP,
+				GRATE_3D_CTX_STENCIL_OP_REPLACE);
+		}
+	}
+
 	grate_3d_ctx_bind_program(ctx, program);
 	grate_3d_ctx_set_depth_range(ctx, 0.0f, 1.0f);
 	grate_3d_ctx_set_dither(ctx, 0x779);
@@ -732,6 +757,22 @@ int main(int argc, char *argv[])
 				d16[h * w - 2], d16[h * w - 1]);
 		} else {
 			fprintf(stderr, "depth mmap failed\n");
+		}
+	}
+
+	if (stencil) {
+		void *smap = NULL;
+
+		if (host1x_bo_mmap(stencil->bo, &smap) == 0 && smap) {
+			uint8_t *s8 = smap;
+			unsigned w = options.width, h = options.height;
+
+			fprintf(stdout, "stencil8 row0: %02X %02X %02X %02X mid: %02X %02X last: %02X %02X\n",
+				s8[0], s8[1], s8[2], s8[3],
+				s8[(h / 2) * w + w / 2], s8[(h / 2) * w + w / 2 + 1],
+				s8[h * w - 2], s8[h * w - 1]);
+		} else {
+			fprintf(stderr, "stencil mmap failed\n");
 		}
 	}
 

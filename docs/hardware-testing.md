@@ -268,3 +268,13 @@ Two things to know before using it:
 * so a shader-side depth write is only visible with a payload that is not
   `0x8000`. `0.25` works: it encodes to `0x4000` as `D16` and to `0x00400040` as
   `RGBA8888`, so one run can tell which surface was touched.
+
+`GRATE_STENCIL=1` does the same for an `S8` stencil surface, printing
+`stencil8 row0: ... mid: ... last: ...`, and `GRATE_STENCIL_TEST=1` additionally
+enables the stencil test with `ALWAYS`/`REPLACE` plus `keep/keep/replace` ops.
+`GRATE_STENCIL` is the variable that *allocates* - setting only
+`GRATE_STENCIL_TEST` prints no `stencil8` line, which reads exactly like "the
+stencil path works but writes nothing". With the surface really bound,
+`DW: store stencil` writes nothing in any of the four {kill, no kill} x {test
+off, test on} combinations, so the readback is sound and the write is what
+fails.

@@ -698,22 +698,38 @@ two-row probe shows rows 0 and 7 hold different data, but its same-source
   independent: bit 15 selects the pair (set = `r2/r3`, clear = `r0/r1`, which is
   what the assembler emits for each spelling), and bits 16..17 are the target
   class where `3` is invalid and writes nothing.
-- ~~where the DW target classes point~~ - **measured with a `D16` depth surface
-  bound** (`GRATE_DEPTH=1` in `tools/assembler`, see [[Hardware Testing]]):
-  bits 16..17 = 2 writes the colour target, = 1 with index 0 writes the **depth
-  surface**, = 3 writes nothing, and = 0 leaves the colour target alone. The
-  rasterizer writes depth on its own, so a shader with no `DW` still leaves the
-  depth surface at the interpolated `z` (`0x8000` for a full-screen quad at
-  `z = 0.5`) while the colour target keeps the clear value - depth writes are not
-  gated by the shader's store.
-- **The depth payload is not a copy.** A `0.25` payload in `r2/r3` lands in the
-  depth surface as `0x0004`, not the `0x4000` a straight `D16` encoding of the
-  same value would give, so the depth-class store applies its own scaling. Also
-  unexplained: class 1 with index 1 does not touch the depth surface and zeroes
-  the colour pixel instead. Both need their own probe.
-- Where the stencil write (bit 10) and DW modes 2/3 land: with a depth surface
-  bound, class-1 stores with mode 2 or 3 write neither surface. Telling the
-  stencil apart needs a stencil surface, which the harness still cannot allocate.
+- ~~where a DW store points~~ - **measured with a `D16` depth surface bound**
+  (`GRATE_DEPTH=1` in `tools/assembler`, see [[Hardware Testing]]): the **render
+  target index (bits 2..5) is the selector**, not the class field. Index 0 is the
+  depth surface (because `bind_depth_buffer` puts it there), index 1 is the colour
+  target and index 2 is the stencil surface; class 2 is the normal value and class
+  3 is invalid (writes nothing). Classes 0 and 1 are *also* accepted for index 0,
+  which is what made the class field look like a depth selector at first - it is
+  not, the index is. The rasterizer writes depth on its own, so a shader with no
+  `DW` still leaves the depth surface at the interpolated `z` (`0x8000` for a
+  full-screen quad at `z = 0.5`) while the colour target keeps the clear value:
+  depth writes are not gated by the shader's store.
+- **Depth payload: `r3` only, and scaled.** The `D16` value is assembled from the
+  two fx10 halves of `r3` and ignores `r2` completely. Low half gives
+  `value * 0x10` (`0.125`->`0x0002`, `0.25`->`0x0004`, `0.5`->`0x0008`,
+  `1.0`->`0x0010`); high half gives `value * 0x4000` (`0.5`->`0x2000`,
+  `1.0`->`0x4000`); the two superpose (`lo = 1.0` with `hi = 0.5` gives
+  `0x2010`). So even with both halves at 1.0 a shader reaches only `0x4010` of
+  the `D16` range - this is not a plain depth write and the payload has to be
+  pre-scaled deliberately.
+- **The stencil store wrote nothing.** With an `S8` surface bound
+  (`GRATE_STENCIL=1`), `DW: store stencil` (`0x00020409`, index 2 with bit 10)
+  left the stencil bytes at `00` and the colour target at its clear value, and
+  the same was true with bit 10 flipped, with the write pointed at index 3, and
+  in all four combinations of {`kill`, no `kill`} x {stencil test off, on}
+  (`GRATE_STENCIL_TEST=1`). So the obvious gate - the driver's *late* stencil
+  write, which is only enabled when the shader discards (`STENCIL_WRITE_EARLY =
+  !discards_fragment`) - is **ruled out**: the store does nothing either way.
+  What is left: a combined depth-stencil surface (the bare `S8` buffer may have
+  to be the stencil half of a packed surface at the depth slot), or a stencil
+  value that does not come from the `DW` payload at all. Blocked there.
+- DW modes 2/3 with the store pointed at index 0 write neither the colour nor
+  the depth surface.
 
 - TEX bits 6..9, 11 and 14..31 (zero in every sample gathered so far; bit 13 is
   explicit LOD)
