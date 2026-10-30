@@ -455,6 +455,7 @@ int main(int argc, char *argv[])
 	struct grate *grate;
 	struct grate_3d_ctx *ctx;
 	struct host1x_pixelbuffer *pixbuf;
+	struct host1x_pixelbuffer *depth = NULL;
 	struct host1x_bo *bo;
 	uint32_t *fb_data;
 	uint32_t result;
@@ -518,6 +519,22 @@ int main(int argc, char *argv[])
 	/* Setup context */
 
 	ctx = grate_3d_alloc_ctx(grate);
+
+	if (getenv("GRATE_DEPTH")) {
+		depth = host1x_pixelbuffer_create(grate->host1x,
+						  options.width, options.height,
+						  options.width * 2,
+						  PIX_BUF_FMT_D16_LINEAR,
+						  PIX_BUF_LAYOUT_LINEAR);
+		if (!depth) {
+			fprintf(stderr, "depth buffer alloc failed\n");
+			return 1;
+		}
+		grate_3d_ctx_bind_depth_buffer(ctx, depth);
+		grate_3d_ctx_perform_depth_test(ctx, true);
+		grate_3d_ctx_perform_depth_write(ctx, true);
+		grate_3d_ctx_set_depth_func(ctx, GRATE_3D_CTX_DEPTH_FUNC_ALWAYS);
+	}
 	if (test.texture) {
 		struct grate_texture *tex;
 		const char *tex_env = getenv("GRATE_TEX_SIZE");
@@ -697,6 +714,26 @@ int main(int argc, char *argv[])
 	}
 
 	result = fb_data[0];
+
+	if (depth) {
+		void *dmap = NULL;
+
+		if (host1x_bo_mmap(depth->bo, &dmap) == 0 && dmap) {
+			uint16_t *d16 = dmap;
+			unsigned w = options.width, h = options.height;
+			unsigned i;
+
+			fprintf(stdout, "depth16 row0:");
+			for (i = 0; i < 4; i++)
+				fprintf(stdout, " %04X", d16[i]);
+			fprintf(stdout, " mid: %04X %04X", d16[(h / 2) * w + w / 2],
+				d16[(h / 2) * w + w / 2 + 1]);
+			fprintf(stdout, " last: %04X %04X\n",
+				d16[h * w - 2], d16[h * w - 1]);
+		} else {
+			fprintf(stderr, "depth mmap failed\n");
+		}
+	}
 
 	if (test.print_result)
 		fprintf(stdout, "result 0x%08X\n", result);

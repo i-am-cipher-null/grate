@@ -248,3 +248,23 @@ experiment on. The TEX word for `txb r2, r3, tex0, r0, r1, r2, r3` is
 bit 10, LOD bias bit 12. The sampler field is the index itself, so a hand-written
 `0x...1` samples `tex1` and returns whatever an unbound sampler returns
 (constant garbage), not the texture you bound to `tex0`.
+
+### Depth buffer readback
+
+`GRATE_DEPTH=1` makes `tools/assembler` allocate a `D16_LINEAR` depth surface the
+size of the framebuffer, bind it, enable the depth test and the depth write with
+`DEPTH_FUNC_ALWAYS`, and print a few words of it as
+`depth16 row0: 8000 8000 8000 8000 mid: ... last: ...`. It is env-gated, so the
+suite is unaffected. Without it the tool binds only the colour target, which is
+why the depth side of `DW` stayed unmeasured for so long.
+
+Two things to know before using it:
+
+* the depth surface **is** written by the rasterizer even when the fragment
+  program has no `DW` at all - a shader that stores nothing still leaves it at the
+  interpolated `z` (`0x8000` right across the frame for a full-screen quad at
+  `z = 0.5`) while the colour target keeps the clear value. Depth writes are not
+  gated by the shader's store;
+* so a shader-side depth write is only visible with a payload that is not
+  `0x8000`. `0.25` works: it encodes to `0x4000` as `D16` and to `0x00400040` as
+  `RGBA8888`, so one run can tell which surface was touched.

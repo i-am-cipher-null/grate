@@ -184,9 +184,12 @@ a `lowp vec2` into one interpolation slot and a `mediump vec2` into two
 | `load_input` (varying) | `MFU ipl` | one `var` slot per component; precision decides slot count |
 | `load_frag_coord` | `posx`/`posy` + the `r3` z expansion | z needs the documented `1/1000 + max(0,r3.low)/4000 + max(0,r3.high)/4` sequence, i.e. ~6 ALU slots |
 
-The `PRE`/main pairs are a selection *pattern* obligation: `PREEX2` without
-`EX2` in the next MFU word is meaningless, so selection and scheduling have to
-agree. The same is true of the barycentric prologue: `RCP r4` + two
+The `PRE`/main pairs are one operation in two words and this is now measured
+rather than assumed (4.5): the two words may be in the same batch, consecutive
+batches, or separated by an empty batch, but they must be given the same
+operand, the `PRE` result cannot be captured as a value, and dropping the `PRE`
+word silently produces a wrong result. So selection and scheduling have to agree
+only on the *pair* - the words are free to move otherwise. The same is true of the barycentric prologue: `RCP r4` + two
 `mul`s + the `bar` destination must be the first MFU word of the program, and
 `w` arrives in `r4` for that first word only.
 
@@ -244,12 +247,24 @@ same batch get consecutive addresses.
 This is the part a scheduler must get right, and it was previously unknown. All
 measurements use the Grate assembler harness (section 10).
 
-The probe writes fx10 `0.25` (= `0x40`) through `u0.l`. The readback word is
-little-endian, so the channels decode as
-`A << 24 | B << 16 | G << 8 | R` with `R = r2.low`, `G = r2.high`,
-`B = r3.low`, `A = r3.high` - the documented order. That was confirmed with a
-four-value calibration (`r2.h = 0.25`, `r2.l = 0.5`, `r3.h = 0.75`,
-`r3.l = 0.125` -> `0xBF20407F`) before any of the results below were read.
+**Readback channel order (re-measured, and it corrects this document).** Fill all
+four slots with one value, then overwrite exactly one slot and see which byte
+moves. With every slot at `0.25` the word is `0x40404040`, and overwriting a
+single slot with `0.75` gives:
+
+| slot overwritten | word | byte that moved |
+|:--|:--|:--|
+| `r2.l*` | `0x404040BF` | byte 3 |
+| `r2.*h` | `0x4040BF40` | byte 2 |
+| `r3.l*` | `0x40BF4040` | byte 1 |
+| `r3.*h` | `0xBF404040` | byte 0 |
+
+So the 32-bit word is, from MSB to LSB, **`r2.lo`, `r2.hi`, `r3.lo`, `r3.hi`** -
+i.e. byte 0 = `r3.hi`, byte 1 = `r3.lo`, byte 2 = `r2.hi`, byte 3 = `r2.lo`.
+That is the *reverse* of the guess recorded here earlier (`R = r2.low`...), which
+came from a single calibration shader; four one-slot overwrites agree with each
+other and with the fill, so this table is the one to use. Any earlier reading of
+"byte N" in these notes should be re-checked against it.
 
 | Producer -> consumer | Distance | Result | Meaning |
 |:--|:--|:--|:--|
@@ -355,6 +370,39 @@ to be written in the high half - `.*h` or, as every working test shader does,
 `.lh`. A `.l*`-only write is invisible to a later fp20 operand read. That one
 rule explains a whole family of probes that appeared to "lose" values.
 
+**Refined later, and the mechanism is the value format, not the width.** The ISA
+has exactly two formats, `fx10` and `fp20`, and the destination suffix selects
+which one is written: `.l*` / `.*h` write an **fx10** value into the low/high
+slot (the ALU performs the conversion), while `.lh` writes the **fp20** result.
+The two are not interchangeable. A register written as fx10 and then read back as
+fp20 decodes to ~0.0078 (`0x02` at 8-bit output) - that is the whole `0x02`
+mystery, and it is a format mismatch, not truncation. In the other direction the
+conversion is exact: 0.75 written `.lh` (fp20), copied with `.l*` (fp10
+conversion) and stored reads `0xBF` = 0.75.
+
+Consequence for probes and for a backend: keep computations in fp20 and only
+convert to fx10 at the point where a value is consumed as fx10 (a render-target
+store, a texture coordinate). Mixing them silently produces plausible-looking
+wrong numbers, which is exactly how the earlier `0x02` readings were
+misdiagnosed as a forwarding hazard. The controlled
+comparison is one 3-batch copy chain, changing nothing but the destination
+suffix:
+
+| destination suffix | result word | reading |
+|:--|:--|:--|
+| `.lh` (both halves) | `0xEF00F300` | the value propagates |
+| `.*h` (high only) | `0x00000000` | nothing propagates |
+| `.l*` (low only) | `0x00000000` | nothing propagates |
+
+So the operative rule is: **any value a later batch must read has to be written
+with `.lh`.** That single line accounts for the `0x02` readings that were
+previously, and wrongly, attributed to forwarding or to operand ports.
+
+Even so the value is not exact through a multi-hop chain - 0.75 written once and
+copied twice comes back as `0xF3` = 0.953 - so a quantitative probe must write a
+value once and let the DW stage read that same register, never copy it through
+intervening ALU packets.
+
 **Operand rC silently reads zero when rA or rB is a row register.** Measured
 with `MAD r3.*h, rA, rB, rC`, which computes `rA*rB + rC`, all rows fed so the
 exact answer is `1*1 + (-0.5) = 0.5`:
@@ -379,6 +427,23 @@ A row register in rC is not read either: `MAD r3.*h, u4, #0, r2` with `r2 = 0.25
 and `u4 = 1` returns 0 rather than 0.25. So rC must be a uniform or an immediate
 whenever a row register is involved; only rA and rB can come from the row file
 beside a constant.
+
+**Re-measured with the right value format: rC does work, and the table above is
+an artefact.** A clean probe - `MAD r6.lh, r4, u1, u2, #1` with `r4 = 1.0`,
+`u1 = 1.0`, `u2 = -0.5` - returns **0.5** (`0x7F`), and with `c = u0 = 1.0` it
+returns 1.0 (2.0 clamped). So a uniform rC **is** honoured beside a
+row-register rA, and no operand-port restriction exists. The earlier "c dropped"
+rows were produced by priming row registers with the wrong value format. Kept
+below for the record, but do not act on it. Original note: It was measured
+before the `.lh` rule was understood, with row registers primed by half-only
+writes - which store a truncated fp20. Under a correct reading of those runs the
+"c dropped" rows returned 1.0, and neither model produces 1.0: a correct rA with
+c dropped would give about 0.0078 (`0x02`), and a correct rA with c applied would
+give 0.5. So those rows are unexplained, and **the rC-with-row-register rule is
+unconfirmed** - re-measure it with `.lh`-written operands before a backend acts
+on it. What stands from independent evidence: an immediate rC is honoured
+(`fs_mfu_tests.txt` relies on `MAD r3.l*, r2, #1, -#1`), and embedded constants
+(`imm0..imm2`) are a legal rC value.
 
 **`(other)` sends, `(this)` receives, and only to the adjacent packet.**
 `(other)` is bit 61 on packet *k*, `(this)` is bit 60 on packet *k+1* of the same
@@ -543,6 +608,153 @@ clamps behave as written.
 
 Still open: whether `-0.0` and `+0.0` compare equal, which the 8-bit output path
 cannot observe, and the exact saturation value to more than 8 bits of precision.
+
+**fp20 writes truncate; there is no round-to-nearest anywhere in the ALU.**
+Measured with `x = 1 + eps` then `4096*(x-1)` (embedded constant for the offset):
+
+| eps | result | reading |
+|:--|:--|:--|
+| 0 | `0x00` | 0 |
+| 1 ulp (`2^-13`) | `0x7F` = 0.5 | 1 ulp survives |
+| 1.5 ulp | `0x7F` = 0.5 | **truncated to 1 ulp**; rounding would give `0xFF` |
+| 2 ulp | `0xFF` = 1.0 | exact |
+
+The assembler's `fp20` packing truncates too, so assembler and hardware agree and
+a backend can predict every intermediate exactly from the emitted constants.
+
+**The SFU is accurate to within the format, and its output is full range.**
+Amplified with `K*(y - expected) + 0.5` at K = 256 (one fp20 ulp maps to ~0.25
+of output range, 0x7F = exact):
+
+| op | input | expected | measured |
+|:--|:--|:--|:--|
+| `rcp` | 3.0 | 0.333333 | `0x7F` |
+| `rcp` | -2.0 | -0.5 | `0x7F` (sign preserved) |
+| `ex2` (with `preex2`) | -1 | 0.5 | `0x7F` |
+| `ex2` | -0.5 | 0.707107 | `0x7F` |
+| `ex2` | -2 | 0.25 | `0x7F` |
+| `sin` (with `presin`) | pi/6 | 0.5 | `0x78` -> 0.49989 |
+| `sin` | 7pi/6 | -0.5 | `0x87` -> -0.49989 |
+| `sin` | 2pi+pi/6 | 0.5 | `0x78` -> 0.49989 |
+| `sin` | -pi/6 | -0.5 | `0x87` -> -0.49989 |
+| `cos` (with `precos`) | 0 | 1.0 | `0x7F` |
+| `cos` | 2pi/3 | -0.5 | `0x87` -> -0.49989 |
+| `cos` | 2pi | 1.0 | `0x7F` |
+| `frc` | -0.25 | 0.75 | `0x7F` |
+| `lg2` | 0.5 | -1.0 | `0x7F` (negative results are produced) |
+
+The `sin`/`cos` rows are **not** an SFU error: the argument itself is truncated to
+fp20 on the way in. `pi/6 = 0.5235988` has an fp20 ulp of `2^-12` there, so the
+register holds 0.5234375, and `sin(0.5234375) = 0.4998605` - which is the
+measured 0.499885 to within 2.5e-5. Likewise `7pi/6` truncates to 3.6650391 and
+`sin` of that is -0.4998676 against a measured -0.499885. So the SFU itself
+contributes less than ~0.1 ulp: **every op is exact to the precision of its
+input, including arguments past `2pi`** (`sin(2pi+pi/6)` and `cos(2pi)` are as
+accurate as their small-angle counterparts, so `PRE*` really does do range
+reduction). A backend needs no polynomial refinement for any of them.
+
+**The SFU does not clamp to [0,1].** The 8-bit output stage is what saturates, so
+the question only looks ambiguous until the value is halved - storing both `y`
+(byte3) and `y/2` (byte1) in one run separates a true 2.0 from a clamped 1.0:
+
+| op | input | true value | `y` | `y/2` |
+|:--|:--|:--|:--|:--|
+| `rcp` | 0.5 | 2.0 | >=1 | >=1 (`0xFF`) |
+| `rcp` | 0.25 | 4.0 | >=1 | >=1 |
+| `sqrt` | 2 | 1.41421 | >=1 | `0xB4` = 0.706 -> **1.412** |
+| `sqrt` | 4 | 2.0 | >=1 | >=1 |
+| `rsq` | 0.25 | 2.0 | >=1 | >=1 |
+| `ex2` | 1 | 2.0 | >=1 | >=1 |
+
+So the MFU carries values above 1.0 and a shader may use them; only the store
+clamps. That matters for `rsq`/`sqrt` chains, where an intermediate above 1.0 is
+perfectly legal.
+
+**PRE ops and their main op are one instruction in two words.** All three ways of
+splitting them agree, and leaving the `PRE` out silently gives a wrong answer:
+
+| variant | `ex2(-1)` |
+|:--|:--|
+| `preex2` in one batch, `ex2` in the next | 0.5 - correct |
+| both `PRE` and main in the same batch (two MFU words) | 0.5 - correct |
+| `preex2`, one empty batch, `ex2` | 0.5 - correct |
+| `ex2` with no `preex2` | **1.0 - wrong** |
+| `cos(0)` with no `precos` | **0 - wrong** |
+| `sin(pi/6)` with no `presin` | 0.5216 - wrong |
+
+The two words must also be given the **same operand**. Overwriting the operand
+between them produces garbage rather than either answer: `preex2` of -1 then
+`ex2` of 0 returns **0** (not 0.5, not `ex2(0) = 1.0`), and `precos` of 0 then
+`cos` of 3 returns **0.706** (not 1.0, not `cos(3) = -0.99`). The `PRE` result is
+not a usable value either - it cannot be captured and reused: read through the
+`sfu` source, `preex2(-1)` gives 0.5, `preex2(0)` gives 0 and `preex2(2)`,
+`presin(pi/6)` and `precos(0)` all saturate at >=1, which is not a coherent
+function of the argument. So a backend must emit the pair atomically, with the
+same register and value, in the same batch or any later one; the only thing it
+can schedule around is unrelated work.
+
+**Degenerate inputs** (all measured directly, no amplification needed):
+
+| op | input | result | reading |
+|:--|:--|:--|:--|
+| `rcp` | 0 | `0xFF` | +maximum, no NaN |
+| `rsq` | 0 | `0xFF` | +maximum |
+| `rsq` | -4 | `0xFF` | +maximum - *not* -0.5 and not 0 |
+| `sqrt` | -1, -4 | `0x00` | 0 |
+| `lg2` | 0 | `0x00` | minimum |
+| `lg2` | 0.25, 0.125 | `0x00` | negative results, clamped only at the store |
+
+The `rsq` row is explained by modelling `RSQ = RCP(SQRT(x))`: `sqrt(-4) = 0` and
+`rcp(0)` is +maximum, which is exactly what `rsq(-4)` returns. That model also
+predicts `rsq(0) = +maximum`, and it does.
+
+**The `PRE` intermediate is per operand register, and it lives long.** It
+survives at least four intervening batches - 1, 2, 3 and 4 empty batches all
+return the correct `ex2(-1) = 0.5` - two chains interleave (`preex2` of `r0` and
+of `r1`, then `ex2` of both, returns 0.5 and 0.25 side by side, both with and
+without a gap batch), and unrelated SFU work in between does not disturb it:
+`rcp`, `frc`, and even another `preex2` on a *different* register all leave the
+`ex2` result at 0.5. So several `PRE`/main pairs can be in flight at once and a
+scheduler may separate the two words as far as it likes, the only constraint
+being that nothing writes the operand register in between.
+
+**An ALU write to the operand kills the pair - even the same value.** Rewriting the
+operand with a *different* value between the two words yields `ex2(-1) = 1.0`,
+the same wrong answer as omitting the `PRE` entirely; rewriting it with the *same*
+value gives 1.0 as well. Writing some other register in between is harmless (0.5,
+correct). So the rule is not "the operand must hold the same value" but "nothing
+may write that register at all": a scheduler has to treat the pair as clobbering
+its operand register, and a register allocator must not reuse it in between.
+
+**Row-register values clamp at 2^33, and `ex2` underflows at -31.** Built by
+doubling `2.0` in the ALU and reading the exponent back with `lg2` (resolution
+0.125 binades):
+
+| constructed | `lg2` reads |
+|:--|:--|
+| `2^31` | 31.06 |
+| `2^32` | 31.94 |
+| `2^33` | 32.94 |
+| `2^34`, `2^35`, `2^41` | 32.94 - clamped |
+
+That the *value* is clamped, rather than `lg2` refusing a large input, is shown
+by halving the `2^41` chain eight times: it reads **25**, i.e. `2^33 / 2^8`, not
+33. At the bottom, `ex2(-30)` is exact while `ex2(-31)` and below return 0, so
+the usable window is roughly `2^-31 .. 2^33` - about 64 binades, well short of
+what the 8-bit exponent field in the encoding would allow (`2^224`), which means
+the limits are in the datapath rather than the format. Range analysis has to stay
+inside that window: above it clamps silently, below it collapses to zero.
+
+**There are two separate hard limits: 64 exec batches and 64 ALU packets.** A
+65-batch program is refused with `fs: line N: Over 64 exec batches` regardless of
+how little work those batches carry - 65 batches holding only 8 ALU packets fails
+the same way - and a 65-packet program is refused with `fs: line N: Over 64 ALU
+instructions in total`. The ALU count is per **packet**, not per slot: 20 batches
+holding 4 ALU slots each (80 instructions) assembles and runs, so the four slots
+inside a packet are free against the budget. Both are assembly-time checks, so
+they bound what a backend may emit rather than what the hardware could execute,
+and the 64-batch limit is the one that bites first whenever a program has
+non-ALU batches at all.
 
 **8-bit output conversion is `round(x * 255)` with halves rounding down.**
 Calibration values `0.5 -> 0x7F` (127, not 128) and `0.125 -> 0x20` (32, not 31)
@@ -767,20 +979,78 @@ Missing for a complete backend:
 ### 9.2 Needed for correct code, unknown today
 
 4. ~~`MIN`/`MAX`/`CMP` semantics~~ - partly settled, see 4.5. Finite `MIN`/`MAX`
-   order correctly and `CMP` compares the **first product**, not `rA`. Still
-   open: signed zero, and values with the saturated `fp20` exponent.
+   order correctly and `CMP` compares the **first product**, not `rA`. **Signed
+   zero is not reachable**, so there is no tie-breaking rule to find: building
+   `-0` as `0 * -1` produces something `rcp` maps to +infinity exactly like
+   `+0` (`0xFF`, the same as `rcp(+0)`), and `MIN`/`MAX` of that pair return it
+   under either operand order. Values above `2^33` clamp (see below), which is
+   what "the saturated fp20 exponent" turned out to mean.
 5. ~~Whether `saturate` clamps before or after the result scale~~ - **settled,
    and it is the unusual order: the scale is applied first.** `(sat)(/2)` on
    `1.5` gives `0.75` (scale -> 0.75, then saturate), not `0.5`. `(/2)` alone
-   works (`0.5 -> 0.25`). Still open: whether saturate also clamps fx10 writes.
+   works (`0.5 -> 0.25`). **Saturate clamps fx10 writes too**: `1.25` written
+   with `.l* (sat)` reads back through the `.l` source form as 1.0 (halved, it
+   stores `0x7F`), while the same write without `sat` reads back 1.25 (halved,
+   `0x9F`), and a 0.75 control stores `0xBF` either way.
 6. ~~The exact `CMP` predicate~~ - **settled**: it is
    `(rA*rB < 0) ? rB : (rC*rD)`. The reference's `(rA < 0)` reading is wrong on
    hardware, and the true branch is `rB`, not the product. See 4.5.
-7. `RECIP`/`RSQ`/`LG2`/`EX2`/`SQRT`/`SIN`/`COS` accuracy and their input ranges;
-   `PRE*` + main is a two-op sequence, so what the `PRE` result means (and
-   whether it may be stored and reused) matters for selection.
-8. fp20 conversion rounding on ALU results: the assembler truncates; the
-   hardware is **not** verified to. The probe that would settle it is designed
+7. ~~`RECIP`/`RSQ`/`LG2`/`EX2`/`SQRT`/`SIN`/`COS` accuracy, input ranges and the
+   `PRE*` pair~~ - **settled**, details in 4.5. Every op is exact to the
+   precision of its fp20 input; the output is full range (the clamp lives in the
+   output stage); `PRE*` + main must be emitted as one pair with the same
+   operand, and the `PRE` result cannot be stored or reused.
+
+   **Plumbing, now known and previously misread here: `sfu: OP rN` does not
+   write rN.** A survey of 14 operations (rcp, rsq, sqrt, ex2, sin, cos, frc,
+   lg2, presin, precos, preex2) returned *the input, unchanged*, in every case -
+   sqrt(0.25) read back 0.25, rcp(2.0) read back 2.0, cos(0) read back 0. So the
+   `reg` field names the operand, and the result is only available as the `sfu`
+   source of an MFU multiplier: `mul0: r2, sfu, #1`. The multiplier destination
+   is restricted to `r0..r3` (the assembler rejects anything higher with
+   "Invalid row register number, r3 max"), so the result lands in the pixel
+   packet and is read from there.
+
+   **Working recipe, verified on hardware.** Park the operand in `r0..r3` (the
+   pixel packet - `r4..r15` are not readable by the unit: with the operand in
+   `r4`, `rcp` returned the same 0.47 for inputs 2, 4 and 0.25, and the
+   multipliers reject `r4` outright as a source), run `sfu: OP rN`, take the
+   result with `mul0: r2, sfu, #1`, and convert with `.l*` for the store. That
+   returns `rcp(2) = 0.5`, `rcp(4) = 0.25`, `sqrt(0.25) = 0.5` and
+   `frc(1.75) = 0.75` exactly, and `r1` behaves the same as `r0` as the operand.
+   `ex2(-1)` returned 1.0 instead of 0.5, which matches the reference calling
+   EX2 / SIN / COS "second step" operations - they need PREEX2 / PRESIN / PRECOS
+   first, so a single-op probe of those three is not meaningful.
+
+   **Accuracy, measured.** With `K*(y - expected) + 0.5` and `K = 4096` (one
+   fp20 ulp at 0.5 maps to 0.25 of output range), `rcp(2)`, `rcp(4)`, `rcp(3)`,
+   `rsq(4)`, `sqrt(0.25)` and `frc(1.75)` all read back `0x7F` = 0.5 - an error
+   below the probe's resolution (~1.2e-4 absolute, about one fp20 ulp). The SFU
+   is therefore as accurate as the ALU's own format and needs no polynomial
+   refinement at fp20 precision. Still unmeasured: EX2 / SIN / COS (they need
+   their PRE stage, which a single-op probe does not provide) and edge inputs
+   (zero, negative, very small).
+
+   That also means the earlier "SFU costs 3.4 ns/word" timing work measured the
+   cost of an SFU *word*, which is unaffected, but no accuracy claim in this
+   document yet rests on a real measurement - accuracy and input ranges remain
+   open, now with a working way to observe them.
+8. ~~fp20 conversion rounding on ALU results~~ - **settled: the hardware
+truncates toward zero, exactly like the assembler.** `x = 1 + eps`, then
+`4096*(x-1)` with an embedded constant for the offset:
+
+   | eps | result | reading |
+   |:--|:--|:--|
+   | 0 | `0x00` | 0 |
+   | 1 ulp (`2^-13`) | `0x7F` = 0.5 | 1 ulp survives |
+   | 1.5 ulp | `0x7F` = 0.5 | **truncated to 1 ulp** - rounding would give `0xFF` |
+   | 2 ulp | `0xFF` = 1.0 | exact |
+   | 0.25 (control) | `0xFF` | chain saturates as expected |
+
+   There is no round-to-nearest anywhere in the ALU path, and the assembler's
+`fp20` packing truncates identically, so a backend can emit truncated constants
+and predict every intermediate exactly. Earlier failed attempts, kept for the
+record: The probe that would settle it is designed
    and its mechanism is confirmed working - `4096*1.0 + (-4095.5)` returns
    exactly `0x7F`, so an amplified 1-ulp difference is visible at 8-bit output
    precision - but the tie value cannot be routed through a row register at
@@ -832,7 +1102,14 @@ Missing for a complete backend:
     `sync_pre` buffers are dead code on this chip - the shared encoder most
     likely serves a later chip that does have the register. Nothing to probe
     until such a chip turns up.
-13. DW bit 14 (always a zero payload when set) and the packer at `0x1c6648`.
+13. ~~DW bit 14~~ - **confirmed on hardware from a word the assembler itself
+    emits**: it forces an all-zero payload (`0x007F007F` -> `0x00000000`)
+    whichever register pair holds the payload, which is exactly the "always a
+    zero payload" the compiler corpus showed. The target-class field is measured
+    too: bits 16..17 = 2 is the colour target, 1 with index 0 is the depth
+    surface, 3 writes nothing. Still open: the 128-bit packer at `0x1c6648`, and
+    the scaling that turns a depth-class payload into `D16` - a `0.25` payload
+    lands as `0x0004` rather than the `0x4000` a plain copy would give.
 
 ## 10. Reproducing the measurements in 4.3
 

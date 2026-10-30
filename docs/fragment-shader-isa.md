@@ -171,8 +171,12 @@ Two measured restrictions that the bit layout does not show:
   operand cannot see; the working test shaders all write `.lh`, which writes both
   halves (`.l*` = low only, `.*h` = high only).
 * if rA or rB names a row register, **rC reads as zero when it names a uniform**.
-  Immediates (`#0`, `#1`, `-#1`) are still honoured. See [[Writing a Compiler]]
-  section 4.3 for the measurement.
+  Immediates (`#0`, `#1`, `-#1`) are still honoured. **Correction**: those
+  probes primed their row registers with half-only destination writes, which
+  store a truncated fp20 (20-bit value, 16-bit halves), so the rule is
+  unconfirmed and has to be re-measured. A value a later operand must read has
+  to be written with `.lh`; `.*h` or `.l*` alone store a corrupted fp20 that
+  reads back as ~0.0078.
 
 #### Operand rD:
 
@@ -267,6 +271,49 @@ The MFU unit can fetch and interpolate 4 component vectors per instruction and/o
 |      9 |  PREEX2  | Exponent base 2, first step  | rD = pow(2.0, rA)   |
 |     10 |  PRESIN  | Sine, first step             | rD = sin(rA)        |
 |     11 |  PRECOS  | Cosine, first step           | rD = cos(rA)        |
+
+#### SFU semantics (measured)
+
+The pseudo-code column above is misleading for the three `PRE*` ops: they do not
+produce `rD = pow(2, rA)` as a value, and their result is not reachable as a
+value at all. They compute a hidden intermediate that the *second step* op
+consumes, so `PREEX2`+`EX2`, `PRESIN`+`SIN` and `PRECOS`+`COS` are one operation
+in two words:
+
+* the pair may be split across batches **in any way** - same batch, next batch,
+  or with an empty batch in between all return the same correct value, so the
+  intermediate survives at least one intervening batch;
+* both words must be given the **same operand**. Overwriting the operand
+  register between them yields garbage rather than either answer (`preex2` of
+  -1 then `ex2` of 0 returns 0, not 0.5 and not `ex2(0) = 1.0`);
+* the `PRE` result read through the `sfu` source is not a coherent function of
+  the argument (`preex2(-1)` -> 0.5, `preex2(0)` -> 0, `preex2(2)` -> >=1), so
+  it cannot be stored and reused;
+* omitting the `PRE` word silently gives a wrong answer: `ex2(-1)` returns 1.0
+  instead of 0.5, `cos(0)` returns 0 instead of 1.0, `sin(pi/6)` returns 0.5216.
+
+The operand is a "pixel packet" row register (`r0..r3`, fp20); `r4..r15` are not
+readable by the unit, and the multipliers reject them as a source too. The output
+is **full range**: `rcp(0.5)` really is 2.0 and `sqrt(4)` really is 2.0, checked
+by storing both the value and half of it in one run. Only the 8-bit output
+conversion saturates. Accuracy is within the fp20 format for every op measured
+(see [[Writing a Compiler]] 4.5), and `PRESIN`/`PRECOS` do proper range
+reduction, so arguments beyond `2pi` are as accurate as small ones.
+
+Degenerate inputs: `rcp(0)` and `rsq(0)` return +maximum, `sqrt` of a negative
+returns 0, `lg2(0)` returns the minimum, and `rsq` of a negative returns
++maximum - consistent with `RSQ = RCP(SQRT(x))`, since `sqrt(-4) = 0` and
+`rcp(0)` is +maximum. `FRC` is floor-based (`frc(-0.25) = 0.75`, not -0.25).
+
+Row-register values **clamp at `2^33`** and `ex2` **underflows at `-31`**, so the
+usable numeric window is about `2^-31 .. 2^33`. Halving a clamped `2^41` chain
+eight times reads `2^25`, which shows the clamp is in the value rather than in
+`lg2`'s input range.
+
+Program size is bounded twice over: at most **64 exec batches** and at most **64
+ALU packets**, both enforced by the assembler at parse time (`Over 64 exec
+batches`, `Over 64 ALU instructions in total`). The four ALU slots inside one
+packet count once, so 20 batches of 4 slots each is fine.
 
 #### var0..3:
 
@@ -409,6 +456,12 @@ The sampled RGBA data is stored in the two registers as four fx10's.
 ## DW instruction word encoding
 
 Data write instruction controls write of values contained in the row registers R0-R1 / R2-R3 to the destination render target.
+
+Measured payload order for the R2-R3 form: the 32-bit result word is, from MSB
+to LSB, **`r2.lo`, `r2.hi`, `r3.lo`, `r3.hi`** (byte 0 = `r3.hi`, byte 1 =
+`r3.lo`, byte 2 = `r2.hi`, byte 3 = `r2.lo`). That was established by filling all
+four slots with `0.25` (`0x40404040`) and then overwriting exactly one slot with
+`0.75`, four separate runs - see [[Writing a Compiler]] 4.3 for the table.
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
@@ -627,12 +680,40 @@ two-row probe shows rows 0 and 7 hold different data, but its same-source
 - why rC reads as zero for a uniform beside a row-register rA/rB. Either the
   operand-read port allocation or an assembler encoding quirk; disassembling a
   packet that does it would separate the two.
-- fp20 rounding of ALU results. The amplification probe works mechanically
-  (`4096*1.0 + (-4095.5)` returns exactly `0x7F`), but the tie value has to pass
-  through a row register, and every 3-batch chain tried so far returns 0 - see
-  [[Writing a Compiler]] 9.2 item 8 for the state of it.
-- what DW bit 14 does (zero payload); reading back the depth and stencil
-  surfaces would settle where modes 1 and 3 actually write
+- ~~fp20 rounding of ALU results~~ - **settled: the ALU truncates toward zero**
+  at fp20 writeback (1.5 ulp reads back as 1 ulp), the same as the assembler's
+  own packing. See [[Writing a Compiler]] 9.2 item 8. Historical note: the
+  amplification probe (`4096*(x-1)`) is what settles it: 1.5 ulp reads back as
+  1 ulp, so writes truncate.
+- ~~`PRE` intermediate lifetime~~ - **settled**: at least four intervening
+  batches, per operand register, undisturbed by unrelated SFU ops. See
+  [[Writing a Compiler]] 4.5.
+- ~~fp20 exponent extremes~~ - **settled**: values clamp at `2^33` and `ex2`
+  underflows at `-31`, so the usable window is about `2^-31 .. 2^33`. Same
+  reference.
+- ~~what DW bit 14 does~~ - **settled**: with the payload in any register pair,
+  setting bit 14 makes the store write an all-zero payload (`0x007F007F` ->
+  `0x00000000` against a `0x4C4C4C4C` clear). Re-measured from a word the
+  assembler itself emits, so the bit position is not in doubt. Bits 14 and 15 are
+  independent: bit 15 selects the pair (set = `r2/r3`, clear = `r0/r1`, which is
+  what the assembler emits for each spelling), and bits 16..17 are the target
+  class where `3` is invalid and writes nothing.
+- ~~where the DW target classes point~~ - **measured with a `D16` depth surface
+  bound** (`GRATE_DEPTH=1` in `tools/assembler`, see [[Hardware Testing]]):
+  bits 16..17 = 2 writes the colour target, = 1 with index 0 writes the **depth
+  surface**, = 3 writes nothing, and = 0 leaves the colour target alone. The
+  rasterizer writes depth on its own, so a shader with no `DW` still leaves the
+  depth surface at the interpolated `z` (`0x8000` for a full-screen quad at
+  `z = 0.5`) while the colour target keeps the clear value - depth writes are not
+  gated by the shader's store.
+- **The depth payload is not a copy.** A `0.25` payload in `r2/r3` lands in the
+  depth surface as `0x0004`, not the `0x4000` a straight `D16` encoding of the
+  same value would give, so the depth-class store applies its own scaling. Also
+  unexplained: class 1 with index 1 does not touch the depth surface and zeroes
+  the colour pixel instead. Both need their own probe.
+- Where the stencil write (bit 10) and DW modes 2/3 land: with a depth surface
+  bound, class-1 stores with mode 2 or 3 write neither surface. Telling the
+  stencil apart needs a stencil surface, which the harness still cannot allocate.
 
 - TEX bits 6..9, 11 and 14..31 (zero in every sample gathered so far; bit 13 is
   explicit LOD)
