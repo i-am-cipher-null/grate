@@ -523,12 +523,14 @@ single slot with `0.75` gives:
 | `r3.l*` | `0x40BF4040` | byte 1 |
 | `r3.*h` | `0xBF404040` | byte 0 |
 
-So the 32-bit word is, from MSB to LSB, **`r2.lo`, `r2.hi`, `r3.lo`, `r3.hi`** -
-i.e. byte 0 = `r3.hi`, byte 1 = `r3.lo`, byte 2 = `r2.hi`, byte 3 = `r2.lo`.
-That is the *reverse* of the guess recorded here earlier (`R = r2.low`...), which
-came from a single calibration shader; four one-slot overwrites agree with each
-other and with the fill, so this table is the one to use. Any earlier reading of
-"byte N" in these notes should be re-checked against it.
+So the 32-bit word is, from MSB to LSB, **`r3.hi`, `r3.lo`, `r2.hi`, `r2.lo`** -
+i.e. byte 0 (least significant) = `r2.lo`, byte 1 = `r2.hi`, byte 2 = `r3.lo`,
+byte 3 = `r3.hi`. An independent shape confirms it: a packet that leaves `r2.lo`
+at 0.25 and `r3.lo` at 1.0 stores `0x00FF0040`, and a packet leaving `r2.lo` at
+0.75 stores `0x00FF00BF` - the `r2` value is always the low byte. The table of
+overwrites above is correct in its values but its "byte that moved" column is
+labelled from the wrong end; read it as byte 0 for `r2.l*`, byte 1 for `r2.*h`,
+byte 2 for `r3.l*` and byte 3 for `r3.*h`.
 
 | Producer -> consumer | Distance | Result | Meaning |
 |:--|:--|:--|:--|
@@ -568,41 +570,70 @@ implicitly names the latch, so a probe writes a row register and reads the
 slot's latch by number. That is also how a backend must model it: the latch is a
 property of the slot, not of an operand.
 
-**Caution on the latch names.** A direct measurement did *not*
-reproduce the `alu0 -> ALU1` hop: reading `alu0` from ALU1 returned 0, while
-reading `alu1` from ALU2 returned the value packet **ALU0** had written. The
-forwarding fact - same-batch chaining through latches works - still holds, but
-the assembler mnemonic `aluN` seems to be offset by one slot from the packet
-whose result it names. so `N` remains unverified until a dedicated probe
-settles the mapping.
+**The latch map, measured with one reader per run.** Four distinct writers in
+one packet (`r0.lo = 0.25`, `r0.hi = 0.5`, `r1.lo = 0.75`, `r1.hi = 1.0`) and a
+single reader `MAD r2.l*, aluN.l` in the next packet give:
+
+| latch read | value | looks like |
+|:--|--:|:--|
+| `alu0` | 0.25 | slot 0's result |
+| `alu1` | 1.0 | slot 3's result |
+| `alu2` | 0 | nothing |
+| `alu3` | 0 | nothing |
+
+The `alu1` row is misleading: the reader packet's own `ALU1` computed `1.0`
+into `r3.lo`, and repeating the probe with different writer values still returns
+`1.0`. A latch read can therefore be satisfied by the reading packet's own slot
+of the same number. Same-packet shapes show where that works:
+
+| shape (writers `r0.lo = 0.25`, `r0.hi = 0.5`) | read | value |
+|:--|:--|--:|
+| reader in slot 2 | `alu0` | 0.25 - slot 0, same packet |
+| reader in slot 2 | `alu1` | 0 - slot 1 wrote only the **high** half |
+| reader in slot 3 | `alu0` | 0.25 |
+| reader in slot 3 | `alu1` | 0 (same reason) |
+| reader in slot 2 / slot 3 | `r0.l` / `r0.h` | 0 - row-register writes are not visible in the same packet |
+
+So a **low-half write** by slot `k` is readable as `aluK` from a later slot of
+the same packet, and a slot that writes only the high half leaves its latch at
+zero. `alu2`/`alu3` read back zero in every shape tried, including ones where
+slots 2 and 3 did write, so those two slots' results are apparently not
+committed to the latch file. The rule a scheduler needs is narrower than any
+numbering: **read `aluK` from the slot after the one that wrote it with a
+low-half destination, and land the value in a row register or another low
+half.**
 
 The blob itself relies on the chain heavily: for eight summed `vec4` uniforms it
 emits one packet of `mad r3.hl, c0, #1, c4` ... `mad r3.hl, c8, #1, d0`, reading
 the latches by number *inside* the batch. Whatever the exact numbering is, the
 `slot k writes -> slot k+1 reads` form is what a scheduler should emit.
 
-**Unresolved: the latch numbering.** Priming all four slots of one packet with
-four distinct uniform values and reading `alu0/alu1` (then `alu2/alu3`) from the
-next packet returns `0xE300DB00` for the first pair and `0xDB00DB00` for both the
-second pair and a single-value control - so the four latches do **not** carry
-four distinguishable values at the point they are read, and the numbers do not
-match the 8-bit calibration those uniforms would give. Either the latches are
-consumed by the *issue* of the following packet (that is, they hold the in-flight
-results of the packet being executed, not the retired ones) or the read is one
-slot off, as above. The safe compiler rule is unchanged and does not depend on
-resolving it: use `aluN` only for an immediate same-batch chain of the form
-`slot k writes, slot k+1 reads`, which is what every working test shader does,
-and write the chain tail to a row register.
+Earlier attempts disagreed because the probe shape matters: writes done as `.lh`
+(fp20) and read back through a `DW` store do not carry the value, so a control
+built that way is invalid. Outside those shapes the chain itself is measured:
+with `ALU0` writing `r0.l*` and `ALU1`/`ALU2` chaining through `alu0.l`/`alu1.l`,
+both destinations end up holding 0.25.
 
-A second attempt using embedded constants (`imm0..imm2 = 0.25 / 0.5 / 0.75`)
-instead of uniforms reproduces the same failure **including the control**:
-reading `r0`, which the previous packet wrote as 0.25, returns a word whose
-`r2` byte is `0xF7` and `r3` byte is `0xE7` instead of the expected `0x40`, and
-reading `r1` (0.5) changes only the `r3` byte, to `0xEF`. The latch reads
-therefore cannot be interpreted until the harness shape itself is calibrated -
-the store in that packet is not carrying the value the shader computed, whatever
-`aluN` names. Any future probe must first show a known-good control (read `r0`
-back as 0.25) in the same shape before a latch read means anything.
+**Accumulate: `(this)` adds the previous slot's result and discards `rC`.**
+ALU bits 60 and 61 are named "accumulate this" and "accumulate other" in the
+assembler. One packet per row, `u0 = 0.25`, `u1 = 0.5`, `u2 = 0.125`:
+
+| instruction | result | reading |
+|:--|--:|:--|
+| `ALU0: MAD r2.l\*, u1, #1, #0, #1 (this)` | 0.5 | no predecessor, so 0 is added |
+| `ALU0: MAD r2.l\*, u1, #1, u2, #1 (this)` | 0.5 | **the `rC` addend is discarded** |
+| `ALU0: MAD r0.l\*, u0 ..` then `ALU1: MAD r2.l\*, u1, #1, #0, #1 (this)` | **0.75** | adds slot 0's 0.25 |
+| `ALU0: u0`, `ALU1: NOP`, `ALU2: MAD r2.l\*, u1, #1, #0, #1 (this)` | 0.5 | only the *immediately* preceding slot counts |
+| `ALU0: u0`, `ALU1: MAD r1.l\*, u2 ..`, `ALU2: MAD r2.l\*, u1, #1, #0, #1 (this)` | 1.0 | 0.75 + 0.5 = 1.25, stored clamped |
+| any row with `(other)` instead of `(this)` | as without it | **no arithmetic effect measured** |
+
+Two consequences: `(this)` chains a `MAD` into the next slot without spending an
+operand, and because it *replaces* `rC` an instruction cannot have both a real
+addend and `(this)`. The accumulator source is the previous slot, not a
+persistent register, so it does not cross a packet boundary. Bit 61 (`(other)`)
+produced no observable arithmetic difference in any shape; [[Compiler
+Internals]] reads it as "send" in the encoder's register tracking, so it is a
+pipeline bit rather than an operand source.
 
 **Texture results are the exception: they are visible to the ALU in the batch
 that issued the fetch.** A probe that samples a 4x4 grey texture
@@ -1231,6 +1262,39 @@ Seems have no effect when the depth or stencil write enabled.
 
 ### 8.2 Render target usage
 
+**The class field (bits 16..17) selects the surface, and the blob's own discard
+path shows every case it uses:**
+
+| word | index | class | surface |
+|:--|--:|--:|:--|
+| `0x00010001` | 0 | **1** | depth |
+| `0x0002008d` | 3 | 2 | coverage |
+| `0x00020409` | 2 | 2 | stencil |
+| `0x00028005` | 1 | 2 | colour 0 |
+
+Class 1 is depth and is used only with index 0; class 2 covers colour, stencil and
+coverage; class 3 writes nothing. A plain `store` emits class 2
+(`0x00028001`), which is why a depth write needs the explicit suffix - `store
+rt0, r0, r1 class 1` emits `0x00010001`, and `store rt0, r2, r3 class 1` emits
+`0x00018001`. A second colour target is index 5 with class 2 (`store rt5`), as
+measured in section 10.2's MRT case.
+
+**A class-1 store reads its payload from the pair that bit 15 does *not* select,
+and only from that pair's high register.** With `r1.lo = 1.0`, `r1.hi = 0.5` and
+`r3.lo = 1.0` all live in one batch:
+
+| word | bit 15 | pair named by bit 15 | payload actually read | depth written |
+|:--|--:|:--|:--|--:|
+| `0x00010001` | 0 | `r0,r1` | `r3` - `r1` ignored | `0x0010` |
+| `0x00018001` | 1 | `r2,r3` | `r1` - `r3` ignored | `0x2010` |
+
+So the register pair named by bit 15 is ignored outright for a depth store, and
+the value comes from the other pair - `r3` when bit 15 is clear, `r1` when it is
+set. The partner register (`r2` or `r0`) is never read. `store rt0, r0, r1 class
+1` with the depth in `r3` is therefore the spelling that matches the datapath;
+`store rt0, r2, r3 class 1` silently reads `r1` instead. The `D16` encoding of
+that register is under "Depth payload" in section 12.
+
 Some of the render targets have an additional special purpose, like depth/stencil store. They are hardwired and their special purpose is active under certain conditions, like when depth/stencil test is enabled.
 
 | Render target | Usage             |
@@ -1774,14 +1838,18 @@ usually travel together. No other bits are set.
   `DW` still leaves the depth surface at the interpolated `z` (`0x8000` for a
   full-screen quad at `z = 0.5`) while the colour target keeps the clear value:
   depth writes are not gated by the shader's store.
-- **Depth payload: `r3` only, and scaled.** The `D16` value is assembled from the
-  two fx10 halves of `r3` and ignores `r2` completely. Low half gives
-  `value * 0x10` (`0.125`->`0x0002`, `0.25`->`0x0004`, `0.5`->`0x0008`,
-  `1.0`->`0x0010`); high half gives `value * 0x4000` (`0.5`->`0x2000`,
+- **Depth payload: one register, scaled, and it is not the register the pair
+  field names.** The `D16` value comes from the two fx10 halves of the *other*
+  pair's high register (section 8.2): `r3` with `store rt0, r0, r1 class 1`,
+  `r1` with `store rt0, r2, r3 class 1`. Low half gives `value * 0x10`
+  (`0.125`->`0x0002`, `0.25`->`0x0004`, `0.5`->`0x0008`, `1.0`->`0x0010`); high
+  half gives `value * 0x4000` (`0.25`->`0x1000`, `0.5`->`0x2000`,
   `1.0`->`0x4000`); the two superpose (`lo = 1.0` with `hi = 0.5` gives
-  `0x2010`). So even with both halves at 1.0 a shader reaches only `0x4010` of
-  the `D16` range - this is not a plain depth write and the payload has to be
-  pre-scaled deliberately.
+  `0x2010`). Re-measured through the mnemonic: `store rt0, r0, r1 class 1` with
+  `r3.lo`/`r3.hi` at `1.0`/`0.5` reads back `0x2010`, `0.25`/`0` reads `0x0004`
+  and `0`/`0.25` reads `0x1000`. So even with both halves at 1.0 a shader
+  reaches only `0x4010` of the `D16` range - this is not a plain depth write and
+  the payload has to be pre-scaled deliberately.
 - **The stencil surface is writable, but not from the `DW`.** With an `S8`
   surface bound and the stencil test enabled (`ALWAYS`, `keep/keep/REPLACE`), the
   *rasterizer* stamps the reference value into the buffer: ref `0x7F` reads back

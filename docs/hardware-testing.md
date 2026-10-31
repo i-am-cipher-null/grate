@@ -273,16 +273,21 @@ choose the spill mode and bits 10..16 the slot.
 
 ### Depth buffer readback
 
-**Re-checked and not reproducible (the numbers below still stand as the original
-measurement).** With a two-batch shader that writes `r3` from a uniform and ends
-with `DW: store rt0, r2, r3`, the depth surface reads back all zeros and the
-colour target keeps the clear value, even at `x = 1.0`. The word the assembler
-emits for that store is `0x00028001` - mode 1, index 0, payload pair `r2/r3`, and
-class bits 16..17 = 2 (colour class), not 1. So the mnemonic produces a *colour*
-store aimed at index 0; whatever the original depth measurements used must have
-had class 1 (or a payload already in fx10 form). Anyone picking this up should
-re-derive the depth payload with class 1 explicitly rather than trusting
-`store rt0`.
+**Resolved: `store rt0` was a colour store, and the pair field does not name the
+depth payload.** A plain `store rt0, r2, r3` emits `0x00028001` - mode 1, index
+0, pair `r2/r3`, class bits 16..17 = 2, i.e. the *colour* class - which is why
+the depth surface used to read back zeros. The assembler now takes a class
+suffix, so `DW: store rt0, r0, r1 class 1` emits `0x00010001` and does write
+depth. Two things to keep straight when re-running it:
+
+* a class-1 store reads its payload from the register of the pair that bit 15
+  does **not** select, and only from that pair's high register: `store rt0, r0,
+  r1 class 1` reads `r3`, `store rt0, r2, r3 class 1` reads `r1`. Putting the
+  depth in `r3` and using the `r0, r1` spelling is the combination that works;
+* the payload is scaled: `r3.lo` contributes `value * 0x10`, `r3.hi` contributes
+  `value * 0x4000`, superposed. `r3.lo = 1.0, r3.hi = 0.5` reads back `0x2010`.
+
+See the fragment shader ISA document, section 8.2, for the measurement table.
 
 `GRATE_DEPTH=1` makes `tools/assembler` allocate a `D16_LINEAR` depth surface the
 size of the framebuffer, bind it, enable the depth test and the depth write with

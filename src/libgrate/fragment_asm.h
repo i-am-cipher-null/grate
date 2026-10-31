@@ -309,7 +309,8 @@ typedef union fragment_dw_instruction {
 		unsigned stencil_write:1;
 		unsigned unk_11_14:4;
 		unsigned src_regs_select:1;
-		unsigned unk_16_31:16;
+		unsigned render_target_class:2;
+		unsigned unk_18_31:14;
 	};
 
 	uint32_t data;

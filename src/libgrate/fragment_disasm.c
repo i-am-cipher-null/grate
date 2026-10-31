@@ -692,12 +692,19 @@ static const char * disassemble_dw(const dw_instr *dw)
 			} else {
 				buf += sprintf(buf, "r0, r1");
 			}
+
+			/* class 1 is the depth surface; 2 is the default */
+			if (dw->render_target_class != 2) {
+				buf += sprintf(buf, ", class %u",
+					       dw->render_target_class);
+			}
 		}
 	} else {
 		buf += sprintf(buf, "NOP");
 	}
 
-	if (dw->unk_1 || dw->unk_6_9 || dw->unk_11_14 || dw->unk_16_31 != 2) {
+	if (dw->unk_1 || dw->unk_6_9 || dw->unk_11_14 || dw->unk_18_31 ||
+	    dw->render_target_class != 2) {
 		sprintf(buf, " // 0x%08X", dw->data);
 	}
 

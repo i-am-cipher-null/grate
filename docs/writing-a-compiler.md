@@ -618,16 +618,20 @@ record: The probe that would settle it is designed
    lookalikes via `recv`/`send` instead of the register file, or retry at a
    larger `alu_buffer_size` (but 2 hangs - see 9.1).
    Also tried, also failing: chaining through the `aluN` latches inside one batch,
-   and padding every batch to four packets (no change at all). The latch probe
-   turned up something worth flagging on its own: with
-   `ALU0: MAD r2.*h, u0`, `ALU1: MAD r3.*h, alu0`, `ALU2: MAD r3.l*, alu1`,
-   `ALU3: MAD r2.l*, alu2`, the value written to `r3.lo` by ALU2 was `u0` - the
-   result of **packet ALU0** - while ALU1's read of `alu0` returned 0. So the
-   latch name appears to be offset by one slot from the packet that writes it.
-   A second oddity: `MAD r3.*h, r2, #1, -#1` left the value unchanged (0.75
-   stayed 0.75) *and* landed it in `r3.lo` instead of `r3.hi`, i.e. the `-#1`
-   spelling perturbs more than the addend. Both need their own probe before the
-   chain can be trusted - see the caution in [[Fragment Shader ISA]], "Forwarding and the ALU pipeline".
+   and padding every batch to four packets (no change at all).
+
+   The latch file is now mapped well enough to schedule against, in [[Fragment
+   Shader ISA]], "Forwarding and the ALU pipeline": a **low-half** write by slot
+   `k` is readable as `aluK` from a later slot of the same packet (a high-half
+   write leaves the latch at zero), `alu2`/`alu3` never read back anything, and
+   row-register writes are not visible within the packet. So chaining is
+   `slot k writes a low half -> slot k+1 reads aluK`, tail to a row register.
+   Two side findings from the same probes: the **`(this)` modifier adds the
+   previous slot's result and discards `rC`** (a free operand for a chain, but
+   it cannot coexist with a real addend), and `(other)` has no measured
+   arithmetic effect. A second oddity, still unexplained: `MAD r3.*h, r2, #1,
+   -#1` left the value unchanged (0.75 stayed 0.75) *and* landed it in `r3.lo`
+   instead of `r3.hi`, i.e. the `-#1` spelling perturbs more than the addend.
 
 ### 9.3 Needed for performance only
 
@@ -663,8 +667,11 @@ record: The probe that would settle it is designed
     zero payload" the compiler corpus showed. The target-class field is measured
     too: bits 16..17 = 2 is the colour target, 1 with index 0 is the depth
     surface, 3 writes nothing. The depth payload is now characterised as well
-    (the ISA section "Arithmetic semantics"): `r3` only, low half `value * 0x10`, high half
-    `value * 0x4000`, superposed. **The "128-bit packer at `0x1c6648`" does not
+    (the ISA section "Arithmetic semantics"): one register only - the high
+    register of the pair bit 15 does *not* name, so `r3` for `store rt0, r0, r1
+    class 1` - with low half `value * 0x10` and high half `value * 0x4000`,
+    superposed. A backend has to emit the class suffix; a plain `store rt0` is a
+    colour store. **The "128-bit packer at `0x1c6648`" does not
     exist**: both `0x1c6648` and its overlapping neighbour `0x1c6650` decompile
     to an item-size/alignment accumulator (`(acc - 1) + align & -align` over a
     list of items with per-kind sizes), not to `orr`/`lsl` word building, so the

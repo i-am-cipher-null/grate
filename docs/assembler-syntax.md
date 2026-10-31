@@ -441,6 +441,14 @@ Example:
 
 Here render target 1 will be populated with the values carried in the r2-r3 row registers.
 
+A store may name the render target class explicitly. The class is bits 16..17 of the word; the default is 2, which covers the colour, stencil and coverage targets. Class 1 is the depth surface, so a depth write needs the suffix:
+
+	EXEC
+		DW:	store rt0, r0, r1 class 1
+	;
+
+The suffix goes after the source-register list and takes 0..3. The register pair is written in the instruction as usual, but a class-1 store reads its payload from the *other* pair's high register (r3 for the form above), so the value goes in r3 - see the fragment shader ISA document, section 8.2.
+
 There is a special case of writing to the stencil buffer. The write to the stencil buffer is necessary in case of a late stencil test, i.e. when fragment program performs pixel discard. Instruction takes the following form:
 
 	EXEC

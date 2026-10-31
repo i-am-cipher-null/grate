@@ -214,5 +214,7 @@ rt[0-9]{1,2}		{
 
 "stencil"		return T_DW_STENCIL;
 
+"class"			return T_DW_CLASS;
+
 .			return T_SYNTAX_ERROR;
 %%
