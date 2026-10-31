@@ -64,11 +64,37 @@ Consequences for a NIR backend, and they are not optional:
 
 * **All control flow must be flattened before selection.** `if` becomes `CSEL`
   (or arithmetic masking), loops must be unrolled, `break`/`continue` must be
-  unrolled or rejected.
+  unrolled or rejected. Measured on the blob: an `if`/`else` becomes the same
+  two-batch shape as straight-line code (no PSEQ word changes), and a
+  `for (i = 0; i < 300; i++) s += v;` comes out as **36 batches, 400 ALU
+  entries and zero PSEQ words** - it is strength-reduced into repeated adds
+  rather than emitted as a loop, which is the only thing the ISA allows. That is
+  also where the 64-batch budget bites: the loop bound a backend can afford is a
+  function of the ops in the body, not of the trip count alone.
 * **`discard` is not a branch either** - it is an ALU write of a non-zero value
   to register 76. It also has a driver-side effect: the host must switch the
   stencil test to late (`0x40f = 0x60` instead of `0x48`, see
   `grate_3d_set_late_test()`) and set the `discards_fragment` flag.
+  **And it obliges the program to write the surfaces itself.** A discard-capable
+  fragment program compiled by the blob is four batches, not one:
+
+  ```
+  batch 1  mad_le r12.hl, c0, #1, c1.l     ; the condition
+           ...                            ; r14/r15 setup (kill + mask)
+           DW: store rt3, r0, r1          ; coverage
+  batch 2  PSEQ: load rt2 r0, r1          ; fetch the stencil surface
+           DW: store rt2, r0, r1          ; write it back
+  batch 3  DW: store rt0, r0, r1          ; depth
+  batch 4  DW: store rt1, r2, r3          ; colour
+  ```
+
+  So with a late test the depth/stencil/coverage results of the rasterizer are
+  discarded unless the shader rewrites them: the coverage buffer (`rt3`) carries
+  the per-fragment kill decision, and depth (`rt0`) and stencil (`rt2`) are
+  re-emitted from the pixel packet. A backend that emits only the colour store
+  for a shader containing `discard` will lose depth and stencil for every
+  fragment it keeps. The same four-batch shape is what `tests/grate/stencil.c`
+  exercises.
 * **Derivatives, and therefore `textureGrad`, are out of reach** unless
   computed per-quad by hand: there is no quad/neighbour data path. Texture LOD
   is chosen by the TEX unit itself (`TEX` uses the unit's own LOD selection,
@@ -76,6 +102,29 @@ Consequences for a NIR backend, and they are not optional:
   with bit 12 clear reads an *absolute* LOD from `r3` (section 10.4). So
   `textureLod` with a LOD the shader can compute is expressible; only the
   implicit-gradient form is not.
+
+  The blob *accepts* `#extension GL_OES_standard_derivatives` and `dFdx`/`dFdy`/
+  `fwidth`, which is misleading. Its output for `dFdx(v)`, `dFdy(v)`, `fwidth(v)`
+  on a float varying is three batches and contains **no neighbour fetch, no new
+  opcode and no `PSEQ: load`**: batch 1 interpolates the varying and stores it to
+  `rt1` (`DW: store rt1, r0, r1`), batches 2 and 3 then do arithmetic on the
+  fragment constants (`c0`, `c8`, `c16`, `c24`), the row registers and the ALU
+  latches (`d0`, `d1`, `d2`). Since nothing in that stream reads another
+  fragment's value, the derivative is not actually computed - treat the
+  extension as unsupported and reject it rather than copy the blob's sequence.
+
+  The odd operand names in that dump are now fully explained; they are suffixes
+  of Grate's `libcgc` disassembler (`src/libcgc/shader.c`), not unnamed register
+  classes:
+
+  * `d0`, `d1`, `d2` are register numbers 24..27, the ALU result latches, which
+    are readable as ordinary operands;
+  * `r7_div2` is row register 7 written with result scale `3` (`/2`, bits
+    57..58); `_mul2`/`_mul4` are scales 1 and 2;
+  * `r2+`, `r3+`, `r31+` are destinations with bit 61 set, which `libcgc` calls
+    "accumulate" and prints as a `+`; it is the same bit the assembler exposes
+    as `(other)` and this document calls "send". `r31` is the lowp `vec2(0,1)`
+    register, so `r31+` writes nowhere.
 
 The blob behaves the same way: the ISA reference notes that the multi-pass
 program-sequencer recirculation is "not used in practice, BLOB driver gives up on
@@ -108,7 +157,7 @@ shader can be rejected). Unrolling loops makes this worse, not better.
 | Range | Contents | Notes |
 |:--|:--|:--|
 | 0..15 | row registers `r0..r15` | 4 rows x 4 components: `r(4*row + comp)`. Live only up to `alu_buffer_size` rows |
-| 16..23 | global registers `g0..g7` | survive across batches and across the whole program |
+| 16..23 | global registers `g0..g7` | survive across batches (measured, see below) |
 | 24..27 | ALU result registers `alu0..alu3` | the ALU pipeline latches, see 4.3 |
 | 28..30 | embedded constants `imm0..imm2` | one set per batch, occupies ALU slot 3 |
 | 31 | lowp `vec2(0.0, 1.0)` | `.l` = 0.0, `.h` = 1.0 |
@@ -178,7 +227,7 @@ a `lowp vec2` into one interpolation slot and a `mediump vec2` into two
 | `ffract` | `FRC` | |
 | `fcmp`/`slt`/`sge` | `CMP` + condition code | result is `0.0`/`1.0`, not a mask |
 | `bcsel`/`select` on `a < 0` | `CSEL` | only for `< 0`; other comparisons need a compare first |
-| `tex`/`txb` | `TEX`/`TXB` | coords must be in `r0..r3` |
+| `tex`/`txb` | `TEX`/`TXB` | coords must be in `r0..r3`; implicit LOD costs **no** ALU/MFU work (measured, see 4.4) |
 | `textureLod` | `TEX` with bit 13, LOD in `r3` | bit 12 must be clear; only reachable through a raw word today (section 10.4) |
 | `store_output` | `DW` | payload must be in `r2/r3` or `r0/r1` |
 | `load_input` (varying) | `MFU ipl` | one `var` slot per component; precision decides slot count |
@@ -311,6 +360,19 @@ forwarding fact - same-batch chaining through latches works - still holds, but
 the assembler mnemonic `aluN` seems to be offset by one slot from the packet
 whose result it names. Treat the `N` as unverified until a dedicated probe
 settles the mapping.
+
+**Second attempt, still not settled.** Priming all four slots of one packet with
+four distinct uniform values and reading `alu0/alu1` (then `alu2/alu3`) from the
+next packet returns `0xE300DB00` for the first pair and `0xDB00DB00` for both the
+second pair and a single-value control - so the four latches do **not** carry
+four distinguishable values at the point they are read, and the numbers do not
+match the 8-bit calibration those uniforms would give. Either the latches are
+consumed by the *issue* of the following packet (that is, they hold the in-flight
+results of the packet being executed, not the retired ones) or the read is one
+slot off, as above. The safe compiler rule is unchanged and does not depend on
+resolving it: use `aluN` only for an immediate same-batch chain of the form
+`slot k writes, slot k+1 reads`, which is what every working test shader does,
+and write the chain tail to a row register.
 
 **Texture results are the exception: they are visible to the ALU in the batch
 that issued the fetch.** A probe that samples a 4x4 grey texture
@@ -453,6 +515,13 @@ Other forwarding facts, from existing working tests rather than new probes:
    question is `LOD` selection itself, not scheduling - partly closed since:
    the bias operand works and computed LOD clamps at 0, and explicit LOD is
    TEX bit 13 with bit 12 clear (section 10.4).
+
+   Measured on the blob, and this is the answer a backend needs: a shader whose
+   whole body is `gl_FragColor = texture2D(tex, v_uv)` compiles to **one batch
+   with no ALU packet and no MFU arithmetic** - just the varying fetch, `TEX`
+   with bit 10 set and the store. So implicit LOD is entirely the TEX unit's
+   work (`bit 13` clear, `bit 12` clear): the compiler emits nothing for it, and
+   `textureGrad` is the only form that would need per-quad data.
 2. ~~**Cycle cost of a partially filled batch.**~~ - **measured**, see 4.6: a
    batch costs about 14x an extra ALU packet, so how full it is barely
    matters and the scheduler does *not* gain a second dimension.
@@ -504,6 +573,44 @@ map and was not previously written down anywhere in `docs/`.
 | `INCR 0x300 2*k` | linker program | 2 words per varying ([[Shader Linking]]) |
 | `IMM 0xe20 <(alu_buffer_size-1) \| ...>` | `ALU_BUFFER_SIZE` | bits 0..1 = size-1, bits 2..9 = `(300-1)/(size*4)` |
 | `IMM 0xe21 <rows \| 64/rows<<8>` | `TRAM_SETUP` | used TRAM rows |
+
+### 5.1 What the blob's program container carries
+
+The instruction words above are wrapped in a container the blob emits, and one
+of its header fields is a value a backend has to compute. Dumped with
+`cgc -F -H` (field names are Grate's `struct cgc_header` / `cgc_bar`):
+
+```
+fragment shader:
+  type: 0x00001b5e          class of binary, constant for fragment programs
+  unknown00: 0x0000000d
+  size: 0x000002a8          total container size
+  num_symbols: 5            attribute/uniform/varying descriptors
+  bar_size: 48              size of the chunk table
+  bar_offset: 0x00000160
+  binary_size: 184          == the chunk length below
+  binary_offset: 0x000001f0
+  unknown01..04: 0           always zero in every shader seen
+```
+
+followed by `bar->chunk_count` entries, each a `{offset, length}` pair, and each
+chunk starting with:
+
+```
+unknown0: 0x00000002
+unknown1: 0x00000002
+```
+
+**Both are the exec-batch count**, which is why they are worth knowing: a
+one-batch shader dumps `1, 1`, a two-batch shader `2, 2`, the three-batch
+`dFdx` shader `3, 3`. The stream words that follow have exactly that many
+entries per unit, so this is the same number as the `0x520` count and as every
+`NONINCR` length in section 5. A driver that fills these from its own batch
+count is consistent with the blob; a compiler's output is just the chunk body.
+
+`libcgc` treats the container as "one or more chunks", iterates them and
+reassembles each with `fragment_shader_disassemble()`; for AR20 every blob
+output seen so far is a single chunk.
 
 The stream **counts must all agree**: PSEQ, MFU schedule, TEX, ALU schedule,
 complement and DW all have exactly one word per batch, so `n` is the batch count
@@ -885,6 +992,17 @@ destination type (`fx10 low/high`, `fp20`, or skip). The fragment shader then
 reaches them through MFU `ipl` slots, one slot per component (or per packed pair
 of components for fx10).
 
+**Row indices are dense and have nothing to do with GLSL locations.** With
+`varying vec2 v_uv` at location 7 and `varying vec4 v_col` at location 8, the
+blob's fragment program dumps `ipl: var1 v0, var1 v0, var1 v1, var1 v1` - i.e.
+the MFU varying operand carries a 5-bit **row index** assigned in linker order
+(row 0 for the first linked varying, row 1 for the second), and the GLSL
+location only matters on the *vertex* side when the linker instruction is built.
+A backend therefore cannot use `var.location` as the MFU operand; it must keep
+the row map that the linker program was built from. Components that the shader
+does not read are not fetched at all, which is why a 4-component varying can
+show up in fewer than four `ipl` slots.
+
 What a backend must therefore produce per varying:
 
 1. a TRAM row assignment, and the `TRAM_SETUP` row count (`64 / rows`, so rows
@@ -947,8 +1065,11 @@ target. Targets are hardwired: 0 depth, 1 colour, 2 stencil, 3 coverage,
 4 spill, 5..12 MRT `n+1`. So `gl_FragData[1]` is render target 5. Target 4 is the
 blob's `SURF_REGSPILL`; its base is `RT_PTR(4)` = `0xe04`, with a companion limit
 at `0xe34` and enable bit 4 of `0x903`, and a spill store is inert unless DW bits
-10..16 select a slot (measured table in [[Fragment Shader ISA]]). A backend that
-never spills therefore only needs targets 0..3 and 5..12.
+10..16 select a slot, and bits 18..23 add `128`/`256`/`512`/`1024`/`4096` words to
+the address (measured tables in [[Fragment Shader ISA]]). What a spill store
+carries is `r0` scaled by 256 in 24.8 fixed point - not the colour pair - so the
+spill buffer holds pixel-packet values, and a backend that never spills needs
+only targets 0..3 and 5..12.
 
 Missing for a complete backend:
 

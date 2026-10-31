@@ -852,8 +852,9 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			fprintf(stdout, "rt4: %08X %08X %08X %08X nz=%u first=%u\n",
-				r32[0], r32[1], r32[2], r32[3], nz, first);
+			fprintf(stdout, "rt4: %08X %08X %08X %08X nz=%u first=%u wf=%08X wf1=%08X\n",
+				r32[0], r32[1], r32[2], r32[3], nz, first,
+				r32[first], r32[first + 1]);
 		}
 	}
 

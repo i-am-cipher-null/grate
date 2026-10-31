@@ -87,6 +87,22 @@ The ALU instructions comes in packets of 3 or 4 scalar instructions (the fourth 
 |  6..18 | operand rC               |
 |   0..5 | operand rD               |
 
+Two independent decoders disagree about the top of the destination field, and
+both readings are in use:
+
+* the encoder reconstruction in [[Compiler Internals]] builds the destination as
+  a 7-bit value `(hwreg << 1) | half` at bits 47..53, which is what makes the
+  kill register (76) and the condition registers (64..71) addressable;
+* Grate's `libcgc/shader.c`, which was written from the blob's own dumps, reads
+  bits 47..51 as a 5-bit register, **bit 53 as "a condition code is present"**
+  and bits 55:54 as the condition.
+
+For destinations below 64 the two agree on bits 47..51 and bit 53 is clear, so
+the difference only shows up for a conditional packet or a write to 64..76. One
+`MAD r3.*h, ... (eq)` probe with bit 53 forced to 0 and to 1 is all that is
+needed to settle it; until then, treat bit 53 as part of the destination and set
+it only when the destination is >= 64.
+
 #### ALU buffer and pixel packet:
 
 Patent: https://www.google.com/patents/US7710427
@@ -125,12 +141,22 @@ Unlike a regular ALU instruction, the ALU3 instruction words, constituting immed
 
 The conditional operation is applied to the ALU's result, so the final result is either 0.0 (false) or 1.0 (true).
 
-| Value | Meaning                  |
-|------:|:-------------------------|
-|     0 | no comparison            |
-|     1 | zero                     |
-|     2 | greater than zero        |
-|     3 | greater or equal to zero |
+| Value | Meaning (this document)  | Meaning (`libcgc/shader.c`) |
+|------:|:-------------------------|:----------------------------|
+|     0 | no comparison            | `_z`  - result is 0.0       |
+|     1 | zero                     | `_nz` - result is not 0.0   |
+|     2 | greater than zero        | `_le` - result is <= 0.0    |
+|     3 | greater or equal to zero | `_lt` - result is < 0.0     |
+
+`libcgc/shader.c` names the codes `_z _nz _le _lt` for 0..3 and prints them
+between the mnemonic and the destination (`mad_le r12.hl, c0, #1, c1.l`, seen in
+the blob's discard path). The two readings describe the same bit pairs with a
+shifted naming: a `<= 0` test is the complement of `> 0`, so they agree on
+behaviour and disagree on labels. Follow the left column (what the assembler and
+all measurements use) and note that the right column is only a pretty-printer.
+
+Bit 53 is the "condition present" flag in `libcgc/shader.c`; see the note under
+the ALU word table.
 
 #### Condition registers:
 
@@ -143,6 +169,23 @@ Looks like ALU can address up to 2 source CR's in one ALU[0-3] sub-instruction.
 #### Kill register:
 
 Non-zero value written to the KILL register discards the fragment, zero keeps it alive and doesn't resurrect the killed fragment. Destination register write mask (low/high halves) is ignored.
+
+A kill is only half of the mechanism. The blob's own discard path is four
+batches, and it writes the surfaces the rasterizer would otherwise have written:
+
+```
+batch 1  mad_le r12.hl, c0, #1, c1.l   ; the condition, then r14/r15 setup
+         DW: store rt3, r0, r1         ; coverage - carries the kill decision
+batch 2  PSEQ: load rt2 r0, r1         ; fetch stencil
+         DW: store rt2, r0, r1         ; write stencil back
+batch 3  DW: store rt0, r0, r1         ; depth
+batch 4  DW: store rt1, r2, r3         ; colour
+```
+
+`PSEQ: load rt2 r0, r1` is the framebuffer-fetch form (`0x00820008`-style word,
+render target index 2 in bits 16..19) used here to read the current stencil value
+before rewriting it. So a program that can discard must re-emit coverage, depth
+and stencil itself; with the late test enabled the rasterizer's copies are gone.
 
 #### Position registers:
 
@@ -258,6 +301,16 @@ The MFU unit can fetch and interpolate 4 component vectors per instruction and/o
 | 14..20 | var2     |
 |  7..13 | var1     |
 |   0..6 | var0     |
+
+Each 7-bit `varN` slot is `[0]` saturate, `[2:1]` opcode, `[7:3]` a **5-bit row
+index** into TRAM. `libcgc/shader.c` prints exactly that field as `v<n>`, and the
+blob's output for two linked varyings is `ipl: var1 v0, var1 v0, var1 v1, var1
+v1` - dense row indices 0 and 1, unrelated to the GLSL `location`s the varyings
+were declared with (those only appear on the vertex side, in the linker
+instruction at `0x300`). The index is *not* a straight copy of the linker's
+`tram_row_index` field when rows are sparse, and only the components the shader
+reads get a slot.
+
 | opcode | Mnemonic | Meaning                      | pseudo-code         |
 |-------:|:--------:|:-----------------------------|:--------------------|
 |      0 |    NOP   | No operation                 |                     |
@@ -803,11 +856,37 @@ usually travel together. No other bits are set.
   | `0x00029002` | 2, bit 12 | 152 words from word 1280 |
   | `0x0002A002` | 2, bit 13 | 152 words from word 1280 |
 
-  Bits 17..31 are inert for spill stores (swept one at a time: no write), and
-  mode 1 at the same index is the control that proves the base binding, the
-  enable bit and the readback are sound. The payload is *not* the RGBA8888
-  conversion - `0x7B`, `0xFE0000` and `0xC0` are raw spill words - so a backend
-  should treat the spill buffer as opaque storage.
+  Mode 1 at the same index is the control that proves the base binding, the
+  enable bit and the readback are sound.
+
+  **The spill address is `RT_PTR(4) + offset`, and the offset comes from the DW
+  word itself.** Bits 18, 19, 20, 21 and 23 each move the write by a power of
+  two in 128-word steps: `+128`, `+256`, `+512`, `+1024`, `+4096` words, measured
+  one bit at a time with `0xC0` in r0 (`first` in the readback). Bit 16 doubles
+  the number of words written (`nz` 76 instead of 38), bit 25 collapses it to
+  one, and bits 17/20..22/24/26..31 have no effect on their own. The slot field
+  (bits 10..16) is not an offset in the same units: mode 3 with slot 1 writes at
+  word 0, slot 2 puts `0x00FE0000` in the *high* half of the same word, slot 3
+  sets both halves, and slot 4 in mode 2 writes from word 1280. So bits 10/11
+  address the two 16-bit halves of a spill word, and mode 2 writes four times as
+  many words as mode 3 (152 vs 38 nonzero).
+
+  **Payload: `r0` only, and it is `value * 256`, not the RGBA8888 conversion.**
+  Priming one row register at a time and reading the spill word back:
+
+  | r0 | with r0 primed | with r1/r2/r3 primed instead |
+  |--:|:--|:--|
+  | 0.0 | `0x00000000` | `0x0000007B` (r0 untouched - leftover) |
+  | 0.25 | `0x00000040` | `0x0000007B` |
+  | 0.5 | `0x00000080` | `0x0000007B` |
+  | 0.75 | `0x000000C0` | `0x0000007B` |
+  | 1.0 | `0x00000100` | `0x0000007B` |
+  | 1.5 | `0x00000180` | `0x0000007B` |
+
+  The value tracks r0 exactly through `r1`, `r2` and `r3` staying put, it is
+  `x * 256` in a 32-bit word (8 fractional bits), and there is **no clamp at
+  1.0** (`1.5` gives `0x180`). So a spill buffer holds 24.8 fixed-point copies
+  of the *pixel packet*, not the colour payload the DW word names.
 - DW modes 2/3 with the store pointed at index 0 write neither the colour nor
   the depth surface (the index is ignored for spills - they always go to target
   4). Mode 1 pointed at an **unbound** index is worse than a no-op:

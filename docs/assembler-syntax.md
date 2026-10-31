@@ -385,7 +385,7 @@ ALU instruction takes the following form:
 
 ALU registers:
 - rN - ALU buffer row register, N is 0..15 (4 registers per row)
-- gN - General purpose register, N is 0..8
+- gN - General purpose register, N is 0..7 (`g8`/`g9` are a parse error, matching the eight registers at 16..23)
 - aluN - ALUN result register, N is 0..3
 - immN - ALU3 immediate constant, N is 0..2
 - lp - Low precision register, the "lp" form is used only for the destination register, while source registers uses "#0" or "#1" form. When rD is set to #1, it's enable bit is unset, making rD 1.0 effectively.

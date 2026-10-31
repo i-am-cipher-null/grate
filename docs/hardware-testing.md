@@ -261,9 +261,10 @@ index 4 the same way with `RGBA8888` and prints `rt4:`. `GRATE_TEX2=1` binds a
 second, blue `RGBA8888` texture as `tex1`, which is what proved that TEX bits
 0..2 select the sampler.
 
-The `rt4:` line also reports `nz=` (nonzero words in the whole surface) and
-`first=` (the first nonzero word index), which is what makes a *spill* write
-visible at all - a spill store lands at a slot offset, not at word 0.
+The `rt4:` line also reports `nz=` (nonzero words in the whole surface),
+`first=` (the first nonzero word index) and `wf=`/`wf1=` (the words at `first`
+and `first+1`), which is what makes a *spill* write visible at all - a spill
+store lands at a slot/offset, not at word 0.
 `GRATE_RT_LIMIT=1` additionally programs `0xe30 + i` with the end address of
 each surface, the companion register ardrv pushes and Grate's XML never named.
 The spill sweep that used them is a raw `DW: 0x...` word; the plain
@@ -271,6 +272,17 @@ The spill sweep that used them is a raw `DW: 0x...` word; the plain
 choose the spill mode and bits 10..16 the slot.
 
 ### Depth buffer readback
+
+**Re-checked and not reproducible (the numbers below still stand as the original
+measurement).** With a two-batch shader that writes `r3` from a uniform and ends
+with `DW: store rt0, r2, r3`, the depth surface reads back all zeros and the
+colour target keeps the clear value, even at `x = 1.0`. The word the assembler
+emits for that store is `0x00028001` - mode 1, index 0, payload pair `r2/r3`, and
+class bits 16..17 = 2 (colour class), not 1. So the mnemonic produces a *colour*
+store aimed at index 0; whatever the original depth measurements used must have
+had class 1 (or a payload already in fx10 form). Anyone picking this up should
+re-derive the depth payload with class 1 explicitly rather than trusting
+`store rt0`.
 
 `GRATE_DEPTH=1` makes `tools/assembler` allocate a `D16_LINEAR` depth surface the
 size of the framebuffer, bind it, enable the depth test and the depth write with
