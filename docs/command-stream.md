@@ -1,6 +1,12 @@
+# Tegra 2 (AR20) 3D engine - command stream
+
+Host1x command stream for the 3D engine: CDMA instruction encodings and the
+register pushes that load a fragment program. See [[Host1x]] for the general
+command-stream model and [[Fragment Shader ISA]] for the words themselves.
+
 See [NVIDIA's Host1x documentation](http://http.download.nvidia.com/tegra-public-appnotes/host1x.html)
 
-## CDMA instructions
+## 1. CDMA instructions
 
 |  Bits  | Meaning          |
 |-------:|:-----------------|
@@ -8,7 +14,7 @@ See [NVIDIA's Host1x documentation](http://http.download.nvidia.com/tegra-public
 | 28..30 | opcode           |
 |  0..27 | opcode dependent |
 
-## Opcodes
+## 2. Opcode encodings
 
 |  Value | Mnemonic |
 |-------:|:---------|
@@ -20,7 +26,6 @@ See [NVIDIA's Host1x documentation](http://http.download.nvidia.com/tegra-public
 |      5 | restart  |
 |      6 | gather   |
 
-## Opcode encodings
 
 ### setclass
 
@@ -72,7 +77,7 @@ See [NVIDIA's Host1x documentation](http://http.download.nvidia.com/tegra-public
 |     14 | incr    |
 |  0..13 | count   |
 
-## GR3D push registers
+## 3. GR3D register pushes for fragment programs
 
 Every fragment-shader stream is pushed through an index/data register pair in
 `HOST1X_CLASS_GR3D`. `libcgc/shader.c` in Grate decodes a whole command stream
@@ -105,7 +110,7 @@ consistent with the `count[1:0]` / `address[7:2]` layout documented in
 [[Writing a Compiler]] section 4.1 (the "wide" ALU variant uses bits 10:8 and
 22:16 instead, and is not used by the blob on AR20).
 
-## Fragment program upload sequence
+## 4. Fragment program upload sequence
 
 
 **Known**, from `grate-asm.c` and `include/tgr_3d.xml.h`; this is the definitive
