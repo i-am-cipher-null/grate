@@ -249,6 +249,18 @@ bit 10, LOD bias bit 12. The sampler field is the index itself, so a hand-writte
 `0x...1` samples `tex1` and returns whatever an unbound sampler returns
 (constant garbage), not the texture you bound to `tex0`.
 
+### Extra render targets and textures
+
+`GRATE_RT5=1` allocates a linear surface at index 5 (the `gl_FragData[1]`
+target), binds it, enables it, and prints its first words as `rt5: ...`.
+`GRATE_RT5_FMT=` picks the format - `rgba8888` (default), `rgb565`, `a8` or
+`l8` - and the print follows it: `rt5: %08X` x4 for 32-bit, `rt5(16):` eight
+16-bit words, `rt5(8):` sixteen bytes. That is how the fx10-to-target-format
+conversion table in [[Fragment Shader ISA]] was measured. `GRATE_RT4=1` binds
+index 4 the same way with `RGBA8888` and prints `rt4:`. `GRATE_TEX2=1` binds a
+second, blue `RGBA8888` texture as `tex1`, which is what proved that TEX bits
+0..2 select the sampler.
+
 ### Depth buffer readback
 
 `GRATE_DEPTH=1` makes `tools/assembler` allocate a `D16_LINEAR` depth surface the
@@ -271,7 +283,10 @@ Two things to know before using it:
 
 `GRATE_STENCIL=1` does the same for an `S8` stencil surface, printing
 `stencil8 row0: ... mid: ... last: ...`, and `GRATE_STENCIL_TEST=1` additionally
-enables the stencil test with `ALWAYS`/`REPLACE` plus `keep/keep/replace` ops.
+enables the stencil test with `ALWAYS`/`REPLACE` plus `keep/keep/replace` ops,
+and `GRATE_STENCIL_REF=n` sets the reference value. **Set a non-zero ref**: the
+patch used 0 at first, and an untouched zero buffer is indistinguishable from a
+successful `REPLACE` with ref 0 - ref `0x7F` or `0xC8` is what proves the write.
 `GRATE_STENCIL` is the variable that *allocates* - setting only
 `GRATE_STENCIL_TEST` prints no `stencil8` line, which reads exactly like "the
 stencil path works but writes nothing". With the surface really bound,

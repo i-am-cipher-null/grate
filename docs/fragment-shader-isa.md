@@ -170,13 +170,14 @@ Two measured restrictions that the bit layout does not show:
   Writing a destination as `.l*` alone therefore produces a value a later fp20
   operand cannot see; the working test shaders all write `.lh`, which writes both
   halves (`.l*` = low only, `.*h` = high only).
-* if rA or rB names a row register, **rC reads as zero when it names a uniform**.
-  Immediates (`#0`, `#1`, `-#1`) are still honoured. **Correction**: those
-  probes primed their row registers with half-only destination writes, which
-  store a truncated fp20 (20-bit value, 16-bit halves), so the rule is
-  unconfirmed and has to be re-measured. A value a later operand must read has
-  to be written with `.lh`; `.*h` or `.l*` alone store a corrupted fp20 that
-  reads back as ~0.0078.
+* there is **no rC port restriction**: a uniform in rC is honoured beside a
+  row-register rA or rB, and a row register in rC is honoured beside a uniform
+  rA. `MAD r2.l*, r1, #1, u1, #1` with `r1 = 0.5`, `u1 = 0.25` returns `0.75`,
+  exactly like `MAD r2.l*, u0, #1, u1, #1` (no row operand) and
+  `MAD r2.l*, u1, #1, r0, #1` (row in rC); all three read back `0xBF` as
+  RGBA8888. The earlier "rC reads as zero" table was an artefact of priming row
+  registers with half-only destination writes. An immediate rC works too
+  (`MAD r2.l*, r1, #1, #1, #1` gives `1.5`, saturating to `0xFF`).
 
 #### Operand rD:
 
@@ -664,6 +665,34 @@ This also corrects the compiler-corpus note that used to be here: bit 7 was seen
 on the rt3 store, but setting it on an rt1 store has no effect at all, so it is
 not a general target-class flag.
 
+#### Target format conversion
+
+The store always carries four fx10 values; the render-target unit converts them
+to the surface's format from `RT_PARAMS.FORMAT`. With the payload in `r2.lo` and
+`r3.lo` (so red and blue get the value, green and alpha are 0):
+
+| x | RGBA8888 | RGB565 | L8 | A8 |
+|--:|:--|:--|:--|:--|
+| 0.25 | `0x00400040` | `0x4008` | `0x40` | `0x00` |
+| 0.5  | `0x007F007F` | `0x780F` | `0x7F` | `0x00` |
+| 0.75 | `0x00BF00BF` | `0xB817` | `0xBF` | `0x00` |
+| 1.0  | `0x00FF00FF` | `0xF81F` | `0xFF` | `0x00` |
+
+So 8-bit channels are `round(x * 255)` with ties rounding **down** (`0.5` ->
+`0x7F`), 5-bit channels `round(x * 31)` (`0.5` -> 15, `0.75` -> 23), `L8` is the
+red channel converted identically, and `A8` takes the alpha channel only (0
+here, because nothing was written to the high half of the pair). `RGB565` packs
+`R` in bits 15..11, `G` in 10..5 and `B` in 4..0.
+
+#### Payload format
+
+`DW` reads its four payload fields as **fx10 unconditionally**, so a value
+destined for a store must be in fx10 form. A `.lh` destination writes fp20, and a
+store of that register writes the *bit pattern* instead of the value:
+`MAD r2.lh, u0` with `u0 = 0.25` then `store rt1, r2, r3` gives `0xE700E700`,
+while `MAD r2.l*, u0` gives `0x00400040`. Both halves matter: `.l*` writes only
+the low fx10, so the high field keeps whatever was there before.
+
 #### PSEQ
 
 A framebuffer fetch (`GL_NV_shader_framebuffer_fetch`) compiles to
@@ -672,14 +701,31 @@ matching the disassembler's `rt2`), `dest_regs_select` (bit 1) is 0 meaning
 R0-R1, and bits 3 and 23 are both set - consistent with the note above that they
 usually travel together. No other bits are set.
 
-#### Still open
-
-- how a second `LINK` line's component mapping interacts with the first. A
-two-row probe shows rows 0 and 7 hold different data, but its same-source
-  control did not read equal.
-- why rC reads as zero for a uniform beside a row-register rA/rB. Either the
-  operand-read port allocation or an assembler encoding quirk; disassembling a
-  packet that does it would separate the two.
+#### Still open- ~~how a second `LINK` line's component mapping interacts with the first~~ -
+  **settled: the words compose, per component.** Each `LINK` line becomes one
+  word at `0x300` and the next at `0x302` (`grate-asm.c`: `1 + n*2` words, one
+  `INCR(0x300, n*2)`), and a linker that writes `x` from one line and `y` from a
+  second renders the same frame as a single line writing both. Rows behave the
+  same way: reading `t1` with row 1 linked reproduces the frame `t0` gives with
+  row 0 linked, and adding row 1 leaves row 0 untouched. The old "same-source
+  control did not read equal" was a probe artefact - see the `ipl` note below.
+- ~~why rC reads as zero for a uniform beside a row-register rA/rB~~ -
+  **settled: it does not, and there is no operand-port restriction.** See the
+  note under "Operands (rA, rB, rC)" above; the three arrangements (row rA with
+  uniform rC, uniform rA with row rC, and no row operand at all) all return
+  `0.75` for `1*0.5 + 0.25`.
+- **`ipl` results cannot be read back through an ALU operand**, which is what
+  made every earlier TRAM probe look inconsistent. The slot mapping itself is
+  solid - slot 0 lands in `r0`, slot 1 in `r1`, and a leading `NOP` slot leaves
+  its register alone (`MAD r2.l*, r0` shows the slot-0 value in red and 0 in
+  blue, and the `NOP, t0.fp20` form shows 0 in red and the value in blue). But
+  the *value* an ALU sees is not the interpolated one: with all four components
+  linked, a `MAD rX.l*, rX, #1, #0, #1` readout returns the same words for every
+  slot pair and the same words a linker that only writes `x` produces, and two
+  runs of the same shader differ (`0xBB02BE02` in one, `0xFFFFFFFF` at pixel 0 in
+  the other). An fp20 read takes the high half of the pair, which `ipl` does not
+  fill, so the ALU reads leftover register content. Consume TRAM data the way
+  `filter_quad_fs.txt` does - as a TEX coordinate - not through ALU arithmetic.
 - ~~fp20 rounding of ALU results~~ - **settled: the ALU truncates toward zero**
   at fp20 writeback (1.5 ulp reads back as 1 ulp), the same as the assembler's
   own packing. See [[Writing a Compiler]] 9.2 item 8. Historical note: the
@@ -717,20 +763,37 @@ two-row probe shows rows 0 and 7 hold different data, but its same-source
   `0x2010`). So even with both halves at 1.0 a shader reaches only `0x4010` of
   the `D16` range - this is not a plain depth write and the payload has to be
   pre-scaled deliberately.
-- **The stencil store wrote nothing.** With an `S8` surface bound
-  (`GRATE_STENCIL=1`), `DW: store stencil` (`0x00020409`, index 2 with bit 10)
-  left the stencil bytes at `00` and the colour target at its clear value, and
-  the same was true with bit 10 flipped, with the write pointed at index 3, and
-  in all four combinations of {`kill`, no `kill`} x {stencil test off, on}
-  (`GRATE_STENCIL_TEST=1`). So the obvious gate - the driver's *late* stencil
-  write, which is only enabled when the shader discards (`STENCIL_WRITE_EARLY =
-  !discards_fragment`) - is **ruled out**: the store does nothing either way.
-  What is left: a combined depth-stencil surface (the bare `S8` buffer may have
-  to be the stencil half of a packed surface at the depth slot), or a stencil
-  value that does not come from the `DW` payload at all. Blocked there.
+- **The stencil surface is writable, but not from the `DW`.** With an `S8`
+  surface bound and the stencil test enabled (`ALWAYS`, `keep/keep/REPLACE`), the
+  *rasterizer* stamps the reference value into the buffer: ref `0x7F` reads back
+  `7F`, ref `0xC8` reads back `C8`. So binding, the target-enable path and the
+  readback are all sound - an earlier run looked negative only because the ref
+  was 0 and an untouched buffer is zero too.
+- ~~the `DW` stencil store~~ - **ruled out as the mechanism**. `DW: store
+  stencil` (`0x00020409`, index 2 with bit 10) writes nothing in all four
+  {`kill`, no `kill`} x {test off, on} combinations, with bit 10 flipped, or
+  pointed at index 3 - while the ref/REPLACE path writes the same surface fine.
+  So a backend should do stencil updates through the stencil ops (ref +
+  `REPLACE`) and ignore the `DW` stencil store on AR20.
 - DW modes 2/3 with the store pointed at index 0 write neither the colour nor
-  the depth surface.
+  the depth surface. Mode 1 pointed at an **unbound** index is worse than a no-op:
+  the colour target then holds a descending per-pixel ramp (`0x0000FD7F`, then
+  `FD7E`, `FD7D`, ..., 16384 distinct values over 65532 pixels, four pixels per
+  step) instead of a clear or shader-written colour. So a store whose target is
+  not bound leaves the framebuffer in a state no shader produced - do not read it
+  back, and treat any index without a surface as "no target".
+- **MRT stores work.** With a linear `RGBA8888` surface bound and enabled at
+  index 5, `DW: store rt5, r2, r3` writes `00400040` into it while the index-1
+  colour target stays at its clear value, so index 5 is `gl_FragData[1]` and a
+  shader can feed more than one target.
 
-- TEX bits 6..9, 11 and 14..31 (zero in every sample gathered so far; bit 13 is
-  explicit LOD)
-- `sampler_index` behaviour with several samplers used simultaneously
+- ~~TEX bits 6..9, 11 and 14..31~~ - **swept and inert on hardware**: with a
+  two-tone texture and `s = 0.7` (the white half), setting bits 6, 7, 8, 9, 11,
+  14, 16, 20, 24, 28 and 31 one at a time leaves the sample at `0xFFFFFFFF` in
+  every case, identical to the base word `0x00001420`. Readers that change the
+  result are bit 12 (bias), bit 13 (explicit LOD) and bits 0..5 (sampler /
+  destination / coordinate selects).
+- ~~`sampler_index` with several samplers~~ - **settled**: with tex0 cleared to
+  white and tex1 to blue, a TEX word with sampler index 0 samples white
+  (`0xFFFFFFFF`) and index 1 samples blue (`0x000000FF`), so bits 0..2 select the
+  sampler directly and two textures can be used in one shader.

@@ -403,47 +403,29 @@ copied twice comes back as `0xF3` = 0.953 - so a quantitative probe must write a
 value once and let the DW stage read that same register, never copy it through
 intervening ALU packets.
 
-**Operand rC silently reads zero when rA or rB is a row register.** Measured
-with `MAD r3.*h, rA, rB, rC`, which computes `rA*rB + rC`, all rows fed so the
-exact answer is `1*1 + (-0.5) = 0.5`:
+**There is no rC operand-port restriction - settled.** `MAD r2.l*, rA, #1, rC,
+#1` computes `rA + rC` and is read out as fx10, so a `DW` sees it. With
+`u0 = 0.5`, `u1 = 0.25` and row registers primed with `.lh` (the only write that
+stores a usable fp20), all three arrangements return the exact answer:
 
-| rA | rB | rC | result | reading |
-|:--|:--|:--|:--|:--|
-| `u4`=1.0 | `u5`=1.0 | `u6`=-0.5 | `0x7F` = 0.5 | works |
-| `u4`=1.0 | `#1` | `u6`=-0.5 | `0x7F` = 0.5 | works |
-| `r2`=1.0 | `u5`=1.0 | `u6`=-0.5 | `0xFF` = 1.0 | **c dropped** |
-| `r2`=1.0 | `#1` | `u6`=-0.5 | `0xFF` = 1.0 | **c dropped** |
-| `u4`=1.0 | `r2`=1.0 | `u6`=-0.5 | `0xFF` = 1.0 | **c dropped** |
+| rA | rC | result | reading |
+|:--|:--|:--|:--|
+| `r1` (row, 0.5) | `u1` (uniform) | `0xBF` | 0.75 - both honoured |
+| `u0` (uniform) | `u1` (uniform) | `0xBF` | 0.75 - control |
+| `u1` (uniform) | `r0` (row, 0.5) | `0xBF` | 0.75 - row in rC is read |
 
-An *immediate* rC is still honoured when a row register is in rA/rB - that is
-what `MAD r3.l*, r2, #1, -#1` in `fs_mfu_tests.txt` relies on. The rule for a
-backend is therefore: **with a row-register source, the constant addend must be
-an immediate (`#0`, `#1`, `-#1`) or an embedded constant, never a uniform.** A
-uniform rC is read as 0 and the shader is silently wrong by one addend. Nothing
-about it looks wrong at assembly time, which makes this the most dangerous item
-found so far.
+An immediate rC beside a row rA saturates as expected
+(`MAD r2.l*, r1, #1, #1, #1` = 1.5 -> `0xFF`). So a backend may put any uniform,
+row register, immediate or embedded constant in rC.
 
-A row register in rC is not read either: `MAD r3.*h, u4, #0, r2` with `r2 = 0.25`
-and `u4 = 1` returns 0 rather than 0.25. So rC must be a uniform or an immediate
-whenever a row register is involved; only rA and rB can come from the row file
-beside a constant.
-
-**Re-measured with the right value format: rC does work, and the table above is
-an artefact.** A clean probe - `MAD r6.lh, r4, u1, u2, #1` with `r4 = 1.0`,
-`u1 = 1.0`, `u2 = -0.5` - returns **0.5** (`0x7F`), and with `c = u0 = 1.0` it
-returns 1.0 (2.0 clamped). So a uniform rC **is** honoured beside a
-row-register rA, and no operand-port restriction exists. The earlier "c dropped"
-rows were produced by priming row registers with the wrong value format. Kept
-below for the record, but do not act on it. Original note: It was measured
-before the `.lh` rule was understood, with row registers primed by half-only
-writes - which store a truncated fp20. Under a correct reading of those runs the
-"c dropped" rows returned 1.0, and neither model produces 1.0: a correct rA with
-c dropped would give about 0.0078 (`0x02`), and a correct rA with c applied would
-give 0.5. So those rows are unexplained, and **the rC-with-row-register rule is
-unconfirmed** - re-measure it with `.lh`-written operands before a backend acts
-on it. What stands from independent evidence: an immediate rC is honoured
-(`fs_mfu_tests.txt` relies on `MAD r3.l*, r2, #1, -#1`), and embedded constants
-(`imm0..imm2`) are a legal rC value.
+Original, incorrect note (kept as a warning, do not act on it): rC was measured
+as reading zero when it named a uniform beside a row-register rA/rB - five rows
+computed `1*1 + (-0.5)` as `1.0` instead of `0.5` - and a row register in rC was
+measured as unread. Both came from priming row registers with `.l*` / `.*h`,
+which store a truncated fp20 that reads back as ~0.0078, so neither operand ever
+held the value the probe assumed. It is the same trap as the `0x02` readings
+above, and the reason every probe in this document now writes `.lh` and reads
+back `.l*`.
 
 **`(other)` sends, `(this)` receives, and only to the adjacent packet.**
 `(other)` is bit 61 on packet *k*, `(this)` is bit 60 on packet *k+1* of the same
@@ -606,8 +588,14 @@ numerically indistinguishable from exact arithmetic at 8-bit output precision.
 For a compiler this is the friendly behaviour: no NaN, no wrap, so `min`/`max`
 clamps behave as written.
 
-Still open: whether `-0.0` and `+0.0` compare equal, which the 8-bit output path
-cannot observe, and the exact saturation value to more than 8 bits of precision.
+Both of the previously open points here are now answered elsewhere. Signed zero
+is not reachable at all (9.2 item 4), so a `-0.0`/`+0.0` comparison cannot be
+constructed - there is no tie rule to find. And the saturation point is measured
+to 0.125 binades by reading the exponent back with `lg2`: `2^33` reads 33, and
+so does every larger constructed value, while `2^41` halved eight times reads
+25. That puts the largest finite value at `2^33` (consistent with
+`2^32 * (2 - 2^-12)`, which is the same number to within one binade step); a
+finer figure would need a different amplifier than `lg2`.
 
 **fp20 writes truncate; there is no round-to-nearest anywhere in the ALU.**
 Measured with `x = 1 + eps` then `4096*(x-1)` (embedded constant for the offset):
@@ -906,10 +894,28 @@ What a backend must therefore produce per varying:
 3. the matching `ipl` slot in the first MFU word that touches it, with the
    precision deciding whether one or two slots are consumed.
 
-**Open:** how many TRAM rows exist in total (16 are addressable by the MFU, the
-linker's row field is 6 bits, `TRAM_SETUP` allows up to 127 rows), and what
-happens when a varying is read in two different batches (whether `ipl` may be
-repeated, or whether the value must be kept in a row register).
+**Settled: rows 0..15 only, and that is not a limitation in practice.** The
+MFU's `var` field carries the TRAM index in **4 bits**, so only rows 0..15 are
+reachable from the fragment program whatever the linker writes, and the
+assembler refuses to emit more: `linker_asm.y` errors with "Invalid TRAM row
+index, 15 maximum" (that parse error is why the old `tram20` probe printed
+nothing at all, not a hardware limit). The linker's row field is 6 bits and
+`TRAM_SETUP` allows up to 127, so the encoding could express rows 16+, but no
+fragment program can name them. A backend assigns 0..15 and sets
+`used_tram_rows_nb` to `max_row + 1` (`grate_3d_set_used_tram_rows_nb` writes
+rows and `64 / rows`, so the row count must divide 64).
+
+**Multiple `LINK` lines and multiple rows both work.** Two lines - one writing
+`x`, one writing `y` of the same row - render exactly the frame a single line
+writing both does, and a second row does not disturb the first: reading `t1`
+with row 1 linked gives the same frame as reading `t0` with row 0 linked.
+Reading a TRAM value back through an ALU operand is what does *not* work (the
+fp20 read takes the unfilled high half, so it returns leftover register
+contents); consume it as a TEX coordinate, as `filter_quad_fs.txt` does.
+
+**Settled:** re-reading a varying in a **later batch** works - the same varying
+interpolated in two different batches returns identical values - so `ipl` may be
+repeated and the value need not be parked in a row register.
 
 The chain is verified end to end at least for two components: `filter_quad`
 renders its texture's two-tone split exactly (section 10.3), so the linked
@@ -944,23 +950,38 @@ Missing for a complete backend:
 
 * **format conversion** - the store is always four fx10; conversion to
   RGBA8888/RGB565/etc. is done by the render-target unit from `RT_PARAMS.FORMAT`.
-  The rounding/clamping applied at that point is **open** (an 8-bit surface sees
-  `0x40` for `0.25`, i.e. truncation or round-to-nearest both fit the data so
-  far).
+  For the 8-bit path the conversion is settled (4.5): `round(x * 255)` with halves
+  rounding down (`0.5` -> `0x7F`, `0.125` -> `0x20`). `RGB565` is
+  `round(x * 31)` per 5-bit channel, `L8` takes the red channel and `A8` the
+  alpha channel; the measured table is in [[Fragment Shader ISA]].
+
+  **The payload must be fx10.** `DW` reads four fx10 fields unconditionally, so a
+  value left in fp20 form is stored as its *bit pattern*: `MAD r2.lh, u0` with
+  `u0 = 0.25` followed by `DW: store rt1, r2, r3` stores `0xE700E700`, while the
+  same value written `.l*` stores `0x00400040`. Materialise the store payload
+  with `.l*` / `.*h` (or read it as fp20 and convert), never with `.lh`.
 * **blending** - there is no blend instruction; blending is fixed-function and
   lives in the 3D state, so `nir_lower_blend` style needs are a state question,
   not a shader question.
-* **MRT limits**: `max_dual_source_render_targets = 0` in the driver, and 12
-  targets are addressable, but nothing has verified more than one MRT store per
-  batch.
+* **MRT works, including several stores per program.** With a linear
+  `RGBA8888` surface bound and enabled at index 5, `DW: store rt5, r2, r3`
+  writes `00400040` into it while the index-1 colour target keeps its clear
+  value - so target 5 really is `gl_FragData[1]`. A program that stores to
+  index 1 in one batch and index 5 in a later one writes **both**, each with its
+  own batch's payload (0.25 into index 1, 0.75 into index 5), so every enabled
+  target can be fed from one program. The driver's
+  `max_dual_source_render_targets = 0` and 12 addressable targets are the limits.
 * **alpha-to-coverage, dithering per fragment** - no encoding.
 
 ## 9. The gap list, ordered by what blocks a compiler
 
 ### 9.1 Blocks the backend from being written
 
-1. **Scheduling/forwarding model** - mostly closed (sections 4.3, 4.6). Still
-   needed: `pseq_to_dw_exec_nb` semantics (4.4).
+1. **Scheduling/forwarding model** - closed (sections 4.3, 4.6).
+   `pseq_to_dw_exec_nb` turned out to be a **no-op in the assembler**: values 1
+   and 4 produce byte-identical 29-word fragments (the two streams diff clean)
+   and identical results, so there is no encoding to discover - whatever the blob
+   intends it for is not emitted.
 2. **Register allocation over a 16-fp20 file with ALU-latch-side chaining** -
    the encoding is known, the *policy* is not. Nothing is known about whether
    `g0..g7` have any cost penalty, or whether row registers beyond
@@ -972,9 +993,14 @@ Missing for a complete backend:
 3. ~~TEX operand plumbing~~ - **settled**: coordinates must be in `r0..r3`, and
    an ALU in the *previous* batch can write them, which is how
    `tests/grate/asm/tex_cross_batch.txt` feeds `s` and `t` from uniforms. The
-   same batch cannot, because the ALU stage runs after TEX (section 10.3). Still
-   open: the cycle cost of the copy, and whether the copy can share its batch
-   with the ALU work that produces it.
+   same batch cannot, because the ALU stage runs after TEX (section 10.3).
+   **Cost of the copy, measured** on the 13-batch shape at 256x256, 100 draws:
+   439.8 ms with no copy at all (TEX straight off the `ipl` coordinates),
+   483.2 ms with the copy folded into a batch that already does other ALU work,
+   and 502.5 ms with the copy alone in its own batch. Folding the copy in costs
+   ~0.43 ms/draw, a separate batch for it another ~0.19 ms/draw - the per-batch
+   cost of 4.6, so a backend should always fold the copy into a batch it already
+   has.
 
 ### 9.2 Needed for correct code, unknown today
 
@@ -1058,8 +1084,8 @@ record: The probe that would settle it is designed
    returns 0 even for its own control (`eps = 0.25`, which should be `0xFF`),
    and the store sees the first batch's register as 0. So the blocker is the
    register round-trip across two batch boundaries, not the arithmetic. Note
-   that rC must be an immediate here (see 4.3), so the subtract needs `-#1` and
-   the multiply needs the uniform in rB. Next step: chain through `aluN`
+   the subtract there used `-#1` and the multiply took the uniform in rB, though
+   rC may equally be a uniform (4.3). Next step: chain through `aluN`
    lookalikes via `recv`/`send` instead of the register file, or retry at a
    larger `alu_buffer_size` (but 2 hangs - see 9.1).
    Also tried, also failing: chaining through the `aluN` latches inside one batch,
@@ -1107,9 +1133,15 @@ record: The probe that would settle it is designed
     whichever register pair holds the payload, which is exactly the "always a
     zero payload" the compiler corpus showed. The target-class field is measured
     too: bits 16..17 = 2 is the colour target, 1 with index 0 is the depth
-    surface, 3 writes nothing. Still open: the 128-bit packer at `0x1c6648`, and
-    the scaling that turns a depth-class payload into `D16` - a `0.25` payload
-    lands as `0x0004` rather than the `0x4000` a plain copy would give.
+    surface, 3 writes nothing. The depth payload is now characterised as well
+    (section 4.5 and the ISA doc): `r3` only, low half `value * 0x10`, high half
+    `value * 0x4000`, superposed. **The "128-bit packer at `0x1c6648`" does not
+    exist**: both `0x1c6648` and its overlapping neighbour `0x1c6650` decompile
+    to an item-size/alignment accumulator (`(acc - 1) + align & -align` over a
+    list of items with per-kind sizes), not to `orr`/`lsl` word building, so the
+    packer still has to be located. Stencil writes are answered differently from
+    what was assumed: the `DW` stencil store is dead on this chip, the ref +
+    `REPLACE` stencil path works (see the ISA doc).
 
 ## 10. Reproducing the measurements in 4.3
 

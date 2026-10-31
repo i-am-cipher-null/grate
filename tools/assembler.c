@@ -49,6 +49,9 @@ struct vs_mat4 {
 	float values[16];
 };
 
+/* GRATE_RT5_FMT decides the pixel size of the rt5 readback */
+static unsigned rt5_bpp = 4;
+
 struct vs_asm_test {
 	char *vs_path;
 	char *fs_path;
@@ -457,6 +460,8 @@ int main(int argc, char *argv[])
 	struct host1x_pixelbuffer *pixbuf;
 	struct host1x_pixelbuffer *depth = NULL;
 	struct host1x_pixelbuffer *stencil = NULL;
+	struct host1x_pixelbuffer *rt4 = NULL;
+	struct host1x_pixelbuffer *rt5 = NULL;
 	struct host1x_bo *bo;
 	uint32_t *fb_data;
 	uint32_t result;
@@ -611,13 +616,68 @@ int main(int argc, char *argv[])
 			grate_3d_ctx_perform_stencil_test(ctx, true);
 			grate_3d_ctx_set_stencil_func(ctx,
 				GRATE_3D_CTX_STENCIL_TEST_FRONT,
-				GRATE_3D_CTX_STENCIL_TEST_ALWAYS, 0, 0xff);
+				GRATE_3D_CTX_STENCIL_TEST_ALWAYS,
+				(unsigned)(getenv("GRATE_STENCIL_REF") ? atoi(getenv("GRATE_STENCIL_REF")) : 0), 0xff);
 			grate_3d_ctx_set_stencil_ops(ctx,
 				GRATE_3D_CTX_STENCIL_TEST_FRONT,
 				GRATE_3D_CTX_STENCIL_OP_KEEP,
 				GRATE_3D_CTX_STENCIL_OP_KEEP,
 				GRATE_3D_CTX_STENCIL_OP_REPLACE);
 		}
+	}
+
+	if (getenv("GRATE_RT4")) {
+		rt4 = host1x_pixelbuffer_create(grate->host1x,
+						options.width, options.height,
+						options.width * 4,
+						PIX_BUF_FMT_RGBA8888,
+						PIX_BUF_LAYOUT_LINEAR);
+		if (!rt4) {
+			fprintf(stderr, "rt4 alloc failed\n");
+			return 1;
+		}
+		grate_3d_ctx_bind_render_target(ctx, 4, rt4);
+		grate_3d_ctx_enable_render_target(ctx, 4);
+	}
+
+	if (getenv("GRATE_TEX2")) {
+		struct grate_texture *t2 = grate_create_texture(grate, 4, 4,
+				PIX_BUF_FMT_RGBA8888, PIX_BUF_LAYOUT_LINEAR);
+		if (!t2)
+			return 1;
+		grate_texture_clear(grate, t2, 0x000000FF);
+		ctx->textures[1] = t2;
+	}
+
+	if (getenv("GRATE_RT5")) {
+		enum pixel_format fmt = PIX_BUF_FMT_RGBA8888;
+		const char *fmt_env = getenv("GRATE_RT5_FMT");
+
+		if (fmt_env && !strcmp(fmt_env, "rgb565")) {
+			fmt = PIX_BUF_FMT_RGB565;
+			rt5_bpp = 2;
+		} else if (fmt_env && !strcmp(fmt_env, "a8")) {
+			fmt = PIX_BUF_FMT_A8;
+			rt5_bpp = 1;
+		} else if (fmt_env && !strcmp(fmt_env, "l8")) {
+			fmt = PIX_BUF_FMT_L8;
+			rt5_bpp = 1;
+		} else if (fmt_env && strcmp(fmt_env, "rgba8888")) {
+			fprintf(stderr, "unknown GRATE_RT5_FMT \"%s\"\n", fmt_env);
+			return 1;
+		}
+
+		rt5 = host1x_pixelbuffer_create(grate->host1x,
+						options.width, options.height,
+						options.width * rt5_bpp,
+						fmt,
+						PIX_BUF_LAYOUT_LINEAR);
+		if (!rt5) {
+			fprintf(stderr, "rt5 alloc failed\n");
+			return 1;
+		}
+		grate_3d_ctx_bind_render_target(ctx, 5, rt5);
+		grate_3d_ctx_enable_render_target(ctx, 5);
 	}
 
 	grate_3d_ctx_bind_program(ctx, program);
@@ -773,6 +833,41 @@ int main(int argc, char *argv[])
 				s8[h * w - 2], s8[h * w - 1]);
 		} else {
 			fprintf(stderr, "stencil mmap failed\n");
+		}
+	}
+
+	if (rt4) {
+		void *rmap = NULL;
+
+		if (host1x_bo_mmap(rt4->bo, &rmap) == 0 && rmap) {
+			uint32_t *r32 = rmap;
+			fprintf(stdout, "rt4: %08X %08X %08X %08X\n",
+				r32[0], r32[1], r32[2], r32[3]);
+		}
+	}
+
+	if (rt5) {
+		void *rmap = NULL;
+
+		if (host1x_bo_mmap(rt5->bo, &rmap) == 0 && rmap) {
+			unsigned k;
+
+			if (rt5_bpp == 4) {
+				uint32_t *r32 = rmap;
+				fprintf(stdout, "rt5: %08X %08X %08X %08X",
+					r32[0], r32[1], r32[2], r32[3]);
+			} else if (rt5_bpp == 2) {
+				uint16_t *r16 = rmap;
+				fprintf(stdout, "rt5(16):");
+				for (k = 0; k < 8; k++)
+					fprintf(stdout, " %04X", r16[k]);
+			} else {
+				uint8_t *r8 = rmap;
+				fprintf(stdout, "rt5(8):");
+				for (k = 0; k < 16; k++)
+					fprintf(stdout, " %02X", r8[k]);
+			}
+			fprintf(stdout, "\n");
 		}
 	}
 
