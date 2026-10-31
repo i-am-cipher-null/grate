@@ -621,6 +621,25 @@ while the dump is not, so counting messages reports "no new timeouts" when the
 dumps are sitting right there. And the dump is the *hanging* job's own stream, so
 it shows the context programming of the draw that wedged, not the one before it.
 
+### Reading a whole job out of the dump
+
+The register lines are interleaved with other kernel output, and one hang can
+leave more than one job in the ring, so three rules make the dump readable:
+
+* **Group by kernel timestamp.** One dump is written within a few milliseconds,
+  so a 50 ms window is one job; taking "the longest contiguous block" instead
+  truncates it at every interleaved line (it captured 17 of 61 lines that way).
+* **Attribute values by position inside the block.** A multi-register `INCR`
+  writes consecutive offsets, so a value belongs to `offset + k`, not to the
+  offset that starts the block.
+* **A repeated offset means more than one job is in the window.** The last
+  occurrence is the live one - in one capture `0x343` and `0x520` each appear
+  twice because two jobs were present.
+
+The device script `dumpctx4.sh` does exactly this and resolves names from
+`tgr_3d.xml.h`; its output for a fully loaded draw is tabulated in
+[[GR3D Registers]] 14.3.
+
 This settled two things pokes could not: `RT_PARAMS(1)` is `0x04040034` (format
 `0x0d`, pitch 1024, bit 26) and `RT_PARAMS(5)` is `0x00040034`, so bit 26 is
 `RT_PARAMS.TILED` - the framebuffer is tiled and the rt5 surface is linear. Poking

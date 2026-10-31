@@ -599,7 +599,7 @@ program of either shape.
 
 | Addr | Name | Status | Fields / notes |
 |--:|:--|:--:|:--|
-| `0xe00 + i` | `RT_PTR(i)`, i = 0..15 | V | render target address (relocated). Index 0 = depth, 1 = colour 0, 2 = stencil, 3 = coverage, 4 = register spill, 5..15 = further colour targets |
+| `0xe00 + i` | `RT_PTR(i)`, i = 0..15 | V | render target address (relocated). Index 0 = depth, 1 = colour 0, 2 = stencil, 3 = coverage, 4 = register spill, 5 = `SURF_OUT1` in the blob's enum. Only 0..4 were ever observed to receive a `DW` store on AR20 ([[Fragment Shader ISA]] 8.2) |
 | `0xe10 + i` | `RT_PARAMS(i)` | V | `dither_enable` bit 0, `format` 2..6 (`PIXEL_FORMAT_*`), `pitch` 8..24 (in bytes), `tiled` bit 26 (`TILED_16x16`) |
 | `0xe20` | `ALU_BUFFER_SIZE` | V | `size - 1` at 0..1, `SIZEx4` at 24..31. **Only `size = 1` is usable**; see below |
 | `0xe21` | `TRAM_SETUP` | V | `div64` 0..6 (`64 / rows`), `used_tram_rows_nb` 8..14 |
@@ -621,6 +621,12 @@ The target index table is the one the blob uses, in its own words:
 `SURF_REGSPILL` 4, `SURF_OUT1` 5. Indices 6..15 are declared by the hardware
 (16 enable bits) but no blob path was observed using them; Grate binds 5 as
 `gl_FragData[1]`.
+
+**A normal draw keeps five of those targets live at once**, each with its own
+pointer and parameter word: in the complete dump in 14.3, `RT_ENABLE` is
+`0x0001002f` - indices 0, 1, 2, 3 and 5 plus `DEPTH_BUFFER` (bit 16) - and every
+one of them has a valid `RT_PTR` and `RT_PARAMS`. The depth buffer is index 0
+*and* needs bit 16; the plain index bit alone does not enable it.
 
 ### 14.2 `ALU_BUFFER_SIZE` (`0xe20`): only size 1 works
 
@@ -672,6 +678,68 @@ layout cannot be learned from blob output until that hardcode is removed.
 `GRATE_ALU_BUF_WORD=<hex>` overrides the whole word for experiments; with a
 single-batch control the override produces bit-identical output for size 1, so the
 pipeline config is inert while it is legal.
+
+### 14.3 The complete register set of one draw job
+
+A `dmesg` stream dump of a wedged draw is the whole register set in programming
+order, which makes it the cheapest complete cross-check of the tables above. The
+job below is a 256x256 textured quad onto a tiled `RGBA8888` framebuffer with
+depth, stencil, coverage and a linear surface on index 5 all bound. The program
+itself is the deliberate `alu_buffer_size = 2` wedge used to trigger the dump,
+which is why `0xe20` reads `0x25000001` (size 2, `SIZEx4` 37). The recipe that
+extracts this from a dump is in [[Hardware Testing]], "Reading a whole job out
+of the dump".
+
+| push | register | value |
+|:--|:--|--:|
+| `INCR(0x347, 1)` | `POINT_SIZE` | `0x3f800000` |
+| `INCR(0x34d, 1)` | `HALF_LINE_WIDTH` | `0x3f000000` |
+| `INCR(0x34c, 1)` | `LINE_PARAMS` | `0x00000002` |
+| `INCR(0x546, 1)` | `FP_PSEQ_DW_CFG` | `0x00000040` |
+| `INCR(0x346, 1)` | `POINT_PARAMS` | `0x00001401` |
+| `INCR(0x403, 1)` | `DEPTH_TEST_PARAMS` | `0x00000378` |
+| `INCR(0xe20, 1)` | `ALU_BUFFER_SIZE` | `0x25000001` |
+| `INCR(0x501, 1)` | — (unnamed) | `0x223212cf` |
+| `INCR(0x520, 1)` | `FP_PSEQ_ENGINE_INST` | `0x20006003` |
+| `INCR(0xe21, 1)` | `TRAM_SETUP` | `0x00000140` |
+| `INCR(0x343, 1)` | `CULL_FACE_LINKER_SETUP` | `0xb8e00000` |
+| `INCR(0x120, 1)` | `VP_ATTRIB_IN_OUT_SELECT` | `0x00030081` |
+| `INCR(0xe10, 1)` | `RT_PARAMS(0)` — depth | `0x0002002c` |
+| `INCR(0xe00, 1)` | `RT_PTR(0)` | `0x1c400000` |
+| `INCR(0xe11, 1)` | `RT_PARAMS(1)` — colour 0 | `0x04040034` |
+| `INCR(0xe01, 1)` | `RT_PTR(1)` | `0x1c3c0000` |
+| `INCR(0xe12, 1)` | `RT_PARAMS(2)` — stencil | `0x0001000c` |
+| `INCR(0xe02, 1)` | `RT_PTR(2)` | `0x1c420000` |
+| `INCR(0xe13, 1)` | `RT_PARAMS(3)` — coverage | `0x00040034` |
+| `INCR(0xe03, 1)` | `RT_PTR(3)` | `0x1c440000` |
+| `INCR(0xe15, 1)` | `RT_PARAMS(5)` | `0x00040034` |
+| `INCR(0xe05, 1)` | `RT_PTR(5)` | `0x1c480000` |
+| `INCR(0x903, 1)` | `RT_ENABLE` | `0x0001002f` |
+| `INCR(0x710, 1)` | `TEXTURE_POINTER(0)` | `0x1c0cb000` |
+| `INCR(0x121, 1)` | `INDEX_PTR` | `0x1c0d7000` |
+| `INCR(0x122, 1)` | `DRAW_PARAMS` | `0xec000000` |
+| `INCR(0x123, 1)` | `DRAW_PRIMITIVES` | `0x00500000` |
+| `NONINCR(0x000, 1)` | `INCR_SYNCPT` | `0x00000106` |
+
+What it establishes beyond confirming the individual field tables:
+
+* **Five targets are live simultaneously, each fully parameterised.** The five
+  `RT_PARAMS` words decode to `D16_LINEAR`/pitch 512 for depth,
+  `RGBA8888`/pitch 1024/`TILED` for colour 0, `S8`/pitch 256 for stencil, and
+  `RGBA8888`/pitch 1024/linear for both the coverage surface and index 5.
+* **`0x501` is `0x223212cf`**, exactly the value the formula in section 15
+  (`0x22000000 | 0x00320000 | (0x12c << 4) | 0xf`) predicts, taken from a real
+  dump rather than derived.
+* **`0x403` is `0x00000378`** in a depth-tested, dithering job: `depth_test`
+  (bit 3), `func` = `ALWAYS` (7), `depth_write` (bit 8) and bit 9 (`0x200`), the
+  one field section 5 could not isolate.
+* **`0x122` = `0xec000000`** is `INDEX_MODE` = uint16, `PROVOKING_VERTEX` = last,
+  `PRIMITIVE_TYPE` = triangles; `0x123` = `0x00500000` is five indices at
+  offset 0.
+* **Only this job's writes appear.** `ATTRIB_MODE`, the shader streams, the
+  constants and `TEXTURE_DESC*` are programmed by the context pushbuf, which is
+  not part of the timed-out job. A dump is the per-draw delta, not a complete
+  image of the pipeline state.
 
 ## 15. Registers Grate writes that are *not* in `tgr_3d.xml.h`
 

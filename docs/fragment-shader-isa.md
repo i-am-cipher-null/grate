@@ -1401,8 +1401,9 @@ Class 1 is depth and is used only with index 0; class 2 covers colour, stencil a
 coverage; class 3 writes nothing. A plain `store` emits class 2
 (`0x00028001`), which is why a depth write needs the explicit suffix - `store
 rt0, r0, r1 class 1` emits `0x00010001`, and `store rt0, r2, r3 class 1` emits
-`0x00018001`. A second colour target is index 5 with class 2 (`store rt5`), as
-measured in section 10.2's MRT case.
+`0x00018001`. A second colour target is spelled as index 5 with class 2
+(`store rt5`), but AR20 does not implement that slot - see the target-5 note
+below.
 
 **A class-1 store reads its payload from the pair that bit 15 does *not* select,
 and only from that pair's high register.** With `r1.lo = 1.0`, `r1.hi = 0.5` and
@@ -1453,6 +1454,24 @@ limit register written, and with the store in its own batch after a working
 coverage, spill) are the only ones with a working `DW` path on this chip; 5..12
 are addressable but not implemented here.
 
+The complete register dump of one draw ([[GR3D Registers]] 14.3) closes this off:
+the driver programs *five* targets - 0, 1, 2, 3 and 5 - each with its own
+`RT_PTR` and an `RT_PARAMS` word of the working shape, and `RT_ENABLE` is
+`0x0001002f`. The index-5 slot was therefore live and parameterised exactly like
+the four that work, and its store still did not land. Nothing is left to vary
+from software.
+
+**The encoding for a second colour target does exist, and the blob emits it.**
+Compiling `gl_FragData[0]`/`gl_FragData[1]` to a blob program gives two `DW`
+words, `0x00028005` (`store rt1, r2, r3`) and `0x00028015` (`store rt5, r2, r3`) -
+`SURF_OUT0` and `SURF_OUT1` from the blob's own enum, both class 2, with the
+second buffer's value re-materialised into `r6/r7` from a constant instead of
+reusing `r2/r3`. The same output appears with and without
+`GL_ARB_draw_buffers`, so the extension has no bearing on the encoding. The blob
+is one compiler shared across chips, so this fixes the *spelling* of a second
+colour target; it does not show that AR20 has the datapath, and AR20 is a GL ES
+2.0 part, where a `gl_FragData` index above 0 does not exist at all.
+
 Some of the render targets have an additional special purpose, like depth/stencil store. They are hardwired and their special purpose is active under certain conditions, like when depth/stencil test is enabled.
 
 | Render target | Usage             |
@@ -1462,7 +1481,7 @@ Some of the render targets have an additional special purpose, like depth/stenci
 |             2 | Stencil buffer    |
 |             3 | Coverage buffer (ordinary target, colour value format) |
 |             4 | Spill buffer      |
-|         5..12 | MRT n+1           |
+|         5..12 | Encoded as MRT n+1; **not implemented on AR20** (see below) |
 
 **Render target 3 carries no coverage - it is a scratch surface the program may
 write and fetch back.** Three measurements fix its role. The rasterizer never
@@ -1898,8 +1917,9 @@ renumbered.
 
 The render target field (bits 2..5) is confirmed, as is the hardwiring of the
 special targets (rt0 depth, rt1 color, rt2 stencil). `gl_FragData[1]` compiles
-to render target **5**, which confirms the documented `5..12 = MRT n+1` mapping
-and shows MRT outputs are offset past the fixed depth/color/stencil slots.
+to render target **5**, which confirms the `5..12 = MRT n+1` index mapping and
+shows MRT outputs are offset past the fixed depth/color/stencil slots. The index
+is the right one; the hardware slot is what is missing (8.2).
 
 ### 12.5 DW verified on hardware
 
@@ -2217,10 +2237,13 @@ usually travel together. No other bits are set.
   step) instead of a clear or shader-written colour. So a store whose target is
   not bound leaves the framebuffer in a state no shader produced - do not read it
   back, and treat any index without a surface as "no target".
-- **MRT stores work.** With a linear `RGBA8888` surface bound and enabled at
-  index 5, `DW: store rt5, r2, r3` writes `00400040` into it while the index-1
-  colour target stays at its clear value, so index 5 is `gl_FragData[1]` and a
-  shader can feed more than one target.
+- ~~MRT stores work~~ - **retracted.** The `00400040` once read back from a bound
+  index-5 surface was stale buffer content. Re-running the same two-batch program
+  with `RT_PARAMS(5)` set to a working colour word, `RT_ENABLE` = `0x22`, and the
+  `0xe35` limit as well leaves the surface `00000000`, and the control with only
+  index 1 enabled is identical. The index-5 slot is live and fully parameterised
+  in a real draw and still receives nothing (8.2). Index 1 is the only `DW`
+  target AR20 implements.
 
 - ~~TEX bits 6..9, 11 and 14..31~~ - **swept and inert on hardware**: with a
   two-tone texture and `s = 0.7` (the white half), setting bits 6, 7, 8, 9, 11,

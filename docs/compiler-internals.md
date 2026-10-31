@@ -450,6 +450,16 @@ Decompiling either function still fails, and the failure modes are now understoo
 objdump therefore remains the only usable view of this code, and the packer's
 field table stands on it.
 
+## Blob output proves encoding, never a working slot
+
+The blob compiles `gl_FragData[0]`/`gl_FragData[1]` to `DW` words `0x00028005`
+and `0x00028015`, i.e. `SURF_OUT0` and `SURF_OUT1`, and the second one uses index
+5 - a slot AR20 does not implement ([[Fragment Shader ISA]] 8.2). The same
+compiler serves later chips, so a field it emits establishes only that the
+*encoding* exists. Any "is this usable here" question has to be answered on
+hardware; the target-5 question was settled that way, after the blob's output
+had suggested the opposite.
+
 ## Open questions
 
 * which unit the `0x1c6648` 128-bit packer belongs to;
