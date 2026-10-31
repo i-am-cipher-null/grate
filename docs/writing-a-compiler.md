@@ -32,6 +32,7 @@ appear all over these notes - so the mapping is:
 | 5 Program layout / uploads | [[Command Stream]] - "Fragment program upload sequence" |
 | 5.1 Container header, 5.2 chunks | [[Fragment Shader ISA]] - "Program container, chunks and recirculation" |
 | 6 Varyings and the linker | [[Shader Linking]] (rows, interpolation, TRAM) |
+| 5.3 and 9.1 driver state (`0xe20`, `0xe21`, per-unit uploads) | [[GR3D Registers]] |
 | 10 Measurement recipes | stays here, and the individual probes cite the ISA sections by name |
 
 ---
@@ -545,9 +546,11 @@ Missing for a complete backend:
    `g0..g7` have any cost penalty, or whether row registers beyond
    `alu_buffer_size` alias. **Partly measured**: at `alu_buffer_size = 1`, all of
    `r4..r15` are distinct from `r0..r3` and from each other, so the file is not
-   silently remapped onto four registers. But `alu_buffer_size = 2` **hangs the
-   GPU** for a shader that touches only `r0..r3`, reproducibly, while 1 and 3
-   run - so size 2 is unusable and size 3 is the alternative to size 1.
+   silently remapped onto four registers. But **nothing above 1 is usable**: 2
+   and 4 hang the engine for *any* program - including one whose only batch is a
+   single `DW: store` - and 3 runs some programs, hangs others and returns zero
+   where size 1 returns the value. See [[GR3D Registers]] 14.2; a backend must
+   assume four fp20 row registers (`r0..r3`) and nothing more.
 3. ~~TEX operand plumbing~~ - **settled**: coordinates must be in `r0..r3`, and
    an ALU in the *previous* batch can write them, which is how
    `tests/grate/asm/tex_cross_batch.txt` feeds `s` and `t` from uniforms. The

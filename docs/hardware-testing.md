@@ -548,3 +548,45 @@ Two habits worth keeping:
   tile, which is why an apparent linear ramp read off that dump has the wrong
   slope. The word for pixel `(x, y)` is
   `(y / 16 * (width / 16) + x / 16) * 256 + (y % 16) * 16 + x % 16`.
+
+## `alu_buffer_size`: only size 1 runs
+
+`ALU_BUFFER_SIZE` is `0xe20` - `(size - 1)` in bits 0..1, an undocumented
+`SIZEx4` byte in bits 24..31, plus a companion write to `0x501`. Grate programs
+`SIZEx4` as `(300 - 1) / (size * 4)`, which makes size 1 `0x4a000000`, size 2
+`0x25000001`, size 3 `0x18000002` and size 4 `0x12000003`.
+
+Measured with a three-batch shader (`u0 -> r0.lh`, `r0 -> r2.l*`, store) at
+256x256:
+
+| size | outcome |
+|--:|:--|
+| 1 | `result 0x00000040` - expected value |
+| 2 | hangs; no result, the process has to be killed |
+| 3 | `result 0x00000000` - completes, wrong value |
+| 4 | hangs |
+
+Three probes separate the cause:
+
+* **not the `SIZEx4` byte.** With `GRATE_ALU_BUF_WORD=<hex>` forcing the whole
+  word, size 2 hangs for every `SIZEx4` tried (`0x00`, `0x12`, `0x18`, `0x24`,
+  `0x25`, `0x26`, `0x4a`), and size 4 hangs for `0x00`, `0x11`, `0x12`, `0x18`,
+  `0x24`. The failing value is the two-bit size field.
+* **not the shader.** At size 2 a program whose only batch is
+  `DW: store rt1, r2, r3` - no ALU, no MFU, no TEX - hangs as well.
+* **size 3 is not a substitute.** At size 3 the two-batch shape returns 0, and
+  both `ALU0: MAD r2.l*, u0, ...` followed by a store in a later batch and the
+  same pair inside one batch **hang**.
+
+So there is never more than one row in flight, and the register file a backend
+can use is `r0..r3` plus `g0..g7`, the four ALU latches and the three immediates.
+
+`GRATE_ALU_BUF_WORD` overrides `0xe20` verbatim. At size 1 every value tried
+(`0x4a000000`, `0x3f000000`, `0x00000000`) produced the expected result, so the
+word is inert while the size field is legal - which is also why it cannot be the
+cause of the size-2 hang.
+
+To reproduce: generate a shader with the wanted `alu_buffer_size`, run
+`tools/assembler --testonly --result`, and wrap every run in `timeout` with a
+`pkill -f tools/assembler` afterwards - a hang wedges the channel until the
+process is killed, and the next run recovers on its own.

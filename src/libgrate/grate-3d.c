@@ -324,11 +324,16 @@ static void grate_3d_set_alu_buffer_size(struct host1x_pushbuf *pb,
 {
 	unsigned alu_buf_size = ctx->program->fs->alu_buf_size;
 	unsigned unk_pseq_cfg = 0x12C;
+	const char *override = getenv("GRATE_ALU_BUF_WORD");
 	uint32_t value = 0;
 
-	value |= TGR3D_VAL(ALU_BUFFER_SIZE, SIZE, alu_buf_size - 1);
-	value |= TGR3D_VAL(ALU_BUFFER_SIZE, SIZEx4,
-			   (unk_pseq_cfg - 1) / (alu_buf_size * 4));
+	if (override) {
+		value = strtoul(override, NULL, 0);
+	} else {
+		value |= TGR3D_VAL(ALU_BUFFER_SIZE, SIZE, alu_buf_size - 1);
+		value |= TGR3D_VAL(ALU_BUFFER_SIZE, SIZEx4,
+				   (unk_pseq_cfg - 1) / (alu_buf_size * 4));
+	}
 
 	host1x_pushbuf_push(pb, HOST1X_OPCODE_INCR(TGR3D_ALU_BUFFER_SIZE, 1));
 	host1x_pushbuf_push(pb, value);

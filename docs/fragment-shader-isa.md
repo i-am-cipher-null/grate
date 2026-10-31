@@ -146,7 +146,12 @@ Two structural constraints that shape it:
 * `alu_buffer_size` (1..4) decides how many rows are in flight. The blob sets it
   from its scheduler; the assembler refuses anything but `ALU0..ALU3` in a
   packet, so 4 rows is the ceiling for the *register* file but the assembler
-  cannot populate 8 halves in one packet (see [[Compiler Internals]]).
+  cannot populate 8 halves in one packet (see [[Compiler Internals]]). **On AR20
+  only `alu_buffer_size = 1` runs**: 2 and 4 hang the engine even for a program
+  with no ALU work, and 3 completes some programs with the wrong value and hangs
+  others ([[GR3D Registers]] 14.2). So `r0..r3` are in practice the whole live
+  row-register file, and `r4..r15` are extra storage that the TEX and DW units
+  cannot address.
 
 
 ## 3. Data formats

@@ -138,6 +138,7 @@ map; it had not been recorded in `docs/` before.
 | `INCR 0x820 32` | `FP_CONST(0..31)` | fragment uniforms, 32 words |
 | `IMM 0x900 0` / `NONINCR 0x901 n` | `FP_UPLOAD_DW_INST` | DW words, one per batch |
 | `INCR 0x300 2*k` | linker program | 2 words per varying ([[Shader Linking]]) |
-| `IMM 0xe20 <(alu_buffer_size-1) \| ...>` | `ALU_BUFFER_SIZE` | bits 0..1 = size-1, bits 2..9 = `(300-1)/(size*4)` |
+| `IMM 0xe20 <(alu_buffer_size-1) \| (300-1)/(size*4) << 24>` | `ALU_BUFFER_SIZE` | bits 0..1 = size-1, bits 24..31 = `(300-1)/(size*4)`. Only size 1 runs on AR20; see [[GR3D Registers]] 14.2 |
+| `INCR 0x501 1` | — | companion write to `0xe20`: `(0x2200 << 16) \| (0x0032 << 16) \| (0x12c << 4) \| 0xf` |
 | `IMM 0xe21 <rows \| 64/rows<<8>` | `TRAM_SETUP` | used TRAM rows |
 
