@@ -1283,8 +1283,13 @@ ALU_REG_ABS:
 ALU_REG:
 	T_ROW_REGISTER ALU_SRC_FLOAT_TYPE
 	{
-		if ($1 > 15) {
-			PARSE_ERROR("Invalid row reg, should be 0..15");
+		/* Row registers are 0..15, but the same syntax reaches the whole
+		 * register file by hardware number: 16..23 globals, 24..31 ALU
+		 * latches, 64..71 condition registers, 72..75 the per-fragment
+		 * specials (posx, posy, coverage, pface). A source read of a
+		 * special register is legal; writing one is not. */
+		if ($1 > 75) {
+			PARSE_ERROR("Invalid row reg, should be 0..75");
 		}
 
 		memset(&yyval.alu_reg, 0, sizeof(yyval.alu_reg));

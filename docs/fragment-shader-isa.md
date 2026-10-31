@@ -83,7 +83,7 @@ The different units seems to be synchronized by separate timing streams.
 | 64..71 | condition registers, in pairs | 8 CRs, each holding two fx10 `0.0`/`1.0` |
 | 72 | `posx` | `8192 + frag.x` |
 | 73 | `posy` | `8192 + (height - 1) - frag.y` |
-| 74 | coverage | documented but not selectable by the assembler |
+| 74 | coverage | reads 0 on AR20; reachable as `r74` (see section 8.2) |
 | 75 | `pface` | polygon face |
 | 76 | kill | write non-zero to discard |
 
@@ -283,8 +283,8 @@ The ALU instructions comes in packets of 3 or 4 scalar instructions (the fourth 
 |   Bits | Meaning                  |
 |-------:|:-------------------------|
 | 62..63 | opcode                   |
-|     61 | send                     |
-|     60 | recv                     |
+|     61 | accumulate other (no measured arithmetic effect) |
+|     60 | accumulate this (add the previous slot's result) |
 |     59 | addition disable         |
 | 57..58 | scale result             |
 |     56 | saturate result          |
@@ -297,6 +297,13 @@ The ALU instructions comes in packets of 3 or 4 scalar instructions (the fourth 
 |  6..18 | operand rC               |
 |   0..5 | operand rD               |
 
+**Bits 60 and 61 are the accumulate pair (measured).** `(this)` (bit 60) makes
+the instruction add the *previous slot's* result and ignore its own `rC`
+addend; clear, the instruction honours `rC`. `(other)` (bit 61) produced no
+arithmetic difference in any shape tested and is the "send" bit of the
+encoder's register tracking. Measurement table in "Forwarding and the ALU
+pipeline".
+
 **The destination is 7 bits, 47..53, and bit 53 is its top bit (measured).**
 Grate's `libcgc/shader.c` reads only bits 47..51 and treats bit 53 as "a condition
 code is present"; that is a display artefact of its 5-bit read, not the encoding.
@@ -304,6 +311,9 @@ The blob's own conditional word settles it - high dword `0x00e000c2` decodes to
 destination **64** and condition **3**, so the instruction writes condition
 register 0, and `libcgc` prints it as `mad_lt r0.__` only because it drops bit
 53. Nothing needs to be set for a condition to apply; see "Condition codes".
+The four control-flow shaders checked later write their conditions into row
+registers (`mad_le`/`mad_lt` with a `rN` destination) and never into a `crN`, so
+this particular word is rare rather than typical in blob output.
 
 ### 5.1 Instruction packet
 
@@ -388,6 +398,32 @@ Looks like ALU can address up to 2 source CR's in one ALU[0-3] sub-instruction.
 
 Non-zero value written to the KILL register discards the fragment, zero keeps it alive and doesn't resurrect the killed fragment. Destination register write mask (low/high halves) is ignored.
 
+Both halves of that are measured. `MAD kill, u0, #1, #0, #1 (eq)` with `u0 = 0`
+discards (the target keeps its clear value `0x4C4C4C4C` while the same packet's
+`r2`/`r3` stores are dropped), and `MAD kill, #1, #1, #0, #1` with no condition
+also discards - any non-zero result kills, the condition only decides when. The
+predicate does **not** need its own packet: a same-packet condition is enough,
+which means a kill costs one ALU slot and nothing else.
+
+A condition *on the instruction itself* is the reliable form. A condition
+register written earlier in the **same batch** is not visible to a later
+instruction in that batch - it reads as zero. Measured with a per-pixel band
+(`cr0 = posx/256 - 32 > 0`, `kill = cr0`, stencil store at ref `0x7F`):
+
+| arrangement | row 0 (`x = 0..3`) | mid (`x = 128,129`) |
+|:--|:--|:--|
+| `cr0` written in batch 1, `kill = cr0` in batch 2 | `7F 00 00 00` | `00 00` |
+| `cr0` written and read in the same batch | `7F 7F 7F 7F` | `7F 7F` |
+| condition on the kill write itself, no CR | `7F 00 00 00` | `00 00` |
+
+So a compare has to live in an earlier batch than its use, or be folded into the
+consuming instruction. The same-packet forwarding that exists for `aluK` does not
+extend to condition registers.
+
+The blob does not use the `kill` register for `discard` at all: its discard
+shader writes the coverage, stencil and depth targets as well as colour (this
+section's four-store sequence), with no `kill` instruction in the dump.
+
 A kill is only half of the mechanism. The blob's own discard path is four
 batches, and it writes the surfaces the rasterizer would otherwise have written:
 
@@ -402,8 +438,19 @@ batch 4  DW: store rt1, r2, r3         ; colour
 
 `PSEQ: load rt2 r0, r1` is the framebuffer-fetch form (`0x00820008`-style word,
 render target index 2 in bits 16..19) used here to read the current stencil value
-before rewriting it. So a program that can discard must re-emit coverage, depth
-and stencil itself; with the late test enabled the rasterizer's copies are gone.
+before rewriting it. The fetch works - it lands the surface value, normalised, in
+`r0/r1` (ref `0xC8` reads back as `0xC7` through an `RGBA8888` store, ref `0x7F`
+as `0x7F`) - and the `DW: store stencil` beside it commits the late update, so the
+pair is a working read-modify-write (section 8.2).
+
+What the late test actually changes on AR20, measured with a `kill` write in the
+program: **depth is still written by the rasterizer** (`0x8000` across the frame,
+killed fragments included, whether the gate holds `0x48` or `0x60`), while the
+**stencil update moves into the fragment program** - the fixed-function `REPLACE`
+stops as soon as the program writes the kill register (a constant-zero `kill` is
+enough), and `DW: store stencil` is what performs it. The blob's batch 2 is
+therefore not redundant: it is the late stencil update, and a discard-capable
+program with a stencil buffer has to emit it.
 
 ### 5.8 Position registers
 
@@ -431,6 +478,9 @@ Two measured restrictions that the bit layout does not show:
   Writing a destination as `.l*` alone therefore produces a value a later fp20
   operand cannot see; the working test shaders all write `.lh`, which writes both
   halves (`.l*` = low only, `.*h` = high only).
+* `-#1` in rC is a working minus-one addend: `MAD r2.l*, u0, #1, -#1, #1` with
+  `u0 = 1.5` returns `0.5`. In rA/rB the same spelling is a *multiplier*
+  (`1.5 * -1`), which an early probe misread as a broken modifier.
 * there is **no rC port restriction**: a uniform in rC is honoured beside a
   row-register rA or rB, and a row register in rC is honoured beside a uniform
   rA. `MAD r2.l*, r1, #1, u1, #1` with `r1 = 0.5`, `u1 = 0.25` returns `0.75`,
@@ -469,7 +519,7 @@ Patents:
 | 64..71 | condition registers     |
 |     72 | fragment x-position     |
 |     73 | fragment y-position     |
-|     74 | primitive coverage      |
+|     74 | primitive coverage (reads 0 on AR20) |
 |     75 | polygon face            |
 |     76 | kill (discard) fragment |
 
@@ -594,14 +644,36 @@ of the same number. Same-packet shapes show where that works:
 | reader in slot 3 | `alu1` | 0 (same reason) |
 | reader in slot 2 / slot 3 | `r0.l` / `r0.h` | 0 - row-register writes are not visible in the same packet |
 
-So a **low-half write** by slot `k` is readable as `aluK` from a later slot of
-the same packet, and a slot that writes only the high half leaves its latch at
-zero. `alu2`/`alu3` read back zero in every shape tried, including ones where
-slots 2 and 3 did write, so those two slots' results are apparently not
-committed to the latch file. The rule a scheduler needs is narrower than any
-numbering: **read `aluK` from the slot after the one that wrote it with a
-low-half destination, and land the value in a row register or another low
-half.**
+**Which latch survives what.** Reading one latch from one specific slot, with a
+single writer in the previous packet, separates "inside this packet" from
+"carried over":
+
+| read from | latch | previous packet wrote | result |
+|:--|:--|:--|--:|
+| slot 0 | `alu0` | slot 0, `r0.lo = 0.25` | **0.25** - carried over |
+| slot 2 | `alu0` | slot 0, `r0.lo = 0.25` | 0 |
+| slot 0 | `alu1` | slot 1, `r0.lo = 0.25` | 0 |
+| slot 2 / slot 3 | `alu1` | slot 1, `r1.lo = 0.75` | 0 |
+| slot 2 | `alu0` | slot 1, slot 2 or slot 3 only | 0 |
+| any slot | `alu2`, `alu3` | slot 2 / slot 3 low write | 0 |
+
+So exactly one value is carried over a packet boundary: **`alu0`, read from
+slot 0, holds the previous packet's slot-0 result.** Everything else is a
+same-packet path: reading `aluK` from any slot is satisfied by the current
+packet's slot-K **low-half** write, whichever slot performs the read and
+whether slot K comes before or after the reader - the read is served from the
+packet's write bus rather than from a retired register. A high-half-only
+(`.*h`) or fp20 (`.lh`) destination leaves its latch at zero.
+
+All four latches are live **inside their own packet**, including 2 and 3: with
+`ALU2: MAD r1.l*, u0` and the reader in slot 1 or slot 0, `alu2` returns the
+writer's value (`0.75` -> `0xBF`), and the same holds for `alu3` from slot 3.
+The earlier "`alu2`/`alu3` never carry a value" reading came from probes whose
+readers sat in the *next* packet, where only slot 0's latch survives.
+
+The rule a scheduler needs: chain `slot k writes a low half -> another slot of
+the same packet reads aluK`, or carry a value across a packet boundary only as
+`alu0` into slot 0; land the result in a row register or another low half.
 
 The blob itself relies on the chain heavily: for eight summed `vec4` uniforms it
 emits one packet of `mad r3.hl, c0, #1, c4` ... `mad r3.hl, c8, #1, d0`, reading
@@ -634,6 +706,45 @@ persistent register, so it does not cross a packet boundary. Bit 61 (`(other)`)
 produced no observable arithmetic difference in any shape; [[Compiler
 Internals]] reads it as "send" in the encoder's register tracking, so it is a
 pipeline bit rather than an operand source.
+
+### 5.15 Condition registers
+
+Registers 64..71 are the condition file, and `crN` addresses **16 scalar
+booleans**: `crN` is register `64 + (N >> 1)` with the sub-register bit set to
+`N & 1`, which is why the disassembler prints `cr%d` as `(reg - 64) * 2 + id`.
+
+They are readable as ALU sources (fx10 half, one `crN` per half), and measure as
+pure booleans:
+
+| write | read back |
+|:--|--:|
+| never written | 0.0 |
+| `MAD cr0, u0, #1, #0, #1`, `u0 = 0.75` | 1.0 |
+| same, `u0 = 0.5` | 1.0 |
+| same, `u0 = 0.25` | 1.0 |
+| same, `u0 = 0.0` | 0.0 |
+| `.. (eq)`, `u0 = 0.75` | 0.0 |
+| `.. (eq)`, `u0 = 0.0` | 1.0 |
+| `.. (gt)`, `u0 = 0.75` | 1.0 |
+
+So a write without a condition stores `result != 0` (any non-zero value, not the
+value itself), and a write with a condition stores the condition's 0/1 - the
+same 0.0 / 1.0 a row-register destination receives. `cr0` and `cr1` are
+independently addressable (writing `cr1` leaves `cr0` at 0) and `cr14`/`cr15`
+work, so all 16 are real. A read in the **same packet** as the write returns 0:
+the condition file needs a packet boundary, unlike the `aluN` latches.
+
+**The blob does not use the condition file.** Twelve control-flow shaders - a
+`discard`, a ternary select, `&&`/`||`, `for`/`while` loops with a comparison and
+with `break`, nested `if`/`else`, an early `return`, MRT output, multiple
+discards, and two comparison-only shaders - dump **zero** `crN` references when
+the destination field of every ALU word is decoded (13 shaders counting the
+earlier sweep). The blob expresses each predicate as a condition on a
+**row-register** destination instead - `mad_le r12.hl, -r5, #1, c0.l` is its
+comparison idiom - where the result is the same 0.0 / 1.0 and can be multiplied
+in where needed. So a backend needs no CR at all; the file is only an extra
+boolean scratch, and the one advantage it has is that a value survives a packet
+boundary.
 
 **Texture results are the exception: they are visible to the ALU in the batch
 that issued the fetch.** A probe that samples a 4x4 grey texture
@@ -1260,6 +1371,15 @@ Seems have no effect when the depth or stencil write enabled.
 |      1 | R2-R3   |
 |      0 | R0-R1   |
 
+**Each source register feeds one 16-bit field of the destination word, so an
+`RGBA8888` pixel needs both registers.** With `r2 = 0.5`, `r3 = 0.125` and `DW:
+store rt3, r2, r3`, the surface word is `DF00EF00`: the `R` and `G` bytes carry
+`r2`, the `B` and `A` bytes carry `r3`, and in each pair the converted value is
+in the first byte while the second carries the low bits of whatever the
+register's slot holds - always `00` for an `.l*` write, a value-dependent
+residue for an `.lh` write (see the raw-fp20 note below). One register therefore
+supplies at most two 8-bit channels, never four.
+
 ### 8.2 Render target usage
 
 **The class field (bits 16..17) selects the surface, and the blob's own discard
@@ -1302,14 +1422,51 @@ Some of the render targets have an additional special purpose, like depth/stenci
 |             0 | Depth buffer      |
 |             1 | Color buffer      |
 |             2 | Stencil buffer    |
-|             3 | Coverage buffer ? |
+|             3 | Coverage buffer (ordinary target, colour value format) |
 |             4 | Spill buffer      |
 |         5..12 | MRT n+1           |
+
+**Render target 3 carries no coverage - it is a scratch surface the program may
+write and fetch back.** Three measurements fix its role. The rasterizer never
+writes it on its own: a program that stores nothing leaves a bound `rt3`
+all-zero while the colour target is filled. The program's own `rt3` store does
+not reach register 74 - that reads `0` after a `0.5` store and after a `1.0`
+store, in a plain full-screen quad and in a quad shrunk to half the frame, at
+three read scales. And a `PSEQ` fetch of index 3 (`0x00830008`) does return the
+surface into `r0/r1`, byte for byte. So AR20 has no shader-visible primitive or
+sample coverage: the surface records the program's own decision, nothing in the
+fixed function consumes it, and a backend can leave `rt3` alone unless it is
+reproducing the blob's exact four-batch discard shape.
+
+Register 74 is reachable as `r74`: source operands accept any hardware register
+number from 16 to 75, while destinations stay limited to `r0..r15`. The zero is
+thus a measured value, not missing syntax.
 
 ## 9. PSEQ
 
 
 PSEQ stands for Program Sequencer. It fetches raw data from a selected render target, converts that data into FX10 [FP20(?)] format and loads it into registers.
+
+**The fetch is a byte-exact round trip and respects the index.** The word is
+`0x00800008 | (index << 16)`, so index 2 gives `0x00820008` and index 3
+`0x00830008`. Storing a value to a target in one batch, fetching that same index
+in a later batch of the same program, and then storing `r0/r1` to colour
+reproduces the surface word exactly - including for the coverage target, which
+has no other reader:
+
+| target | surface word | fetched word |
+|--:|:--|:--|
+| 3, `.lh` value `0.25` | `E700E700` | `E700E700` |
+| 3, `.lh` value `0.75` | `F300F300` | `F300F300` |
+| 3, `.l*` value `0.25` | `00400040` | `00400040` |
+| 4, `.lh` value `0.25` | `E700E700` | `E700E700` |
+| 5, `.lh` value `0.25` | `E700E700` | `E700E700` |
+
+Each run fetched the index it had written while the two other surfaces stayed
+zero, so the index field selects the surface. The 8-bit round trip is exact, so
+the `0xC8 -> 0xC7` seen on the stencil path is the fixed-function stencil write,
+not the fetch. The program's own store is visible to a later batch's fetch in the
+same draw, with one draw and with two.
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
@@ -1411,25 +1568,36 @@ A varying-count sweep confirms the split and shows the shape of `unknown0`
 | 8 | 4 | 12 | 12 | 32 | 11 |
 | 9 | 3 | 12 | 12 | 32 | 12 |
 
-`unknown1` matches the batch count in all fourteen shaders measured so far. For
-`unknown0` the useful observation is the **range**: it is only ever 1, 2, 3 or 4,
-never larger, and it is not monotonic in either the batch count or the ALU count
-(24 ALU words give 3 in one shader and 4 in another). A value that is bounded by
-4 and decided by the scheduler is most plausibly the **number of row registers
-in flight**, i.e. the `alu_buffer_size` the blob chose for that program (1 for a
-shader with no varyings, rising to 4 when many varyings are live) - the same
-quantity the driver writes to `0xe20`. That is a hypothesis rather than a
-measurement: `cgc -F -R` shows the blob never writes `0xe20`/`0xe21` itself, so
-there is nothing to cross-check against yet. Either way a driver may fill
-`unknown0` with its own row count without breaking anything observed so far.
+`unknown1` matches the batch count in all fourteen shaders measured so far.
 
-The chunk-scaling test below strengthens it decisively: `unknown0` is **1 for
-every shader with no varyings**, whether it has 8, 16, 24 or 32 `vec4` uniforms
-and 7, 10 or 13 batches, and only rises to 2..4 when varyings are interpolated.
-A field that ignores uniform count and total batch count but tracks varying
-pressure is the row count. `unknown1` behaves the opposite way: it is the batch
-count *of its own chunk*, so a multi-chunk program has several different values
-(16 `vec4` -> chunks of 3 and 4 batches, summing to the 7 the stream contains).
+**`unknown0` is the number of 4-register row groups the chunk touches:**
+`ceil((highest row register used + 1) / 4)`. Measured against the registers the
+chunk's own disassembly mentions (`cgc -F -s`, ignoring the `lp` register 31):
+
+| shader | rows touched | highest | `unknown0` | `ceil((max+1)/4)` |
+|:--|:--|--:|--:|--:|
+| one uniform, straight to the output | `r2, r3` | 3 | 1 | 1 |
+| 2 summed `vec4` varyings | `r0..r7` | 7 | 2 | 2 |
+| 3 varyings | `r0..r11` | 11 | 3 | 3 |
+| 4 varyings | `r0..r15` | 15 | 4 | 4 |
+| 6 varyings | `r0..r11` | 11 | 3 | 3 |
+| 9 varyings | `r0..r11` | 11 | 3 | 3 |
+| 8 summed `vec4` uniforms | `r2, r3, r6, r7, r10, r11` | 11 | 3 | 3 |
+
+That fits all seven, and it explains the two things that looked arbitrary before:
+the field is bounded by 4 because there are only 16 row registers, and it is not
+monotonic in the varying count because the blob reuses low rows whenever it can
+(6 and 9 varyings both stop at `r11`). It is **not** the `alu_buffer_size` the
+driver writes to `0xe20`, and it is not the batch count; a chunk that needs
+rows 8..11 reports 3 regardless of how many batches it has. A driver that
+computes it from its own highest row register reproduces the blob's value.
+
+The chunk-scaling test below is consistent with that: a shader with no varyings
+can report 1 (when its whole body fits in `r0..r3`) but reports 3 as soon as its
+uniform sum reaches `r11` - the row-group rule above predicts both. `unknown1`
+behaves differently: it is the batch count *of its own chunk*, so a multi-chunk
+program has several different values (16 `vec4` -> chunks of 3 and 4 batches,
+summing to the 7 the stream contains).
 
 ### 10.2 Chunks and recirculation
 
@@ -1750,9 +1918,11 @@ not a general target-class flag.
 
 ### 12.6 Target format conversion
 
-The store always carries four fx10 values; the render-target unit converts them
-to the surface's format from `RT_PARAMS.FORMAT`. With the payload in `r2.lo` and
-`r3.lo` (so red and blue get the value, green and alpha are 0):
+Each source register contributes one 16-bit field, which the render-target unit
+converts to the surface's format from `RT_PARAMS.FORMAT`; on `RGBA8888` the
+first register's field lands in `R`/`G` and the second's in `B`/`A`. With fx10
+payloads in `r2.lo` and `r3.lo` the field's first byte is the channel and its
+second byte is 0, so red and blue get the value, green and alpha are 0:
 
 | x | RGBA8888 | RGB565 | L8 | A8 |
 |--:|:--|:--|:--|:--|
@@ -1769,12 +1939,41 @@ here, because nothing was written to the high half of the pair). `RGB565` packs
 
 ### 12.7 Payload format
 
-`DW` reads its four payload fields as **fx10 unconditionally**, so a value
-destined for a store must be in fx10 form. A `.lh` destination writes fp20, and a
-store of that register writes the *bit pattern* instead of the value:
-`MAD r2.lh, u0` with `u0 = 0.25` then `store rt1, r2, r3` gives `0xE700E700`,
-while `MAD r2.l*, u0` gives `0x00400040`. Both halves matter: `.l*` writes only
-the low fx10, so the high field keeps whatever was there before.
+`DW` converts its payload fields from whatever format the destination left in
+the register, and it only handles fx10 correctly. An fx10 destination (`.l*` /
+`.*h`) gives the converted value, so the field's first byte is `round(x*255)` and
+its second byte is `00`. An fp20 destination (`.lh`) does not: the field is then
+a reading of the fp20 bit pattern, monotone but logarithmic, 8 steps per octave:
+
+| x | `.lh` field bytes (`R`,`G`) | `.l*` field bytes (`R`,`G`) |
+|--:|:--|:--|
+| 0.0625 | `D7 00` | `10 00` |
+| 0.125 | `DF 00` | `20 00` |
+| 0.25 | `E7 00` | `40 00` |
+| 0.375 | `EB 00` | `60 00` |
+| 0.5 | `EF 00` | `7F 00` |
+| 0.75 | `F3 00` | `BF 00` |
+| 1.0 | `F7 00` | `FF 00` |
+| 1.5 | `FB 00` | `FF 00` |
+| 2.0 | `FF 00` | `FF 00` |
+| -0.5 | `00 00` | `00 00` |
+
+The `.lh` byte is `8*exponent + top 3 mantissa bits`, i.e. `247 + 8*log2 x` over
+the useful range, saturated at `0xFF` above `2.0` - the fp20 word taken as a
+10-bit unsigned fraction rather than decoded. The second byte of an `.lh` field
+is a value-dependent residue, usually `00` but measured as `CB`, `C3`, `F4` and
+`FF` for mantissas `0x...CCD`, `0x...0C5`, `0x...8F6` and `0x...199A`; it is not
+modelled. When an `.l*` write targets the very pair the store consumes
+(`r0`/`r1`), that byte reads `02` from pixel 2 onward instead of `00` -`007F027F`
+rather than `007F007F` for `0.5` - a stale-slot artefact of writing only the low
+half of the registers being read. Writing `.lh`, or storing from `r2`/`r3`, keeps
+it `00`. Materialise the store payload with `.l*` / `.*h`, never with `.lh`.
+Both halves matter: `.l*` writes only the low fx10, so the high field keeps
+whatever was there before.
+
+This also explains the apparent value drift through a `.lh` copy chain: `0xF3` is
+exactly the raw-fp20 byte for `0.75`, so the `0.953` that the second hop reads
+back is that byte reappearing, not a loss of precision in fp20.
 
 ### 12.8 PSEQ
 
@@ -1850,16 +2049,46 @@ usually travel together. No other bits are set.
   and `0`/`0.25` reads `0x1000`. So even with both halves at 1.0 a shader
   reaches only `0x4010` of the `D16` range - this is not a plain depth write and
   the payload has to be pre-scaled deliberately.
-- **The stencil surface is writable, but not from the `DW`.** With an `S8`
-  surface bound and the stencil test enabled (`ALWAYS`, `keep/keep/REPLACE`), the
-  *rasterizer* stamps the reference value into the buffer: ref `0x7F` reads back
-  `7F`, ref `0xC8` reads back `C8`. So binding, the target-enable path and the
-  readback are all sound - an earlier run looked negative only because the ref
-  was 0 and an untouched buffer is zero too.
-- ~~the `DW` stencil store~~ - **ruled out as the mechanism**. `DW: store
-  stencil` (`0x00020409`, index 2 with bit 10) writes nothing in all four
-  {`kill`, no `kill`} x {test off, on} combinations, with bit 10 flipped, or
-  pointed at index 3 - while the ref/REPLACE path writes the same surface fine.
+- **The stencil surface is updated by `DW: store stencil` once the program is
+  discard-capable.** With an `S8` surface bound and the stencil test enabled
+  (`ALWAYS`, `keep/keep/REPLACE`): a program that never writes the kill register
+  gets the update from the fixed-function stage (ref `0x7F` reads back `7F`, ref
+  `0xC8` reads back `C8`); a program that *does* write the kill register - even
+  with a constant zero, so nothing is actually discarded - gets no
+  fixed-function update at all, and it is the `DW: store stencil` word
+  (`0x00020409`) that performs it. The same program with `store rt1` instead
+  leaves the surface at `00`, which is the control that isolates the store. The
+  committed value is the test's result, so under `REPLACE` it is the reference
+  value. A tiled stencil surface (`PIX_BUF_LAYOUT_TILED_16x16`) behaves
+  identically to a linear one.
+- ~~the `DW` stencil store writes nothing~~ - **retracted: it is the mechanism.**
+  The earlier negative came from two configurations that cannot show a commit:
+  the stencil test disabled (there is no update to commit) and a program that
+  discards every fragment (no fragment survives to commit it). The isolating
+  probe is a kill write of a *constant zero* with the test enabled: `store
+  stencil` then leaves the surface at the reference value and `store rt1` leaves
+  it at `00`. Note that a zero kill value is enough - the switch is the program
+  being discard-capable, not a fragment actually dying.
+- **The stencil path, measured end to end on `rt2`.** The `PSEQ` fetch
+  `0x00820008` reads the surface into `r0/r1`, normalised (ref `0xC8` -> `0xC7`
+  through an `RGBA8888` store, `0x7F` -> `0x7F`); with the test enabled and
+  `REPLACE`, a program without a kill write gets the reference value from the
+  fixed-function stage, and a program with one gets it only if it ends in `DW:
+  store stencil`. Test disabled -> nothing is committed; every fragment discarded
+  -> nothing is committed. Depth is unaffected and is written early for every
+  fragment. The blob's four-batch discard shape replays end to end in this
+  harness, including the coverage target at `rt3`.
+- **The `PSEQ` fetch supplies the "old" value the stencil op works from.** With
+  the test enabled and `INCR` selected, five draws of a program that ends in `DW:
+  store stencil` leave the surface at `05` when the program fetches `rt2` first,
+  and at a position-shaped `01 .. 80` ramp when it does not - un-fetched `r0/r1`
+  do not hold the surface value, so the op computes from whatever is there.
+  `KEEP` shows the same split (with the fetch: nothing changes, which is correct;
+  without it: the same position-shaped values). `REPLACE` is indifferent because
+  it ignores the old value, which is why probes that used `REPLACE` could not see
+  any of this. The store therefore commits `op(old, ref, mask)` with `old` in
+  `r0/r1`, and that is why the blob's discard path is `PSEQ: 0x00820008` followed
+  by `DW: store stencil` rather than the store alone.
   So a backend should do stencil updates through the stencil ops (ref +
   `REPLACE`) and ignore the `DW` stencil store on AR20.
 - **The spill destination is render target 4, base register `0xe04`.** The blob

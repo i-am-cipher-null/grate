@@ -448,6 +448,31 @@ static void dump_asm(struct grate_shader *vs,
 		grate_shader_disasm_linker(linker) ?: "");
 }
 
+static enum grate_3d_ctx_stencil_operation stencil_zpass_op(void)
+{
+	const char *op = getenv("GRATE_STENCIL_OP");
+
+	if (!op || !strcmp(op, "replace"))
+		return GRATE_3D_CTX_STENCIL_OP_REPLACE;
+	if (!strcmp(op, "keep"))
+		return GRATE_3D_CTX_STENCIL_OP_KEEP;
+	if (!strcmp(op, "zero"))
+		return GRATE_3D_CTX_STENCIL_OP_ZERO;
+	if (!strcmp(op, "invert"))
+		return GRATE_3D_CTX_STENCIL_OP_INVERT;
+	if (!strcmp(op, "incr"))
+		return GRATE_3D_CTX_STENCIL_OP_INCR;
+	if (!strcmp(op, "decr"))
+		return GRATE_3D_CTX_STENCIL_OP_DECR;
+	if (!strcmp(op, "incr_wrap"))
+		return GRATE_3D_CTX_STENCIL_OP_INCR_WRAP;
+	if (!strcmp(op, "decr_wrap"))
+		return GRATE_3D_CTX_STENCIL_OP_DECR_WRAP;
+
+	fprintf(stderr, "unknown GRATE_STENCIL_OP \"%s\"\n", op);
+	return GRATE_3D_CTX_STENCIL_OP_REPLACE;
+}
+
 int main(int argc, char *argv[])
 {
 	struct vs_asm_test test;
@@ -460,6 +485,7 @@ int main(int argc, char *argv[])
 	struct host1x_pixelbuffer *pixbuf;
 	struct host1x_pixelbuffer *depth = NULL;
 	struct host1x_pixelbuffer *stencil = NULL;
+	struct host1x_pixelbuffer *rt3 = NULL;
 	struct host1x_pixelbuffer *rt4 = NULL;
 	struct host1x_pixelbuffer *rt5 = NULL;
 	struct host1x_bo *bo;
@@ -606,7 +632,8 @@ int main(int argc, char *argv[])
 						    options.width, options.height,
 						    options.width,
 						    PIX_BUF_FMT_S8,
-						    PIX_BUF_LAYOUT_LINEAR);
+						    getenv("GRATE_STENCIL_TILED") ? PIX_BUF_LAYOUT_TILED_16x16
+						    : PIX_BUF_LAYOUT_LINEAR);
 		if (!stencil) {
 			fprintf(stderr, "stencil buffer alloc failed\n");
 			return 1;
@@ -615,15 +642,31 @@ int main(int argc, char *argv[])
 		if (getenv("GRATE_STENCIL_TEST")) {
 			grate_3d_ctx_perform_stencil_test(ctx, true);
 			grate_3d_ctx_set_stencil_func(ctx,
-				GRATE_3D_CTX_STENCIL_TEST_FRONT,
+				GRATE_3D_CTX_STENCIL_TEST_BOTH,
 				GRATE_3D_CTX_STENCIL_TEST_ALWAYS,
 				(unsigned)(getenv("GRATE_STENCIL_REF") ? atoi(getenv("GRATE_STENCIL_REF")) : 0), 0xff);
 			grate_3d_ctx_set_stencil_ops(ctx,
-				GRATE_3D_CTX_STENCIL_TEST_FRONT,
+				GRATE_3D_CTX_STENCIL_TEST_BOTH,
 				GRATE_3D_CTX_STENCIL_OP_KEEP,
 				GRATE_3D_CTX_STENCIL_OP_KEEP,
-				GRATE_3D_CTX_STENCIL_OP_REPLACE);
+				stencil_zpass_op());
 		}
+	}
+
+	if (getenv("GRATE_COVERAGE")) {
+		rt3 = host1x_pixelbuffer_create(grate->host1x,
+					       options.width, options.height,
+					       options.width * 4,
+					       PIX_BUF_FMT_RGBA8888,
+					       getenv("GRATE_COVERAGE_TILED") ?
+					       PIX_BUF_LAYOUT_TILED_16x16 :
+					       PIX_BUF_LAYOUT_LINEAR);
+		if (!rt3) {
+			fprintf(stderr, "coverage alloc failed\n");
+			return 1;
+		}
+		grate_3d_ctx_bind_render_target(ctx, 3, rt3);
+		grate_3d_ctx_enable_render_target(ctx, 3);
 	}
 
 	if (getenv("GRATE_RT4")) {
@@ -833,6 +876,28 @@ int main(int argc, char *argv[])
 				s8[h * w - 2], s8[h * w - 1]);
 		} else {
 			fprintf(stderr, "stencil mmap failed\n");
+		}
+	}
+
+	if (rt3) {
+		void *rmap = NULL;
+
+		if (host1x_bo_mmap(rt3->bo, &rmap) == 0 && rmap) {
+			uint32_t *r32 = rmap;
+			unsigned k, nz = 0, first = 0;
+			unsigned words = options.width * options.height;
+
+			for (k = 0; k < words; k++) {
+				if (r32[k]) {
+					if (!nz)
+						first = k;
+					nz++;
+				}
+			}
+
+			fprintf(stdout, "cov3: %08X %08X %08X %08X nz=%u first=%u wf=%08X wf1=%08X\n",
+				r32[0], r32[1], r32[2], r32[3], nz, first,
+				r32[first], r32[first + 1]);
 		}
 	}
 

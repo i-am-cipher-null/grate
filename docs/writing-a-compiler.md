@@ -92,7 +92,10 @@ Consequences for a NIR backend, and they are not optional:
   also where the 64-batch budget bites: the loop bound a backend can afford is a
   function of the ops in the body, not of the trip count alone.
 * **`discard` is not a branch either** - it is an ALU write of a non-zero value
-  to register 76. It also has a driver-side effect: the host must switch the
+  to register 76, with the compare either folded onto that write or computed in
+  an earlier batch: a condition register written and read inside one batch reads
+  as zero, so a same-batch compare silently never fires (see the ISA document,
+  section 5.7). It also has a driver-side effect: the host must switch the
   stencil test to late (`0x40f = 0x60` instead of `0x48`, see
   `grate_3d_set_late_test()`) and set the `discards_fragment` flag.
   **And it obliges the program to write the surfaces itself.** A discard-capable
@@ -108,13 +111,30 @@ Consequences for a NIR backend, and they are not optional:
   batch 4  DW: store rt1, r2, r3          ; colour
   ```
 
-  So with a late test the depth/stencil/coverage results of the rasterizer are
-  discarded unless the shader rewrites them: the coverage buffer (`rt3`) carries
-  the per-fragment kill decision, and depth (`rt0`) and stencil (`rt2`) are
-  re-emitted from the pixel packet. A backend that emits only the colour store
-  for a shader containing `discard` will lose depth and stencil for every
-  fragment it keeps. The same four-batch shape is what `tests/grate/stencil.c`
-  exercises.
+  Measurement refines that reading. A `kill` write makes the driver set the late
+  test (`0x40f = 0x60`) and clear `STENCIL_WRITE_EARLY`, and the two surfaces then
+  behave differently:
+
+  | surface | program without `kill` | program with `kill` (even `kill = 0`) |
+  |:--|:--|:--|
+  | depth `rt0`, test `ALWAYS`, write on | `8000` everywhere | `8000` everywhere, killed fragments included |
+  | stencil `rt2`, ref `0x7F`, `REPLACE`, `store rt1` only | `7F` everywhere | `00` everywhere |
+  | stencil, same but ending in `DW: store stencil` | `7F` everywhere | `7F` everywhere |
+
+  Depth is written **early and unconditionally**, so a discarded fragment still
+  stamps its interpolated `z` - a backend does not need to re-emit it. Stencil
+  moves behind the shader: the fixed-function update stops as soon as the program
+  writes the kill register (a constant-zero `kill` is enough), and `DW: store
+  stencil` is what performs it. The blob is therefore right about its batch 2,
+  and a backend must emit that store for every discard-capable program that has a
+  stencil buffer. The committed value is the test result (the reference value
+  under `REPLACE`), and the `PSEQ: 0x00820008` fetch returns the current surface
+  value for the ops that need to see it - normalised, so ref `0xC8` reads back as
+  `0xC7` through an `RGBA8888` store and `0x7F` as `0x7F`. With the test disabled
+  the store commits nothing, and a program that discards every fragment commits
+  nothing either. The coverage target (`rt3`) works too: the four-batch shape
+  replays end to end, with `rt3` filled (`nz = 65536`) and `rt2` at the reference
+  value. `tests/grate/stencil.c` exercises the same shape.
 * **Derivatives, and therefore `textureGrad`, are out of reach** unless
   computed per-quad by hand: there is no quad/neighbour data path. Texture LOD
   is chosen by the TEX unit itself (`TEX` uses the unit's own LOD selection,
@@ -464,9 +484,15 @@ Consequences:
 
 ## 8. Fragment outputs
 
-**Known.** `DW` stores four fx10 values from `r2/r3` (or `r0/r1`) to a render
-target. Targets are hardwired: 0 depth, 1 colour, 2 stencil, 3 coverage,
-4 spill, 5..12 MRT `n+1`. So `gl_FragData[1]` is render target 5. Target 4 is the
+**Known.** `DW` stores one 16-bit field per source register from `r2/r3` (or
+`r0/r1`) to a render target: on `RGBA8888` the first register fills `R` and `G`
+and the second `B` and `A` (`r2 = 0.5`, `r3 = 0.125` stores `DF00EF00`), and a
+field's first byte is the converted channel. Targets are hardwired: 0 depth,
+1 colour, 2 stencil, 3 coverage - an ordinary target with the colour value
+format, measured equal to `rt1` at every probe point, and readable only by a
+`PSEQ` fetch of that index - register 74 (`primitive coverage`) reads zero in
+every configuration tested, so no coverage information reaches the shader - 4
+spill, 5..12 MRT `n+1`. So `gl_FragData[1]` is render target 5. Target 4 is the
 blob's `SURF_REGSPILL`; its base is `RT_PTR(4)` = `0xe04`, with a companion limit
 at `0xe34` and enable bit 4 of `0x903`, and a spill store is inert unless DW bits
 10..16 select a slot, and bits 18..23 add `128`/`256`/`512`/`1024`/`4096` words to
@@ -484,11 +510,14 @@ Missing for a complete backend:
   `round(x * 31)` per 5-bit channel, `L8` takes the red channel and `A8` the
   alpha channel; the measured table is in [[Fragment Shader ISA]].
 
-  **The payload must be fx10.** `DW` reads four fx10 fields unconditionally, so a
-  value left in fp20 form is stored as its *bit pattern*: `MAD r2.lh, u0` with
+  **The payload must be fx10.** `DW` converts each field as fx10, so a value
+  left in fp20 form stores a reading of its *bit pattern*: `MAD r2.lh, u0` with
   `u0 = 0.25` followed by `DW: store rt1, r2, r3` stores `0xE700E700`, while the
-  same value written `.l*` stores `0x00400040`. Materialise the store payload
-  with `.l*` / `.*h` (or read it as fp20 and convert), never with `.lh`.
+  same value written `.l*` stores `0x00400040`. The `.lh` byte is
+  `8*exponent + top 3 mantissa bits` - `247 + 8*log2 v`, saturating above `2.0`
+  - so it is monotone but not a colour value at all, and there is no format
+  conversion that can rescue it. Materialise the store payload with `.l*` /
+  `.*h` (or read it as fp20 and convert), never with `.lh`.
 * **blending** - there is no blend instruction; blending is fixed-function and
   lives in the 3D state, so `nir_lower_blend` style needs are a state question,
   not a shader question.
@@ -622,16 +651,24 @@ record: The probe that would settle it is designed
 
    The latch file is now mapped well enough to schedule against, in [[Fragment
    Shader ISA]], "Forwarding and the ALU pipeline": a **low-half** write by slot
-   `k` is readable as `aluK` from a later slot of the same packet (a high-half
-   write leaves the latch at zero), `alu2`/`alu3` never read back anything, and
-   row-register writes are not visible within the packet. So chaining is
-   `slot k writes a low half -> slot k+1 reads aluK`, tail to a row register.
+   `k` is readable as `aluK` from any slot of the same packet (a high-half or
+   fp20-only write leaves the latch at zero), all four latches are live inside
+   their own packet (`alu2`/`alu3` included), and row-register writes are not
+   visible within the packet. The one
+   carried-over value is **`alu0` read from slot 0**, which holds the previous
+   packet's slot-0 result. So chaining is `slot k writes a low half -> another
+   slot reads aluK`, tail to a row register.
    Two side findings from the same probes: the **`(this)` modifier adds the
    previous slot's result and discards `rC`** (a free operand for a chain, but
    it cannot coexist with a real addend), and `(other)` has no measured
-   arithmetic effect. A second oddity, still unexplained: `MAD r3.*h, r2, #1,
-   -#1` left the value unchanged (0.75 stayed 0.75) *and* landed it in `r3.lo`
-   instead of `r3.hi`, i.e. the `-#1` spelling perturbs more than the addend.
+   arithmetic effect.
+
+   The `-#1` oddity recorded here is **resolved - it was a byte-order
+   misreading, not a modifier problem.** `MAD r3.*h, u0, #1, -#1, #1` with
+   `u0 = 1.5` writes `0.5` into `r3.hi` (byte 3 = `0x7F`) and nothing into
+   `r3.lo`, and with `u0 = 0.75` it computes `-0.25`, which an fx10 write clamps
+   to zero. Both are correct. The note was written while this document still
+   labelled the store bytes from the wrong end.
 
 ### 9.3 Needed for performance only
 
@@ -646,6 +683,42 @@ record: The probe that would settle it is designed
     **settled: yes.** A batch holding a `tex` into `r2/r3` plus a store of
     ALU-produced values returns exactly the ALU values (`0x7F407F40`), so a DW
     can run alongside a TEX as long as it does not consume the sample.
+
+**Per-batch cost, re-measured with the chaining rules known.** Seven shapes
+differing only in batch count and slots per batch, 100 draws each, minimum of
+five runs at 256x256:
+
+| shape | min ms | ms/draw |
+|:--|--:|--:|
+| 12 empty batches + store | 426.6 | 4.27 |
+| 12 batches x 1 slot + store | 445.7 | 4.46 |
+| 12 batches x 4 independent + store | 431.9 | 4.32 |
+| 4 batches x 3 slots + store | 218.2 | 2.18 |
+| 3 batches x 4 independent + store | 207.4 | 2.07 |
+| 3 batches x 4 chained `(this)` + store | 190.3 | 1.90 |
+| 6 batches x 2 slots + store | 283.7 | 2.84 |
+
+Fitted over all seven: **92.9 ms fixed + 26.3 ms per exec batch**, i.e.
+0.263 ms per batch per draw, or **about 4.0 ns per fragment per batch**. Two
+consequences for a scheduler: filling a batch is nearly free (36 extra ALU slots
+spread over 12 batches moved the time by -13.8 ms, inside the noise), so pack
+work into batches rather than spreading packets across them.
+
+`(this)` costs nothing either way. With 12 batches of four slots, the four
+operand forms measured within 8 ms of each other (immediate `#0` 426.9, uniform
+431.1, `#1` 434.7, `(this)` 431.2 ms) - about 0.05 ns/fragment/batch. An earlier
+note here claimed a `(this)` chain was ~17 ms *faster*; repeating that pair with
+seven samples instead of three gave **+13.1 ms at 3 batches and -18.0 ms at 12
+batches**, i.e. opposite signs, so that reading was noise. Chain for register
+pressure, not for speed.
+
+**Packing validated end to end.** A shader with eight `MAD`s behind one texture
+sample, emitted two ways: naive (coordinates, then one packet per batch, then
+TEX+DW - 10 batches) and packed (coordinates, two 4-slot batches, then TEX+DW -
+4 batches). Naive 372.3 ms, packed 196.5 ms per 100 draws at 256x256: a 47%
+saving, against a model prediction of 355.9 -> 198.1 ms. Both emitted the
+identical `0xFFFFFFFF`, so the packing changes nothing else. A backend should
+emit the packed form - the batch count, not the slot count, is the cost.
 
 ### 9.4 Documentation debt that blocks nothing
 

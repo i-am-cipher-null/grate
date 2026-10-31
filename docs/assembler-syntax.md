@@ -457,6 +457,8 @@ There is a special case of writing to the stencil buffer. The write to the stenc
 
 The operation doesn't take any source registers. The stencil data will be stored to the "stencil" render target 2.
 
+Measured behaviour on AR20: this store commits the **late** stencil update, so it matters exactly when the program also writes the kill register. With `kill = 0` (discard-capable, nothing discarded) and the stencil test enabled at ref `0x7F`, a program ending in `store stencil` leaves the surface at `7F`, while the same program ending in `store rt1` leaves it at `00` - the fixed-function update is disabled once the program can discard. With the stencil test disabled the store writes nothing, and a program that discards every fragment writes nothing either. It commits the result of the stencil op, and the "old" value that op works from is taken from `r0/r1`, so a program with `KEEP`-style ops has to fetch the surface first (`PSEQ: 0x00820008`, which loads render target 2 into `r0/r1`); without the fetch the old value is whatever `r0/r1` happen to hold. See the fragment shader ISA document, section 8.2.
+
 ## Linker assembler
 
 The linker assembler defines which vertex export registers will be copied to the TRAM, hence the (from)export register-(to)TRAM row locations, to what format the exported vertex register components will be converted during the copying to the TRAM and how the TRAM row component will be interpolated during the rasterization stage of graphics pipeline.

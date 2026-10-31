@@ -309,13 +309,242 @@ Two things to know before using it:
 
 `GRATE_STENCIL=1` does the same for an `S8` stencil surface, printing
 `stencil8 row0: ... mid: ... last: ...`, and `GRATE_STENCIL_TEST=1` additionally
-enables the stencil test with `ALWAYS`/`REPLACE` plus `keep/keep/replace` ops,
-and `GRATE_STENCIL_REF=n` sets the reference value. **Set a non-zero ref**: the
-patch used 0 at first, and an untouched zero buffer is indistinguishable from a
+enables the stencil test on **both faces** with `ALWAYS`/`REPLACE` plus
+`keep/keep/replace` ops, and `GRATE_STENCIL_REF=n` sets the reference value.
+**Set a non-zero ref**: an untouched zero buffer is indistinguishable from a
 successful `REPLACE` with ref 0 - ref `0x7F` or `0xC8` is what proves the write.
 `GRATE_STENCIL` is the variable that *allocates* - setting only
 `GRATE_STENCIL_TEST` prints no `stencil8` line, which reads exactly like "the
-stencil path works but writes nothing". With the surface really bound,
-`DW: store stencil` writes nothing in any of the four {kill, no kill} x {test
-off, test on} combinations, so the readback is sound and the write is what
-fails.
+stencil path works but writes nothing".
+
+With the surface really bound, the result depends on whether the program can
+discard:
+
+| program | test | `stencil8` |
+|:--|:--|:--|
+| `DW: store rt1`, no kill write | `ALWAYS`, ref `0x7F` | `7F` - fixed-function update |
+| `DW: store rt1`, `kill = 0` | `ALWAYS`, ref `0x7F` | `00` - fixed-function update gone |
+| `DW: store stencil`, `kill = 0` | `ALWAYS`, ref `0x7F` | `7F` - the store commits it |
+| `DW: store stencil`, `kill = 0` | off | `00` - nothing to commit |
+| `DW: store stencil`, `kill = 1` | `ALWAYS`, ref `0x7F` | `00` - no fragment survives |
+
+The readback is sound and `DW: store stencil` (`0x00020409`) is the *late*
+stencil update: it is required, and it does the work, as soon as the program
+writes the kill register. The `kill = 0` rows are the ones that isolate it -
+nothing is discarded, yet the fixed-function update has already stopped. A tiled
+stencil surface (`GRATE_STENCIL_TILED=1`, `PIX_BUF_LAYOUT_TILED_16x16`) behaves
+identically to a linear one, and the coloured-output column is independent: the
+control shaders read `0x00400040` in every row.
+
+**Late test with `discard`: depth still happens, stencil moves into the shader.**
+A `kill` write sets `discards_fragment`, which flips `0x40f` from `0x48` to `0x60`
+and clears `STENCIL_WRITE_EARLY`. From the `depth16` / `stencil8` readouts:
+
+| program | `depth16` | `stencil8`, ref `0x7F` |
+|:--|:--|:--|
+| colour store only | `8000` everywhere | `7F` everywhere |
+| colour store + `kill = 0` | `8000` everywhere | `00` everywhere |
+| `kill = 0` + `store stencil` | `8000` everywhere | `7F` everywhere |
+| `kill = 1` (discards all) + `store stencil` | `8000` everywhere | `00` everywhere |
+
+Depth is written early in every case, so a discarded fragment still stamps its
+interpolated `z`. Stencil moves behind the shader: a kill write - even a constant
+zero - stops the fixed-function update, and `DW: store stencil` is what performs
+it. The blob's four-batch shape replays end to end once the coverage target is
+bound: batch 1 fills `rt3` (`nz=65536`), batch 2 leaves `rt2` at the reference
+value, so the sequence is both required and sufficient.
+
+**The coverage target works and has a readout.** `GRATE_COVERAGE=1` binds an
+`RGBA8888` surface at render target 3 (`GRATE_COVERAGE_TILED=1` for
+`TILED_16x16`) and prints `cov3: ... nz=... first=...` like the `rt4` readout. A
+`DW: store rt3, r0, r1` with `r0 = r1 = 0.5` fills all 65536 words with
+`EF00EF00`; the store is dropped for a fragment the shader discards, exactly like
+the colour store. That closes the last unmeasured surface of the discard path.
+
+**The coverage target has no value format of its own.** Same shader, same
+uniform, differing only in the target index, over 20 values and both write forms:
+`cov3` equals the colour word in every run. The `EF00EF00` above is not a
+coverage encoding - it is what an `.lh` (raw fp20) write looks like on *any*
+target, colour included:
+
+| x | `store rt1` (`result`) | `store rt3` (`cov3`) |
+|--:|:--|:--|
+| 0.01 | `C1F4C1F4` | `C1F4C1F4` |
+| 0.25 | `E700E700` | `E700E700` |
+| 0.5 | `EF00EF00` | `EF00EF00` |
+| 0.9 | `F5FFF5FF` | `F5FFF5FF` |
+| 3.0 | `FF00FF00` | `FF00FF00` |
+| 0.25, `.l*` | `00400040` | `00400040` |
+| 0.5, `.l*` | `007F007F` | `007F007F` |
+
+So `rt3` is an ordinary target: bind any format, store to it with `.l*`, and it
+behaves like colour. The decode of the raw-fp20 byte is in [[Fragment Shader ISA]]
+section 12.7. Two more facts come out of the same runs: the value is
+deterministic (the same `0.7` written by `MAD`, by `MAD` with a second uniform and
+by `MUL` gives the same word, repeatably, over the whole frame - `nz = 65536`),
+and a store writes **16 bits per source register** - `r2 = 0.5`, `r3 = 0.125`
+stores `DF00EF00`, so the first register lands in `R`/`G` and the second in
+`B`/`A`.
+
+**Nothing reads the coverage target back.** The surface is straightforward to
+fill and just as straightforward to prove dead. Source operands accept any
+hardware register number, so the coverage special - hardware register 74, which
+`fragment_asm.h` has no name for - is reachable as `r74`:
+
+```
+ALU0: MAD r2.l*, r74, #1, #0      ; coverage, converted to an 8-bit channel
+ALU1: MAD r3.l*, r74, #1, #0
+DW:   store rt1, r2, r3
+```
+
+| configuration | `r74` read as |
+|:--|:--|
+| full-screen quad, three read scales | `0` |
+| quad scaled to half the frame (edge pixels present) | `0` |
+| after the program stores `0.5` into `rt3` | `0` |
+| after the program stores `1.0` into `rt3` | `0` |
+| `posx` through the same operand (control) | `0x7F .. 0x83` gradient |
+
+`posx` through the identical shader shape reads a proper per-fragment gradient
+(`0.5` at the frame origin, rising by one LSB per 256 columns at a `2^-14`
+scale), so the operand path and the scaling are sound and the zeros are real. A
+program that stores nothing leaves a bound `rt3` at `nz = 0` as well, so the
+rasterizer does not fill it either. Conclusion: `rt3` is a write-only record of
+the discard decision, and AR20 exposes no primitive/sample coverage to the
+shader.
+
+**The coverage target can be read back with `PSEQ`.** `PSEQ: 0x00830008` (fetch
+form, render target 3 in bits 16..19; the word is `0x00800008 | (index << 16)`)
+loads the surface into `r0/r1`, and a following `DW: store rt1, r0, r1`
+reproduces it byte for byte. Storing `0.5` via `.lh` leaves `cov3 = EF00EF00` and
+the colour target reads `EF00EF00`; the same program with the `PSEQ` line removed
+reads `0`, so the fetch is the only thing putting data in those registers. The
+index selects the surface, and values and write formats pass through unchanged:
+
+| program | surface | fetched word |
+|:--|:--|:--|
+| store rt3 `.lh` `0.25` | `E700E700` | `E700E700` |
+| store rt3 `.lh` `0.75` | `F300F300` | `F300F300` |
+| store rt3 `.l*` `0.25` | `00400040` | `00400040` |
+| store rt4 `.lh` `0.25`, fetch 4 | `E700E700` (rt4) | `E700E700` |
+| store rt5 `.lh` `0.25`, fetch 5 | `E700E700` (rt5) | `E700E700` |
+
+In every run the surfaces that were *not* being fetched stayed zero, so the index
+really selects the target. The store is visible to the fetch even within one
+draw, so no extra pass is needed to read back what the program wrote.
+
+Read the pair with `DW: store rt1, r0, r1`, not through ALU operands: reading
+`r0` as an operand returned nothing usable in the forms tried (an fp20 operand
+reads the high half of the pair, which a fetch does not appear to fill), and
+that dead end is what made the first attempt look like a failed fetch.
+
+**The stencil store's "old" value comes from the fetched registers.**
+`GRATE_STENCIL_OP=incr|keep|replace|zero|invert|incr_wrap|decr_wrap` selects the
+z-pass op. With `INCR`, five draws of a `kill = 0` program ending in
+`store stencil` give:
+
+| program | `stencil8` after 5 draws |
+|:--|:--|
+| `PSEQ 0x00820008` + `store stencil` | `05` everywhere - one increment per draw |
+| `store stencil`, no fetch | `01` at row 0, `41` at mid, `80` at last - position-shaped garbage |
+| `store rt1` (control) | `00` |
+| `KEEP` + `store stencil`, no fetch | `00` at row 0, `40` at mid, `7F` at last - the same garbage |
+
+So the store commits `op(old, ref, mask)` with `old` taken from `r0/r1`, and only
+the `PSEQ` fetch puts the surface value there. `REPLACE` hides all of this
+because it ignores `old`, which is why every earlier probe that used `REPLACE`
+saw a constant value and concluded the store was doing nothing useful.
+
+**Per-pixel kill bands work, and need the compare in an earlier batch.** With a
+threshold on `posx` (`cr0 = posx/256 - 32 - k/256 > 0`, stencil store at ref
+`0x7F`, `REPLACE`), the buffer shows the band exactly:
+
+| threshold | row 0 (`x = 0..3`) | mid (`x = 128,129`) | last (`x = 254,255`) |
+|:--|:--|:--|:--|
+| kill `x > 0` | `7F 00 00 00` | `00 00` | `00 00` |
+| kill `x > 128` | `7F 7F 7F 7F` | `7F 00` | `00 00` |
+| kill every fragment | `00 00 00 00` | `00 00` | `00 00` |
+
+The compare has to sit in a batch *before* the kill: a condition register written
+and read inside one batch reads as zero, so the same program with everything in
+one batch writes `7F` everywhere. Putting the condition directly on the kill
+write (`MAD kill, posx, u0, u1, #1 (gt)`) also works within one batch. These rows
+also confirm the sampled-pixel note below: at `kill x > 0` the first pixel of
+row 0 is kept and the rest are not.
+
+**Two argument traps.** `--fs_uniform` takes a bare float, not an expression:
+`'["d"]=-32-0.5'` parses as `-32`, so a threshold sweep built that way silently
+tests the same threshold every time. And `.lh` writes fp20 rather than fx10, so
+a colour readback of a `.lh` write is not a normalised byte - it is a log-scaled
+reading of the fp20 bit pattern (decoded below, and in [[Fragment Shader ISA]]
+section 12.7):
+
+| value | `.lh` readback | `.l*` readback |
+|:--|:--|:--|
+| 0.25 | `E700E700` | `00400040` |
+| 0.5 | `EF00EF00` | `007F007F` |
+| 0.75 | `F300F300` | `00BF00BF` |
+| 1.0 | `F700F700` | `00FF00FF` |
+
+Only the `.l*` (low half) form maps a value to `round(255 v)`. A `.lh` readback is
+*not* an fp20 value either - it is `8*exponent + top 3 mantissa bits`, monotone
+but logarithmic (8 steps per octave, saturating at `FF` above `2.0`), plus a
+value-dependent residue in the second byte. Decode it with the table in
+[[Fragment Shader ISA]] section 12.7, or better, do not produce it.
+
+Two traps this cost, both about register halves and readout width: `MAD r3.*h`
+followed by an fp20 read of `r3` returns nothing usable - write `.lh` when a
+later operand has to see the value - and a per-pixel kill band has to be
+confirmed by dumping the frame (`--expected` with a value the run will not
+produce prints every pixel), because `--result` only ever reports one pixel.
+
+One harness detail that costs a probe if it is missed: `--testonly` prints its
+`got 0x...` result line on **stderr**, so a probe that captures only stdout looks
+like the assembler produced nothing. Redirect `2>&1` and filter the driver noise
+(`nvrm_init failed`, `x11_display_create`) rather than discarding stderr.
+
+**Resolved: `GRATE_STENCIL_TEST` used to discard every fragment.** With
+`GRATE_DEPTH=1 GRATE_STENCIL=1 GRATE_STENCIL_TEST=1` set, the colour target read
+`0x4C4C4C4C` (the clear value) for **every** probe, including a no-`kill` control
+that stores `1.0` and otherwise reads `0x00400040`. Depth was innocent: the same
+shader under `GRATE_DEPTH=1` alone reads `0x00400040`. The culprit is face
+selection in the harness. It programmed the stencil function and ops for `FRONT`
+only, while the quad in `tools/assembler.c` (`0,1,2` over
+`(-1,1) (-1,-1) (1,1)`, and `front_direction_is_cw = false`) is **back-facing**
+in screen space. An unprogrammed face does not mean "no test": the back-face
+state resets to `NEVER` with mask 0, so every fragment failed the stencil test
+before the colour write and the target kept its clear value. In a readback that
+is indistinguishable from a shader-side `kill`, which is how it was first
+mis-filed.
+
+`tools/assembler.c` now programs `GRATE_3D_CTX_STENCIL_TEST_BOTH`. After the
+change, `GRATE_DEPTH=1 GRATE_STENCIL=1 GRATE_STENCIL_TEST=1` reads `0x00400040`,
+and a shader whose `kill` is unconditionally taken still reads `0x4C4C4C4C`.
+Two habits worth keeping:
+
+* program two-sided rasterizer state on both faces even for a single-quad probe,
+  because the untouched face is `NEVER`, not "disabled";
+* when a probe loses *all* colour at once, bypass the stage under suspicion
+  rather than the whole set: `GRATE_STENCIL=1` without `GRATE_STENCIL_TEST=1`
+  isolates the surface from the test, and `GRATE_DEPTH=1` alone isolated depth
+  in one round. Dropping exactly one variable per run is what found this.
+
+**Three probe traps that each cost a round.**
+
+* A uniform bound as `[n].l` lives in an **fx10** slot, so a scale like `1/8192`
+  quantises to 0 - `posx * (1/8192)` then reads 0 for every pixel, no matter what
+  `posx` holds. Bind `[n]` as full fp20 when the value is small.
+* A `kill` probe has to write the register it also stores. With no `kill` the
+  shader stored only `r3`, so both the "kept" and the "discarded" runs read
+  `0x00FF0000` and looked identical.
+* `posx` **is** biased by 8192 (`posx = 8192 + frag.x`), confirmed with a
+  validated control: `posx * (1/256)` reads `0xFF` (>= 1.0, so `posx >= 256`)
+  while `128 * (1/256)` reads `0x7F`.
+* **`--result` reports framebuffer pixel (0,0), so `posx` is 8192 there.**
+  `grate_framebuffer_data()` returns the raw mmap of a `TILED_16x16` surface and
+  does not untile it, so word 0 is the first pixel of tile (0,0). The frame dump
+  that a failing `--expected` prints is in that same tiled order: consecutive
+  words walk *y* inside a 16x16 tile (256 words per tile), then jump to the next
+  tile, which is why an apparent linear ramp read off that dump has the wrong
+  slope. The word for pixel `(x, y)` is
+  `(y / 16 * (width / 16) + x / 16) * 256 + (y % 16) * 16 + x % 16`.

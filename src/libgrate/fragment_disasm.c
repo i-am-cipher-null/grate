@@ -70,6 +70,9 @@ static const char * reg_name(int reg, int id)
 	case FRAGMENT_POS_Y:
 		sprintf(buf, "posy");
 		break;
+	case FRAGMENT_COVERAGE_REG:
+		sprintf(buf, "cov");
+		break;
 	case FRAGMENT_POLYGON_FACE:
 		sprintf(buf, "pface");
 		break;
