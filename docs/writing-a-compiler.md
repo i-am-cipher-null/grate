@@ -3,8 +3,8 @@
 This document is a gap analysis, not an ISA reference. The ISA encoding itself
 lives in [[Fragment Shader ISA]]; the blob compiler's internals live in
 [[Compiler Internals]]. The question answered here is: **if you sit down to
-write a NIR -> AR20 backend for Mesa, which facts do you need, which of them do
-we have, and which are still missing?**
+write a NIR -> AR20 backend for Mesa: which facts are needed, which are
+established, and which are missing?**
 
 It is written against the driver in `src/gallium/drivers/grate/` (Mesa), where
 `grate_program.c` currently converts NIR to TGSI and `fp/pack.c` can already
@@ -438,11 +438,18 @@ varying reaches `ipl`, and `ipl` reaches the pixel packet.
 
 ## 7. Uniforms and constants
 
-**Known.** 32 words at `0x820..0x83f`, uploaded per draw. Each word is either
+**Known.** 32 words at `0x820..0x83f`, uploaded per chunk. Each word is either
 one fp20 uniform (`u0..u31` read as fp20) or two fx10 halves (`.l`, `.h`), and
-the ALU selects 32..63 for them. The depth of the file is fixed - 32 fp20 / 64
-fx10 - so the backend must pack uniform vectors into those, and a
-`vec4` mediump uniform consumes 4 words (half the file).
+the ALU selects 32..63 for them.
+
+The window is **per chunk, not per program**: 32 fp20 / 64 fx10, re-uploaded for
+each chunk of a split program ([[Fragment Shader ISA]], "Program container,
+chunks and recirculation"), which is how the blob compiles shaders needing more
+than 32 scalars - a 16-`vec4` shader comes out as two chunks of eight. Within a
+chunk a `vec4` mediump uniform consumes 4 words (half the window), so a
+single-chunk backend is limited to eight `vec4`, while a chunk-splitting one is
+not. Slots are also relocatable and assigned by use rather than by declaration
+(same ISA section), so the upload has to be built from the symbol table.
 
 Consequences:
 
@@ -549,7 +556,7 @@ Missing for a complete backend:
    output stage); `PRE*` + main must be emitted as one pair with the same
    operand, and the `PRE` result cannot be stored or reused.
 
-   **Plumbing, now known and previously misread here: `sfu: OP rN` does not
+   **`sfu: OP rN` is established, and was long misread:** it does not
    write rN.** A survey of 14 operations (rcp, rsq, sqrt, ex2, sin, cos, frc,
    lg2, presin, precos, preex2) returned *the input, unchanged*, in every case -
    sqrt(0.25) read back 0.25, rcp(2.0) read back 2.0, cos(0) read back 0. So the

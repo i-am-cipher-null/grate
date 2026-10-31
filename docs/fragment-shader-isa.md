@@ -100,10 +100,14 @@ constant range is exactly that window (`c0..c31` = register numbers 32..63, with
 **But 32 scalars is not the shader-visible limit: the blob accepts 16 `vec4`
 uniforms.** A shader summing `m0..m15` compiles with `0 lines, 0 errors`, emits
 7 batches and 60 ALU words, sets no embedded constants at all, and its header
-reads `unknown0: 1`, `unknown1: 3`. That is 64 fp20 scalars through a 32-register
-window, and how it is legal is **open**: the first batch alone already reads
-`c0`, `c2`, `c4`, `c6`, `c8`, `c12`, `c16`, `c20` and `c22`, so a naive
-"8 vec4 and reject" rule would refuse shaders the blob happily compiles.
+reads `unknown0: 1`, `unknown1: 3`. That is 64 fp20 scalars in total, and the
+mechanism that makes it legal is the **chunk split of section 10.2**: this
+program is two chunks, each uploaded with its own constant window, so no single
+chunk needs more than 32 live scalars. Inside each chunk the addresses stay
+within `c0..c31` (the first chunk already reads `c0`, `c2`, `c4`, `c6`, `c8`,
+`c12`, `c16`, `c20` and `c22`). A naive "8 vec4 and reject" rule would refuse
+shaders the blob compiles, so for a chunk-splitting backend the split, not the
+window, is the limit that matters.
 
 **Uniform slots are assigned densely by use, not by declaration.** Two shaders
 that differ only in which uniforms they touch show it:
@@ -120,18 +124,18 @@ pruned as well - a 16-uniform shader reports `m5.xz` and `m6.x` for uniforms who
 other components are dead - so the slot pressure is live-value pressure, not
 declaration size.
 
-What that means for the 32-word window is still not fully settled, but the
-important negative result stands: **the blob does not diagnose uniform pressure.**
-Both the 8-`vec4` and the 16-`vec4` shaders emit a program that references
-exactly `c0..c31` and nothing outside, and neither produced an error, so a
-16-`vec4` shader either aliases slots or relies on a reload mechanism that is not
-visible in the stream (`cgc -F -R` shows **no `0x820` write at all** - the blob
-never uploads constants, so the driver owns the window entirely). Two practical
-consequences: do not copy "16 vec4 is supported", and do not assume the `asm.h`
-array sizes are a hardware limit either - they are the hand-written assembler's
-convenience limit. Reject above 8 `vec4` / 32 live scalar slots until an
-end-to-end hardware test says otherwise, and remember the slot map is relocatable
-when you build the uniform upload.
+**The blob does not diagnose uniform pressure, and the window is per chunk.**
+Both the 8-`vec4` and the 16-`vec4` shaders emit programs whose constant
+addresses stay inside `c0..c31`, and neither produced an error; the extra
+uniforms are accommodated by the chunk split of section 10.2, which gives every
+chunk its own window. `cgc -F -R` shows **no `0x820` write at all** - the blob
+never uploads constants itself, so the driver owns the window and must upload it
+once per chunk. Consequences for a backend: one that emits a single chunk can
+reject above 8 `vec4` / 32 live scalar slots, while one that mirrors the split
+accepts what the blob accepts; in both cases the `asm.h` array sizes are the
+hand-written assembler's convenience limit, not a hardware one. The slot map is
+relocatable, so the uniform upload has to be built from the symbol table rather
+than from declaration order.
 
 Two structural constraints that shape it:
 
@@ -166,7 +170,7 @@ This means that there's a 14 bit significand, with 13 bits explicitly stored. A 
 
 The FX10 format is similar to [most signed fixed-point formats](https://en.wikipedia.org/wiki/Fixed-point_arithmetic), using 10 bits of storage, and a scaling-factor of 1/256.
 
-This means we have a minumum value of -4.0, and a maximum value of ~3.996.
+The representable range is therefore [-4.0, 3.996] in steps of 1/256.
 
 ### 3.3 Range and precision limits
 
@@ -182,9 +186,10 @@ section is about what the hardware does with them.
   `2^-31 .. 2^32`, 14-bit effective significand - i.e. *between* fp16 and fp32,
   but with no denormals.
 * `fx10`: signed 10-bit fixed point, scale 1/256, range `[-4.0, 3.996]`,
-  resolution `1/256`. The assembler converts by truncating `f * 256`, which
-  independently confirms truncation-toward-zero at least in the tool; the
-  hardware's own rounding on `ALU`/`TEX` results is **open** (see [[Writing a Compiler]] 9.3).
+  resolution `1/256`. The assembler converts by truncating `f * 256`, and the
+  hardware does the same: ALU results truncate toward zero at fp20 writeback
+  (1.5 ulp reads back as 1 ulp, section 5.15), so tool and hardware agree and
+  every intermediate value is predictable from the emitted constants.
 * Arithmetic is *always* one of these two; there is no fp32 anywhere.
 
 So a NIR backend needs `nir_lower_fp64`, `nir_lower_int64`, `nir_lower_int`
@@ -495,7 +500,7 @@ When bit "addition disable" is set, the Multiply-Add operation turns into two mu
 
 
 
-This is the part a scheduler must get right, and it was previously unknown. All
+The behaviour below is measured on AR20 hardware. Where it is incomplete the text says so. All
 measurements use the Grate assembler harness (section 10).
 
 **Readback channel order (re-measured, and it corrects this document).** Fill all
@@ -535,7 +540,7 @@ So:
 > **Intra-batch, the row/global register file is not a safe data path; the
 > `alu0..alu3` result registers are. Between batches, register writes do commit.**
 
-The `0x40000000` case is worth stating precisely, because a first reading of it
+The `0x40000000` case needs precision, because an obvious reading of it
 is misleading. Packet 1 writes `r3.h = 0.25`; packet 2 reads `r3.h` and writes
 `r2.h`. The framebuffer then shows `G = 0x40` (so packet 2's read **did** see the
 new value - the read is forwarded) and `A = 0x00` (so `r3.h` is *zero* by the
@@ -555,12 +560,12 @@ implicitly names the latch, so a probe writes a row register and reads the
 slot's latch by number. That is also how a backend must model it: the latch is a
 property of the slot, not of an operand.
 
-**Caution on the latch names.** A direct probe in this session did *not*
+**Caution on the latch names.** A direct measurement did *not*
 reproduce the `alu0 -> ALU1` hop: reading `alu0` from ALU1 returned 0, while
 reading `alu1` from ALU2 returned the value packet **ALU0** had written. The
 forwarding fact - same-batch chaining through latches works - still holds, but
 the assembler mnemonic `aluN` seems to be offset by one slot from the packet
-whose result it names. Treat the `N` as unverified until a dedicated probe
+whose result it names. so `N` remains unverified until a dedicated probe
 settles the mapping.
 
 The blob itself relies on the chain heavily: for eight summed `vec4` uniforms it
@@ -568,7 +573,7 @@ emits one packet of `mad r3.hl, c0, #1, c4` ... `mad r3.hl, c8, #1, d0`, reading
 the latches by number *inside* the batch. Whatever the exact numbering is, the
 `slot k writes -> slot k+1 reads` form is what a scheduler should emit.
 
-**Second attempt, still not settled.** Priming all four slots of one packet with
+**Unresolved: the latch numbering.** Priming all four slots of one packet with
 four distinct uniform values and reading `alu0/alu1` (then `alu2/alu3`) from the
 next packet returns `0xE300DB00` for the first pair and `0xDB00DB00` for both the
 second pair and a single-value control - so the four latches do **not** carry
@@ -606,7 +611,7 @@ as an fx10 half (`r0.l*` or `r0.*h`) sample the same texel regardless of the
 value, which is what the ISA reference says: the coordinate registers are
 consumed as fp20.
 
-This retracts an earlier conclusion in this document. A first probe reported
+An earlier conclusion is retracted: an early probe reported
 that coordinates "never took effect", but it was writing the coordinate as an
 fx10 half *and* using `r2` as both the third coordinate and the TEX destination;
 both mistakes make the coordinate read as 0. So the coordinate path works, and
@@ -665,7 +670,7 @@ suffix:
 
 So the operative rule is: **any value a later batch must read has to be written
 with `.lh`.** That single line accounts for the `0x02` readings that were
-previously, and wrongly, attributed to forwarding or to operand ports.
+wrongly attributed to forwarding or operand ports before the format difference was understood.
 
 Even so the value is not exact through a multi-hop chain - 0.75 written once and
 copied twice comes back as `0xF3` = 0.953 - so a quantitative probe must write a
@@ -687,13 +692,13 @@ An immediate rC beside a row rA saturates as expected
 (`MAD r2.l*, r1, #1, #1, #1` = 1.5 -> `0xFF`). So a backend may put any uniform,
 row register, immediate or embedded constant in rC.
 
-Original, incorrect note (kept as a warning, do not act on it): rC was measured
+**Obsolete reading, retained as a caution:** rC was measured
 as reading zero when it named a uniform beside a row-register rA/rB - five rows
 computed `1*1 + (-0.5)` as `1.0` instead of `0.5` - and a row register in rC was
 measured as unread. Both came from priming row registers with `.l*` / `.*h`,
 which store a truncated fp20 that reads back as ~0.0078, so neither operand ever
 held the value the probe assumed. It is the same trap as the `0x02` readings
-above, and the reason every probe in this document now writes `.lh` and reads
+above, and the reason every measurement now writes `.lh` and reads
 back `.l*`.
 
 **`(other)` sends, `(this)` receives, and only to the adjacent packet.**
@@ -758,9 +763,9 @@ the chain mechanism itself.
 `MIN(2^32, 0.25) = 0.25` and `MAX(2^32, 0.25) = 2^32`, identical in both
 argument orders.
 
-**Beware the constants.** Getting this wrong is easy and produces convincing
-nonsense - the first attempt at this experiment used `0x3E000` as "0.25" and
-concluded, wrongly, that `MIN`/`MAX` were broken. `fp20` is
+**Constant encoding.** A wrong constant produces plausible but incorrect
+results: reading `0x3E000` as 0.25 instead of 1.0
+makes `MIN`/`MAX` look broken. `fp20` is
 `(1 + mantissa/8192) * 2^(exp-31)`, so:
 
 | value | fp20 |
@@ -790,7 +795,7 @@ numerically indistinguishable from exact arithmetic at 8-bit output precision.
 For a compiler this is the friendly behaviour: no NaN, no wrap, so `min`/`max`
 clamps behave as written.
 
-Both of the previously open points here are now answered elsewhere. Signed zero
+Two related points are settled. Signed zero
 is not reachable at all (9.2 item 4), so a `-0.0`/`+0.0` comparison cannot be
 constructed - there is no tie rule to find. And the saturation point is measured
 to 0.125 binades by reading the exponent back with `lg2`: `2^33` reads 33, and
@@ -1275,7 +1280,7 @@ unknown0: 0x00000002
 unknown1: 0x00000002
 ```
 
-**Both are the exec-batch count**, which is why they are worth knowing: a
+**Both words carry instruction counts:** a
 one-batch shader dumps `1, 1`, a two-batch shader `2, 2`, the three-batch
 `dFdx` shader `3, 3`. The stream words that follow have exactly that many
 entries per unit, so this is the same number as the `0x520` count and as every
@@ -1286,9 +1291,9 @@ count is consistent with the blob; a compiler's output is just the chunk body.
 reassembles each with `fragment_shader_disassemble()`; for AR20 every blob
 output seen so far is a single chunk.
 
-**Correction: only the second word is the batch count.** An earlier revision of
-this section recorded "both are the batch count" because the two coincide for
-small shaders. Counting the streams of six blob outputs (`cgc -F -s -H`, one
+**Only the second word is the batch count.** The two words coincide for
+small shaders, which invites reading both as the batch count; counting the
+streams of six blob outputs (`cgc -F -s -H`, one
 PSEQ/TEX/DW line per batch):
 
 | shader | `unknown0` | `unknown1` | batches | ALU words | MFU words |

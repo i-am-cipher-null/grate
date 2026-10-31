@@ -114,7 +114,7 @@ consistent with the `count[1:0]` / `address[7:2]` layout documented in
 
 
 **Known**, from `grate-asm.c` and `include/tgr_3d.xml.h`; this is the definitive
-map and was not previously written down anywhere in `docs/`.
+map; it had not been recorded in `docs/` before.
 
 | Host1x push | Register | Contents |
 |:--|:--|:--|
