@@ -205,3 +205,25 @@ anyway, so the trigger alone never identifies an operation.
 as the operand of a CDMA `mask`/`nonincr` instruction. The 3D engine's register
 blocks are in [[GR3D Registers]]; the general MMIO layout is in
 [[MMIO Registers]].
+
+### 6.1 Where the remaining addresses would have to come from
+
+The blob is the obvious second source, and it does not give them up statically.
+`subprojects/Linux_for_Tegra/libnvddk_2d_v2.so` builds its command stream through
+the `NvRmStream*` API - `NvRmStreamPushSetClass` is imported - and contains **no
+2D register literals at all**: not one `#0x3a` or `#0xcc` immediate in the
+disassembly, and no matching word in `.rodata`. The `libnvddk_2d.so` and
+`libnvrm_graphics.so` images are the same. So the register values are computed or
+taken from a structure that is filled at run time, not tabled in the image.
+
+Two routes remain, both external to this tree:
+
+* capture a real 2D stream - the 2D DDK needs a working downstream `nvrm` stack,
+  which this device does not have (the assembler logs `****nvrm_init failed****`
+  because the AR20 kernel runs the upstream driver), so this needs a stock L4T
+  image or a `record-replay` style shim in front of the channel;
+* disassemble the 2D HAL in `libnvrm_graphics.so`, where the class/opcode
+  plumbing lives, and reconstruct the register table from the call sites.
+
+Until one of those happens, sections 2 and 3 are the complete set of 2D
+registers with evidence behind them.

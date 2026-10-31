@@ -24,6 +24,7 @@
  */
 
 #include <math.h>
+#include <string.h>
 
 #include "../libhost1x/host1x-private.h"
 #include "libgrate-private.h"
@@ -881,6 +882,8 @@ static void grate_3d_setup_indices(struct host1x_pushbuf *pb,
 	grate_3d_relocate_primitive_indices(pb, bo, bo->offset);
 }
 
+static void grate_3d_poke_env(struct host1x_pushbuf *pb);
+
 static void grate_3d_setup_context(struct host1x_pushbuf *pb,
 				   struct grate_3d_ctx *ctx)
 {
@@ -918,6 +921,43 @@ static void grate_3d_setup_context(struct host1x_pushbuf *pb,
 	grate_shader_emit(pb, ctx->program->vs);
 	grate_shader_emit(pb, ctx->program->fs);
 	grate_shader_emit(pb, ctx->program->linker);
+
+	grate_3d_poke_env(pb);
+}
+
+/*
+ * GRATE_POKE="0xb00=3,0xc00=0x1ff" pushes raw register writes right before
+ * the draw, for register experiments that have no API. Values are 32-bit, so
+ * every poke is an INCR/1 pair rather than an IMM (IMM carries 16 bits).
+ */
+static void grate_3d_poke_env(struct host1x_pushbuf *pb)
+{
+	const char *env = getenv("GRATE_POKE");
+	char *copy, *tok, *save;
+
+	if (!env || !*env)
+		return;
+
+	copy = strdup(env);
+	if (!copy)
+		return;
+
+	for (tok = strtok_r(copy, ",", &save); tok; tok = strtok_r(NULL, ",", &save)) {
+		char *eq = strchr(tok, '=');
+		unsigned long addr, value;
+
+		if (!eq)
+			continue;
+
+		*eq = 0;
+		addr = strtoul(tok, NULL, 0);
+		value = strtoul(eq + 1, NULL, 0);
+
+		host1x_pushbuf_push(pb, HOST1X_OPCODE_INCR(addr, 1));
+		host1x_pushbuf_push(pb, value);
+	}
+
+	free(copy);
 }
 
 static void grate_3d_check_render_targets_guard(struct grate_3d_ctx *ctx)

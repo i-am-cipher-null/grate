@@ -64,11 +64,11 @@ by writing the index pointer and the two draw registers.
 | Addr | Name | Status | Fields / notes |
 |--:|:--|:--:|:--|
 | `0x100 + 2i` | `ATTRIB_PTR(i)`, i = 0..15 | D | 32-bit byte address of attribute `i` (relocated). |
-| `0x101 + 2i` | `ATTRIB_MODE(i)` | D | `type` 0..3 (see below), `size` 4..7 (components - 1, so 0 = 1 component), `stride` 8..31. |
-| `0x120` | `VP_ATTRIB_IN_OUT_SELECT` | D | one bit per vertex-program output (`n`) and input (`16 + n`); Grate writes `0x00030081`, i.e. `OUT0`, `OUT7`, `IN0`, `IN1`. See the note below. |
+| `0x101 + 2i` | `ATTRIB_MODE(i)` | V | `type` 0..3, `size` 4..7 (**component count**, so a `vec4` writes 4), `stride` 8..31 (**bytes**). Measured from a `vec4` float32 attribute that renders correctly: `0x0000104d` = type `0xd`, size `4`, stride `16`. |
+| `0x120` | `VP_ATTRIB_IN_OUT_SELECT` | V | `out_mask` 0..15, `in_mask` 16..31: one bit per export the vertex program may write and per attribute it may read. `0x00030081` = exports 0 and 7, attributes 0 and 1 - exactly what the program in `host1x_gr3d_triangle()` declares (`gl_Position`, `vcolor`, two attributes), which is what makes it a measurement rather than a guess. |
 | `0x121` | `INDEX_PTR` | D | byte address of the index buffer (relocated). |
-| `0x122` | `DRAW_PARAMS` | D | `primitive_type` 24..26, `provoking_vertex` 27, `index_mode` 28..29, `first` 0..23. |
-| `0x123` | `DRAW_PRIMITIVES` | D | `index_count - 1` at 20..31, `offset` (first index) at 0..19. Writing it starts the draw. |
+| `0x122` | `DRAW_PARAMS` | V | `primitive_type` 24..26, `provoking_vertex` 27, `index_mode` 28..29, `first` 0..23; bits 30..31 are always set (`value \|= 0xC0000000`) - clearing them is untested, but every working stream has them |
+| `0x123` | `DRAW_PRIMITIVES` | V | `index_count - 1` at 20..31, `offset` (first index) at 0..19. Writing it starts the draw: three indices are pushed as `0x00200000` |
 | `0x124`..`0x126` | — | ? | reset writes `0x124 = 7`, `0x125 = 0`, `0x126 = 0` |
 
 `ATTRIB_MODE.type` (from the header, the same numbering the vertex ISA uses):
@@ -93,30 +93,65 @@ writes 2. Grate's `host1x_gr3d_triangle()` programs `0x00200000` for three
 indices and `0xec000000` for the pointer word, i.e. `index_count - 1 = 2`,
 `first = 0`.
 
-**Not settled:** the exact meaning of the `VP_ATTRIB_IN_OUT_SELECT` bits as used
-by Grate. The header names them `OUT0..OUT15` (bits 0..15) and `IN0..IN15`
-(bits 16..31), and the header itself has a defect - `IN12` is defined as
-`0x04000000`, the same value as `IN10`. Grate's vertex-shader path writes
-`0x00030081`, which sets `OUT0`, `OUT7`, `IN0` and `IN1`; which attributes those
-map onto is determined by the vertex program's own input/output mask rather than
-by this register alone. The value in `host1x_gr3d_triangle()` was copied from a
-working blob stream, so the encoding is only as good as that example.
+`VP_ATTRIB_IN_OUT_SELECT` is computed, not constant: Grate takes the program's
+`attributes_use_mask`, splits it into an output mask (low 16 bits) and an input
+mask (high 16 bits), intersects the input half with the attributes the context
+has buffers for, drops the attributes whose buffer is missing, and writes
+`in_mask << 16 | out_mask`. A shader using attribute 2 and exporting to 3 would
+write `0x00040008`. The header itself has a defect worth knowing about: `IN12`
+is defined as `0x04000000`, the same value as `IN10`.
+
+Two further constraints come from the vertex ISA rather than from this register:
+attribute and export indices are 4 bits each, and the *program* also declares
+which attributes and constants it reads, so a mismatch between the mask and the
+program leaves the program reading whatever the mask disabled (usually zero).
+
+**The attribute `size` field is the component count, not count minus one.** The
+old AR20 notes in [[Geometry Submission]] give `size` as bits 4..6 and `stride`
+as bits 8..19; the measured value contradicts both - `0x0000104d` for a `vec4`
+float32 attribute only decodes with `size` at 4..7 = 4 and `stride` at 8..31 = 16
+bytes. Strides above 64 KiB are therefore expressible in principle.
 
 ## 3. Vertex program engine, VPE (`0x200`..`0x20b`)
 
 | Addr | Name | Status | Notes |
 |--:|:--|:--:|:--|
 | `0x200`..`0x204` | — | ? | reset writes `0x11`, `0xffff`, `0xff0000`, `0`, `0` |
-| `0x205` | `VP_UPLOAD_INST_ID` | D | upload pointer, reset to 0 before every program |
-| `0x206` | `VP_UPLOAD_INST` | D | instruction FIFO: `4 * n` words, one 128-bit VLIW instruction per four dwords |
-| `0x207` | `VP_UPLOAD_CONST_ID` | D | constant (uniform) window pointer |
-| `0x208` | `VP_UPLOAD_CONST` | D | `256 * 4` words = the whole 256-register constant file |
+| `0x205` | `VP_UPLOAD_INST_ID` | V | upload pointer, `IMM 0x205 0` before every program |
+| `0x206` | `VP_UPLOAD_INST` | V | instruction FIFO: `NONINCR 0x206 4*n`, then `4*n` words, one 128-bit VLIW instruction per four dwords, **high dword first** (`part3, part2, part1, part0`) |
+| `0x207` | `VP_UPLOAD_CONST_ID` | V | constant-file pointer, `IMM 0x207 0` before every upload |
+| `0x208` | `VP_UPLOAD_CONST` | V | `NONINCR 0x208 1024` = `256 * 4` words = the whole `vec4[256]` constant file, uploaded in full on every draw |
 | `0x209`, `0x20a` | — | ? | cleared at reset |
 | `0x20b` | — | ? | reset writes 3 |
 
 `0x206` is the only path by which vertex instructions reach the engine; the
 words are in [[Vertex Shader ISA]]. The constant window is `0x208` and is
 independent of the fragment-side `FP_CONST` window at `0x820`.
+
+### 3.1 What the vertex program may use
+
+Limits that a vertex-side compiler or a hand-written probe has to respect
+([[Vertex Shader ISA]]):
+
+| Resource | Size |
+|:--|:--|
+| VLIW instructions | 256, one end-of-program bit |
+| Local `vec4` registers | 32 |
+| Input attribute `vec4` registers | 16 |
+| Constant `vec4` registers | 256 (`0x207`/`0x208`) |
+| Export `vec4` registers | 16 (index 31 = disabled) |
+| Condition registers | 2, per-component (less/equal/greater than 0) |
+| Address registers | 4 (`A0.xyzw`), with an 8-deep shared push/pop stack |
+
+Register indices are 5 bits; 32..63 for `rA`/`rB`/`rC` and 32..62 for `rD` are
+invalid, and **the program aborts if an invalid index appears in an instruction
+even when that operand is unused**. Export indices 16..30 abort as well, and so
+does a stack over- or underflow. Those are not silent: an aborted vertex
+program leaves the primitive undrawn, which looks like an empty frame.
+
+The upload is a full rewrite every draw - there is no dirty tracking - so the
+constant file costs 1024 register writes per draw regardless of use. That is
+visible in the timing work as part of the fixed per-draw cost.
 
 ## 4. Setup unit and linker (`0x300`..`0x364`)
 
@@ -320,11 +355,20 @@ separated the six words.
 | `0xb13` | — | ? | never written |
 | `0xb14` | — | ? | cleared at reset |
 
-`0xb00` is the only register in this block whose value has been varied
-deliberately, and the only reason it appears at all is the ordering constraint
-with `0x750`: writing the texture descriptors before `0xb00 = 3` corrupts
-non-power-of-two textures. The block behaves like a per-stage alias window, which
-is what the `PIPEALIAS` block at `0xc00` also looks like.
+**Measured: inert for rendering on AR20.** `0xb00` was poked to 0, 1, 2, 3, 4, 7,
+15 and `0x1ff` immediately before the draw, and `0xe41` to 0, 1, 2, 3 and 4, on a
+full-screen textured quad (4x4 `RGBA8888`, row-coloured, `filter_quad_fs`). Whole
+frames - 65532 pixels each - were compared: **zero differing pixels for every
+value**, and no hangs. Neither register changes what the fragment pipeline
+produces.
+
+The one effect that has ever been observed for this block is an *ordering*
+constraint with `0x750`: writing the texture descriptors before `0xb00 = 3`
+corrupts non-power-of-two textures (see section 8). That is consistent with a
+per-stage alias window - a write to `0x750` lands in whichever pipe `0xb00`
+selects - and it is why the reset sequence walks `0xb00` through 1, 2, 3 with a
+matching `0xe41` write. What each stage actually holds is still unknown; what is
+known is that none of it feeds the colour path on AR20.
 
 ## 13. PIPEALIAS (`0xc00`..`0xc53`)
 
@@ -343,7 +387,14 @@ and never used otherwise:
 
 Four-address groups at `0x30` stride suggest four pipeline slots with four
 registers each - most plausibly the four ALU slots' per-pipe configuration,
-aliased into the main register space. No experiment exists.
+aliased into the main register space.
+
+**Measured: inert for rendering on AR20.** `0xc00`, `0xc01`, `0xc02`, `0xc03`,
+`0xc30`, `0xc31`, `0xc40` and `0xc50` were each poked with `0xffffffff`,
+`0x000001ff` and `0x00000001` before the draw, on the same full-frame textured
+quad as section 12. Every value gave **zero differing pixels** and no hang, so if
+the block is an alias window for per-pipe state, none of that state is reachable
+from a single-batch fragment program with one ALU packet.
 
 ## 14. Global / cross-engine (`0xe00`..`0xe87`)
 
@@ -449,10 +500,12 @@ names them:
 
 ## 16. Gaps
 
-* **Blocks 0xb00 (GSHIM) and 0xc00 (PIPEALIAS)** are only known to exist: every
-  register in them is cleared at reset and two of them (`0xb00`, `0xe41`) are
-  varied in a fixed sequence whose effect is only visible through the `0x750`
-  ordering constraint.
+* **Blocks 0xb00 (GSHIM) and 0xc00 (PIPEALIAS)**: now measured to be inert for
+  the fragment path on AR20 (sections 12 and 13) - every register poked with
+  several values changed no pixel of a textured full frame. What remains is the
+  *stage* semantics of `0xb00` (it selects something that only shows up through
+  the `0x750` ordering constraint) and whether the `0xc00` groups need a
+  multi-packet ALU program, a second pipe or a non-AR20 chip to do anything.
 * **`0xa02`..`0x0a08`**: six threshold words plus one more, programmed twice per
   draw with identical values. Flush thresholds, counters or both - not separated.
 * **`0x501`**: the companion write to `0xe20`. Its high bits look like two packed

@@ -590,3 +590,34 @@ To reproduce: generate a shader with the wanted `alu_buffer_size`, run
 `tools/assembler --testonly --result`, and wrap every run in `timeout` with a
 `pkill -f tools/assembler` afterwards - a hang wedges the channel until the
 process is killed, and the next run recovers on its own.
+
+## Register pokes: `GRATE_POKE`
+
+Not every register has an API. `GRATE_POKE="0xb00=3,0xc00=0x1ff"` pushes raw
+register writes at the very end of `grate_3d_setup_context()`, i.e. after the
+context, attributes, targets, textures and shaders are programmed and before the
+draw. Every poke is an `INCR addr 1` pair, so the value is a full 32 bits (`IMM`
+carries 16).
+
+The control that proves the path works is `GRATE_POKE="0x903=0"`: clearing
+`RT_ENABLE` leaves the colour target untouched, so the readback becomes the clear
+colour (`0x4C4C4C4C` instead of `0xFF01FF00`). Any probe that returns the
+unmodified value without such a control has proved nothing.
+
+**Whole frames, not one pixel.** `--result` reports pixel (0,0), which is often
+insensitive to a change; run with `--expected 0xDEADBEEF` to force the frame dump
+and compare histograms instead. On the 4x4 row-coloured `filter_quad` frame
+(65532 pixels, 4 distinct words) the following changed **zero** pixels and never
+hung:
+
+| register | values poked |
+|:--|:--|
+| `0xb00` | 0, 1, 2, 3, 4, 7, 15, `0x1ff` |
+| `0xe41` | 0, 1, 2, 3, 4 |
+| `0xc00`, `0xc01`, `0xc02`, `0xc03` | `0xffffffff`, `0x1ff`, 1 |
+| `0xc30`, `0xc31`, `0xc40`, `0xc50` | `0xffffffff`, `0x1ff`, 1 |
+| `0x750` (and after `0xb00=3`) | 0 |
+
+One shell trap: `pkill -f tools/assembler` matches the shell running the probe,
+because that command line contains the same string, so it kills the probe itself
+and the run looks like a silent success. Use `pkill -x assembler`.
