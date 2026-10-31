@@ -910,3 +910,917 @@ usually travel together. No other bits are set.
   white and tex1 to blue, a TEX word with sampler index 0 samples white
   (`0xFFFFFFFF`) and index 1 samples blue (`0x000000FF`), so bits 0..2 select the
   sampler directly and two textures can be used in one shader.
+
+---
+
+# Part II: measured behaviour
+
+The sections below describe the machine, not a backend: they are the results of
+experiments on AR20 hardware (the recipes are in [[Writing a Compiler]] section
+10). They used to live in the compiler notes and are collected here because they
+are ISA facts.
+
+Note on cross-references inside the moved text: a pointer to "section 10" or
+"10.4" means the measurement recipes in [[Writing a Compiler]], while pointers of
+the form "see 4.x" were written when this text lived there and refer to that
+document's backend sections.
+
+## Register map and limits
+
+
+**Known**, from `asm.h` and the blob:
+
+| Range | Contents | Notes |
+|:--|:--|:--|
+| 0..15 | row registers `r0..r15` | 4 rows x 4 components: `r(4*row + comp)`. Live only up to `alu_buffer_size` rows |
+| 16..23 | global registers `g0..g7` | survive across batches (measured, see below) |
+| 24..27 | ALU result registers `alu0..alu3` | the ALU pipeline latches, see "Forwarding and the ALU pipeline" |
+| 28..30 | embedded constants `imm0..imm2` | one set per batch, occupies ALU slot 3 |
+| 31 | lowp `vec2(0.0, 1.0)` | `.l` = 0.0, `.h` = 1.0 |
+| 32..63 | uniforms `u0..u31` | fp20 each, or 64 fx10 halves |
+| 64..71 | condition registers, in pairs | 8 CRs, each holding two fx10 `0.0`/`1.0` |
+| 72 | `posx` | `8192 + frag.x` |
+| 73 | `posy` | `8192 + (height - 1) - frag.y` |
+| 74 | coverage | documented but not selectable by the assembler |
+| 75 | `pface` | polygon face |
+| 76 | kill | write non-zero to discard |
+
+Practical register budget for the allocator: **16 fp20 (32 fx10) row registers,
+8 globals, 4 ALU latches, 3 immediates, 32 uniforms.** That is smaller than
+typical NIR temp counts by an order of magnitude, so register allocation has to
+be the first thing designed, not the last.
+
+**A `mediump vec4` uniform occupies four consecutive registers** - a shader that
+sums eight of them reads `c0..c31` and nothing above - and the operand field's
+constant range is exactly that window (`c0..c31` = register numbers 32..63, with
+64..71 already taken by the condition registers), fed by a 32-word `0x820` push.
+
+**But 32 scalars is not the shader-visible limit: the blob accepts 16 `vec4`
+uniforms.** A shader summing `m0..m15` compiles with `0 lines, 0 errors`, emits
+7 batches and 60 ALU words, sets no embedded constants at all, and its header
+reads `unknown0: 1`, `unknown1: 3`. That is 64 fp20 scalars through a 32-register
+window, and how it is legal is **open**: the first batch alone already reads
+`c0`, `c2`, `c4`, `c6`, `c8`, `c12`, `c16`, `c20` and `c22`, so a naive
+"8 vec4 and reject" rule would refuse shaders the blob happily compiles.
+
+**Uniform slots are assigned densely by use, not by declaration.** Two shaders
+that differ only in which uniforms they touch show it:
+
+| shader | uniform symbols (from `cgc -F --uniforms`) | ALU reads |
+|:--|:--|:--|
+| `m0 + m8` | `m0.xyzw @ 127,0`, `m8.xyzw @ 127,1` | `c0..c3` and `c4..c7` |
+| `m8` alone | `m8.xyzw @ 127,1` | **`c0..c3`** |
+
+The same uniform moves from `c4..c7` to `c0..c3` depending on whether `m0` is used
+before it, so the constant slot is a compiler-chosen property of the *use*, and
+the symbol table's `location` field is where the driver finds it. Components are
+pruned as well - a 16-uniform shader reports `m5.xz` and `m6.x` for uniforms whose
+other components are dead - so the slot pressure is live-value pressure, not
+declaration size.
+
+What that means for the 32-word window is still not fully settled, but the
+important negative result stands: **the blob does not diagnose uniform pressure.**
+Both the 8-`vec4` and the 16-`vec4` shaders emit a program that references
+exactly `c0..c31` and nothing outside, and neither produced an error, so a
+16-`vec4` shader either aliases slots or relies on a reload mechanism that is not
+visible in the stream (`cgc -F -R` shows **no `0x820` write at all** - the blob
+never uploads constants, so the driver owns the window entirely). Two practical
+consequences: do not copy "16 vec4 is supported", and do not assume the `asm.h`
+array sizes are a hardware limit either - they are the hand-written assembler's
+convenience limit. Reject above 8 `vec4` / 32 live scalar slots until an
+end-to-end hardware test says otherwise, and remember the slot map is relocatable
+when you build the uniform upload.
+
+Two structural constraints that shape it:
+
+* row registers are *only* addressable as `r0..r3` by TEX and DW, and as
+  `r0..r3` by the MFU multiplier. So texture coordinates and store payloads must
+  end up in the current row, which forces copies (`r3.lh, r2, #1, #0` style
+  moves) around every TEX and DW.
+* `alu_buffer_size` (1..4) decides how many rows are in flight. The blob sets it
+  from its scheduler; the assembler refuses anything but `ALU0..ALU3` in a
+  packet, so 4 rows is the ceiling for the *register* file but the assembler
+  cannot populate 8 halves in one packet (see [[Compiler Internals]]).
+
+
+## Instruction budget
+
+
+**Known** (hardware - the schedule word's address field is 6 bits, the count
+field 2 bits):
+
+```
+max 64 exec batches per program
+per batch:  <= 1 PSEQ, <= 3 MFU, <= 1 TEX, <= 3 ALU packets, <= 1 DW
+max 64 MFU words, 64 ALU packets (256 ALU slots), 64 TEX, 64 DW, 64 PSEQ
+```
+
+`fp/pack.c` already asserts `num_instructions < 4` and `address < 64`, and
+`grate_program.c` asserts `num_fp_instrs < 64`.
+
+This is the single hardest constraint on a real shader compiler: a nontrivial
+fragment shader is ~20-40 ALU slots per source statement, so **256 ALU slots is
+the whole program**. Any NIR that survives legalisation must be counted, and the
+backend needs a defined failure mode (Mesa can fall back to `llvmpipe`, or the
+shader can be rejected). Unrolling loops makes this worse, not better.
+
+
+## Precision limits (measured)
+
+The *encodings* of the two formats are in "Registers" above (FP20 / FX10); this
+section is about what the hardware does with them.
+
+
+**Known / inferred:**
+
+* `fp20`: sign, 6-bit exponent (bias 31), 13 stored significand bits. `0x3f`
+  exponent is inf/NaN (`float_to_fp20()` maps `0xff` to `0x3f`). Range roughly
+  `2^-31 .. 2^32`, 14-bit effective significand - i.e. *between* fp16 and fp32,
+  but with no denormals.
+* `fx10`: signed 10-bit fixed point, scale 1/256, range `[-4.0, 3.996]`,
+  resolution `1/256`. The assembler converts by truncating `f * 256`, which
+  independently confirms truncation-toward-zero at least in the tool; the
+  hardware's own rounding on `ALU`/`TEX` results is **open** (see [[Writing a Compiler]] 9.3).
+* Arithmetic is *always* one of these two; there is no fp32 anywhere.
+
+So a NIR backend needs `nir_lower_fp64`, `nir_lower_int64`, `nir_lower_int`
+(all integer ops are illegal), and a precision pass that assigns every
+intermediate to fp20 or fx10. `mediump` maps naturally onto fp20 arithmetic and
+`lowp` onto fx10 (two components per register), which is also why the MFU packs
+a `lowp vec2` into one interpolation slot and a `mediump vec2` into two
+([[Fragment Shader ISA]], "MFU interpolation slots depend on precision").
+
+
+## Batch structure and per-unit limits
+
+
+**Known.** A batch is one row of the schedule streams. One word per stream per
+batch, except MFU (a batch may consume 1..3 MFU words) and ALU (1..3 packets).
+The schedule word is
+
+```
+bits 0..1  count (number of words to execute, 0 = NOP but still 1 cycle)
+bits 2..7  address (index of the first word to execute)
+```
+
+The assembler computes `address = num_pushed_so_far - count + 1`, i.e. the
+address is "the last `count` words pushed", which is why three MFU slots in the
+same batch get consecutive addresses.
+
+### 4.2 Per-unit constraints
+
+* ALU packet: 4 slots, each slot is one instruction. Slot 3 can instead carry
+  three embedded constants, in which case that packet has only 3 ALU ops.
+* `recv`/`send` (bits 60/61) implement a cross-packet accumulator chain; the
+  table in [[Fragment Shader ISA]] is the contract. `recv` overrides `rC` with
+  the accumulated value.
+* MFU consecutive records with equal `sched` share one 64-bit word.
+
+
+## Forwarding and the ALU pipeline
+
+
+This is the part a scheduler must get right, and it was previously unknown. All
+measurements use the Grate assembler harness (section 10).
+
+**Readback channel order (re-measured, and it corrects this document).** Fill all
+four slots with one value, then overwrite exactly one slot and see which byte
+moves. With every slot at `0.25` the word is `0x40404040`, and overwriting a
+single slot with `0.75` gives:
+
+| slot overwritten | word | byte that moved |
+|:--|:--|:--|
+| `r2.l*` | `0x404040BF` | byte 3 |
+| `r2.*h` | `0x4040BF40` | byte 2 |
+| `r3.l*` | `0x40BF4040` | byte 1 |
+| `r3.*h` | `0xBF404040` | byte 0 |
+
+So the 32-bit word is, from MSB to LSB, **`r2.lo`, `r2.hi`, `r3.lo`, `r3.hi`** -
+i.e. byte 0 = `r3.hi`, byte 1 = `r3.lo`, byte 2 = `r2.hi`, byte 3 = `r2.lo`.
+That is the *reverse* of the guess recorded here earlier (`R = r2.low`...), which
+came from a single calibration shader; four one-slot overwrites agree with each
+other and with the fill, so this table is the one to use. Any earlier reading of
+"byte N" in these notes should be re-checked against it.
+
+| Producer -> consumer | Distance | Result | Meaning |
+|:--|:--|:--|:--|
+| ALU (packet 1) -> DW (same batch) | 0 | `0x40004000` | works |
+| ALU0 -> ALU1, same packet (`alu0` as source) | 0 | `0x40004000` | works |
+| ALU (packet 1) -> ALU (packet 2, same batch), reading **`r3.h`** | 1 packet | `0x40000000` | read is fresh, but the **earlier write is lost** |
+| ALU (packet 1) -> ALU (packet 2, same batch), reading **`alu0.h`** | 1 packet | `0x40004000` | works |
+| ALU (batch N) -> ALU (batch N+1), reading **`r3.h`** | 1 batch | `0x40004000` | works |
+| TEX -> ALU, same batch | 0 | `0x7F007F00` | works - the sample is already visible |
+| TEX -> ALU, next batch | 1 batch | `0x7F007F00` | works |
+| TEX -> DW, same batch | 0 | `0x40404040` | works |
+| ALU -> TEX coordinates, fp20 in `r0` | 1 batch | `0xFFFFFFFF` / `0x00000000` | works - right half vs left half of a two-tone texture |
+| ALU -> TEX coordinates, fx10 half only | 1 batch | `0x00000000` either way | **not used** - see below |
+
+So:
+
+> **Intra-batch, the row/global register file is not a safe data path; the
+> `alu0..alu3` result registers are. Between batches, register writes do commit.**
+
+The `0x40000000` case is worth stating precisely, because a first reading of it
+is misleading. Packet 1 writes `r3.h = 0.25`; packet 2 reads `r3.h` and writes
+`r2.h`. The framebuffer then shows `G = 0x40` (so packet 2's read **did** see the
+new value - the read is forwarded) and `A = 0x00` (so `r3.h` is *zero* by the
+time the DW stage reads it). In other words the reader gets the value through a
+bypass, and the pending register-file write of that same register is suppressed.
+The read is not stale; the **writeback is dropped**.
+
+That reproduces identically on two consecutive runs, so it is deterministic, not
+noise. Whether it is exactly "bypass cancels the writeback" or something subtler
+in the ALU writeback arbitration is unresolved, but the compiler rule is the
+same either way: **never read, in one packet, a row/global register written by an
+earlier packet in the same batch** - chain through `aluN` instead, and let the
+chain tail write the register.
+
+`aluN` cannot be a *destination* in the assembler grammar; the ALU slot number
+implicitly names the latch, so a probe writes a row register and reads the
+slot's latch by number. That is also how a backend must model it: the latch is a
+property of the slot, not of an operand.
+
+**Caution on the latch names.** A direct probe in this session did *not*
+reproduce the `alu0 -> ALU1` hop: reading `alu0` from ALU1 returned 0, while
+reading `alu1` from ALU2 returned the value packet **ALU0** had written. The
+forwarding fact - same-batch chaining through latches works - still holds, but
+the assembler mnemonic `aluN` seems to be offset by one slot from the packet
+whose result it names. Treat the `N` as unverified until a dedicated probe
+settles the mapping.
+
+The blob itself relies on the chain heavily: for eight summed `vec4` uniforms it
+emits one packet of `mad r3.hl, c0, #1, c4` ... `mad r3.hl, c8, #1, d0`, reading
+the latches by number *inside* the batch. Whatever the exact numbering is, the
+`slot k writes -> slot k+1 reads` form is what a scheduler should emit.
+
+**Second attempt, still not settled.** Priming all four slots of one packet with
+four distinct uniform values and reading `alu0/alu1` (then `alu2/alu3`) from the
+next packet returns `0xE300DB00` for the first pair and `0xDB00DB00` for both the
+second pair and a single-value control - so the four latches do **not** carry
+four distinguishable values at the point they are read, and the numbers do not
+match the 8-bit calibration those uniforms would give. Either the latches are
+consumed by the *issue* of the following packet (that is, they hold the in-flight
+results of the packet being executed, not the retired ones) or the read is one
+slot off, as above. The safe compiler rule is unchanged and does not depend on
+resolving it: use `aluN` only for an immediate same-batch chain of the form
+`slot k writes, slot k+1 reads`, which is what every working test shader does,
+and write the chain tail to a row register.
+
+**Texture results are the exception: they are visible to the ALU in the batch
+that issued the fetch.** A probe that samples a 4x4 grey texture
+(`0x40404040`, i.e. 0.251) and doubles one component in the same batch returns
+`0x7F` per channel (0.5), and the same probe with the ALU moved to the next
+batch returns the identical word. So a scheduler does **not** have to pad
+distance after a TEX, which removes the largest suspected source of stall
+padding from the design.
+
+Two further facts about the batch, both structural rather than measured:
+
+* the stage order inside one batch is fixed - PSEQ, MFU, TEX, ALU, DW - and the
+  assembler grammar enforces it (writing `TEX:` after `ALU:` is a syntax error).
+  Consequently **ALU -> TEX within one batch is impossible**, and computed
+  texture coordinates always cost a batch boundary;
+* TEX and DW address the pixel-packet row registers only (`r0..r3`), so a
+  sampled value that a later stage needs must be live in the current row.
+
+**Texture coordinates are read as `fp20`, and ALU-written coordinates do reach
+the unit.** With a two-tone 4x4 texture (left half black, right half white),
+writing `s = 0.875` into `r0` as fp20 in one batch and sampling in the next
+returns `0xFFFFFFFF`; writing `0.125` returns `0x00000000`. The same writes done
+as an fx10 half (`r0.l*` or `r0.*h`) sample the same texel regardless of the
+value, which is what the ISA reference says: the coordinate registers are
+consumed as fp20.
+
+This retracts an earlier conclusion in this document. A first probe reported
+that coordinates "never took effect", but it was writing the coordinate as an
+fx10 half *and* using `r2` as both the third coordinate and the TEX destination;
+both mistakes make the coordinate read as 0. So the coordinate path works, and
+since ALU cannot precede TEX within a batch (stage order), the compiler must
+assume **one batch of latency between computing a coordinate and using it** - a
+scheduling constraint, not a hazard.
+
+This is consistent with the ALU being a 4-stage pipeline where each packet is
+one cycle and `alu0..alu3` are the actual pipeline latches: within a batch,
+packet *k+1* is issued before packet *k* retires, so only the latches carry
+data forward. Across a batch boundary enough cycles pass for the register file
+write to land.
+
+**Practical rule for the backend:** the intra-batch dependency graph must be
+built over `aluN`, not over virtual registers. That is a strong constraint on
+register allocation - a value with a same-batch consumer must be bound to an
+ALU latch, and only one consumer per latch per packet boundary. In practice this
+means scheduling ALU into packets as *chains* (`alu0 -> alu1 -> alu2 -> alu3`)
+with the chain tail written back to a row/global register.
+
+**Half selection is the part that bites.** A bare `fp20` source read takes the
+**high** half of the pair: with `r2.lo = 0.25` and `r2.hi = 1.0`,
+`MAD r3.*h, r2, #1, #0` returns `1.0`. The low half is only addressable as an
+*fx10* operand - `r2.l` / `r2.h` read the halves as 1.10 fixed point, and the
+same probe reads 0.25 through `r2.l` and 1.0 through `r2.h`. The destination side
+is independent: `.l*` writes the low half only, `.*h` the high half only, and
+`.lh` writes **both** (`ALU_DST` in `fragment_asm.y` computes
+`low = l1||l2`, `high = h1||h2`). So a value a later batch must read as fp20 has
+to be written in the high half - `.*h` or, as every working test shader does,
+`.lh`. A `.l*`-only write is invisible to a later fp20 operand read. That one
+rule explains a whole family of probes that appeared to "lose" values.
+
+**Refined later, and the mechanism is the value format, not the width.** The ISA
+has exactly two formats, `fx10` and `fp20`, and the destination suffix selects
+which one is written: `.l*` / `.*h` write an **fx10** value into the low/high
+slot (the ALU performs the conversion), while `.lh` writes the **fp20** result.
+The two are not interchangeable. A register written as fx10 and then read back as
+fp20 decodes to ~0.0078 (`0x02` at 8-bit output) - that is the whole `0x02`
+mystery, and it is a format mismatch, not truncation. In the other direction the
+conversion is exact: 0.75 written `.lh` (fp20), copied with `.l*` (fp10
+conversion) and stored reads `0xBF` = 0.75.
+
+Consequence for probes and for a backend: keep computations in fp20 and only
+convert to fx10 at the point where a value is consumed as fx10 (a render-target
+store, a texture coordinate). Mixing them silently produces plausible-looking
+wrong numbers, which is exactly how the earlier `0x02` readings were
+misdiagnosed as a forwarding hazard. The controlled
+comparison is one 3-batch copy chain, changing nothing but the destination
+suffix:
+
+| destination suffix | result word | reading |
+|:--|:--|:--|
+| `.lh` (both halves) | `0xEF00F300` | the value propagates |
+| `.*h` (high only) | `0x00000000` | nothing propagates |
+| `.l*` (low only) | `0x00000000` | nothing propagates |
+
+So the operative rule is: **any value a later batch must read has to be written
+with `.lh`.** That single line accounts for the `0x02` readings that were
+previously, and wrongly, attributed to forwarding or to operand ports.
+
+Even so the value is not exact through a multi-hop chain - 0.75 written once and
+copied twice comes back as `0xF3` = 0.953 - so a quantitative probe must write a
+value once and let the DW stage read that same register, never copy it through
+intervening ALU packets.
+
+**There is no rC operand-port restriction - settled.** `MAD r2.l*, rA, #1, rC,
+#1` computes `rA + rC` and is read out as fx10, so a `DW` sees it. With
+`u0 = 0.5`, `u1 = 0.25` and row registers primed with `.lh` (the only write that
+stores a usable fp20), all three arrangements return the exact answer:
+
+| rA | rC | result | reading |
+|:--|:--|:--|:--|
+| `r1` (row, 0.5) | `u1` (uniform) | `0xBF` | 0.75 - both honoured |
+| `u0` (uniform) | `u1` (uniform) | `0xBF` | 0.75 - control |
+| `u1` (uniform) | `r0` (row, 0.5) | `0xBF` | 0.75 - row in rC is read |
+
+An immediate rC beside a row rA saturates as expected
+(`MAD r2.l*, r1, #1, #1, #1` = 1.5 -> `0xFF`). So a backend may put any uniform,
+row register, immediate or embedded constant in rC.
+
+Original, incorrect note (kept as a warning, do not act on it): rC was measured
+as reading zero when it named a uniform beside a row-register rA/rB - five rows
+computed `1*1 + (-0.5)` as `1.0` instead of `0.5` - and a row register in rC was
+measured as unread. Both came from priming row registers with `.l*` / `.*h`,
+which store a truncated fp20 that reads back as ~0.0078, so neither operand ever
+held the value the probe assumed. It is the same trap as the `0x02` readings
+above, and the reason every probe in this document now writes `.lh` and reads
+back `.l*`.
+
+**`(other)` sends, `(this)` receives, and only to the adjacent packet.**
+`(other)` is bit 61 on packet *k*, `(this)` is bit 60 on packet *k+1* of the same
+batch. The receiver computes `rA*rB + acc`, so the accumulator **replaces** rC: a
+receiver written `MAD r3.*h, #0, #1, 0.1` returns the sender's result (measured
+0.25 and 0.5), never 0.1. Reversing the order transfers nothing (0.1 survives),
+and a receiver in the next batch gets no handoff. It is a within-batch chaining
+mechanism that complements `aluN` rather than replacing it.
+
+Other forwarding facts, from existing working tests rather than new probes:
+
+* MFU interpolation -> ALU, same batch: works (`fs_vs_tests.txt`).
+* MFU interpolation (batch 1) -> ALU (batch 2): works (`sky_fs.txt`).
+* TEX -> DW, same batch: works (`filter_quad_fs.txt`) - TEX in batch 2 and the
+  store of its result in batch 2 produce the correct filtered quad.
+* ALU -> DW, same batch: works (`sky_fs.txt`).
+
+
+## Arithmetic semantics
+
+
+Same harness, same calibration as 4.3. Two probes per question, with the
+operands swapped, so that "returns source 0" and "returns the special value"
+can be told apart.
+
+**`CMP` (assembler mnemonic `CSEL`) is `(rA*rB < 0) ? rB : (rC*rD)`.**
+
+| rA | rB | rC | rD | result | reading |
+|:--|:--|:--|:--|:--|:--|
+| -0.25 | -0.25 | 0.25 | 1 | `0x40` (0.25) | product is +, so the false branch ran - `rA < 0` would have been true |
+| 0.25 | -0.25 | 0.25 | 1 | `0x00` (-0.25) | product is -, true branch ran |
+| -0.25 | 0.5 | 0.25 | 1 | `0x7F` (0.5) | true branch yields **`rB`**, not `rA*rB` (which would be -0.125 -> 0) |
+
+So the reference's `(rA < 0) ? rB : (rC*rD)` is wrong in the *condition*, and
+right in the *result*: the sign tested is the one of `rA*rB`, which is what makes
+`CMP` symmetric with `MIN`/`MAX` (`min(rA*rB, rC*rD)`).
+
+**Finite `MIN`/`MAX` order correctly.** `MIN(0.75, 0.25) = 0.25`,
+`MAX(0.75, 0.25) = 0.75`.
+
+**`fp20` has no infinity and no NaN. The maximum exponent (`0x3F`) is the
+finite value `2^32`, and arithmetic on it is ordinary arithmetic.**
+
+That was measured with a chain rather than a single operation, because one
+multiply cannot tell "finite" from "saturating": start at the value, multiply
+by `0.25` repeatedly across batches, and see whether it lands on an exact power
+of two.
+
+| start | steps x 0.25 | predicted if finite | measured |
+|:--|:--|:--|:--|
+| `0x7C000` (exp 62 = `2^31`) | 16 | `2^31 * 2^-32 = 0.5` | `0x7F` = 0.5 |
+| `0x7E000` (exp 63) | 17 | `2^32 * 2^-34 = 0.25` | `0x40` = 0.25 |
+
+An infinity or a NaN would not survive seventeen multiplies and arrive exactly
+on `0.25`; a saturating format would have stuck at its maximum. Control chains
+from `0.25` (1, 2, 3 steps -> `0x10001000`, `0x04000400`, `0x01000100`) confirm
+the chain mechanism itself.
+
+`MIN`/`MAX` therefore order correctly at the top of the format:
+`MIN(2^32, 0.25) = 0.25` and `MAX(2^32, 0.25) = 2^32`, identical in both
+argument orders.
+
+**Beware the constants.** Getting this wrong is easy and produces convincing
+nonsense - the first attempt at this experiment used `0x3E000` as "0.25" and
+concluded, wrongly, that `MIN`/`MAX` were broken. `fp20` is
+`(1 + mantissa/8192) * 2^(exp-31)`, so:
+
+| value | fp20 |
+|:--|:--|
+| 0.125 | `0x38000` |
+| 0.25 | `0x3A000` |
+| 0.5 | `0x3C000` |
+| 1.0 | `0x3E000` |
+| 2.0 | `0x40000` |
+| `2^31` | `0x7C000` |
+| `2^32` (max exponent) | `0x7E000` |
+
+**Overflow saturates; it does not wrap and it does not clamp at `2^32`.**
+Products that exceed the range behave like a value at the top of the format:
+
+| chain | exact would give | measured |
+|:--|:--|:--|
+| `2^31 * 4 = 2^33`, then 17 x 0.25 (`/2^34`) | 0.5 | `0x7F` = 0.5 |
+| `2^32`, then 16 x 0.25 (`/2^32`) | 1.0 | `0xFF` = 1.0 (control) |
+| `2^31 * 2^31 = 2^62`, then 31 x 0.25 (`/2^62`) | 1.0 | `0x00` |
+
+A clamp at `2^32` would have given `0.25` in the first row; a wrap to zero would
+have given `0x00` there. The third row rules out exact continuation. The only
+model consistent with all three is saturation at the largest finite value, which
+is `2^32 * (2 - 2^-12)`, i.e. just below `2^33` - that is why the first row is
+numerically indistinguishable from exact arithmetic at 8-bit output precision.
+For a compiler this is the friendly behaviour: no NaN, no wrap, so `min`/`max`
+clamps behave as written.
+
+Both of the previously open points here are now answered elsewhere. Signed zero
+is not reachable at all (9.2 item 4), so a `-0.0`/`+0.0` comparison cannot be
+constructed - there is no tie rule to find. And the saturation point is measured
+to 0.125 binades by reading the exponent back with `lg2`: `2^33` reads 33, and
+so does every larger constructed value, while `2^41` halved eight times reads
+25. That puts the largest finite value at `2^33` (consistent with
+`2^32 * (2 - 2^-12)`, which is the same number to within one binade step); a
+finer figure would need a different amplifier than `lg2`.
+
+**fp20 writes truncate; there is no round-to-nearest anywhere in the ALU.**
+Measured with `x = 1 + eps` then `4096*(x-1)` (embedded constant for the offset):
+
+| eps | result | reading |
+|:--|:--|:--|
+| 0 | `0x00` | 0 |
+| 1 ulp (`2^-13`) | `0x7F` = 0.5 | 1 ulp survives |
+| 1.5 ulp | `0x7F` = 0.5 | **truncated to 1 ulp**; rounding would give `0xFF` |
+| 2 ulp | `0xFF` = 1.0 | exact |
+
+The assembler's `fp20` packing truncates too, so assembler and hardware agree and
+a backend can predict every intermediate exactly from the emitted constants.
+
+**The SFU is accurate to within the format, and its output is full range.**
+Amplified with `K*(y - expected) + 0.5` at K = 256 (one fp20 ulp maps to ~0.25
+of output range, 0x7F = exact):
+
+| op | input | expected | measured |
+|:--|:--|:--|:--|
+| `rcp` | 3.0 | 0.333333 | `0x7F` |
+| `rcp` | -2.0 | -0.5 | `0x7F` (sign preserved) |
+| `ex2` (with `preex2`) | -1 | 0.5 | `0x7F` |
+| `ex2` | -0.5 | 0.707107 | `0x7F` |
+| `ex2` | -2 | 0.25 | `0x7F` |
+| `sin` (with `presin`) | pi/6 | 0.5 | `0x78` -> 0.49989 |
+| `sin` | 7pi/6 | -0.5 | `0x87` -> -0.49989 |
+| `sin` | 2pi+pi/6 | 0.5 | `0x78` -> 0.49989 |
+| `sin` | -pi/6 | -0.5 | `0x87` -> -0.49989 |
+| `cos` (with `precos`) | 0 | 1.0 | `0x7F` |
+| `cos` | 2pi/3 | -0.5 | `0x87` -> -0.49989 |
+| `cos` | 2pi | 1.0 | `0x7F` |
+| `frc` | -0.25 | 0.75 | `0x7F` |
+| `lg2` | 0.5 | -1.0 | `0x7F` (negative results are produced) |
+
+The `sin`/`cos` rows are **not** an SFU error: the argument itself is truncated to
+fp20 on the way in. `pi/6 = 0.5235988` has an fp20 ulp of `2^-12` there, so the
+register holds 0.5234375, and `sin(0.5234375) = 0.4998605` - which is the
+measured 0.499885 to within 2.5e-5. Likewise `7pi/6` truncates to 3.6650391 and
+`sin` of that is -0.4998676 against a measured -0.499885. So the SFU itself
+contributes less than ~0.1 ulp: **every op is exact to the precision of its
+input, including arguments past `2pi`** (`sin(2pi+pi/6)` and `cos(2pi)` are as
+accurate as their small-angle counterparts, so `PRE*` really does do range
+reduction). A backend needs no polynomial refinement for any of them.
+
+**The SFU does not clamp to [0,1].** The 8-bit output stage is what saturates, so
+the question only looks ambiguous until the value is halved - storing both `y`
+(byte3) and `y/2` (byte1) in one run separates a true 2.0 from a clamped 1.0:
+
+| op | input | true value | `y` | `y/2` |
+|:--|:--|:--|:--|:--|
+| `rcp` | 0.5 | 2.0 | >=1 | >=1 (`0xFF`) |
+| `rcp` | 0.25 | 4.0 | >=1 | >=1 |
+| `sqrt` | 2 | 1.41421 | >=1 | `0xB4` = 0.706 -> **1.412** |
+| `sqrt` | 4 | 2.0 | >=1 | >=1 |
+| `rsq` | 0.25 | 2.0 | >=1 | >=1 |
+| `ex2` | 1 | 2.0 | >=1 | >=1 |
+
+So the MFU carries values above 1.0 and a shader may use them; only the store
+clamps. That matters for `rsq`/`sqrt` chains, where an intermediate above 1.0 is
+perfectly legal.
+
+**PRE ops and their main op are one instruction in two words.** All three ways of
+splitting them agree, and leaving the `PRE` out silently gives a wrong answer:
+
+| variant | `ex2(-1)` |
+|:--|:--|
+| `preex2` in one batch, `ex2` in the next | 0.5 - correct |
+| both `PRE` and main in the same batch (two MFU words) | 0.5 - correct |
+| `preex2`, one empty batch, `ex2` | 0.5 - correct |
+| `ex2` with no `preex2` | **1.0 - wrong** |
+| `cos(0)` with no `precos` | **0 - wrong** |
+| `sin(pi/6)` with no `presin` | 0.5216 - wrong |
+
+The two words must also be given the **same operand**. Overwriting the operand
+between them produces garbage rather than either answer: `preex2` of -1 then
+`ex2` of 0 returns **0** (not 0.5, not `ex2(0) = 1.0`), and `precos` of 0 then
+`cos` of 3 returns **0.706** (not 1.0, not `cos(3) = -0.99`). The `PRE` result is
+not a usable value either - it cannot be captured and reused: read through the
+`sfu` source, `preex2(-1)` gives 0.5, `preex2(0)` gives 0 and `preex2(2)`,
+`presin(pi/6)` and `precos(0)` all saturate at >=1, which is not a coherent
+function of the argument. So a backend must emit the pair atomically, with the
+same register and value, in the same batch or any later one; the only thing it
+can schedule around is unrelated work.
+
+**Degenerate inputs** (all measured directly, no amplification needed):
+
+| op | input | result | reading |
+|:--|:--|:--|:--|
+| `rcp` | 0 | `0xFF` | +maximum, no NaN |
+| `rsq` | 0 | `0xFF` | +maximum |
+| `rsq` | -4 | `0xFF` | +maximum - *not* -0.5 and not 0 |
+| `sqrt` | -1, -4 | `0x00` | 0 |
+| `lg2` | 0 | `0x00` | minimum |
+| `lg2` | 0.25, 0.125 | `0x00` | negative results, clamped only at the store |
+
+The `rsq` row is explained by modelling `RSQ = RCP(SQRT(x))`: `sqrt(-4) = 0` and
+`rcp(0)` is +maximum, which is exactly what `rsq(-4)` returns. That model also
+predicts `rsq(0) = +maximum`, and it does.
+
+**The `PRE` intermediate is per operand register, and it lives long.** It
+survives at least four intervening batches - 1, 2, 3 and 4 empty batches all
+return the correct `ex2(-1) = 0.5` - two chains interleave (`preex2` of `r0` and
+of `r1`, then `ex2` of both, returns 0.5 and 0.25 side by side, both with and
+without a gap batch), and unrelated SFU work in between does not disturb it:
+`rcp`, `frc`, and even another `preex2` on a *different* register all leave the
+`ex2` result at 0.5. So several `PRE`/main pairs can be in flight at once and a
+scheduler may separate the two words as far as it likes, the only constraint
+being that nothing writes the operand register in between.
+
+**An ALU write to the operand kills the pair - even the same value.** Rewriting the
+operand with a *different* value between the two words yields `ex2(-1) = 1.0`,
+the same wrong answer as omitting the `PRE` entirely; rewriting it with the *same*
+value gives 1.0 as well. Writing some other register in between is harmless (0.5,
+correct). So the rule is not "the operand must hold the same value" but "nothing
+may write that register at all": a scheduler has to treat the pair as clobbering
+its operand register, and a register allocator must not reuse it in between.
+
+**Row-register values clamp at 2^33, and `ex2` underflows at -31.** Built by
+doubling `2.0` in the ALU and reading the exponent back with `lg2` (resolution
+0.125 binades):
+
+| constructed | `lg2` reads |
+|:--|:--|
+| `2^31` | 31.06 |
+| `2^32` | 31.94 |
+| `2^33` | 32.94 |
+| `2^34`, `2^35`, `2^41` | 32.94 - clamped |
+
+That the *value* is clamped, rather than `lg2` refusing a large input, is shown
+by halving the `2^41` chain eight times: it reads **25**, i.e. `2^33 / 2^8`, not
+33. At the bottom, `ex2(-30)` is exact while `ex2(-31)` and below return 0, so
+the usable window is roughly `2^-31 .. 2^33` - about 64 binades, well short of
+what the 8-bit exponent field in the encoding would allow (`2^224`), which means
+the limits are in the datapath rather than the format. Range analysis has to stay
+inside that window: above it clamps silently, below it collapses to zero.
+
+**There are two separate hard limits: 64 exec batches and 64 ALU packets.** A
+65-batch program is refused with `fs: line N: Over 64 exec batches` regardless of
+how little work those batches carry - 65 batches holding only 8 ALU packets fails
+the same way - and a 65-packet program is refused with `fs: line N: Over 64 ALU
+instructions in total`. The ALU count is per **packet**, not per slot: 20 batches
+holding 4 ALU slots each (80 instructions) assembles and runs, so the four slots
+inside a packet are free against the budget. Both are assembly-time checks, so
+they bound what a backend may emit rather than what the hardware could execute,
+and the 64-batch limit is the one that bites first whenever a program has
+non-ALU batches at all.
+
+**8-bit output conversion is `round(x * 255)` with halves rounding down.**
+Calibration values `0.5 -> 0x7F` (127, not 128) and `0.125 -> 0x20` (32, not 31)
+rules out both `trunc(x*256)` and plain round-half-up. Relevant to a backend only
+because it means a shader cannot rely on `1.0` landing on `0xFF` via `x*256`.
+
+
+## Performance model
+
+
+**Known.** `GRATE_DRAW_COUNT` draws the same full-screen quad n times and
+reports the wall time of the draw loop plus the readback sync. Seven shaders in
+`tests/grate/asm/perf/` differ only in batch structure, and they share one fx10
+epilogue that stores `0x40404040` for `u0 = 0.25`, so every run also proves the
+shader itself executed. Median of three runs, 100 draws of a 256x256 quad
+(65536 fragments):
+
+| shader | batches | ALU packets | ms / draw |
+|:--|--:|--:|--:|
+| `fill_1b_1p` | 1 | 2 | 1.25 |
+| `fill_4b_4p` | 4 | 4 | 2.01 |
+| `fill_4b_12p` | 4 | 12 | 2.08 |
+| `fill_12b_12p` | 12 | 12 | 4.24 |
+| `fill_4b_12p_8nop` | 12 | 12 (+8 empty) | 4.29 |
+| `cost_texnop_12b` | 12 | 2 | 4.25 |
+| `cost_mfu_12b` | 12 | 2 | 4.31 |
+
+Subtracting pairs (run-to-run spread is about +/-10%, so these are
+order-of-magnitude terms rather than precise constants):
+
+| term | cost per draw | per fragment |
+|:--|--:|--:|
+| one extra batch | 0.27 ms | 4.1 ns |
+| one extra ALU packet | 0.006-0.02 ms | 0.1-0.3 ns |
+
+> **A batch is charged whether it is full, half full or empty, and it costs the
+> same whichever unit fills it.** Three comparisons say so:
+>
+> * `fill_4b_12p` and `fill_12b_12p` execute the *same 12 ALU packets*: 2.08 vs
+>   4.24 ms/draw. The only difference is the grouping.
+> * `fill_4b_12p_8nop` adds 8 batches whose ALU schedule `count` is 0 (they hold
+>   nothing but a disabled TEX word): 4.29 ms/draw, indistinguishable from
+>   `fill_12b_12p`'s 4.24. **`count = 0` is not cheaper than `count = 1`.**
+> * `cost_texnop_12b` (11 idle batches) and `cost_mfu_12b` (11 MFU batches) land
+>   at 4.25 and 4.31 against the ALU version's 4.24, all within 1.6%. The cost
+>   is the batch pass itself - one PSEQ step over the fragments - not the work
+>   inside it.
+
+Consequences for the scheduler:
+
+* packing ALU to three packets per batch is the single biggest win available,
+  well ahead of any operand-level trick: a 12-packet shader is twice as fast in
+  4 batches as in 12;
+* splitting a batch to gain latency (say, to pass a value through the register
+  file instead of an ALU latch) costs a *whole* batch, so it only pays when it
+  removes at least one other batch;
+* padding a short batch with NOPs is free, but *merging* two short batches is
+  what saves time - which makes the 64-batch budget a harder limit than the 256
+  ALU slots.
+
+At the ~300 MHz this GPU runs at, 4.1 ns is ~1.2 cycles per fragment per batch,
+about 5 cycles per fragment across four pixel pipes: a fixed per-batch pipeline
+cost. That also fits the two neighbouring observations - `pseq_to_dw_exec_nb`
+changes nothing about correctness (4.4 item 3), because the batch pass is a
+fixed cost regardless of how the pipeline is tuned, and the blob "gives up on
+large shaders" instead of recirculating them.
+
+The clock itself is **not measurable** here: this system mounts no debugfs at
+all (`/sys/kernel/debug` does not exist), there is no `clk_summary`, no
+`/sys/devices/*/clocks` and no GPU clock line in `dmesg`, and the account is
+non-root. So the cycle figures assume the 300 MHz T20 nominal; across the
+plausible 250-333 MHz range the batch costs 1.1-1.5 cycles per fragment.
+
+#### Which unit costs: the MFU does
+
+Same harness, 13 batches each with the work in the first 12, medians of three
+runs of 100 draws:
+
+| work per batch | ms/draw |
+|:--|--:|
+| nothing (epilogue only) | 4.77 |
+| 3 ALU packets | 4.37 |
+| 1 MFU word | 4.63 |
+| 3 MFU words | 10.18 |
+| 3 MFU + 3 ALU | 10.10 |
+| 1 TEX sample | 4.45 |
+| 3 MFU + 1 TEX sample | 10.06 |
+
+> **A batch costs the maximum over its units, not the sum.** Adding 33 ALU
+> packets to an MFU-bound batch changes nothing (10.18 -> 10.10) and adding 11
+> TEX samples to one changes nothing either (10.18 -> 10.06). Both hide under
+> the MFU completely.
+
+> **The MFU is the scarce resource, and only from the second word per batch.**
+> One SFU word per batch is fully hidden (4.50 against 4.67 empty), two cost
+> +2.59 ms/draw and three +5.64. So **every SFU op beyond the first in its batch
+> costs ~3.4 ns per fragment** - about one cycle at 300 MHz, i.e. one issue
+> slot.
+>
+> The cost is the same for every op: `rcp`, `rsq`, `lg2`, `ex2`, `sqrt`, `sin`,
+> `cos`, `frc`, `preex2`, `presin` and `precos` at three words per batch all land
+> between 10.02 and 10.31 ms/draw, a 1.5% spread. A `PRE`+main pair therefore
+> costs two slots and neither half is cheap. An MFU word with no SFU op in it
+> (`ipl` only) is free, so the pipeline that costs is the SFU, not the MFU word
+> itself.
+>
+> Two consequences that are easy to get backwards:
+>
+> * **packing SFU ops together beats spreading them.** A second SFU op costs
+>   ~3.4 ns/fragment while an extra batch costs ~4.1 ns/fragment, so splitting
+>   three transcendentals across three batches is *slower* than keeping them in
+>   one - capped, of course, at three MFU words per batch;
+> * **emulating one of them in ALU is a real win.** `1 SFU + 3 ALU` measures at
+>   the empty baseline (4.52), so going from two SFU words per batch to one
+>   saves the whole 2.6 ms/draw, provided the replacement fits in three ALU
+>   packets. What can be emulated is limited: `fract` and `exp2` have no ALU
+>   equivalent at all (no floor/trunc, no bit operations), so the candidates are
+>   `sin`/`cos`/`rcp`-style polynomial chains.
+
+Resolution caveat: the ALU and TEX terms sit at the noise floor (+/-0.4
+ms/draw over 100 draws), so "free" means "under 0.02 ms/draw per packet", not
+exactly zero. The SFU numbers are well clear of that floor.
+
+The per-unit shaders are generated rather than committed, because they differ
+only in which body fills the first 12 of 13 batches:
+
+```
+hdr() { printf 'alu_buffer_size = 1\npseq_to_dw_exec_nb = 1\n\n.uniforms\n\t[0].l = "u0";\n\n.asm\n'; }
+body() { for i in $(seq 12); do printf 'EXEC\n'; eval "$1"; printf ';\n'; done; }
+mfu3() { printf '\tMFU:\tsfu: frc r3\n\tMFU:\tsfu: frc r3\n\tMFU:\tsfu: frc r3\n'; }
+```
+
+appended to the thirteen-batch epilogue used by `tests/grate/asm/perf/`; the
+TEX variants take the coordinates from fp20 uniforms in batch 1 and end with a
+plain `DW: store rt1, r2, r3`.
+
+
+## Program container, chunks and recirculation
+
+
+The instruction words above are wrapped in a container the blob emits, and one
+of its header fields is a value a backend has to compute. Dumped with
+`cgc -F -H` (field names are Grate's `struct cgc_header` / `cgc_bar`):
+
+```
+fragment shader:
+  type: 0x00001b5e          class of binary, constant for fragment programs
+  unknown00: 0x0000000d
+  size: 0x000002a8          total container size
+  num_symbols: 5            attribute/uniform/varying descriptors
+  bar_size: 48              size of the chunk table
+  bar_offset: 0x00000160
+  binary_size: 184          == the chunk length below
+  binary_offset: 0x000001f0
+  unknown01..04: 0           always zero in every shader seen
+```
+
+followed by `bar->chunk_count` entries, each a `{offset, length}` pair, and each
+chunk starting with:
+
+```
+unknown0: 0x00000002
+unknown1: 0x00000002
+```
+
+**Both are the exec-batch count**, which is why they are worth knowing: a
+one-batch shader dumps `1, 1`, a two-batch shader `2, 2`, the three-batch
+`dFdx` shader `3, 3`. The stream words that follow have exactly that many
+entries per unit, so this is the same number as the `0x520` count and as every
+`NONINCR` length in section 5. A driver that fills these from its own batch
+count is consistent with the blob; a compiler's output is just the chunk body.
+
+`libcgc` treats the container as "one or more chunks", iterates them and
+reassembles each with `fragment_shader_disassemble()`; for AR20 every blob
+output seen so far is a single chunk.
+
+**Correction: only the second word is the batch count.** An earlier revision of
+this section recorded "both are the batch count" because the two coincide for
+small shaders. Counting the streams of six blob outputs (`cgc -F -s -H`, one
+PSEQ/TEX/DW line per batch):
+
+| shader | `unknown0` | `unknown1` | batches | ALU words | MFU words |
+|:--|--:|--:|--:|--:|--:|
+| constant colour | 1 | 1 | 1 | 4 | 0 |
+| one `texture2D` | 1 | 1 | 1 | 0 | 1 |
+| one varying | 1 | 1 | 1 | 4 | 1 |
+| `gl_FragData[0..1]` | 2 | 2 | 2 | 8 | 1 |
+| `dFdx`/`dFdy` | 3 | 3 | 3 | 24 | 1 |
+| nine `vec4` varyings | 3 | **12** | **12** | 32 | 12 |
+
+So `unknown1` is the exec-batch count in all six cases, while `unknown0` follows
+it only while the ALU work is dense. In the varying-heavy shader `unknown0` is 3
+while there are 12 batches - and 3 is not the ALU packet count either (32 words =
+8 packets), so **`unknown0` is still open**. It has to be filled consistently
+with the body, but a driver that derives `unknown1` from its batch count and
+leaves `unknown0` at its observed small-shader value is no worse off than the
+blob until this is settled. The batch count itself is unambiguous elsewhere: the
+number of entries in every schedule stream and the value in the `0x520` start
+word.
+
+A varying-count sweep confirms the split and shows the shape of `unknown0`
+(same shader, only the number of summed `vec4` varyings changed):
+
+| varyings | `unknown0` | `unknown1` | batches | ALU words | MFU words |
+|--:|--:|--:|--:|--:|--:|
+| 2 | 2 | 2 | 2 | 4 | 2 |
+| 3 | 3 | 3 | 3 | 8 | 3 |
+| 4 | 4 | 4 | 4 | 12 | 4 |
+| 5 | 2 | 8 | 8 | 16 | 8 |
+| 6 | 3 | 9 | 9 | 24 | 8 |
+| 7 | 4 | 8 | 8 | 24 | 8 |
+| 8 | 4 | 12 | 12 | 32 | 11 |
+| 9 | 3 | 12 | 12 | 32 | 12 |
+
+`unknown1` matches the batch count in all fourteen shaders measured so far. For
+`unknown0` the useful observation is the **range**: it is only ever 1, 2, 3 or 4,
+never larger, and it is not monotonic in either the batch count or the ALU count
+(24 ALU words give 3 in one shader and 4 in another). A value that is bounded by
+4 and decided by the scheduler is most plausibly the **number of row registers
+in flight**, i.e. the `alu_buffer_size` the blob chose for that program (1 for a
+shader with no varyings, rising to 4 when many varyings are live) - the same
+quantity the driver writes to `0xe20`. That is a hypothesis rather than a
+measurement: `cgc -F -R` shows the blob never writes `0xe20`/`0xe21` itself, so
+there is nothing to cross-check against yet. Either way a driver may fill
+`unknown0` with its own row count without breaking anything observed so far.
+
+The chunk-scaling test below strengthens it decisively: `unknown0` is **1 for
+every shader with no varyings**, whether it has 8, 16, 24 or 32 `vec4` uniforms
+and 7, 10 or 13 batches, and only rises to 2..4 when varyings are interpolated.
+A field that ignores uniform count and total batch count but tracks varying
+pressure is the row count. `unknown1` behaves the opposite way: it is the batch
+count *of its own chunk*, so a multi-chunk program has several different values
+(16 `vec4` -> chunks of 3 and 4 batches, summing to the 7 the stream contains).
+
+### 5.2 The blob splits the program when the constants do not fit
+
+This is the mechanism behind "the fragment shader split in two" and it changes
+what the unit of a program is. Same shader, only the number of summed `vec4`
+uniforms changed, counted with `cgc -F -s`:
+
+| `vec4` uniforms | chunks | batches (total) | ALU words | per-chunk `unknown1` |
+|--:|--:|--:|--:|:--|
+| 8 | 1 | 4 | 32 | 4 |
+| 16 | **2** | 7 | 60 | 3, 4 |
+| 24 | **3** | 10 | 96 | 3, 3, 4 |
+| 32 | **4** | 13 | 128 | 3, 3, 3, 4 |
+
+Each `*** chunk N/M` block is a **complete program**: its own chunk header, its
+own PSEQ / MFU / TEX / ALU / DW words, its own batch count, and its own render
+target stores. The ALU uploads add up (`120` words for the 16-uniform shader at
+"ALU words: 60" per chunk), and the driver's upload sequence in section 5 is run
+**per chunk**, which is what makes 16 `vec4` legal at all: each chunk gets its own
+32-word constant window (`0x820`), so the pressure per chunk stays inside the
+window even though the whole shader exceeds it.
+
+So the answer to "what happens when the uniforms do not fit" is: the blob does
+not fail and does not reload mid-program, it **re-emits the program as several
+independent chunks** and lets the container's chunk table carry them. The split
+point is roughly eight `vec4` per chunk, i.e. one full constant window.
+
+What a backend should do about it is a design decision, not a documented rule:
+emitting a single chunk and rejecting over-budget shaders is the conservative
+choice; mirroring the split is what the blob does and is the only way to accept
+them. **How the chunks are chained: the fragment is recirculated.** The chunks do not
+communicate through the render target. In a 4-chunk program, chunks 1, 2 and 3
+contain `DW: nop` in every batch and only the **last** chunk stores, so the
+earlier chunks deliberately write nothing - their results have to survive in the
+pixel's own state while the *same* fragment is fed through the pipeline again.
+That is what the ISA reference calls program-sequencer recirculation and
+dismisses as "not used in practice"; it is in fact the mechanism behind a
+uniform-heavy shader. The consequences for a backend that mirrors the split:
+
+* row registers, globals and the pixel packet carry **across chunks** - a value a
+  later chunk reads must be in a place the next pass still sees;
+* the **64-batch budget and the 64-instruction budgets apply per chunk**, not per
+  shader (16 `vec4` gives chunks of 3 and 4 batches, comfortably inside the
+  limit, where a single pass would have needed 7);
+* the constant window is reloaded per chunk, which is the whole point of the
+  split - so a chunk must not need more than 32 live scalar constants;
+* only the final chunk may store colour/depth/stencil/coverage, so the store
+  schedule in [[Writing a Compiler]] 2.1 applies to it alone.
+
+Still unmeasured: whether the driver may submit chunks in any order (the
+recirculation order is presumably the chunk-table order), and whether anything
+in the hardware enforces the "only the last chunk stores" convention or whether
+an earlier chunk storing to `rt1` would simply be overwritten later.
+
+The stream **counts must all agree**: PSEQ, MFU schedule, TEX, ALU schedule,
+complement and DW all have exactly one word per batch, so `n` is the batch count
+everywhere. `grate_shader_disasm_fs()` treats a mismatch as "malformed", which
+is a good sanity check to copy into the driver.
+
+`ALU_BUFFER_SIZE` also needs a second magic write (`0x501`), and T114 needs the
+`0x547` pair; both are already in `grate_3d_set_alu_buffer_size()`.
+
