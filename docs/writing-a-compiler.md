@@ -483,6 +483,25 @@ Consequences:
   upload at draw time (`symbols[]` in `grate_program.c` already does this for the
   assembler path).
 
+### 7.1 A schedule that exceeds 64 batches
+
+The batch count is a register field, not a hint ([[GR3D Registers]] 6.1), and two
+limits bound it: the assembler refuses more than 64 `EXEC` blocks in one program,
+and a count of 128 already hangs AR20, so a backend cannot simply keep emitting
+batches. Splitting is the answer, and it is the same mechanism as the uniform
+pressure case above:
+
+* cut at batch boundaries into chunks well below the limit, each with its own
+  `0x520` count and its own constant window - the window is per chunk, so the
+  split is what makes a 16-`vec4` uniform set legal at all;
+* the container's second header word carries that chunk's batch count, so it is
+  derived per chunk, not per program;
+* a chunk has to be self-contained: a value computed in one chunk cannot be read
+  by the next except through a render target or the spill buffer, which is what
+  the blob's recirculation does ([[Fragment Shader ISA]] 10.2);
+* never pad the count upwards to "be safe". An over-count runs the sequencer past
+  the end of the schedule and, at 128 and above, wedges the channel.
+
 ## 8. Fragment outputs
 
 **Known.** `DW` stores one 16-bit field per source register from `r2/r3` (or
@@ -652,8 +671,9 @@ record: The probe that would settle it is designed
    Also tried, also failing: chaining through the `aluN` latches inside one batch,
    and padding every batch to four packets (no change at all).
 
-   The latch file is now mapped well enough to schedule against, in [[Fragment
-   Shader ISA]], "Forwarding and the ALU pipeline": a **low-half** write by slot
+   The latch file is now mapped well enough to schedule against, in
+   [[Fragment Shader ISA]] "Forwarding and the ALU pipeline": a **low-half**
+   write by slot
    `k` is readable as `aluK` from any slot of the same packet (a high-half or
    fp20-only write leaves the latch at zero), all four latches are live inside
    their own packet (`alu2`/`alu3` included), and row-register writes are not

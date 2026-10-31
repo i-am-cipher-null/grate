@@ -214,7 +214,10 @@ byte 96, so at pitch `p` it reads data block row `96/p`:
 
 `GRATE_DRAW_COUNT=n` draws the same quad `n` times and prints
 `draws=n elapsed_ms=...`, timed from before the first submit to after the
-readback sync. That is wall time including CPU submission, so use it for
+readback sync. The line only appears for `n > 1`, so a timing sweep that forgets
+the variable produces no numbers at all - and the `nvrm_init failed` / `Cannot
+open display` chatter every run prints is not an error, the tool falls back to
+the DRM path. That is wall time including CPU submission, so use it for
 differences between two shaders, not absolutes: at 100 draws of a 256x256 quad
 the floor is ~1.25 ms/draw of driver cost, and 12 ALU packets add 0.83 ms as 4
 batches or 3.0 ms as 12. Empty batches are not free - 8 batches holding only a
@@ -233,6 +236,14 @@ SFU op (`ipl` only) is free, so it is the SFU pipeline that costs.
 All eleven SFU ops measured (`rcp`, `rsq`, `lg2`, `ex2`, `sqrt`, `sin`, `cos`,
 `frc`, `preex2`, `presin`, `precos`, three words per batch) land within 1.5% of
 each other, so a `PRE`+main pair costs two slots.
+
+**Order drift fakes register effects.** Runs get faster as a sweep proceeds, so a
+sequential poke sweep reports every later value as "faster than base". The FDC
+block ([[GR3D Registers]] 11.1) first looked like a 12% win on the ALU path for
+exactly this reason; repeating base at the end of that sweep moved it by as much
+as any poke did. Time it A/B/A/B: alternate base and the suspect value four
+times, take medians, and repeat base last. A difference counts only if it is
+larger than base's own spread, which was 10-28 ms across 100 draws here.
 
 Note that the **GPU clock cannot be read as non-root on this system**: there is
 no `/sys/kernel/debug` at all, no `clk_summary`, no `/sys/devices/*/clocks`, and
@@ -628,7 +639,7 @@ as geometry changes, and the depth/stencil/line/point words show up as nothing.
 The table is in [[GR3D Registers]] 4.1, and it is the way to check any register
 claim cheaply - one value, one frame diff.
 
-Three gotchas that produced misleading data during those sweeps:
+Four gotchas that produced misleading data during those sweeps:
 
 * **A hang wedges the channel.** After a timeout, kill the process and re-run a
   known-good shader (`fs_vs_tests` must return `0xFF01FF00`) before trusting the
@@ -642,3 +653,9 @@ Three gotchas that produced misleading data during those sweeps:
   per run instead of keeping them all, and watch `df`.
 * **`--expected` mismatch exits 1 by design**, so every successful frame-dump run
   ends with status 1. A sweep that treats non-zero as failure aborts itself.
+* **A stencil or coverage test that never writes `kill` is not testing the
+  shader.** With the stencil test on but no `kill` write in the program, QRast
+  performs the stencil update before the shader tail, so a program truncated by a
+  bad batch count still shows the reference value and the test says nothing. Only
+  after a `kill` write does the update move behind the shader and depend on the
+  `DW: store stencil` batch actually running ([[GR3D Registers]] 6.1).

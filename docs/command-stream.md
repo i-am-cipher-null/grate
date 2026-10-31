@@ -1,8 +1,8 @@
 # Tegra 2 (AR20) 3D engine - command stream
 
 Host1x command stream for the 3D engine: CDMA instruction encodings and the
-register pushes that load a fragment program. See [[Host1x]] for the general
-command-stream model and [[Fragment Shader ISA]] for the words themselves.
+register pushes that load a fragment program. See [[MMIO Registers]] for the
+address-block overview and [[Fragment Shader ISA]] for the words themselves.
 
 See [NVIDIA's Host1x documentation](http://http.download.nvidia.com/tegra-public-appnotes/host1x.html)
 

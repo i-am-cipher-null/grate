@@ -248,26 +248,127 @@ register. Both behaviours are measured, see [[Fragment Shader ISA]] §8.2.
 | Addr | Name | Status | Fields / notes |
 |--:|:--|:--:|:--|
 | `0x500` | `FP_PSEQ_UPLOAD_INST_BUFFER_FLUSH` | D | write 0 to flush before uploading PSEQ words |
-| `0x501` | — | ? | second half of the `ALU_BUFFER_SIZE` programming: Grate writes `(0x2200 << 16) \| (0x0032 << 16) \| (0x12C << 4) \| 0xF`. Reset writes 7. Not in `tgr_3d.xml.h` |
+| `0x501` | — | V | second half of the `ALU_BUFFER_SIZE` programming: Grate writes `0x223212cf`. Bits 4..15 (`0x12C << 4`) must be non-zero, otherwise nothing reaches the target; every other field is cosmetic (6.2). Reset writes 7. Not in `tgr_3d.xml.h` |
 | `0x502` | — | ? | cleared at reset |
 | `0x503` | — | ? | cleared before every draw |
-| `0x520` | `FP_PSEQ_ENGINE_INST` | D | `0x20006000 \| batch_count`. Starts the sequencer; `batch_count` is the number of schedule rows |
+| `0x520` | `FP_PSEQ_ENGINE_INST` | V | `0x20006000 \| batch_count`. Starts the sequencer; the count is the number of batches **executed**: under-counting silently truncates the program, over-counting runs past it, 0 and >= 128 hang, bits 29 and 14 are mandatory (6.1) |
 | `0x540` | `FP_PSEQ_UPLOAD_INST_ID` | D | upload pointer |
 | `0x541` | `FP_PSEQ_UPLOAD_INST` | D | PSEQ word, one per batch |
 | `0x542`..`0x544` | — | ? | cleared at reset |
-| `0x545` | `FP_PSEQ_QUAD_ID` | ? | written 0 before every draw |
-| `0x546` | `FP_PSEQ_DW_CFG` | D | `pseq_to_dw_exec_nb` 6..31 |
+| `0x545` | `FP_PSEQ_QUAD_ID` | V | written 0 before every draw; 0..`0xffffffff` all give a bit-identical frame on a single-quad program (6.1) |
+| `0x546` | `FP_PSEQ_DW_CFG` | V | `pseq_to_dw_exec_nb` 6..31; inert on both measured program shapes (6.1) |
 | `0x547` | — | ? | Tegra 114 only: `INCR(0x547, 2)` then `0xc0000000`, `0`. Not in `tgr_3d.xml.h` |
 
-`pseq_to_dw_exec_nb` is driver state, not a compiler output: dumping the blob's
-command stream shows it never writes `0x546` itself, and sweeping it on hardware
-(1, 3, 8, 16) leaves a single-batch program's output bit-identical. It is a
-pipeline-depth knob.
+### 6.1 Measured: the count field is the number of batches executed
 
-The `0x501` word is the other half of the ALU buffer programming and is written
-unconditionally next to `0xe20`; because `0xe20 = 2` and `4` hang the engine (see
-14.1), the only `0x501`/`0xe20` pairs that have ever run here are the size 1 and
-size 3 ones.
+`0x520` is `0x20006000 | n`, and `n` is not a hint: it is how many batches the
+sequencer runs. Poking it after Grate programmed the context, on a 2-batch
+textured program and on the 4-batch ALU program:
+
+| `n` | 2-batch textured program | 4-batch ALU program |
+|--:|:--|:--|
+| 0 | **hangs** | - |
+| 1 | frame loses the TEX/DW tail, no hang | tail lost, no store |
+| 2 | **bit-identical to the unpoked frame** | tail lost, same partial frame as `n = 1` |
+| 3 | identical | - |
+| 4 | different frame | **bit-identical** (the true count) |
+| 8 | different frame | identical |
+| 16, 32, 64 | different frame, all three the same | - |
+| 128, 256, 512, 1024, 2048 | **hangs** | - |
+
+Three consequences for a driver or compiler:
+
+* **Under-counting is silent.** As far as the engine is concerned the program ran
+  to completion; the missing batches simply never execute and the picture is
+  wrong with no error. The count has to be derived from the schedule streams, not
+  left at a constant.
+* **Over-counting is undefined, not harmless.** The sequencer keeps reading
+  schedule entries past the end of the program, which hold whatever the next
+  uploaded stream left there. On the textured program 16 to 64 give a frame that
+  differs from both the correct one and each other's, and 128 and above hang.
+* **The constant bits are not decoration.** Setting one bit at a time on top of
+  the minimum working word `0x20004000 | 2`, same textured frame:
+
+  | bit | mask | result |
+  |--:|--:|:--|
+  | 12 | `0x1000` | **store lost** - same frame as a count of 1 |
+  | 13 | `0x2000` | identical (optional) |
+  | 14 | `0x4000` | **mandatory**: clearing it hangs |
+  | 15..28 | `0x8000`..`0x10000000` | identical (all fourteen checked) |
+  | 29 | `0x20000000` | **mandatory**: clearing it hangs |
+  | 30, 31 | `0x40000000`, `0x80000000` | **hang** |
+
+  The minimum working word is `0x20004000 | n` and `0x20006000 | n` is what the
+  driver writes. Bit 12 is not part of the count: with it set the frame comes back
+  exactly as if the DW batch had been skipped and the count stops mattering - on
+  the 4-batch ALU program, count 4 with bit 12 gives the same frame as count 3
+  without it - whereas a large count instead changes the picture or hangs.
+  The suppression is **global, not colour-only**. With the same bit set, in three
+  independently measured programs:
+
+  | store | without bit 12 | with bit 12 |
+  |:--|:--|:--|
+  | `DW: store stencil` after a `kill` write | stencil `9A` | stencil `00` |
+  | `DW: store rt0, r2, r3` with a `D16` depth target | depth `0000` | depth `8000` (the clear value) |
+  | `DW: store rt3, r0, r1` with a coverage target | coverage `0x200` per pixel | coverage all zero |
+
+  So bit 12 gates every `DW` store regardless of target, which makes
+  `0x520 = 0x20005000 | n` a usable "run the whole program, store nothing" control.
+
+Skipping a batch skips all of it. A two-batch program that writes `kill` in the
+first batch (which moves the stencil update behind the shader) and does
+`DW: store stencil` in the second writes `0x9A` into the stencil buffer at counts
+2 and 3 and leaves it completely clear at count 1: the dropped batch's DW does not
+run at all, side effects included. Without the `kill` write the same program
+writes `0x9A` at every count, because QRast then updates the stencil before the
+shader tail ([[Fragment Shader ISA]] 8.2) - a trap when designing this kind of
+test, since the result then says nothing about the batch count.
+
+The count cannot be mis-declared on the assembler path, because it is derived
+rather than written out: `shader->pseq_inst_nb` is `asm_fs_instructions_nb`, the
+number of `EXEC` blocks the parser produced, and the parser already rejects more
+than 64 batches - well inside the field. A compiler has to derive it the same way
+from its own schedule.
+
+`0x545` (`FP_PSEQ_QUAD_ID`) is inert in every shape tried: a textured full-frame
+draw (thousands of 2x2 quads, so "only one quad in flight" is not the
+explanation), the 4-batch ALU program, and a `kill`-writing stencil program with a
+coverage target bound - 0, 1, 2, 3, `0xff` and `0xffffffff` all give a
+bit-identical frame and identical stencil readbacks. Whatever consumes it is not
+reachable with these draw shapes, so the field stays open.
+
+`pseq_to_dw_exec_nb` (`0x546`) is driver state, not a compiler output, and no
+value in its field is observable: the blob never writes `0x546` itself, and 0, 1,
+3, 8, 16 and 127 leave a 2-batch program's frame bit-identical, as they do the
+4-batch ALU program. It is a pipeline-depth knob this experiment cannot see.
+
+### 6.2 Measured: `0x501` has exactly one field that matters
+
+The `0x501` word is written unconditionally next to `0xe20` as `0x223212cf`.
+Poking it field by field (same whole-frame test):
+
+| value | frame |
+|:--|:--|
+| `0x223212cf` (the driver's own value) | identical |
+| `0x000012cf`, `0x000012c0` | identical |
+| `0x003212cf` | identical |
+| `0x2232064f` (`0x12C` field changed to `0x64`) | identical |
+| `0x223212ce` (low nibble `0xe`) | identical |
+| `0x003212cf` (high `0x2200` field cleared) | identical |
+| `0x0000000f` (low nibble only) | **store lost** |
+| `0x00320000` | **store lost** |
+| `0x22000000` | **store lost** |
+| `0x2232000f` | **store lost** |
+| 0, 1 | **store lost** |
+
+The only load-bearing part is bits 4..15, the `0x12C << 4` field, and only in
+that it must be non-zero: `0x64` in its place is fine, and changing the low nibble
+or either high constant field is fine. "Store lost" means the frame came back with
+the same hash as an `0x520` count of 1 - the ALU work ran but nothing reached the
+render target - which fits the field being the ALU instruction buffer size, the
+companion of `0xe20` (`0x12C` = 300). Because `0xe20 = 2` and `4` hang the engine
+(see 14.1), the only `0x501`/`0xe20` pairs that have ever run here are the size 1
+and size 3 ones.
 
 ## 7. Attribute interpolation and SFU, MFU (`0x600`..`0x60e`)
 
@@ -404,6 +505,22 @@ pixels compared by hash). Every one of these left the frame **bit-identical**:
 So whatever the FDC block configures, none of it is visible in the colour result
 of a single-quad draw - consistent with the block being cache policy rather than
 pipeline state.
+
+Timing rules it out as a performance knob as well. A first sweep looked
+promising - every poke came out "faster" than the unpoked frame, `0xa02`..`0xa07`
+all-ones by 12% on the ALU path - but that was the sweep order, not the register:
+repeating base at the end of the same sweep moved it by as much as the pokes did.
+Interleaved A/B/A/B, four rounds each, median of 100 draws (11-sample textured
+shader and the 4-batch ALU shader):
+
+| shader | base | `0xa02`..`0xa07` = `0xffffffff` | base spread over the sweep |
+|:--|--:|--:|--:|
+| 11 TEX samples, 100 draws | 447.6 ms | 452.2 ms | 9.5 ms |
+| 12 ALU packets, 4 batches, 100 draws | 216.6 ms | 210.8 ms | 28.1 ms |
+
+Both differences sit inside the run-to-run spread, so these words cost nothing
+measurable on either path. The drift itself is documented in
+[[Hardware Testing]], "Timing a draw loop".
 
 Two single bits **hang the engine**, reproducibly, and the channel recovers once
 the offending process is killed:
@@ -584,11 +701,10 @@ names them:
   *stage* semantics of `0xb00` (it selects something that only shows up through
   the `0x750` ordering constraint) and whether the `0xc00` groups need a
   multi-packet ALU program, a second pipe or a non-AR20 chip to do anything.
-* **`0xa02`..`0x0a08`**: six threshold words plus one more, programmed twice per
-  draw with identical values. Flush thresholds, counters or both - not separated.
-* **`0x501`**: the companion write to `0xe20`. Its high bits look like two packed
-  constants (`0x2200`, `0x0032`) and the low half contains `0x12C << 4 | 0xF`, but
-  no field has been isolated.
+* **`0xa02`..`0xa08`**: measured to change neither the frame nor the time
+  (section 11.1), so the block is policy this chip does not require from
+  software. *What* it configures is still unknown, but nothing a compiler or a
+  driver does depends on the answer.
 * **`0x40f`**: only two values are known (`0x48`, `0x60`) and only bit 6 has been
   tied to a behaviour (`STENCIL_WRITE_EARLY`).
 * **`0xe26` (DITHER) and `0xe27`**: written per draw, effect not measured. A dither

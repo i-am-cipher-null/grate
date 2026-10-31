@@ -708,8 +708,8 @@ Two consequences: `(this)` chains a `MAD` into the next slot without spending an
 operand, and because it *replaces* `rC` an instruction cannot have both a real
 addend and `(this)`. The accumulator source is the previous slot, not a
 persistent register, so it does not cross a packet boundary. Bit 61 (`(other)`)
-produced no observable arithmetic difference in any shape; [[Compiler
-Internals]] reads it as "send" in the encoder's register tracking, so it is a
+produced no observable arithmetic difference in any shape; the encoder in
+[[Compiler Internals]] reads it as "send" in its register tracking, so it is a
 pipeline bit rather than an operand source.
 
 ### 5.15 Condition registers
@@ -1420,6 +1420,23 @@ set. The partner register (`r2` or `r0`) is never read. `store rt0, r0, r1 class
 `store rt0, r2, r3 class 1` silently reads `r1` instead. The `D16` encoding of
 that register is under "Depth payload" in section 12.
 
+**The coverage target (index 3) only accepts one of the two source pairs.** Both
+stores below come from a two-batch program whose first batch writes
+`r0.lo = r2.lo = r2.hi = r3.lo = 0.5`, with a coverage target bound; `cov3` is the
+raw readback of that surface:
+
+| word | bit 15 | `cov3` readback |
+|:--|--:|:--|
+| `store rt3, r2, r3` (`0x00028201`) | 1 | all zero - nothing written |
+| `store rt3, r0, r1` (`0x00020201`) | 0 | `0x200` per covered pixel |
+
+`0x200` is `0.5` in the coverage format's 10-bit fixed point, so the value is the
+`r0` a coverage store is expected to read; with the `r2/r3` pair selected the
+store is dropped instead of reading `r2`. A coverage test that uses `store rt3,
+r2, r3` therefore measures nothing at all, which is how this was found. A `DW`
+store to index 3 is also suppressed by bit 12 of the `0x520` start word, like
+every other store ([[GR3D Registers]] 6.1).
+
 Some of the render targets have an additional special purpose, like depth/stencil store. They are hardwired and their special purpose is active under certain conditions, like when depth/stencil test is enabled.
 
 | Render target | Usage             |
@@ -1563,7 +1580,11 @@ with the body, but a driver that derives `unknown1` from its batch count and
 leaves `unknown0` at its observed small-shader value is no worse off than the
 blob until this is settled. The batch count itself is unambiguous elsewhere: the
 number of entries in every schedule stream and the value in the `0x520` start
-word.
+word. That count is also what the sequencer executes, so it cannot be rounded:
+poking it below the real batch count drops the missing batches silently, above it
+runs past the end of the program, and at 128 and beyond it hangs the engine
+([[GR3D Registers]] 6.1). A dropped batch is dropped completely: its `DW` side
+effects do not happen either, a stencil store included.
 
 A varying-count sweep confirms the split and shows the shape of `unknown0`
 (same shader, only the number of summed `vec4` varyings changed):
