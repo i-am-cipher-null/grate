@@ -621,3 +621,9 @@ hung:
 One shell trap: `pkill -f tools/assembler` matches the shell running the probe,
 because that command line contains the same string, so it kills the probe itself
 and the run looks like a silent success. Use `pkill -x assembler`.
+
+The same method measures the *documented* state registers: scissor bounds,
+viewport bias/scale, guardband and the `0x343` linker-count coupling all show up
+as geometry changes, and the depth/stencil/line/point words show up as nothing.
+The table is in [[GR3D Registers]] 4.1, and it is the way to check any register
+claim cheaply - one value, one frame diff.

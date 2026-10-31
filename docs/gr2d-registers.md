@@ -213,7 +213,10 @@ The blob is the obvious second source, and it does not give them up statically.
 the `NvRmStream*` API - `NvRmStreamPushSetClass` is imported - and contains **no
 2D register literals at all**: not one `#0x3a` or `#0xcc` immediate in the
 disassembly, and no matching word in `.rodata`. The `libnvddk_2d.so` and
-`libnvrm_graphics.so` images are the same. So the register values are computed or
+`libnvrm_graphics.so` images are the same, and `libnvrm_graphics.so` exports only
+the CDMA helpers (`NvRmStreamInit`, `NvRmStreamEnd`, `NvRmStreamPushIncr`,
+`NvRmStreamPushSetClass`, `NvRmStreamPushWaitLast`) - there is no register table
+to recover from that library either. So the register values are computed or
 taken from a structure that is filled at run time, not tabled in the image.
 
 Two routes remain, both external to this tree:

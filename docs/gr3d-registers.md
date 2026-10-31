@@ -190,6 +190,36 @@ Notes:
 * `0x343` bits 30..31 and 21..18 are stable at `0xb8e00000` in both Grate and
   the reset sequence, but no experiment has isolated them.
 
+### 4.1 Measured effects
+
+Method: let Grate program the register normally, then override it with
+`GRATE_POKE` immediately before the draw ([[Hardware Testing]], "Register
+pokes"), run the 4x4 row-coloured `filter_quad` frame, untile it and diff against
+the unpoked frame - 65532 pixels, 4 distinct colours.
+
+| poke | differing pixels | reading |
+|:--|--:|:--|
+| `0x350=0x00000010` (max 16, min 0) | 61440, unchanged strip `x < 16` | `SCISSOR_HORIZ.max` is an **exclusive** upper bound; exactly the 16-column strip survives |
+| `0x350=0x000f00ff` (min 15, max 255) | 4092 | `SCISSOR_HORIZ.min` clips from the left and is inclusive; the count is close to the 3840 pixels of a 15-column strip, the rest being edge pixels |
+| `0x351=0x00000010` (max 16) | 61440, unchanged strip `y < 16` | same rule on the vertical axis, one register per axis |
+| `0x350`+`0x351` | 65280, 256 unchanged | the untouched set is the 16x16 intersection, so the two axes clip independently |
+| `0x352=0` (X bias) | 32768, changed region `x < 128` | the primitive moves by half a frame: X bias is a pre-scale offset, and Grate's value (`width * 8`) places the quad at the left edge |
+| `0x353=0` (Y bias) | 65532 | same on y; the whole frame changes because the moved edge is the vertical one |
+| `0x355=0.5` (X scale) | 65532, one colour | halving the horizontal scale shrinks the quad out of the frame - scale is applied to the post-bias coordinate |
+| `0x357=0` (Z scale) | 0 | colour output does not depend on `z` when no depth surface is bound |
+| `0x358`,`0x359` = 0.5 | 49148 | guardband width/height clip the primitive, so they are real clip bounds rather than hints |
+| `0x358`,`0x359` = 0.0625 | 65528 | a smaller guardband clips more - monotone in the bound |
+| `0x343=0` | 1020, scattered | clearing the word also clears `linker_inst_count` (bits 5..9) and `front_cw`, so varying interpolation degrades. The register is **not** a pure cull-face field, and this is why "disable culling" by zeroing it gives a mostly-right frame with 1020 wrong pixels |
+| `0x403=0` (depth params) | 0 | no colour effect: with no depth surface bound the depth stage is inert |
+| `0x402=0` (stencil params) | 0 | same for stencil |
+| `0x34c=0` (line params) | 0 | triangles are unaffected |
+| `0x347=1.0` (point size) | 0 | triangles are unaffected |
+
+So of the state registers probed, the scissor pair, the viewport bias/scale and the
+guardband all have directly measurable geometry effects, while the depth and
+stencil words have none unless the corresponding surface is bound, and the
+line/point words only apply to their own primitive types.
+
 ## 5. Quad rasterizer, QRast (`0x400`..`0x41a`)
 
 | Addr | Name | Status | Fields / notes |
@@ -360,7 +390,9 @@ separated the six words.
 full-screen textured quad (4x4 `RGBA8888`, row-coloured, `filter_quad_fs`). Whole
 frames - 65532 pixels each - were compared: **zero differing pixels for every
 value**, and no hangs. Neither register changes what the fragment pipeline
-produces.
+produces. A second program shape - four batches holding three ALU packets each
+(`tests/grate/asm/perf/fill_4b_12p.txt`) - gave the same zero-diff result, so the
+inertness is not an artefact of a single-batch program.
 
 The one effect that has ever been observed for this block is an *ordering*
 constraint with `0x750`: writing the texture descriptors before `0xb00 = 3`
@@ -392,9 +424,10 @@ aliased into the main register space.
 **Measured: inert for rendering on AR20.** `0xc00`, `0xc01`, `0xc02`, `0xc03`,
 `0xc30`, `0xc31`, `0xc40` and `0xc50` were each poked with `0xffffffff`,
 `0x000001ff` and `0x00000001` before the draw, on the same full-frame textured
-quad as section 12. Every value gave **zero differing pixels** and no hang, so if
-the block is an alias window for per-pipe state, none of that state is reachable
-from a single-batch fragment program with one ALU packet.
+quad as section 12, and again with the four-batch/three-packet ALU program. Every
+value gave **zero differing pixels** and no hang, so if the block is an alias
+window for per-pipe state, none of that state is reachable from a fragment
+program of either shape.
 
 ## 14. Global / cross-engine (`0xe00`..`0xe87`)
 
