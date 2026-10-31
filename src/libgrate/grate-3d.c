@@ -328,7 +328,7 @@ static void grate_3d_set_alu_buffer_size(struct host1x_pushbuf *pb,
 	const char *override = getenv("GRATE_ALU_BUF_WORD");
 	uint32_t value = 0;
 
-	if (override) {
+	if (override && *override) {
 		value = strtoul(override, NULL, 0);
 	} else {
 		value |= TGR3D_VAL(ALU_BUFFER_SIZE, SIZE, alu_buf_size - 1);
@@ -502,9 +502,23 @@ static void grate_3d_reset_program(struct host1x_pushbuf *pb)
 static void grate_3d_startup_pseq_engine(struct host1x_pushbuf *pb,
 					 struct grate_3d_ctx *ctx)
 {
+	uint32_t word = 0x20006000 | (ctx->program->fs->pseq_inst_nb & 0xfff);
+
+	/*
+	 * Bit 12 suppresses every DW store while the program itself still runs
+	 * (docs/gr3d-registers.md 6.1). That makes it a free "the shader ran"
+	 * control: with it set the readback must be the clear colour.
+	 */
+	{
+		const char *no_store = getenv("GRATE_NO_STORE");
+
+		if (no_store && *no_store && strcmp(no_store, "0"))
+			word |= 1 << 12;
+	}
+
 	host1x_pushbuf_push(pb,
 			    HOST1X_OPCODE_INCR(TGR3D_FP_PSEQ_ENGINE_INST, 1));
-	host1x_pushbuf_push(pb, 0x20006000 | ctx->program->fs->pseq_inst_nb);
+	host1x_pushbuf_push(pb, word);
 }
 
 static void grate_3d_set_late_test(struct host1x_pushbuf *pb,

@@ -639,6 +639,20 @@ as geometry changes, and the depth/stencil/line/point words show up as nothing.
 The table is in [[GR3D Registers]] 4.1, and it is the way to check any register
 claim cheaply - one value, one frame diff.
 
+`GRATE_NO_STORE=1` sets bit 12 of the `0x520` start word, which suppresses every
+`DW` store while the whole program still runs ([[GR3D Registers]] 6.1). It is the
+control for "did the shader execute at all": with it set the readback must be the
+clear colour. It is off when unset, empty or `0` - and an empty value counting as
+"on" is precisely the bug that made one sweep report every register as inert,
+because a shell passing `GRATE_NO_STORE=` disabled all stores for the whole run.
+
+One more harness limitation, from trying to measure `0xe26`/`0xe27` on a
+reduced-precision target: `GRATE_RT5=1 GRATE_RT5_FMT=rgb565` does not give a
+writable 16-bit target as the tool currently stands - the `rt5(16):` readback is
+all zeros even with no poke set - and target-5 stores into `RGBA8888` only place
+`0x200` in two words. Any experiment that depends on reading target 5 back has to
+be fixed before its result means anything.
+
 Four gotchas that produced misleading data during those sweeps:
 
 * **A hang wedges the channel.** After a timeout, kill the process and re-run a

@@ -314,6 +314,8 @@ Three consequences for a driver or compiler:
 
   So bit 12 gates every `DW` store regardless of target, which makes
   `0x520 = 0x20005000 | n` a usable "run the whole program, store nothing" control.
+  Grate exposes it as `GRATE_NO_STORE=1` (see [[Hardware Testing]]), and it is the
+  check that should precede any claim that a register is inert.
 
 Skipping a batch skips all of it. A two-batch program that writes `kill` in the
 first batch (which moves the stencil update behind the shader) and does
@@ -705,11 +707,18 @@ names them:
   (section 11.1), so the block is policy this chip does not require from
   software. *What* it configures is still unknown, but nothing a compiler or a
   driver does depends on the answer.
-* **`0x40f`**: only two values are known (`0x48`, `0x60`) and only bit 6 has been
-  tied to a behaviour (`STENCIL_WRITE_EARLY`).
-* **`0xe26` (DITHER) and `0xe27`**: written per draw, effect not measured. A dither
-  matrix per target would be expected to live around here, given
-  `RT_PARAMS.dither_enable`.
+* **`0x40f`**: bit 6 (`STENCIL_WRITE_EARLY`) is tied to a behaviour. Of the other
+  bits, `0x00`, `0x08`, `0x48`, `0x60` and `0x78` all leave a plain colour draw
+  bit-identical, and `0xffffffff` **hangs the engine** - so the word is a trap for
+  a "clear it and see" sweep. What the other bits select is still unknown.
+* **`0xe26` (DITHER) and `0xe27`**: inert on the 8-bit colour path. With a
+  constant-grey store, `0xe26` = 0, 1, `0x7`, `0xff`, `0xffffffff` and `0xe27` = 0,
+  1, 2, `0xffffffff` all give a bit-identical frame containing a single distinct
+  word, and the store-nothing control was run first so the channel was known
+  alive. Reduced precision is the case a dither matrix exists for, and it is
+  still untested: the 565 target on index 5 could not be written in this harness
+  (its readback is all-zero even with no poke), so `RT_PARAMS.dither_enable`
+  stays unexplained.
 * **Indices 6..15 of the render-target arrays** (`0xe06`.., `0xe16`..) are
   addressable and enabled-able but never used by Grate or the blob's observed
   paths; whether AR20 has 16 or fewer physical targets is unknown.

@@ -1437,6 +1437,13 @@ r2, r3` therefore measures nothing at all, which is how this was found. A `DW`
 store to index 3 is also suppressed by bit 12 of the `0x520` start word, like
 every other store ([[GR3D Registers]] 6.1).
 
+The rule is not coverage-specific. The same two-batch shape aimed at MRT target 5
+(`GRATE_RT5=1`) writes `0x200` into words 2 and 3 with the R0/R1 pair and nothing
+at all with R2/R3; the colour target 1 accepts both pairs and simply shows the
+different values, because `r1` is zero. Target 2 is different again: neither pair
+lands unless the `stencil write` bit (bit 10) is set, so only the `store stencil`
+spelling writes that surface.
+
 Some of the render targets have an additional special purpose, like depth/stencil store. They are hardwired and their special purpose is active under certain conditions, like when depth/stencil test is enabled.
 
 | Render target | Usage             |
