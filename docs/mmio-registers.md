@@ -24,3 +24,5 @@ not otherwise use. Both are listed in [[GR3D Registers]] §14.2 and §15.
 
 The 2D engine is a separate class space, not part of this map; see
 [[GR2D Registers]].
+
+Start at [[Index]] for the document map and the reading order by task.

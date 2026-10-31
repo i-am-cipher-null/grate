@@ -328,6 +328,23 @@ The same table is used by `TEXTURE_DESC1.format` for sampling and by
 `RT_PARAMS.format` (`0xe10 + i`) for rendering, with one difference: D16 linear
 (`0x0b`) and nonlinear (`0x0c`) are render-target formats only, and `R8`/`RG8`
 style formats have no entry at all.
+### 8.1 Measured: which TEX registers matter
+
+Same method as 4.1 - poke after Grate programmed the context, diff the whole
+textured frame (4x4 power-of-two `RGBA8888`, row-coloured, mip chain unbound).
+`0x740`, `0x741`, `0x742`, all sixteen words `0x750..0x75f` (with `1` and
+`0xffffffff`) and `0x7e0`/`0x7e1` (with `0`, `1` and `0xffffffff`) each gave
+**zero differing pixels out of 65532** and no hang.
+
+So the block is inert for the sampling path on AR20 with a power-of-two texture.
+That does not contradict the ordering constraint in section 8 - the only case
+where a `0x750` write has ever been seen to matter is a **non-power-of-two**
+texture, and the corruption there comes from the write landing in an unexpected
+pipe, not from the value itself being used by the sampler.
+
+What *does* control sampling, measured elsewhere: `TEXTURE_POINTER` (`0x710+i`),
+`TEXTURE_DESC1` (`0x720+2i`) and `TEXTURE_DESC2` (`0x721+2i`), plus the sampler
+index inside the TEX instruction word ([[Fragment Shader ISA]] section 9).
 
 ## 9. Fragment ALU (`0x800`..`0x807`)
 
@@ -361,16 +378,44 @@ surfaces' formats and pitches at `0xe10 + i`.
 
 | Addr | Name | Status | Fields / notes |
 |--:|:--|:--:|:--|
-| `0xa00` | `FDC_CONTROL` | D | bit 0 = invalidate. Grate also writes larger values (`0xe00`, `0xe01`) as a control word; the upper bits are not decoded |
+| `0xa00` | `FDC_CONTROL` | D | bit 0 = invalidate. Grate also writes larger values (`0xe00`, `0xe01`) as a control word; the upper bits are not decoded. **Bit 4 hangs the engine** (measured, section 11.1) |
 | `0xa01` | — | D | second control word, written with the `0xa02` block |
 | `0xa02`..`0xa07` | — | ? | six threshold/counter words, `0x1ff, 0x1ff, 0x1ff, 0x30, 0x20, 0x30` in every Grate stream |
-| `0xa08` | — | ? | written `0x100` |
+| `0xa08` | — | ? | written `0x100`; **bit 16 hangs the engine** (measured, section 11.1) |
 | `0xa09`..`0xa0c` | — | ? | cleared at reset |
 
 The FDC is the unified cache used by QRast, PSEQ and DW. The `0xa02` block is
 programmed identically at init and before every draw, which suggests
-flush/threshold configuration rather than per-draw state, but no experiment has
-separated the six words.
+flush/threshold configuration rather than per-draw state.
+
+### 11.1 Measured: none of it affects rendering, and two bits hang the engine
+
+Whole-frame test as in 4.1 (4x4 row-coloured textured `filter_quad`, 65532
+pixels compared by hash). Every one of these left the frame **bit-identical**:
+
+| registers | values |
+|:--|:--|
+| `0xa01` | 0, 1, `0xffffffff` |
+| `0xa02`..`0xa07` | 0, `0x1ff`, `0xffffffff` |
+| `0xa08` | 0, `0x100`, `0x1ff` |
+| `0xa09`..`0xa0c` | 0, `0xffffffff` |
+| `0xa00` | 0, 1, 2, `0x100` |
+
+So whatever the FDC block configures, none of it is visible in the colour result
+of a single-quad draw - consistent with the block being cache policy rather than
+pipeline state.
+
+Two single bits **hang the engine**, reproducibly, and the channel recovers once
+the offending process is killed:
+
+| register | bit | evidence |
+|:--|:--|:--|
+| `0xa00` | **4** (`0x10`) | `0x10` hangs; `0x2`, `0x4`, `0x6`, `0x8`, `0x20`, `0x40`, `0x80` run; `0xf8`, `0x1f8`, `0x1ff`, `0xffffffff` hang because they contain it |
+| `0xa08` | **16** (`0x10000`) | `0x200`, `0x400`, `0x800`, `0x1000`, `0x8000`, `0x80000000` run; `0x10000` and `0xffffff00` hang |
+
+A driver that pokes this block must keep those two bits clear; nothing in Grate's
+steady-state path touches them (`0xa00` is written `0xe00`/`0xe01` and `0xa08` as
+`0x100`).
 
 ## 12. GSHIM (`0xb00`..`0xb14`)
 

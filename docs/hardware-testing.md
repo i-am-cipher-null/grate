@@ -627,3 +627,18 @@ viewport bias/scale, guardband and the `0x343` linker-count coupling all show up
 as geometry changes, and the depth/stencil/line/point words show up as nothing.
 The table is in [[GR3D Registers]] 4.1, and it is the way to check any register
 claim cheaply - one value, one frame diff.
+
+Three gotchas that produced misleading data during those sweeps:
+
+* **A hang wedges the channel.** After a timeout, kill the process and re-run a
+  known-good shader (`fs_vs_tests` must return `0xFF01FF00`) before trusting the
+  next result; otherwise the batch silently reports "no effect" for everything
+  that follows. Two single bits hang it reproducibly: **`0xa00` bit 4** and
+  **`0xa08` bit 16** ([[GR3D Registers]] 11.1). The channel comes back after
+  `pkill -x assembler`.
+* **A frame dump is ~835 KB and `/tmp` is a 244 MB tmpfs.** Roughly 90 dumps fill
+  it, and from then on every run writes a **0-byte** log - which reads exactly
+  like "that register did nothing". Overwrite a single dump file (or hash it)
+  per run instead of keeping them all, and watch `df`.
+* **`--expected` mismatch exits 1 by design**, so every successful frame-dump run
+  ends with status 1. A sweep that treats non-zero as failure aborts itself.
