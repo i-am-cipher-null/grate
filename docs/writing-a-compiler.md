@@ -944,7 +944,11 @@ Consequences:
 
 **Known.** `DW` stores four fx10 values from `r2/r3` (or `r0/r1`) to a render
 target. Targets are hardwired: 0 depth, 1 colour, 2 stencil, 3 coverage,
-4 spill, 5..12 MRT `n+1`. So `gl_FragData[1]` is render target 5.
+4 spill, 5..12 MRT `n+1`. So `gl_FragData[1]` is render target 5. Target 4 is the
+blob's `SURF_REGSPILL`; its base is `RT_PTR(4)` = `0xe04`, with a companion limit
+at `0xe34` and enable bit 4 of `0x903`, and a spill store is inert unless DW bits
+10..16 select a slot (measured table in [[Fragment Shader ISA]]). A backend that
+never spills therefore only needs targets 0..3 and 5..12.
 
 Missing for a complete backend:
 

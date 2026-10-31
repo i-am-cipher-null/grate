@@ -841,8 +841,19 @@ int main(int argc, char *argv[])
 
 		if (host1x_bo_mmap(rt4->bo, &rmap) == 0 && rmap) {
 			uint32_t *r32 = rmap;
-			fprintf(stdout, "rt4: %08X %08X %08X %08X\n",
-				r32[0], r32[1], r32[2], r32[3]);
+			unsigned k, nz = 0, first = 0;
+			unsigned words = options.width * options.height;
+
+			for (k = 0; k < words; k++) {
+				if (r32[k]) {
+					if (!nz)
+						first = k;
+					nz++;
+				}
+			}
+
+			fprintf(stdout, "rt4: %08X %08X %08X %08X nz=%u first=%u\n",
+				r32[0], r32[1], r32[2], r32[3], nz, first);
 		}
 	}
 

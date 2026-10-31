@@ -224,6 +224,13 @@ context `+0x6c`/`+0x6e`) confirms the helper's role.
 [31:10] returned by dw_enc_src() / dw_enc_src_spill1() / dw_enc_src_spillN()
 ```
 
+The spill half of that word is now placed on hardware: modes 2/3 always target
+render target 4, whose address comes from `RT_PTR(4)` = `0xe04` (with the
+companion limit `0xe34` and enable bit 4 of `0x903`), and bits 10..16 of the word
+are a selection/slot field that must be non-zero or the store does nothing. See
+[[Fragment Shader ISA]] for the measured table. That is also why the encoder has
+separate `dw_enc_src_spill1`/`dw_enc_src_spillN` helpers producing bits 31:10.
+
 `0x2af330` starts by `memset`-ing `0xc0` bytes at context `+0x4dc` and walking
 `prog->slots` (`prog_t+0x60`), testing `slot->index == 4` (`res_desc+4`, render
 target 4 = spill) and reading `desc->type` (`res_desc+0xc`). That independently

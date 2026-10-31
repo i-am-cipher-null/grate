@@ -667,6 +667,21 @@ pixbuf_check:
 						rt->pixbuf->bo,
 						rt->pixbuf->bo->offset);
 
+		/*
+		 * ardrv pushes a companion register at 0xe30+i holding the end
+		 * of the surface; the AR20 rename for it is not in tgr_3d.xml yet.
+		 * Env-gated: no shipped path writes it, so keep it opt-in.
+		 */
+		if (getenv("GRATE_RT_LIMIT")) {
+			host1x_pushbuf_push(pb,
+					    HOST1X_OPCODE_INCR(0xe30 + i, 1));
+			HOST1X_PUSHBUF_RELOCATE(pb, rt->pixbuf->bo,
+						rt->pixbuf->bo->offset +
+						rt->pixbuf->pitch *
+						rt->pixbuf->height, 0);
+			host1x_pushbuf_push(pb, 0xdeadbeef);
+		}
+
 		if (i == 0 && ctx->depth_test)
 			enable_mask |= TGR3D_RT_ENABLE_DEPTH_BUFFER;
 

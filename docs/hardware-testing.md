@@ -261,6 +261,15 @@ index 4 the same way with `RGBA8888` and prints `rt4:`. `GRATE_TEX2=1` binds a
 second, blue `RGBA8888` texture as `tex1`, which is what proved that TEX bits
 0..2 select the sampler.
 
+The `rt4:` line also reports `nz=` (nonzero words in the whole surface) and
+`first=` (the first nonzero word index), which is what makes a *spill* write
+visible at all - a spill store lands at a slot offset, not at word 0.
+`GRATE_RT_LIMIT=1` additionally programs `0xe30 + i` with the end address of
+each surface, the companion register ardrv pushes and Grate's XML never named.
+The spill sweep that used them is a raw `DW: 0x...` word; the plain
+`store rt4, r2, r3` mnemonic emits `0x00028011` (mode 1, index 4), so bits 1:0
+choose the spill mode and bits 10..16 the slot.
+
 ### Depth buffer readback
 
 `GRATE_DEPTH=1` makes `tools/assembler` allocate a `D16_LINEAR` depth surface the

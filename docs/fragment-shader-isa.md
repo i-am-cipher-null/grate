@@ -775,8 +775,42 @@ usually travel together. No other bits are set.
   pointed at index 3 - while the ref/REPLACE path writes the same surface fine.
   So a backend should do stencil updates through the stencil ops (ref +
   `REPLACE`) and ignore the `DW` stencil store on AR20.
+- **The spill destination is render target 4, base register `0xe04`.** The blob
+  names its surfaces in index order - `SURF_DEPTH` 0, `SURF_OUT0` 1,
+  `SURF_STENCIL` 2, `SURF_COVERAGE` 3, **`SURF_REGSPILL` 4**, `SURF_OUT1` 5 - so
+  the spill surface is target 4 like the table above says. ardrv
+  (`NvArdStreamBeginAndPushRelocs`) then pushes, for every valid surface,
+  `INCR(0xe00 + i, 1)` followed by a *relocated* address, plus a companion
+  `INCR(0xe30 + i, 1)` holding the end of the surface when its context flag says
+  so. So the binding is `0x903` bit 4 (enable), `0xe04` (address) and `0xe34`
+  (limit) - and Grate only ever wrote the first two. `grate-3d.c` now pushes the
+  limit under `GRATE_RT_LIMIT=1`.
+
+  The store is **inert while its selection field is zero**: DW bits 10..16 are
+  the spill slot/selection, so a spill word with them clear writes nothing
+  anywhere. Measured with an `RGBA8888` surface bound at index 4 and a `0.75`
+  payload:
+
+  | DW word | mode | writes into rt4 |
+  |:--|:--|:--|
+  | `0x00028011` | 1 (colour, control) | `0x00BF00BF` at word 0, all 65536 words |
+  | `0x00028012` | 2, selection 0 | nothing |
+  | `0x00028013` | 3, selection 0 | nothing |
+  | `0x00028403` | 3, bit 10 | `0x0000007B` at word 0, 38 words |
+  | `0x00028803` | 3, bit 11 | `0x00FE0000` at word 0, 38 words |
+  | `0x0002C003` | 3, bit 14 | `0x000000C0` at word 2, 38 words |
+  | `0x00038003` | 3, bit 16 | `0x000000C0` at word 3, 38 words |
+  | `0x00029002` | 2, bit 12 | 152 words from word 1280 |
+  | `0x0002A002` | 2, bit 13 | 152 words from word 1280 |
+
+  Bits 17..31 are inert for spill stores (swept one at a time: no write), and
+  mode 1 at the same index is the control that proves the base binding, the
+  enable bit and the readback are sound. The payload is *not* the RGBA8888
+  conversion - `0x7B`, `0xFE0000` and `0xC0` are raw spill words - so a backend
+  should treat the spill buffer as opaque storage.
 - DW modes 2/3 with the store pointed at index 0 write neither the colour nor
-  the depth surface. Mode 1 pointed at an **unbound** index is worse than a no-op:
+  the depth surface (the index is ignored for spills - they always go to target
+  4). Mode 1 pointed at an **unbound** index is worse than a no-op:
   the colour target then holds a descending per-pixel ramp (`0x0000FD7F`, then
   `FD7E`, `FD7D`, ..., 16384 distinct values over 65532 pixels, four pixels per
   step) instead of a clear or shader-written colour. So a store whose target is
