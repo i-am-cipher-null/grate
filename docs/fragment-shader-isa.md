@@ -297,21 +297,13 @@ The ALU instructions comes in packets of 3 or 4 scalar instructions (the fourth 
 |  6..18 | operand rC               |
 |   0..5 | operand rD               |
 
-Two independent decoders disagree about the top of the destination field, and
-both readings are in use:
-
-* the encoder reconstruction in [[Compiler Internals]] builds the destination as
-  a 7-bit value `(hwreg << 1) | half` at bits 47..53, which is what makes the
-  kill register (76) and the condition registers (64..71) addressable;
-* Grate's `libcgc/shader.c`, which was written from the blob's own dumps, reads
-  bits 47..51 as a 5-bit register, **bit 53 as "a condition code is present"**
-  and bits 55:54 as the condition.
-
-For destinations below 64 the two agree on bits 47..51 and bit 53 is clear, so
-the difference only shows up for a conditional packet or a write to 64..76. One
-`MAD r3.*h, ... (eq)` probe with bit 53 forced to 0 and to 1 is all that is
-needed to settle it; until then, treat bit 53 as part of the destination and set
-it only when the destination is >= 64.
+**The destination is 7 bits, 47..53, and bit 53 is its top bit (measured).**
+Grate's `libcgc/shader.c` reads only bits 47..51 and treats bit 53 as "a condition
+code is present"; that is a display artefact of its 5-bit read, not the encoding.
+The blob's own conditional word settles it - high dword `0x00e000c2` decodes to
+destination **64** and condition **3**, so the instruction writes condition
+register 0, and `libcgc` prints it as `mad_lt r0.__` only because it drops bit
+53. Nothing needs to be set for a condition to apply; see "Condition codes".
 
 ### 5.1 Instruction packet
 
@@ -359,14 +351,30 @@ The conditional operation is applied to the ALU's result, so the final result is
 |     3 | greater or equal to zero | `_lt` - result is < 0.0     |
 
 `libcgc/shader.c` names the codes `_z _nz _le _lt` for 0..3 and prints them
-between the mnemonic and the destination (`mad_le r12.hl, c0, #1, c1.l`, seen in
-the blob's discard path). The two readings describe the same bit pairs with a
-shifted naming: a `<= 0` test is the complement of `> 0`, so they agree on
-behaviour and disagree on labels. Follow the left column (what the assembler and
-all measurements use) and note that the right column is only a pretty-printer.
+between the mnemonic and the destination (`mad_le r12.hl, c0, #1, c1.l`). Those
+are names only: the measured semantics below are authoritative, and the labels
+do not describe them (code 3 measures as `>= 0`, which `libcgc` would call `_lt`).
 
-Bit 53 is the "condition present" flag in `libcgc/shader.c`; see the note under
-the ALU word table.
+Measured, on a row-register destination, so with bit 53 clear throughout:
+
+| code | mnemonic | operand result | stored word | meaning |
+|--:|:--|:--|--:|:--|
+| 0 | none | 1.0 | `0x000000FF` | result unchanged |
+| 1 | `eq` | 1.0 | `0x00000000` | 1.0 -> false |
+| 1 | `eq` | 0.0 | `0x000000FF` | 0.0 -> true |
+| 2 | `gt` | 1.0 | `0x000000FF` | positive -> true |
+| 2 | `gt` | 0.0 | `0x00000000` | zero -> false |
+| 3 | `ge` | 0.0 | `0x000000FF` | zero -> true |
+
+So the condition tests the ALU result and produces 0.0 or 1.0, and **no enable
+bit is involved**: there is no bit anywhere in the word that has to accompany a
+non-zero condition for it to take effect. Bit 53 belongs to the destination
+field, which is why the blob's conditional packets (writing `cr0..cr7` or the
+kill register) appear to "set a condition flag" in `libcgc`'s 5-bit decoder.
+
+A second consequence for code generators: the blob's compare is expressed by
+negating an operand and testing `>= 0` (`mad_lt r0.__, -r3, #1, ec0.l` in its
+raw output), not by a dedicated compare instruction.
 
 ### 5.6 Condition registers
 
@@ -585,6 +593,16 @@ slot off, as above. The safe compiler rule is unchanged and does not depend on
 resolving it: use `aluN` only for an immediate same-batch chain of the form
 `slot k writes, slot k+1 reads`, which is what every working test shader does,
 and write the chain tail to a row register.
+
+A second attempt using embedded constants (`imm0..imm2 = 0.25 / 0.5 / 0.75`)
+instead of uniforms reproduces the same failure **including the control**:
+reading `r0`, which the previous packet wrote as 0.25, returns a word whose
+`r2` byte is `0xF7` and `r3` byte is `0xE7` instead of the expected `0x40`, and
+reading `r1` (0.5) changes only the `r3` byte, to `0xEF`. The latch reads
+therefore cannot be interpreted until the harness shape itself is calibrated -
+the store in that packet is not carrying the value the shader computed, whatever
+`aluN` names. Any future probe must first show a known-good control (read `r0`
+back as 0.25) in the same shape before a latch read means anything.
 
 **Texture results are the exception: they are visible to the ALU in the batch
 that issued the fetch.** A probe that samples a 4x4 grey texture
