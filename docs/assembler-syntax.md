@@ -242,9 +242,19 @@ Here the MFU sub-instruction is represented in raw by a two hex values, 0x000000
 
 #### PSEQ sub-instruction
 
-Opcodes are unknown, available only in a hex form.
+The render-target fetch has a mnemonic; every other PSEQ word is written in hex.
 
-Example:
+	PSEQ:	load rtN, r0, r1
+
+`load` takes the render target index (bits 16..19) and the destination register
+pair (bit 1): either `r0, r1` or `r2, r3`. It emits the enable bits 3 and 23, so
+`load rt2, r0, r1` produces the stencil fetch word `0x00820008` that the blob
+uses, and `load rt3, r0, r1` reads the coverage surface (`0x00830008`). A value
+stored to that target in an earlier batch is visible to the fetch, so a
+read-modify-write is two batches.
+
+The spill layouts and the format fields are not decoded by the mnemonic, use a
+raw word for those:
 
 	EXEC
 		PSEQ:	0x00000000
@@ -353,6 +363,22 @@ Example:
 
 Here texture data is sampled into r0,r1 row registers from texture unit #3, "s t r" coordinates are passed via r0,r1,r2 row registers, LOD bias is enabled and passed via row register r3. In result, r2.fx10_low contains red; r2.fx10_high green; r3.fx10_low blue and r3.fx10_high alpha channel components.
 
+TXL opcode:
+
+The fourth source register carries an *absolute* LOD instead of a bias (TEX bit
+13, which only takes effect while bit 12 is clear). Operands are the same as for
+TXB.
+
+Example:
+
+	EXEC
+		TEX:	txl r2, r3, tex0, r0, r1, r2, r3
+	;
+
+Here the LOD is read from r3 and used directly, ignoring the gradients the
+sampler would otherwise compute. `txl r2, r3, tex0, r0, r1, r2, r3` emits
+`0x2420`, the word that used to have to be written in raw hex.
+
 #### ALU sub-instruction
 
 The ALU sub-instruction consists of four ALU instructions, one per ALU, and an ALU_COMPLEMENT hex value (one per exec batch).
@@ -388,6 +414,19 @@ ALU registers:
 - gN - General purpose register, N is 0..7 (`g8`/`g9` are a parse error, matching the eight registers at 16..23)
 - aluN - ALUN result register, N is 0..3
 - immN - ALU3 immediate constant, N is 0..2
+- lp - the low-precision vec2 register, hardware register 31
+- crN - condition register, N is 0..15 (stored in pairs, so `cr0`/`cr1` share one hardware register)
+- kill - discard register, hardware register 76; write-only, any non-zero value discards the fragment
+- posx / posy - fragment position, hardware registers 72 and 73
+- pface - polygon face, hardware register 75
+- cov - primitive coverage, hardware register 74; reads 0 on AR20
+
+`rN` with N above 15 names the register file by hardware number as well, so
+`r16`..`r23` are the general purpose registers, `r24`..`r27` the ALU result
+registers, `r64`..`r71` the condition registers and `r72`..`r75` the specials.
+Only sources accept that range; a destination above `r15` is a parse error. This
+is what makes `MAD r2.l*, r74, #1, #0` - reading the coverage register - possible
+without a mnemonic, and `cov` is simply a spelling of `r74`.
 - lp - Low precision register, the "lp" form is used only for the destination register, while source registers uses "#0" or "#1" form. When rD is set to #1, it's enable bit is unset, making rD 1.0 effectively.
 - uN - Uniform register, N is 0..31
 - crN - Condition register, N is 0..15

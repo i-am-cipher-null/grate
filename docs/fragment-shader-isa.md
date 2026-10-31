@@ -83,7 +83,7 @@ The different units seems to be synchronized by separate timing streams.
 | 64..71 | condition registers, in pairs | 8 CRs, each holding two fx10 `0.0`/`1.0` |
 | 72 | `posx` | `8192 + frag.x` |
 | 73 | `posy` | `8192 + (height - 1) - frag.y` |
-| 74 | coverage | reads 0 on AR20; reachable as `r74` (see section 8.2) |
+| 74 | `cov` | primitive coverage; reads 0 on AR20 (see section 8.2) |
 | 75 | `pface` | polygon face |
 | 76 | kill | write non-zero to discard |
 
@@ -1481,6 +1481,12 @@ same draw, with one draw and with two.
 |      0 | ???                     |
 
 Note: bit 3 and bit 23 seems to usually be set together. It's not known which one is the actual enable-bit.
+
+The assembler spells the fetch `PSEQ: load rtN, r0, r1` (or `r2, r3` for the
+other destination pair), which emits `0x00800008 | (N << 16) | (pair << 1)`; any
+other word is written in hex. The disassembler decodes the index, the
+destination pair and the enable bits, and prints the word in a trailing comment
+whenever a bit it does not decode is set.
 
 ### 9.1 Destination register selection
 

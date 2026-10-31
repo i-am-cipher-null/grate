@@ -146,6 +146,10 @@ lp			return T_ALU_LOWP;
 posx			return T_POSITION_X;
 posy			return T_POSITION_Y;
 pface			return T_POLIGON_FACE;
+cov			{
+				fragment_asmlval.u = FRAGMENT_COVERAGE_REG;
+				return T_ROW_REGISTER;
+			}
 kill			return T_KILL;
 
 rB			return T_ALU_rB;
@@ -204,8 +208,10 @@ tex[0-9]{1,2}		{
 
 TEX			return T_TEX_OPCODE;
 TXB			return T_TXB_OPCODE;
+TXL			return T_TXL_OPCODE;
 
 "store"			return T_DW_STORE;
+"load"			return T_PSEQ_LOAD;
 
 rt[0-9]{1,2}		{
 				fragment_asmlval.u = atoi(yytext + 2);

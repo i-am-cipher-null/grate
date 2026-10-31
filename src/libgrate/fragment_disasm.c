@@ -364,12 +364,12 @@ static const char * alu_r(const union fragment_alu_instruction *alu, int reg)
 			}
 
 			alu_imm_used = 1;
-			break;
-		case FRAGMENT_CONDITION_REG_0 ... FRAGMENT_CONDITION_REG_7:
-		case FRAGMENT_LOWP_VEC2_0_1:
-		case FRAGMENT_POS_X:
-		case FRAGMENT_POS_Y:
-		case FRAGMENT_POLYGON_FACE:
+			break;	case FRAGMENT_CONDITION_REG_0 ... FRAGMENT_CONDITION_REG_7:
+	case FRAGMENT_LOWP_VEC2_0_1:
+	case FRAGMENT_POS_X:
+	case FRAGMENT_POS_Y:
+	case FRAGMENT_COVERAGE_REG:
+	case FRAGMENT_POLYGON_FACE:
 			precision = 0;
 		}
 		break;
@@ -412,7 +412,7 @@ static const char * alu_dst(const union fragment_alu_instruction *alu)
 
 	switch (alu->dst_reg) {
 	case FRAGMENT_CONDITION_REG_0 ... FRAGMENT_CONDITION_REG_7:
-		adj = (alu->write_low_sub_reg || alu->write_low_sub_reg);
+		adj = (alu->write_low_sub_reg || alu->write_high_sub_reg);
 	case FRAGMENT_KILL_REG:
 		buf += sprintf(buf, "%s", reg_name(alu->dst_reg, adj));
 		break;
@@ -641,12 +641,43 @@ static const char * disassemble_alus(const alu_instr *alu)
 	return ret;
 }
 
+#define PSEQ_ENABLE_LOW			(1u << 3)
+#define PSEQ_ENABLE_HIGH		(1u << 23)
+#define PSEQ_TARGET_SHIFT		16
+#define PSEQ_DST_PAIR			(1u << 1)
+
+static const char * disassemble_pseq(const pseq_instr *pseq)
+{
+	static char ret[64];
+	char *buf = ret;
+	unsigned dst_pair = (pseq->data & PSEQ_DST_PAIR) ? 1 : 0;
+	unsigned known = PSEQ_ENABLE_LOW | PSEQ_ENABLE_HIGH | PSEQ_DST_PAIR |
+			 (0xfu << PSEQ_TARGET_SHIFT);
+
+	if (!(pseq->data & (PSEQ_ENABLE_LOW | PSEQ_ENABLE_HIGH))) {
+		buf += sprintf(buf, "NOP");
+	} else {
+		buf += sprintf(buf, "load rt%u, r%u, r%u",
+			       (pseq->data >> PSEQ_TARGET_SHIFT) & 0xf,
+			       dst_pair * 2, dst_pair * 2 + 1);
+	}
+
+	/* the spill forms and the format fields are not decoded */
+	if (pseq->data & ~known) {
+		sprintf(buf, " // 0x%08X", pseq->data);
+	}
+
+	return ret;
+}
+
 static const char * disassemble_tex(const tex_instr *tex)
 {
 	static char ret[64];
 	char *buf = ret;
 
-	if (tex->enable_bias) {
+	if (tex->explicit_lod) {
+		buf += sprintf(buf, "txl ");
+	} else if (tex->enable_bias) {
 		buf += sprintf(buf, "txb ");
 	} else {
 		buf += sprintf(buf, "tex ");
@@ -666,11 +697,11 @@ static const char * disassemble_tex(const tex_instr *tex)
 		buf += sprintf(buf, "r0, r1, r2");
 	}
 
-	if (tex->enable_bias) {
+	if (tex->enable_bias || tex->explicit_lod) {
 		buf += sprintf(buf, tex->src_regs_select ? ", r1" : ", r3");
 	}
 
-	if (tex->unk_6_9 || tex->unk_11 || tex->unk_13_31) {
+	if (tex->unk_6_9 || tex->unk_11 || tex->unk_14_31) {
 		sprintf(buf, " // 0x%08X", tex->data);
 	}
 
@@ -681,8 +712,11 @@ static const char * disassemble_dw(const dw_instr *dw)
 {
 	static char ret[64];
 	char *buf = ret;
+	unsigned mode = dw->data & 0x3;	/* 1 = render target, 2/3 = spill */
+	int slot_undecoded = 0;
 
-	if (dw->enable) {
+	switch (mode) {
+	case 1:
 		buf += sprintf(buf, "store ");
 
 		if (dw->stencil_write && dw->render_target_index == 2) {
@@ -702,12 +736,24 @@ static const char * disassemble_dw(const dw_instr *dw)
 					       dw->render_target_class);
 			}
 		}
-	} else {
+		break;
+	case 2:
+		/* Single-register spill write. Bit 0 is clear in this mode, so
+		 * it must not be decoded as "store disabled". */
+		buf += sprintf(buf, "store spill, r0");
+		slot_undecoded = 1;
+		break;
+	case 3:
+		buf += sprintf(buf, "store spill, multi");
+		slot_undecoded = 1;
+		break;
+	default:
 		buf += sprintf(buf, "NOP");
+		break;
 	}
 
-	if (dw->unk_1 || dw->unk_6_9 || dw->unk_11_14 || dw->unk_18_31 ||
-	    dw->render_target_class != 2) {
+	/* bits 2..9 select the spill slot and add address offsets */
+	if (slot_undecoded || dw->unk_6_9 || dw->unk_11_14 || dw->unk_18_31) {
 		sprintf(buf, " // 0x%08X", dw->data);
 	}
 
@@ -736,7 +782,7 @@ const char * fragment_pipeline_disassemble(
 	buf += sprintf(buf, "EXEC\n");
 
 	if (pseq->data != 0x00000000) {
-		buf += sprintf(buf, "\tPSEQ:\t0x%08X\n", pseq->data);
+		buf += sprintf(buf, "\tPSEQ:\t%s\n", disassemble_pseq(pseq));
 	}
 
 	for (i = 0; i < mfu_nb; i++) {

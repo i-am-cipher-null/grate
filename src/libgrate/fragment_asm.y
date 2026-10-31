@@ -187,6 +187,7 @@ static uint32_t float_to_fx10(float f)
 %token <u> T_TEX_SAMPLER_ID
 %token T_TEX_OPCODE
 %token T_TXB_OPCODE
+%token T_TXL_OPCODE
 
 %token T_ALU_rB
 %token T_ALU_rC
@@ -227,6 +228,7 @@ static uint32_t float_to_fx10(float f)
 %token T_ALU_DIV2
 
 %token T_DW_STORE
+%token T_PSEQ_LOAD
 %token T_DW_STENCIL
 %token T_DW_CLASS
 %token <u> T_DW_RENDER_TARGET
@@ -480,6 +482,25 @@ PSEQ_INSTRUCTION:
 	T_PSEQ T_HEX
 	{
 		asm_pseq_instructions[asm_fs_instructions_nb].data = $2;
+	}
+	|
+	T_PSEQ T_PSEQ_LOAD T_DW_RENDER_TARGET ',' T_ROW_REGISTER ',' T_ROW_REGISTER
+	{
+		unsigned dst;
+
+		if ($5 == 0 && $7 == 1) {
+			dst = 0;
+		} else if ($5 == 2 && $7 == 3) {
+			dst = 1;
+		} else {
+			PARSE_ERROR("PSEQ destination registers should be either \"r0,r1\" or \"r2,r3\"");
+		}
+
+		/* Bits 3 and 23 are the enable pair, bits 16..19 the render
+		 * target index and bit 1 the destination pair; see
+		 * docs/fragment-shader-isa.md section 9. */
+		asm_pseq_instructions[asm_fs_instructions_nb].data =
+			0x00800008 | ($3 << 16) | (dst << 1);
 	}
 	|
 	T_PSEQ T_OPCODE_NOP
@@ -796,6 +817,38 @@ TEX_INSTRUCTION:
 		}
 		else {
 			PARSE_ERROR("TXB source registers should be either \"r0,r1,r2,r3\" or \"r2,r3,r0,r1\"");
+		}
+	}
+	|
+	T_TEX T_TXL_OPCODE T_ROW_REGISTER ',' T_ROW_REGISTER ',' T_TEX_SAMPLER_ID ',' T_ROW_REGISTER ',' T_ROW_REGISTER ',' T_ROW_REGISTER ',' T_ROW_REGISTER
+	{
+		asm_tex_instructions[asm_fs_instructions_nb].enable = 1;
+
+		if ($3 == 0 && $5 == 1) {
+			asm_tex_instructions[asm_fs_instructions_nb].sample_dst_regs_select = 0;
+		}
+		else if ($3 == 2 && $5 == 3) {
+			asm_tex_instructions[asm_fs_instructions_nb].sample_dst_regs_select = 1;
+		}
+		else {
+			PARSE_ERROR("TEX destination registers should be either \"r0,r1\" or \"r2,r3\"");
+		}
+
+		if ($7 > 15){
+			PARSE_ERROR("Invalid TEX sampler id, 15 is maximum");
+		}
+
+		asm_tex_instructions[asm_fs_instructions_nb].sampler_index = $7;
+		asm_tex_instructions[asm_fs_instructions_nb].explicit_lod = 1;
+
+		if ($9 == 0 && $11 == 1 && $13 == 2 && $15 == 3) {
+			asm_tex_instructions[asm_fs_instructions_nb].src_regs_select = TEX_SRC_R0_R1_R2_R3;
+		}
+		else if ($9 == 2 && $11 == 3 && $13 == 0 && $15 == 1) {
+			asm_tex_instructions[asm_fs_instructions_nb].src_regs_select = TEX_SRC_R2_R3_R0_R1;
+		}
+		else {
+			PARSE_ERROR("TXL source registers should be either \"r0,r1,r2,r3\" or \"r2,r3,r0,r1\"");
 		}
 	}
 	|

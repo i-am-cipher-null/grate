@@ -4,8 +4,8 @@ pseq_to_dw_exec_nb = 1
 /*
  * Explicit LOD probe.
  *
- * This is filter_quad_fs.txt with the TEX word written raw (TEX: <hex>), so
- * bits the assembler has no mnemonic for can be toggled. Field layout:
+ * This is filter_quad_fs.txt with the TEX stage using the explicit-LOD form,
+ * `txl`. Field layout:
  *
  *   bits 3:0   sampler index          0
  *   bit  4     coord register select  0 -> r0, r1, r2
@@ -14,9 +14,10 @@ pseq_to_dw_exec_nb = 1
  *   bit  12    r3 is a LOD bias
  *   bit  13    r3 is an absolute LOD, and only when bit 12 is clear
  *
- * The word shipped here is 0x2420 - bit 13 set, bit 12 clear, explicit LOD.
- * `txb` emits 0x1420 (bit 12) and `tex` emits 0x0420; bit 13 was identified by
- * flipping it in this file, see writing-a-compiler.md section 10.4.
+ * `txl` emits 0x2420 - bit 13 set, bit 12 clear, explicit LOD. `txb` emits
+ * 0x1420 (bit 12) and `tex` emits 0x0420. Bit 13 was identified by flipping it
+ * in this file while the word still had to be written in raw hex, see
+ * writing-a-compiler.md section 10.4.
  *
  * The ALU in batch 1 writes u0 into r3. With the quad magnified 64x over a 4x4
  * texture the computed LOD is -6 and clamps to 0, so lod 0 gives the level-0
@@ -38,6 +39,6 @@ EXEC
 		ALU0:	MAD  r3.lh,  u0,  #1,  #0,  #1
 ;
 EXEC
-	TEX: 0x2420
+	TEX:	txl r2, r3, tex0, r0, r1, r2, r3
 	DW:	store rt1, r2, r3
 ;
