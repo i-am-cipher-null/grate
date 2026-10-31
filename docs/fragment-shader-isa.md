@@ -1437,12 +1437,21 @@ r2, r3` therefore measures nothing at all, which is how this was found. A `DW`
 store to index 3 is also suppressed by bit 12 of the `0x520` start word, like
 every other store ([[GR3D Registers]] 6.1).
 
-The rule is not coverage-specific. The same two-batch shape aimed at MRT target 5
-(`GRATE_RT5=1`) writes `0x200` into words 2 and 3 with the R0/R1 pair and nothing
-at all with R2/R3; the colour target 1 accepts both pairs and simply shows the
-different values, because `r1` is zero. Target 2 is different again: neither pair
-lands unless the `stencil write` bit (bit 10) is set, so only the `store stencil`
-spelling writes that surface.
+The colour target 1 accepts both pairs and simply shows the different values,
+because `r1` is zero. Target 2 is different again: neither pair lands unless the
+`stencil write` bit (bit 10) is set, so only the `store stencil` spelling writes
+that surface.
+
+**Target 5 (MRT) never receives a store on AR20.** Three value sweeps leave the
+`rt5:` readback all-zero, so the `0x200` seen in one earlier run was stale buffer
+content rather than a write. It stays zero after copying the working colour-target
+programming onto index 5: `RT_PARAMS(5)` (`0xe15`) set to `0x04040034` - the word
+a real command-stream dump shows for `RT_PARAMS(1)`, which decodes as format `0x0d`
+(RGBA8888), pitch 1024 and an extra bit 26 - with `RT_ENABLE` = `0x22` and the
+limit register written, and with the store in its own batch after a working
+`store rt1` in the same program. So indices 0..4 (depth, colour, stencil,
+coverage, spill) are the only ones with a working `DW` path on this chip; 5..12
+are addressable but not implemented here.
 
 Some of the render targets have an additional special purpose, like depth/stencil store. They are hardwired and their special purpose is active under certain conditions, like when depth/stencil test is enabled.
 
@@ -2035,18 +2044,29 @@ usually travel together. No other bits are set.
   note under "Operands (rA, rB, rC)" above; the three arrangements (row rA with
   uniform rC, uniform rA with row rC, and no row operand at all) all return
   `0.75` for `1*0.5 + 0.25`.
-- **`ipl` results cannot be read back through an ALU operand**, which is what
-  made every earlier TRAM probe look inconsistent. The slot mapping itself is
-  solid - slot 0 lands in `r0`, slot 1 in `r1`, and a leading `NOP` slot leaves
-  its register alone (`MAD r2.l*, r0` shows the slot-0 value in red and 0 in
-  blue, and the `NOP, t0.fp20` form shows 0 in red and the value in blue). But
-  the *value* an ALU sees is not the interpolated one: with all four components
-  linked, a `MAD rX.l*, rX, #1, #0, #1` readout returns the same words for every
-  slot pair and the same words a linker that only writes `x` produces, and two
-  runs of the same shader differ (`0xBB02BE02` in one, `0xFFFFFFFF` at pixel 0 in
-  the other). An fp20 read takes the high half of the pair, which `ipl` does not
-  fill, so the ALU reads leftover register content. Consume TRAM data the way
-  `filter_quad_fs.txt` does - as a TEX coordinate - not through ALU arithmetic.
+- ~~`ipl` results cannot be read back through an ALU operand~~ - **retracted: they
+  can, with a plain fp20 read.** Slot 0 lands in `r0`, slot 1 in `r1`, a leading
+  `NOP` slot leaves its register alone, and `MAD rX.l*, r0, #1, #0, #1` returns
+  the interpolated value exactly. Measured with a vertex shader that exports a
+  *constant* varying from a uniform, so the read has a value it can be right
+  about (`k` is the varying, read from `r0`/`r1` and stored to `rt1`):
+
+  | varying `k` | stored word (`r2` from `r0`, `r3` from `r1`) |
+  |:--|:--|
+  | (0.5, 0.25) | `0x0040007F` - `r2` = `0x7F`, `r3` = `0x40` |
+  | (0.25, 0.75) | `0x00BF0040` |
+  | (1.0, 0.0) | `0x000000FF` |
+  | (0.125, 0.5) | `0x007F0020` |
+
+  Every stored value is the constant itself, and the TEX consumer of the same
+  slots fetches the matching texel (`k.t = 0.25` reads row 1 of a 4x4
+  row-coloured texture, which is green). The `.h` form reads the same value in
+  fx10 form (`0x00E700EF` for 0.5/0.25) and the **`.l` form reads zero** - which
+  is what made the earlier probes look like leftover content, because they read
+  the low half. The old contradictions (identical words for every slot pair, two
+  runs disagreeing) were artefacts of that read form. So `ipl` output is ordinary
+  fp20 data and a compiler may do arithmetic on varyings directly; there is no
+  need to launder them through the texture unit.
 - ~~fp20 rounding of ALU results~~ - **settled: the ALU truncates toward zero**
   at fp20 writeback (1.5 ulp reads back as 1 ulp), the same as the assembler's
   own packing. See [[Writing a Compiler]] 9.2 item 8. Historical note: the

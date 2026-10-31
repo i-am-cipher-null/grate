@@ -655,6 +655,20 @@ Consequences for a backend: emit every program at `alu_buffer_size = 1` and trea
 the register file as four fp20 row registers (`r0..r3`) plus globals and ALU
 latches. There is no known way to make more rows live.
 
+Sizes 2, 3 and 4 were retried with the `GRATE_ALU_BUF_WORD` empty-value bug fixed
+(an empty variable used to force `0xe20 = 0`, which had made a whole sweep look
+as if every size worked). All three hang, and they hang *even when the size-1
+`0xe20` word is pushed by hand*, so the hang follows the assembled program layout
+for size > 1 rather than the register value. The assembler only accepts
+`ALU0..ALU3` in a packet, so it cannot express the wider layout to begin with
+([[Compiler Internals]], "Assembler limitation"). Four further shapes - one, two
+and three ALU packets in the batch, and a run with every store suppressed by
+bit 12 of `0x520` - all hang as well, so the wider buffer is simply unusable on
+AR20 rather than mis-programmed. Note also that the blob path in Grate hardcodes
+`alu_buf_size = 1` and `pseq_to_dw_nb = 1` (`shader-cgc.c`), so even a blob
+program built for a wider buffer would be run as size 1 by this driver - the
+layout cannot be learned from blob output until that hardcode is removed.
+
 `GRATE_ALU_BUF_WORD=<hex>` overrides the whole word for experiments; with a
 single-batch control the override produces bit-identical output for size 1, so the
 pipeline config is inert while it is legal.
@@ -719,8 +733,15 @@ names them:
   still untested: the 565 target on index 5 could not be written in this harness
   (its readback is all-zero even with no poke), so `RT_PARAMS.dither_enable`
   stays unexplained.
-* **Indices 6..15 of the render-target arrays** (`0xe06`.., `0xe16`..) are
-  addressable and enabled-able but never used by Grate or the blob's observed
-  paths; whether AR20 has 16 or fewer physical targets is unknown.
+* **Indices 5..15 of the render-target arrays** (`0xe05`.., `0xe15`..) are
+  addressable and enable-able, but index 5 takes no `DW` store even when given the
+  exact params word, enable bit and limit register a working target uses (see
+  [[Fragment Shader ISA]] 8.2), and nothing ever writes 6..15. The working set on
+  AR20 is 0..4; whether later chips implement the rest is unknown. A command-stream
+  dump shows index 5 otherwise programmed exactly like a working target
+  (`RT_PARAMS(5) = 0x00040034`: RGBA8888, pitch 1024, linear) with `RT_ENABLE =
+  0x22`, and the only field that differs from the colour target is bit 26, which
+  is `RT_PARAMS.TILED` (`0x04000000` in `tgr_3d.xml.h`) - so the block is not a
+  programming mistake.
 * **`TEXTURE_DESC1` bit 5**, bits 13..26 and bits 30..31, and `TEXTURE_DESC2`
   bits 0..5: the wrap/filter/format fields are measured, the rest are not.

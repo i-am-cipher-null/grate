@@ -445,9 +445,13 @@ rows and `64 / rows`, so the row count must divide 64).
 `x`, one writing `y` of the same row - render exactly the frame a single line
 writing both does, and a second row does not disturb the first: reading `t1`
 with row 1 linked gives the same frame as reading `t0` with row 0 linked.
-Reading a TRAM value back through an ALU operand is what does *not* work (the
-fp20 read takes the unfilled high half, so it returns leftover register
-contents); consume it as a TEX coordinate, as `filter_quad_fs.txt` does.
+Reading a TRAM value back through an ALU operand **does work** with a plain fp20
+row-register read: `MAD r2.l*, r0, #1, #0, #1` returns the interpolated value
+exactly (four different constant varyings all read back as themselves, see
+[[Fragment Shader ISA]] 12.9). The `.l` (low fx10) form returns zero, which is
+what made earlier probes look like leftover register content. `ipl` output is
+ordinary fp20 data, so a backend may do arithmetic on varyings directly instead
+of laundering them through the texture unit.
 
 **Settled:** re-reading a varying in a **later batch** works - the same varying
 interpolated in two different batches returns identical values - so `ipl` may be

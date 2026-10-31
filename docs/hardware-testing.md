@@ -602,6 +602,31 @@ To reproduce: generate a shader with the wanted `alu_buffer_size`, run
 `pkill -f tools/assembler` afterwards - a hang wedges the channel until the
 process is killed, and the next run recovers on its own.
 
+## Reading the command stream from `dmesg`
+
+The kernel prints the whole submitted stream when a channel times out, which is the
+only way to see what the driver *actually* programmed rather than what its source
+intends. Any wedging program works as the trigger - `alu_buffer_size = 2` is
+reliable - and the dump arrives once per hang:
+
+```
+[...] 0x1c38563c: 1e110001: INCR(offset=e11, [04040034])
+[...] 0x1c385644: 1e010001: INCR(offset=e01, [1c3c0000])
+[...] 0x1c38564c: 1e150001: INCR(offset=e15, [00040034])
+[...] 0x1c38565c: 19030001: INCR(offset=903, [00000022])
+```
+
+Two traps. The `cdma_timeout_handler: timeout` **message** is printk-ratelimited
+while the dump is not, so counting messages reports "no new timeouts" when the
+dumps are sitting right there. And the dump is the *hanging* job's own stream, so
+it shows the context programming of the draw that wedged, not the one before it.
+
+This settled two things pokes could not: `RT_PARAMS(1)` is `0x04040034` (format
+`0x0d`, pitch 1024, bit 26) and `RT_PARAMS(5)` is `0x00040034`, so bit 26 is
+`RT_PARAMS.TILED` - the framebuffer is tiled and the rt5 surface is linear. Poking
+`0xe11` instead cannot isolate its fields: the poke lands *after* the `0x520`
+start word and changes the frame even when it rewrites the driver's own value.
+
 ## Register pokes: `GRATE_POKE`
 
 Not every register has an API. `GRATE_POKE="0xb00=3,0xc00=0x1ff"` pushes raw
@@ -653,7 +678,7 @@ all zeros even with no poke set - and target-5 stores into `RGBA8888` only place
 `0x200` in two words. Any experiment that depends on reading target 5 back has to
 be fixed before its result means anything.
 
-Four gotchas that produced misleading data during those sweeps:
+Five gotchas that produced misleading data during those sweeps:
 
 * **A hang wedges the channel.** After a timeout, kill the process and re-run a
   known-good shader (`fs_vs_tests` must return `0xFF01FF00`) before trusting the
@@ -667,6 +692,12 @@ Four gotchas that produced misleading data during those sweeps:
   per run instead of keeping them all, and watch `df`.
 * **`--expected` mismatch exits 1 by design**, so every successful frame-dump run
   ends with status 1. A sweep that treats non-zero as failure aborts itself.
+* **`getenv()` is true for an empty value.** Two sweeps in one session were
+  silently invalidated by this: `GRATE_NO_STORE=` (from a shell that always
+  passes the variable) suppressed *every* store so every register looked inert,
+  and `GRATE_ALU_BUF_WORD=` forced `0xe20 = 0`, reducing an `alu_buffer_size`
+  sweep to size 1 and making sizes 2..4 look identical. Both knobs now treat
+  unset, empty and `0` as off, and any new knob needs that three-way test.
 * **A stencil or coverage test that never writes `kill` is not testing the
   shader.** With the stencil test on but no `kill` write in the program, QRast
   performs the stencil update before the shader tail, so a program truncated by a

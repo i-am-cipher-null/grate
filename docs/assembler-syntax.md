@@ -102,7 +102,7 @@ The fragment assembler is defined by the fragment program parameters, the unifor
 #### Parameters
 
 Fragment program parameters must precede the .constants and .asm sections, they are:
-- alu_buffer_size = N, where N is 1..4 - somewhat defines the number of pixel packets (row registers r[i].xyzw) kept in the ALU buffer. **Only N = 1 runs on AR20**: 2 and 4 hang the engine and 3 is unreliable, so the value is accepted but should not be changed (see [[GR3D Registers]] 14.2).
+- alu_buffer_size = N, where N is 1..4 - somewhat defines the number of pixel packets (row registers r[i].xyzw) kept in the ALU buffer. **Only N = 1 runs on AR20**: 2, 3 and 4 hang the engine, and they hang even when the size-1 `0xe20` word is pushed by hand, so the problem is the program layout the assembler emits for N > 1 (it only accepts `ALU0..ALU3` per packet), not the register value. The value is accepted but must not be changed (see [[GR3D Registers]] 14.2).
 - pseq_to_dw_exec_nb = N, where N is 0..? - the number of PSEQ instructions executed before the non-NOP DW operation.
 
 #### Constants
