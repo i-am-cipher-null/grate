@@ -174,6 +174,47 @@ Practical register budget for the allocator: **16 fp20 (32 fx10) row registers,
 typical NIR temp counts by an order of magnitude, so register allocation has to
 be the first thing designed, not the last.
 
+**A `mediump vec4` uniform occupies four consecutive registers** - a shader that
+sums eight of them reads `c0..c31` and nothing above - and the operand field's
+constant range is exactly that window (`c0..c31` = register numbers 32..63, with
+64..71 already taken by the condition registers), fed by a 32-word `0x820` push.
+
+**But 32 scalars is not the shader-visible limit: the blob accepts 16 `vec4`
+uniforms.** A shader summing `m0..m15` compiles with `0 lines, 0 errors`, emits
+7 batches and 60 ALU words, sets no embedded constants at all, and its header
+reads `unknown0: 1`, `unknown1: 3`. That is 64 fp20 scalars through a 32-register
+window, and how it is legal is **open**: the first batch alone already reads
+`c0`, `c2`, `c4`, `c6`, `c8`, `c12`, `c16`, `c20` and `c22`, so a naive
+"8 vec4 and reject" rule would refuse shaders the blob happily compiles.
+
+**Uniform slots are assigned densely by use, not by declaration.** Two shaders
+that differ only in which uniforms they touch show it:
+
+| shader | uniform symbols (from `cgc -F --uniforms`) | ALU reads |
+|:--|:--|:--|
+| `m0 + m8` | `m0.xyzw @ 127,0`, `m8.xyzw @ 127,1` | `c0..c3` and `c4..c7` |
+| `m8` alone | `m8.xyzw @ 127,1` | **`c0..c3`** |
+
+The same uniform moves from `c4..c7` to `c0..c3` depending on whether `m0` is used
+before it, so the constant slot is a compiler-chosen property of the *use*, and
+the symbol table's `location` field is where the driver finds it. Components are
+pruned as well - a 16-uniform shader reports `m5.xz` and `m6.x` for uniforms whose
+other components are dead - so the slot pressure is live-value pressure, not
+declaration size.
+
+What that means for the 32-word window is still not fully settled, but the
+important negative result stands: **the blob does not diagnose uniform pressure.**
+Both the 8-`vec4` and the 16-`vec4` shaders emit a program that references
+exactly `c0..c31` and nothing outside, and neither produced an error, so a
+16-`vec4` shader either aliases slots or relies on a reload mechanism that is not
+visible in the stream (`cgc -F -R` shows **no `0x820` write at all** - the blob
+never uploads constants, so the driver owns the window entirely). Two practical
+consequences: do not copy "16 vec4 is supported", and do not assume the `asm.h`
+array sizes are a hardware limit either - they are the hand-written assembler's
+convenience limit. Reject above 8 `vec4` / 32 live scalar slots until an
+end-to-end hardware test says otherwise, and remember the slot map is relocatable
+when you build the uniform upload.
+
 Two structural constraints that shape it:
 
 * row registers are *only* addressable as `r0..r3` by TEX and DW, and as
@@ -229,9 +270,31 @@ a `lowp vec2` into one interpolation slot and a `mediump vec2` into two
 | `bcsel`/`select` on `a < 0` | `CSEL` | only for `< 0`; other comparisons need a compare first |
 | `tex`/`txb` | `TEX`/`TXB` | coords must be in `r0..r3`; implicit LOD costs **no** ALU/MFU work (measured, see 4.4) |
 | `textureLod` | `TEX` with bit 13, LOD in `r3` | bit 12 must be clear; only reachable through a raw word today (section 10.4) |
-| `store_output` | `DW` | payload must be in `r2/r3` or `r0/r1` |
+| `store_output` | `DW` | payload must be in `r2/r3` or `r0/r1`; **one DW per batch**, so MRT costs a batch per extra target |
+| `store_output` to `gl_FragData[1]` | `DW: store rt5` | render target **5**, not 2; needs `GL_EXT_draw_buffers`, otherwise the write is silently dropped (see the MRT note below) |
 | `load_input` (varying) | `MFU ipl` | one `var` slot per component; precision decides slot count |
 | `load_frag_coord` | `posx`/`posy` + the `r3` z expansion | z needs the documented `1/1000 + max(0,r3.low)/4000 + max(0,r3.high)/4` sequence, i.e. ~6 ALU slots |
+
+**Multiple render targets, measured.** `gl_FragData[0] = v0` emits one batch with
+`DW: store rt1, r2, r3`. Enabling `GL_EXT_draw_buffers` and writing
+`gl_FragData[1]` adds a *second batch* whose only content is
+`DW: store rt5, r2, r3`:
+
+```
+batch 1   (varying fetch, ALU)   DW: store rt1, r2, r3
+batch 2                          DW: store rt5, r2, r3
+```
+
+Three facts a backend has to encode here:
+
+* the second colour target is render target **5**, not 2 (the index space is
+  0 = depth path, 1 = colour 0, 2 = stencil, 3 = coverage, 4 = spill,
+  5 = colour 1), so the host binds the second colour surface at RT 5;
+* **one DW per batch**, so each additional target costs a whole batch - against
+  a 64-batch budget, MRT is not free;
+* **without the extension the write compiles with 0 errors and is silently
+dropped** (a warning at most). So a driver must gate `gl_FragData[n]` on
+  `GL_EXT_draw_buffers` itself instead of assuming the compiler reports it.
 
 The `PRE`/main pairs are one operation in two words and this is now measured
 rather than assumed (4.5): the two words may be in the same batch, consecutive
@@ -241,6 +304,28 @@ word silently produces a wrong result. So selection and scheduling have to agree
 only on the *pair* - the words are free to move otherwise. The same is true of the barycentric prologue: `RCP r4` + two
 `mul`s + the `bar` destination must be the first MFU word of the program, and
 `w` arrives in `r4` for that first word only.
+
+**The prologue is conditional, and the condition is "anything reads a varying".**
+A shader with no varyings at all (`gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0)`) gets
+no MFU word whatsoever, and its whole body is four ALU slots in one batch:
+
+```
+PSEQ:001    nop
+TEX :001    nop
+ALU :001    mad r2._l, #1, #1, #0
+ALU :001    mad r2.h_, #0, #1, #0
+ALU :001    mad r3._l, #0, #1, #0
+ALU :001    mad r3.h_, #1, #1, #0
+DW  :001    store rt1, r2, r3
+```
+
+So a constant-colour program is one batch, one ALU packet, and a backend can
+omit the `RCP r4`/`bar` prologue entirely when the shader interpolates nothing
+(which matters because the prologue otherwise costs the program's first MFU
+word and a dependency on `r4`). Note also that this dump shows the constant
+being written straight into `r2/r3` in fx10 halves (`. _l` / `.h_`) - the DW
+stage consumes fx10, so an fp20-only ALU result must be converted before the
+store unless it is written with `.lh`.
 
 ### 3.2 What has no encoding at all
 
@@ -360,6 +445,11 @@ forwarding fact - same-batch chaining through latches works - still holds, but
 the assembler mnemonic `aluN` seems to be offset by one slot from the packet
 whose result it names. Treat the `N` as unverified until a dedicated probe
 settles the mapping.
+
+The blob itself relies on the chain heavily: for eight summed `vec4` uniforms it
+emits one packet of `mad r3.hl, c0, #1, c4` ... `mad r3.hl, c8, #1, d0`, reading
+the latches by number *inside* the batch. Whatever the exact numbering is, the
+`slot k writes -> slot k+1 reads` form is what a scheduler should emit.
 
 **Second attempt, still not settled.** Priming all four slots of one packet with
 four distinct uniform values and reading `alu0/alu1` (then `alu2/alu3`) from the
@@ -522,6 +612,24 @@ Other forwarding facts, from existing working tests rather than new probes:
    with bit 10 set and the store. So implicit LOD is entirely the TEX unit's
    work (`bit 13` clear, `bit 12` clear): the compiler emits nothing for it, and
    `textureGrad` is the only form that would need per-quad data.
+
+   The same two shaders also pin the pair-select bits of the TEX word, which the
+   ISA table leaves as "???". Raw words (`cgc -F -s -r`):
+
+   | shader | TEX word | set bits |
+   |:--|:--|:--|
+   | `texture2D(tex, v_uv)` | `0x00000430` | 4, 5, 10 |
+   | `texture2D(tex, v_uv, b)` | `0x00001400` | 10, 12 |
+
+   Bit 10 is enable and bit 12 is the bias request, as documented. Bits 4 and 5
+   are the **coordinate pair** and **destination pair** selectors (`1` = the
+   `r2/r3` pair, `0` = `r0/r1`), and they differ between the two dumps because
+   the bias variant had already fetched its coordinates into the low pair: in the
+   plain sample both the coordinates and the destination are in `r2/r3` (hence
+   `DW: store rt1, r2, r3`), in the bias variant both are in `r0/r1` (hence
+   `DW: store rt1, r0, r1`). So a backend choosing where to put coordinates and
+   where to receive the sample must set these two bits to match - the unit does
+   not take the pair from the schedule word.
 2. ~~**Cycle cost of a partially filled batch.**~~ - **measured**, see 4.6: a
    batch costs about 14x an extra ALU packet, so how full it is barely
    matters and the scheduler does *not* gain a second dimension.
@@ -611,6 +719,117 @@ count is consistent with the blob; a compiler's output is just the chunk body.
 `libcgc` treats the container as "one or more chunks", iterates them and
 reassembles each with `fragment_shader_disassemble()`; for AR20 every blob
 output seen so far is a single chunk.
+
+**Correction: only the second word is the batch count.** An earlier revision of
+this section recorded "both are the batch count" because the two coincide for
+small shaders. Counting the streams of six blob outputs (`cgc -F -s -H`, one
+PSEQ/TEX/DW line per batch):
+
+| shader | `unknown0` | `unknown1` | batches | ALU words | MFU words |
+|:--|--:|--:|--:|--:|--:|
+| constant colour | 1 | 1 | 1 | 4 | 0 |
+| one `texture2D` | 1 | 1 | 1 | 0 | 1 |
+| one varying | 1 | 1 | 1 | 4 | 1 |
+| `gl_FragData[0..1]` | 2 | 2 | 2 | 8 | 1 |
+| `dFdx`/`dFdy` | 3 | 3 | 3 | 24 | 1 |
+| nine `vec4` varyings | 3 | **12** | **12** | 32 | 12 |
+
+So `unknown1` is the exec-batch count in all six cases, while `unknown0` follows
+it only while the ALU work is dense. In the varying-heavy shader `unknown0` is 3
+while there are 12 batches - and 3 is not the ALU packet count either (32 words =
+8 packets), so **`unknown0` is still open**. It has to be filled consistently
+with the body, but a driver that derives `unknown1` from its batch count and
+leaves `unknown0` at its observed small-shader value is no worse off than the
+blob until this is settled. The batch count itself is unambiguous elsewhere: the
+number of entries in every schedule stream and the value in the `0x520` start
+word.
+
+A varying-count sweep confirms the split and shows the shape of `unknown0`
+(same shader, only the number of summed `vec4` varyings changed):
+
+| varyings | `unknown0` | `unknown1` | batches | ALU words | MFU words |
+|--:|--:|--:|--:|--:|--:|
+| 2 | 2 | 2 | 2 | 4 | 2 |
+| 3 | 3 | 3 | 3 | 8 | 3 |
+| 4 | 4 | 4 | 4 | 12 | 4 |
+| 5 | 2 | 8 | 8 | 16 | 8 |
+| 6 | 3 | 9 | 9 | 24 | 8 |
+| 7 | 4 | 8 | 8 | 24 | 8 |
+| 8 | 4 | 12 | 12 | 32 | 11 |
+| 9 | 3 | 12 | 12 | 32 | 12 |
+
+`unknown1` matches the batch count in all fourteen shaders measured so far. For
+`unknown0` the useful observation is the **range**: it is only ever 1, 2, 3 or 4,
+never larger, and it is not monotonic in either the batch count or the ALU count
+(24 ALU words give 3 in one shader and 4 in another). A value that is bounded by
+4 and decided by the scheduler is most plausibly the **number of row registers
+in flight**, i.e. the `alu_buffer_size` the blob chose for that program (1 for a
+shader with no varyings, rising to 4 when many varyings are live) - the same
+quantity the driver writes to `0xe20`. That is a hypothesis rather than a
+measurement: `cgc -F -R` shows the blob never writes `0xe20`/`0xe21` itself, so
+there is nothing to cross-check against yet. Either way a driver may fill
+`unknown0` with its own row count without breaking anything observed so far.
+
+The chunk-scaling test below strengthens it decisively: `unknown0` is **1 for
+every shader with no varyings**, whether it has 8, 16, 24 or 32 `vec4` uniforms
+and 7, 10 or 13 batches, and only rises to 2..4 when varyings are interpolated.
+A field that ignores uniform count and total batch count but tracks varying
+pressure is the row count. `unknown1` behaves the opposite way: it is the batch
+count *of its own chunk*, so a multi-chunk program has several different values
+(16 `vec4` -> chunks of 3 and 4 batches, summing to the 7 the stream contains).
+
+### 5.2 The blob splits the program when the constants do not fit
+
+This is the mechanism behind "the fragment shader split in two" and it changes
+what the unit of a program is. Same shader, only the number of summed `vec4`
+uniforms changed, counted with `cgc -F -s`:
+
+| `vec4` uniforms | chunks | batches (total) | ALU words | per-chunk `unknown1` |
+|--:|--:|--:|--:|:--|
+| 8 | 1 | 4 | 32 | 4 |
+| 16 | **2** | 7 | 60 | 3, 4 |
+| 24 | **3** | 10 | 96 | 3, 3, 4 |
+| 32 | **4** | 13 | 128 | 3, 3, 3, 4 |
+
+Each `*** chunk N/M` block is a **complete program**: its own chunk header, its
+own PSEQ / MFU / TEX / ALU / DW words, its own batch count, and its own render
+target stores. The ALU uploads add up (`120` words for the 16-uniform shader at
+"ALU words: 60" per chunk), and the driver's upload sequence in section 5 is run
+**per chunk**, which is what makes 16 `vec4` legal at all: each chunk gets its own
+32-word constant window (`0x820`), so the pressure per chunk stays inside the
+window even though the whole shader exceeds it.
+
+So the answer to "what happens when the uniforms do not fit" is: the blob does
+not fail and does not reload mid-program, it **re-emits the program as several
+independent chunks** and lets the container's chunk table carry them. The split
+point is roughly eight `vec4` per chunk, i.e. one full constant window.
+
+What a backend should do about it is a design decision, not a documented rule:
+emitting a single chunk and rejecting over-budget shaders is the conservative
+choice; mirroring the split is what the blob does and is the only way to accept
+them. **How the chunks are chained: the fragment is recirculated.** The chunks do not
+communicate through the render target. In a 4-chunk program, chunks 1, 2 and 3
+contain `DW: nop` in every batch and only the **last** chunk stores, so the
+earlier chunks deliberately write nothing - their results have to survive in the
+pixel's own state while the *same* fragment is fed through the pipeline again.
+That is what the ISA reference calls program-sequencer recirculation and
+dismisses as "not used in practice"; it is in fact the mechanism behind a
+uniform-heavy shader. The consequences for a backend that mirrors the split:
+
+* row registers, globals and the pixel packet carry **across chunks** - a value a
+  later chunk reads must be in a place the next pass still sees;
+* the **64-batch budget and the 64-instruction budgets apply per chunk**, not per
+  shader (16 `vec4` gives chunks of 3 and 4 batches, comfortably inside the
+  limit, where a single pass would have needed 7);
+* the constant window is reloaded per chunk, which is the whole point of the
+  split - so a chunk must not need more than 32 live scalar constants;
+* only the final chunk may store colour/depth/stencil/coverage, so the store
+  schedule of section 2.1 applies to it alone.
+
+Still unmeasured: whether the driver may submit chunks in any order (the
+recirculation order is presumably the chunk-table order), and whether anything
+in the hardware enforces the "only the last chunk stores" convention or whether
+an earlier chunk storing to `rt1` would simply be overwritten later.
 
 The stream **counts must all agree**: PSEQ, MFU schedule, TEX, ALU schedule,
 complement and DW all have exactly one word per batch, so `n` is the batch count
@@ -991,6 +1210,14 @@ source export index and TRAM row, plus per-component interpolation flags and
 destination type (`fx10 low/high`, `fp20`, or skip). The fragment shader then
 reaches them through MFU `ipl` slots, one slot per component (or per packed pair
 of components for fx10).
+
+**How many varyings fit?** At least nine `vec4` (36 components): a shader summing
+`v0..v8` compiles with no error, gets **locations 7..15** and rows 0..8, so the
+first varying is always row 0 and the row count simply follows the used varying
+count. The MFU costs one slot per *used component*, so the real budget is the
+TRAM row limit (`0xe21` bits 8..14) crossed with the per-program MFU word budget
+(64 words over all batches) - and every varying the fragment shader reads must
+have its own `ipl` slot in some batch.
 
 **Row indices are dense and have nothing to do with GLSL locations.** With
 `varying vec2 v_uv` at location 7 and `varying vec4 v_col` at location 8, the
