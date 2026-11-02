@@ -112,6 +112,43 @@ as bits 8..19; the measured value contradicts both - `0x0000104d` for a `vec4`
 float32 attribute only decodes with `size` at 4..7 = 4 and `stride` at 8..31 = 16
 bytes. Strides above 64 KiB are therefore expressible in principle.
 
+### 2.1 The 0x100-word window structure
+
+Each unit owns a whole 0x100-word window and uses only the bottom of it, which is
+why the reference has large unnumbered stretches:
+
+| Window | Unit | Registers actually referenced |
+|--:|:--|:--|
+| `0x000` | host1x / common | `0x000`..`0x02d` |
+| `0x100` | index, attributes, draw | `0x100`..`0x126` |
+| `0x200` | VPE (vertex program) | `0x200`..`0x20b` |
+| `0x300` | setup unit and linker | `0x300`..`0x364` |
+| `0x400` | QRast (depth, stencil, viewport) | `0x400`..`0x41a` |
+| `0x500` | PSEQ | `0x500`..`0x547` |
+| `0x600` | MFU (interpolation, SFU) | `0x600`..`0x60e` |
+| `0x700` | TEX | `0x700`..`0x79f` |
+| `0x800` | fragment ALU | `0x800`..`0x807` |
+| `0x900` | DW | `0x900`..`0x90b` |
+| `0xa00` | FDC | `0xa00`..`0xa0c` |
+| `0xb00` | GSHIM | `0xb00`..`0xb14` |
+| `0xc00` | PIPEALIAS | `0xc00`..`0xc53` |
+| `0xe00` | global: targets, spill, pipeline | `0xe00`..`0xe87` |
+
+**The tails are inert, measured.** Poking `0x127`, `0x130`, `0x1ff`, `0x20c`,
+`0x2ff`, `0x60f` and `0x6ff` with `0` and with `0xffffffff` changed **zero**
+pixels of the textured frame and never hung the engine, with two controls in the
+same run: writing the value back into `0x346` (`POINT_PARAMS`) left the frame
+hash unchanged, and writing `0x355` (`VIEWPORT_X_SCALE`) changed it. So a driver
+can treat these addresses as don't-care rather than as state it must preserve.
+
+The latch explanation was tested and does not apply: the tails were poked again
+from `GRATE_POKE_EARLY`, which lands *before* the `0x520` start word
+([[Hardware Testing]], "Poke stages"), and stayed inert. Nothing writes them at
+any stage, so "inert when written" is the whole story rather than "latched before
+the poke could land". The one case that genuinely cannot be separated this way is
+an upload FIFO such as `0x206`, because the driver's own upload overwrites it
+immediately after.
+
 ## 3. Vertex program engine, VPE (`0x200`..`0x20b`)
 
 | Addr | Name | Status | Notes |
@@ -127,6 +164,19 @@ bytes. Strides above 64 KiB are therefore expressible in principle.
 `0x206` is the only path by which vertex instructions reach the engine; the
 words are in [[Vertex Shader ISA]]. The constant window is `0x208` and is
 independent of the fragment-side `FP_CONST` window at `0x820`.
+
+The upload order is no longer only inferred from the assembler: a command-stream
+dump of a two-instruction program shows
+
+```
+NONINCR(offset=206, [4000006c, 0040000d, 8106c003, 6001ff80,
+                     4000006c, 0040010d, 8106c003, 6001ff9d])
+```
+
+and only the high-dword-first reading decodes: the last word `0x6001ff80` carries
+export index 0, write mask `0xF` and scalar destination 63, while reading it as
+the low dword gives export index 27, which is not a legal export. See
+[[Hardware Testing]], "Reading the vertex program out of a dump".
 
 ### 3.1 What the vertex program may use
 
@@ -413,6 +463,8 @@ programs `WIDTH_LOG2`/`HEIGHT_LOG2` and `MAX_LOD` and leaves the `WIDTH`/
 `HEIGHT` fields zero, and the sampler is fine with that - so at least on AR20 the
 log2 fields are the ones that matter for addressing.
 
+`include/tgr_3d.xml.h` names only part of the two descriptor words, which pins down what the rest cannot be. `TEXTURE_DESC1`: bits 0 `WRAP_T_CLAMP_TO_EDGE`, 1 `WRAP_S_CLAMP_TO_EDGE`, 2 `WRAP_T_MIRRORED_REPEAT`, 3 `WRAP_S_MIRRORED_REPEAT`, 4 `COMPRESSED`, 8..12 `FORMAT`, 27 `MINFILTER_LINEAR_BETWEEN`, 28 `MINFILTER_LINEAR_WITHIN`, 29 `MAGFILTER_LINEAR`; bits 5..7 and 13..26 carry no field and 30..31 are unused. `TEXTURE_DESC2`: 6 `NOT_POW2_DIMENSIONS`, 7 `MIPMAP_DISABLE`, 8..19 `HEIGHT`, 12..15 `MAX_LOD`, 20..31 `WIDTH`, plus `WIDTH_LOG2` at 28..31 and `HEIGHT_LOG2` at 24..27 - the log2 fields overlap the exact width/height fields, so a driver must not program both. AR20 reads back correctly with only the log2 fields set and the exact dimensions zero. Bits 0..5 of `TEXTURE_DESC2` have no name.
+
 The `format` field uses the `PIXEL_FORMAT_*` values:
 
 | Value | Format | Value | Format |
@@ -628,20 +680,28 @@ pointer and parameter word: in the complete dump in 14.3, `RT_ENABLE` is
 one of them has a valid `RT_PTR` and `RT_PARAMS`. The depth buffer is index 0
 *and* needs bit 16; the plain index bit alone does not enable it.
 
-### 14.2 `ALU_BUFFER_SIZE` (`0xe20`): only size 1 works
+### 14.2 `ALU_BUFFER_SIZE` (`0xe20`): the count scales with the size
 
 The word is `(size - 1)` in bits 0..1 and an undocumented `SIZEx4` byte in bits
 24..31 that Grate programs as `(300 - 1) / (size * 4)` (74 for size 1, 37 for
 size 2, 24 for size 3, 18 for size 4). Measured on AR20:
 
-| size | result |
-|--:|:--|
-| 1 | runs; the shader's row registers behave as documented |
-| 2 | **hangs the engine**, reproducibly, for any program |
-| 3 | runs *some* programs, but hangs others and can return zero where size 1 returns the value |
-| 4 | **hangs the engine** |
+| size | `0x520` count = batches | count = `batches * size` |
+|--:|:--|:--|
+| 1 | runs; the shader's row registers behave as documented | same as the left column |
+| 2 | **hangs the engine**, reproducibly, for any program | runs, returns the correct value |
+| 3 | runs *some* programs, hangs others, can return zero | runs, returns zero so far |
+| 4 | **hangs the engine** | runs, returns zero so far |
 
-Three experiments narrow it down:
+The `0x520` count is in execution slots, not batches: one batch occupies
+`alu_buffer_size` slots, so a wider buffer requires
+`count = batches * alu_buffer_size`. Every earlier sweep used the batch count,
+which is why 2 and 4 looked like a hard hang. With the count multiplied, size 2
+runs the three-batch probe and returns its expected `0x00000040`, and a count
+that is not a multiple of the size still hangs (5 and 7 at size 2, 3 and 9 at
+size 4). The measurement tables are in [[Hardware Testing]].
+
+Three experiments narrow down what the hang is *not*:
 
 * **The hang is not the `SIZEx4` byte.** With `GRATE_ALU_BUF_WORD` forcing the
   whole `0xe20` word, size 2 hangs for `SIZEx4` = `0x24` (the "correct" quotient
@@ -657,23 +717,29 @@ Three experiments narrow it down:
   the same batch - **hang**. Only the two-batch shape with an intermediate row
   register completes, and it completes with the wrong value.
 
-Consequences for a backend: emit every program at `alu_buffer_size = 1` and treat
-the register file as four fp20 row registers (`r0..r3`) plus globals and ALU
-latches. There is no known way to make more rows live.
+Consequences for a backend: `alu_buffer_size = 1` stays the default, because the
+count is then the batch count, which is what drivers write. At size N the rows
+are **per batch** - batch `i` executes on row `i mod N`, each row holding its own
+`r0..r3` - so a value cannot be handed from batch `i` to batch `i+1` through the
+row file. Measured at size 2 in a four-batch program: a store in batch 2 (row 0)
+returns the producer's value, a store in batch 1 or 3 (row 1) returns zero, while
+the same program at size 1 returns it from all three positions. That per-batch row
+assignment is what the blob's encoder tracks (`hw_caps.track_batches`,
+`read_mask`/`write_mask`, `cur_batch_row`, and the `alu_flush_batch()` call at the
+end of a batch run).
 
 Sizes 2, 3 and 4 were retried with the `GRATE_ALU_BUF_WORD` empty-value bug fixed
 (an empty variable used to force `0xe20 = 0`, which had made a whole sweep look
-as if every size worked). All three hang, and they hang *even when the size-1
-`0xe20` word is pushed by hand*, so the hang follows the assembled program layout
-for size > 1 rather than the register value. The assembler only accepts
-`ALU0..ALU3` in a packet, so it cannot express the wider layout to begin with
-([[Compiler Internals]], "Assembler limitation"). Four further shapes - one, two
-and three ALU packets in the batch, and a run with every store suppressed by
-bit 12 of `0x520` - all hang as well, so the wider buffer is simply unusable on
-AR20 rather than mis-programmed. Note also that the blob path in Grate hardcodes
-`alu_buf_size = 1` and `pseq_to_dw_nb = 1` (`shader-cgc.c`), so even a blob
-program built for a wider buffer would be run as size 1 by this driver - the
-layout cannot be learned from blob output until that hardcode is removed.
+as if every size worked). They hang with the batch count, and they hang *even
+when the size-1 `0xe20` word is pushed by hand*; the converse experiment - a
+program assembled at size 1 whose `0xe20` is overridden to size 2 - hangs too. So
+it is the size field that the count has to match, not the assembled packet
+layout. Four further shapes - one, two and three ALU packets in the batch, and a
+run with every store suppressed by bit 12 of `0x520` - hang with the batch count
+for the same reason. The blob path in Grate hardcodes `alu_buf_size = 1` and
+`pseq_to_dw_nb = 1` (`shader-cgc.c`), so blob programs are run as size 1 here and
+the blob's own choice of size cannot be read off its programs until that hardcode
+is removed.
 
 `GRATE_ALU_BUF_WORD=<hex>` overrides the whole word for experiments; with a
 single-batch control the override produces bit-identical output for size 1, so the
@@ -755,7 +821,7 @@ names them:
 | `0x40c` | 6 | per-draw |
 | `0x40f` | `0x48` / `0x60` | early/late test |
 | `0x416`, `0x41a` | `0x140`, `0xa00` | Tegra 114 only |
-| `0x501` | `0x22000000 \| 0x00320000 \| (0x12c << 4) \| 0xf` | `ALU_BUFFER_SIZE` companion |
+| `0x501` | `0x22000000 \| 0x00320000 \| (0x12c << 4) \| 0xf` | `ALU_BUFFER_SIZE` companion; effective even as the last word before the draw ([[Hardware Testing]], "Poke stages") |
 | `0x502`, `0x503` | 0 | reset / per-draw |
 | `0x542`..`0x544` | 0 | reset |
 | `0x547` | two words | Tegra 114 only |
@@ -793,14 +859,18 @@ names them:
   bits, `0x00`, `0x08`, `0x48`, `0x60` and `0x78` all leave a plain colour draw
   bit-identical, and `0xffffffff` **hangs the engine** - so the word is a trap for
   a "clear it and see" sweep. What the other bits select is still unknown.
-* **`0xe26` (DITHER) and `0xe27`**: inert on the 8-bit colour path. With a
-  constant-grey store, `0xe26` = 0, 1, `0x7`, `0xff`, `0xffffffff` and `0xe27` = 0,
-  1, 2, `0xffffffff` all give a bit-identical frame containing a single distinct
-  word, and the store-nothing control was run first so the channel was known
-  alive. Reduced precision is the case a dither matrix exists for, and it is
-  still untested: the 565 target on index 5 could not be written in this harness
-  (its readback is all-zero even with no poke), so `RT_PARAMS.dither_enable`
-  stays unexplained.
+* **Dithering works, and it needs a quantising target.** `0xe26`/`0xe27` are
+  inert on the RGBA8888 path (a constant-grey store gives one distinct word for
+  `0xe26` = 0, 1, `0x7` and `0xe27` = 0, 1), but with `RT_PARAMS(1)` set to
+  `0x04040018` (RGB565) the same store quantises to two words and adding
+  `dither_enable` (bit 0, `0x04040019`) produces **three**, reproducibly. So
+  `RT_PARAMS.dither_enable` is real and `0xe26` (`TGR3D_DITHER`) is consumed:
+  `0xe26` = 0, 2, 3 or 4 with the dither bit set returns the plain 565 frame,
+  while `0xff` and `0xffffffff` give two further frames. A driver has to leave
+  `0xe26` at the value the rest of its pipeline programmed - Grate writes
+  `ctx->dither_unk` there and `0xe27` = 1 unconditionally. The earlier blocker
+  (565 only reachable through index 5) does not apply: `RT_PARAMS(1)` takes a
+  format word like any other parameter.
 * **Indices 5..15 of the render-target arrays** (`0xe05`.., `0xe15`..) are
   addressable and enable-able, but index 5 takes no `DW` store even when given the
   exact params word, enable bit and limit register a working target uses (see
@@ -811,5 +881,13 @@ names them:
   0x22`, and the only field that differs from the colour target is bit 26, which
   is `RT_PARAMS.TILED` (`0x04000000` in `tgr_3d.xml.h`) - so the block is not a
   programming mistake.
-* **`TEXTURE_DESC1` bit 5**, bits 13..26 and bits 30..31, and `TEXTURE_DESC2`
-  bits 0..5: the wrap/filter/format fields are measured, the rest are not.
+* **`TEXTURE_DESC1` bits 5..7, 13..26 and 30..31, and `TEXTURE_DESC2` bits 0..5**:
+  no field name exists in `tgr_3d.xml.h` for any of them and no measurement has
+  given them an effect. The named fields, the `NOT_POW2_DIMENSIONS` and
+  `MIPMAP_DISABLE` bits, and the two overlapping dimension encodings are listed
+  in section 8.
+* **The unnamed tails of every 0x100-word window** (section 2.1) are inert when
+  written at draw time - seven representative addresses, two values each, no
+  pixel change and no hang, with live and inert controls in the same run. Whether
+  they are undecoded or merely latched before the poke lands cannot be separated
+  with this method, but nothing a driver writes needs them.

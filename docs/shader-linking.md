@@ -76,6 +76,45 @@ VEC4.x = VEC4.z:
 
 Disabling triangle interpolation picks the value from the third vertex in if drawing triangles. This is what we want for triangle strips and triangle fans, but not normal triangles. Which means we'll probably need to use the "constant across length"-flag in that case.
 
+#### Verified from the posted words
+
+Every field above is reproduced by the words the engine actually receives. Each
+`LINK` line becomes one 64-bit instruction at `0x300`/`0x301` (the register has
+stride 2: `LINKER_INSTRUCTION(i) = 0x300 + 2i`), and a command-stream dump shows
+the two halves in push order, first word first:
+
+| `LINK` line | `0x300` | `0x301` |
+|:--|--:|--:|
+| `fp20, fp20, fp20, fp20, tram0.yxzw, export1` | `0x00000008` | `0x0000FECD` |
+| `fp20, fp20, fp20, fp20, tram0.xyzw, export3` | `0x00000018` | `0x0000FEDC` |
+| `fp20, fp20, NOP, NOP, tram0.xyzw, export3` | `0x00000018` | `0x000032DC` |
+| `fp20, fp20, fp20, fp20, tram0.yxzw, export1 (z)` | `0x00000009` | `0x0000FECD` |
+| `fx10.l, fx10.h, fx10.l, fx10.h, tram1.xyzw, export2` | `0x00000210` | `0x0000B694` |
+| `fp20 (cw), fp20, fp20, fp20, tram0.xyzw, export1` | `0x00010008` | `0x0000FEDC` |
+| `fp20, fp20 (dis), fp20, fp20, tram0.xyzw, export1` | `0x00000008` | `0x0002FEDC` |
+
+Reading two of them against the tables, low nibble first:
+
+* first word of `tram1.xyzw, export2`: `0x210` = export index 2 in bits 3..6
+  (`0x10`) plus TRAM row 1 in bits 9..14 (`0x200`), with no interpolation
+  modifiers - so the row index is a 6-bit field, not the 4 bits the assembler
+  grammar accepts;
+* latter word of `tram0.yxzw` with `fp20` everywhere: `0xFECD` reads as bit pairs
+  `01` (swizzle x = y), `11` (type x = fp20), `00` (swizzle y = x), `11` (type y),
+  `10` (swizzle z = z), `11` (type z), `11` (swizzle w = w), `11` (type w) -
+  exactly `.yxzw` in `fp20`;
+* `(z)` sets bit 0 only (`0x9` = export 1 plus `vec4_select`), and `(cw)` on the
+  first column sets bit 16 (`0x10008`);
+* `(dis)` on the **second** column sets bit 17 (`0x0002FEDC`), i.e. the
+  interpolation-disable bits are 16 + component index - a first attempt that put
+  the modifier on column 2 and expected bit 16 was the error, not the hardware.
+
+One correction to the assembler documentation: the modifier tokens are `cw`,
+`cl` and `dis` (`linker_asm.l`), and the fx10 types are spelled `fx10.l` and
+`fx10.h`, not `fx10l`/`fx10h`. A line that fails to parse produces no job at all,
+which can masquerade as a successful measurement - see [[Hardware Testing]],
+"A verification trap".
+
 #### Offset 0xe21:
 
 Defines the number of used TRAM rows.

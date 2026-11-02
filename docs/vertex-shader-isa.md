@@ -274,3 +274,111 @@ Stack is shared by the PUSHA/POPA and CAL/RET operations. Maximum depth of the s
 
 ## Clamping
 If bit "saturate result" is set, both vector and scalar operation results are clamped to [0.0f - 1.0f].
+
+## Verification against a command-stream dump
+
+The vertex program is uploaded inside the draw job, so when a channel times out
+the kernel echoes the packet back and the field table above can be checked
+without any guessing. `tests/grate/asm/vs_mov.txt` is
+
+```
+EXEC(export[0]=vector) MOVv r0.xyzw, a[0].xyzw ; NOPs
+EXEC(export[7]=vector) MOVv r0.xyzw, a[1].xyzw ; NOPs
+```
+
+and the posted packet is two instructions of four dwords, **high dword first**:
+
+```
+NONINCR(offset=206, [4000006c, 0040000d, 8106c003, 6001ff80,
+                     4000006c, 0040010d, 8106c003, 6001ff9d])
+```
+
+Decoding the first one against the table gives every field at its documented
+place:
+
+| Field | Bits | Value | Reading |
+|:--|--:|--:|:--|
+| export vector write enable | 126 | 1 | vector export |
+| vector destination register | 111..116 | 0 | `r0` |
+| rA type | 55..56 | 2 | attribute |
+| rA register | 57..62 | 0 | `a0` |
+| rA swizzle | 63..70 | `0x1B` | `.xyzw` |
+| attribute fetch index | 72..75 | 0 | `a[0]` |
+| vector op write-mask | 13..16 | `0xF` | `.xyzw` |
+| scalar destination register | 7..12 | 63 | unused (dirty) |
+| export write index | 2..6 | 0 | export 0 |
+| end of program | 0 | 0 | not the last instruction |
+
+The second instruction is identical except for `attribute fetch index` = 1 and
+`end of program` = 1, exactly as the source says.
+
+**The blob and Grate's assembler agree on every semantic field.** Compiling
+`gl_Position = aPos` gives `401f9c6c 0040000d 8106c083 6041ff81`; compiling the
+two-output shader (`tc = aTC; gl_Position = aPos`) gives that plus
+`401f9c6c 00400108 0106c083 60419f9d` for `mov o7.xy, v1.xyxx` (`export index`
+7, write mask `0xC` = `.xy`, attribute index 1).
+
+| Field | Grate assembler | Blob |
+|:--|:--|:--|
+| vector destination | `r0` | **63** (write-export-only) |
+| export write index | 0, 7 | 0, 7 |
+| vector op write-mask | `0xF`, `0xF` | `0xF`, `0xC` |
+| attribute fetch index | 0, 1 | 0, 1 |
+| rA swizzle | `0x1B` (`.xyzw`) | `0x1B` (`.xyzw`) |
+| scalar destination | 63 | 63 |
+| predicate bits 106..108 | 0 | all three set |
+| unused operand type bits 22, 39 | 0 | 2 (`attribute`) |
+| end of program | last instruction | last instruction |
+
+Both differences are legal, not a disagreement about the field map. Destination
+63 is the documented "write out without clobbering a local register" form, and
+the predicate bits do nothing while condition-check (bit 109) is clear. A
+compiler that wants the blob's exact word shape should use 63 as the vector
+destination whenever the result is only exported, and may set the three
+predicate bits as a conservative default.
+
+## Opcode usage observed in compiler output
+
+Decoding blob output for single-construct shaders shows which opcode numbers are
+real. Vector opcodes seen: `1` MOV, `2` MUL, `3` ADD, `4` MAD, `9` MIN, `10` MAX,
+`11` SLT, `14` FRC, `15` FLR, `16` SEQ, `18` SGT.
+
+| Construct | Emitted as |
+|:--|:--|
+| `gl_Position = v` | `MOV`, `rD = 63`, export 0 |
+| `dot(a.xy, a.zw)` | `MUL` into a temporary, then `ADD` |
+| `min`, `max` | `MIN` (9), `MAX` (10), one component each |
+| `floor`, `fract` | `FLR` (15), `FRC` (14) |
+| `sign(x)` | `SGT` (18) and `SLT` (11) against a constant |
+| `equal`, `lessThan` | `SEQ` (16), `SLT` (11), summed with `ADD` |
+| `clamp(x, 0.0, 1.0)` | one `MOV` with **saturate** (bit 122) - no MIN/MAX pair |
+| `if (x > c) p = 1.0; else p = 0.0;` | one `SGT` writing the whole export; the boolean *is* the answer, so no branch appears |
+| `for (i = 0; i < 4; i++)` | unrolled, no branch |
+
+Scalar side: `0` NOP, `1` MOV (with `condition flags write enable` set, which is
+how the compiler materialises a condition), and **`9` = BRI**. In a loop with a
+uniform bound the blob emits two BRI words, one per edge, with the destination
+instruction index embedded in the `rC` swizzle field exactly as described under
+"Branching":
+
+```
+0x001f88004800000d8106c08100401ffc   scalop=9  preds=eq     rC=..xxzx
+0x001f94004800000d8106c08080401ffc   scalop=9  preds=gt|lt  rC=..xxyx
+```
+
+Never observed: vector `28..31`, scalar `17..18`, and `BRA`/`CAL`/`RET` - the
+compiler used BRI for both loop edges and called nothing.
+
+Two mechanics the output settles:
+
+* **`condition check` (bit 109) is clear in both branch words** while the
+  predicate bits are set, so a scalar branch appears to test bits 106..108
+  directly and bit 109 is the gate for ordinary conditional writes, not for the
+  branch itself.
+* **The condition register is really used.** The compare feeding the branch
+  carries `condition set` (bit 110) with `condition flags write enable`
+  (bit 125) and a scalar write-mask, and the branch reads it back.
+
+Still unmeasured: the exact predicate semantics for the `gt|lt` combination
+(most likely "not equal to zero"), and whether a call (`CAL`) is emitted at all
+for GLSL functions - the compiler inlined everything tried so far.

@@ -328,7 +328,7 @@ static void grate_3d_set_alu_buffer_size(struct host1x_pushbuf *pb,
 	const char *override = getenv("GRATE_ALU_BUF_WORD");
 	uint32_t value = 0;
 
-	if (override && *override) {
+	if (override) {
 		value = strtoul(override, NULL, 0);
 	} else {
 		value |= TGR3D_VAL(ALU_BUFFER_SIZE, SIZE, alu_buf_size - 1);
@@ -509,12 +509,8 @@ static void grate_3d_startup_pseq_engine(struct host1x_pushbuf *pb,
 	 * (docs/gr3d-registers.md 6.1). That makes it a free "the shader ran"
 	 * control: with it set the readback must be the clear colour.
 	 */
-	{
-		const char *no_store = getenv("GRATE_NO_STORE");
-
-		if (no_store && *no_store && strcmp(no_store, "0"))
-			word |= 1 << 12;
-	}
+	if (getenv("GRATE_NO_STORE"))
+		word |= 1 << 12;
 
 	host1x_pushbuf_push(pb,
 			    HOST1X_OPCODE_INCR(TGR3D_FP_PSEQ_ENGINE_INST, 1));
@@ -896,7 +892,7 @@ static void grate_3d_setup_indices(struct host1x_pushbuf *pb,
 	grate_3d_relocate_primitive_indices(pb, bo, bo->offset);
 }
 
-static void grate_3d_poke_env(struct host1x_pushbuf *pb);
+static void grate_3d_poke_env(struct host1x_pushbuf *pb, const char *var);
 
 static void grate_3d_setup_context(struct host1x_pushbuf *pb,
 				   struct grate_3d_ctx *ctx)
@@ -918,6 +914,14 @@ static void grate_3d_setup_context(struct host1x_pushbuf *pb,
 	grate_3d_set_stencil_test(pb, ctx);
 	grate_3d_set_polygon_offset(pb, ctx);
 	grate_3d_set_alu_buffer_size(pb, ctx);
+
+	/*
+	 * A poke here lands after the pipeline configuration but *before* the
+	 * 0x520 start word, which is the only way to reach state the engine
+	 * latches when the sequencer starts.
+	 */
+	grate_3d_poke_env(pb, "GRATE_POKE_EARLY");
+
 	grate_3d_startup_pseq_engine(pb, ctx);
 	grate_3d_set_point_coord_range(pb, ctx);
 	grate_3d_set_used_tram_rows_nb(pb, ctx);
@@ -931,22 +935,31 @@ static void grate_3d_setup_context(struct host1x_pushbuf *pb,
 	grate_3d_setup_render_targets(pb, ctx);
 	grate_3d_setup_textures(pb, ctx);
 
+	/* A poke here lands after the targets/textures, before the program upload. */
+	grate_3d_poke_env(pb, "GRATE_POKE_MID");
+
 	grate_3d_reset_program(pb);
 	grate_shader_emit(pb, ctx->program->vs);
 	grate_shader_emit(pb, ctx->program->fs);
 	grate_shader_emit(pb, ctx->program->linker);
 
-	grate_3d_poke_env(pb);
+	grate_3d_poke_env(pb, "GRATE_POKE");
 }
 
 /*
- * GRATE_POKE="0xb00=3,0xc00=0x1ff" pushes raw register writes right before
- * the draw, for register experiments that have no API. Values are 32-bit, so
- * every poke is an INCR/1 pair rather than an IMM (IMM carries 16 bits).
+ * GRATE_POKE="0xb00=3,0xc00=0x1ff" pushes raw register writes for register
+ * experiments that have no API. Values are 32-bit, so every poke is an INCR/1
+ * pair rather than an IMM (IMM carries 16 bits).
+ *
+ * Three stages, because the position in the push buffer decides which writes
+ * survive: GRATE_POKE_EARLY lands after the pipeline setup but before the
+ * 0x520 start word, GRATE_POKE_MID right before the program upload, and
+ * GRATE_POKE at the end of the setup, immediately before the draw. A poke that
+ * only works in an earlier stage is state the engine latches at start.
  */
-static void grate_3d_poke_env(struct host1x_pushbuf *pb)
+static void grate_3d_poke_env(struct host1x_pushbuf *pb, const char *var)
 {
-	const char *env = getenv("GRATE_POKE");
+	const char *env = getenv(var);
 	char *copy, *tok, *save;
 
 	if (!env || !*env)

@@ -583,13 +583,15 @@ Missing for a complete backend:
 2. **Register allocation over a 16-fp20 file with ALU-latch-side chaining** -
    the encoding is known, the *policy* is not. Nothing is known about whether
    `g0..g7` have any cost penalty, or whether row registers beyond
-   `alu_buffer_size` alias. **Partly measured**: at `alu_buffer_size = 1`, all of
+   `alu_buffer_size` alias. **Measured**: at `alu_buffer_size = 1`, all of
    `r4..r15` are distinct from `r0..r3` and from each other, so the file is not
-   silently remapped onto four registers. But **nothing above 1 is usable**: 2
-   and 4 hang the engine for *any* program - including one whose only batch is a
-   single `DW: store` - and 3 runs some programs, hangs others and returns zero
-   where size 1 returns the value. See [[GR3D Registers]] 14.2; a backend must
-   assume four fp20 row registers (`r0..r3`) and nothing more.
+   silently remapped onto four registers. **A wider buffer works**, but only with
+   the sequencer count multiplied (`0x520 = batches * alu_buffer_size`, otherwise
+   the engine hangs) and with the rows treated as **per batch**: at size N batch
+   `i` executes on row `i mod N`, so a value cannot be handed from batch `i` to
+   batch `i+1` through the row file. See [[GR3D Registers]] 14.2. The
+   conservative default stays four fp20 row registers (`r0..r3`) at
+   `alu_buffer_size = 1`, which is what the blob path in Grate uses.
 3. ~~TEX operand plumbing~~ - **settled**: coordinates must be in `r0..r3`, and
    an ALU in the *previous* batch can write them, which is how
    `tests/grate/asm/tex_cross_batch.txt` feeds `s` and `t` from uniforms. The
@@ -653,9 +655,32 @@ Missing for a complete backend:
    `rsq(4)`, `sqrt(0.25)` and `frc(1.75)` all read back `0x7F` = 0.5 - an error
    below the probe's resolution (~1.2e-4 absolute, about one fp20 ulp). The SFU
    is therefore as accurate as the ALU's own format and needs no polynomial
-   refinement at fp20 precision. Still unmeasured: EX2 / SIN / COS (they need
-   their PRE stage, which a single-op probe does not provide) and edge inputs
-   (zero, negative, very small).
+   refinement at fp20 precision. **EX2 / SIN / COS, measured with the PRE pair.** `PRESIN`+`SIN` and
+   `PRECOS`+`COS` behave exactly like the first-step ops: `sin(0.5) = 0.479`
+   reads back `0x7B`, `sin(1.0) = 0.841` reads `0xD6` (`0xD7` exact),
+   `cos(1.0) = 0.540` reads `0x89` (`0x8A` exact). The pair needs no refinement
+   either, and the input goes in the row register with the result taken from
+   `sfu` by a multiplier, exactly as for `rcp`. Without the PRE op the register
+   comes back unchanged (`sin` of `0.5` returns `0x7F`), which is what made these
+   three look broken.
+
+   **EX2: a later series contradicted this, and the contradiction is a harness
+   fault.** A second probe series reported `PREEX2`+`EX2` returning 1.0 for
+   every input (`-3`, `-2`, `-1`, `-0.5`, `0`), in one batch and in two, taken
+   from the multiplier and read back through the row register, and `PREEX2`
+   alone returning 0. The same series reported `sin` echoing its input unchanged
+   and `rcp`/`rsq` returning 0 and +maximum where `sqrt` and `sin` were correct.
+   Those are precisely `ex2(0)`, `sin(0)`, `rcp(0)` and `rsq(0)` - the probes
+   were computing at `x = 0`, because the fragment-constant operand had stopped
+   reaching the shader ([[Hardware Testing]], "Fragment constants can read
+   zero"). Measured afterwards on the same board: the shipped `fs_uniform.txt`
+   case returned 0 ten times out of ten while an immediate-operand shader and
+   the varying-only `fs_vs_tests.txt` returned their expected values ten times
+   out of ten. The earlier amplified result - `ex2(-1)`, `ex2(-0.5)` and
+   `ex2(-2)` exact to one fp20 ulp - therefore stands, and `EX2` needs no
+   special operand convention. Every SFU probe must carry an immediate-operand
+   control in the same run; edge inputs (zero, negative, very small) remain
+   unmeasured.
 
    That also means the earlier "SFU costs 3.4 ns/word" timing work measured the
    cost of an SFU *word*, which is unaffected, but no accuracy claim in this
@@ -687,7 +712,8 @@ record: The probe that would settle it is designed
    the subtract there used `-#1` and the multiply took the uniform in rB, though
    rC may equally be a uniform (4.3). Next step: chain through `aluN`
    lookalikes via `recv`/`send` instead of the register file, or retry at a
-   larger `alu_buffer_size` (but 2 hangs - see 9.1).
+   larger `alu_buffer_size` (its `0x520` count has to be multiplied and its rows
+   are per batch - see 9.1).
    Also tried, also failing: chaining through the `aluN` latches inside one batch,
    and padding every batch to four packets (no change at all).
 

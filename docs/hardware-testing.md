@@ -560,37 +560,63 @@ Two habits worth keeping:
   slope. The word for pixel `(x, y)` is
   `(y / 16 * (width / 16) + x / 16) * 256 + (y % 16) * 16 + x % 16`.
 
-## `alu_buffer_size`: only size 1 runs
+## `alu_buffer_size`: the count has to be multiplied, and batches rotate over rows
 
 `ALU_BUFFER_SIZE` is `0xe20` - `(size - 1)` in bits 0..1, an undocumented
 `SIZEx4` byte in bits 24..31, plus a companion write to `0x501`. Grate programs
 `SIZEx4` as `(300 - 1) / (size * 4)`, which makes size 1 `0x4a000000`, size 2
 `0x25000001`, size 3 `0x18000002` and size 4 `0x12000003`.
 
-Measured with a three-batch shader (`u0 -> r0.lh`, `r0 -> r2.l*`, store) at
-256x256:
+Sizes above 1 hang because the **`0x520` count has to be
+`batches * alu_buffer_size`**: the sequencer counts execution slots, and one
+batch occupies `alu_buffer_size` of them. Every earlier sweep assembled and ran
+the program with the count equal to the batch count, which is correct only at
+size 1.
 
-| size | outcome |
-|--:|:--|
-| 1 | `result 0x00000040` - expected value |
-| 2 | hangs; no result, the process has to be killed |
-| 3 | `result 0x00000000` - completes, wrong value |
-| 4 | hangs |
+Measured with the three-batch shape (`u0 -> r0.lh`, `r0.l -> r2.l*` + store), the
+program assembled at `alu_buffer_size = 1` with only the `0xe20` register
+overridden through `GRATE_ALU_BUF_WORD`, and `0x520` poked through `GRATE_POKE`:
 
-Three probes separate the cause:
+| size | `0x520` count | outcome |
+|--:|--:|:--|
+| 1 | (driver's 3) | `0x00000040` |
+| 2 | 3, 5, 7 | hangs |
+| 2 | **6** | `0x00000040` - runs and is correct |
+| 3 | 6, 9 | runs, `0x00000000` |
+| 4 | 3, 9 | hangs |
+| 4 | 12 | runs, `0x00000000` |
 
-* **not the `SIZEx4` byte.** With `GRATE_ALU_BUF_WORD=<hex>` forcing the whole
-  word, size 2 hangs for every `SIZEx4` tried (`0x00`, `0x12`, `0x18`, `0x24`,
-  `0x25`, `0x26`, `0x4a`), and size 4 hangs for `0x00`, `0x11`, `0x12`, `0x18`,
-  `0x24`. The failing value is the two-bit size field.
-* **not the shader.** At size 2 a program whose only batch is
-  `DW: store rt1, r2, r3` - no ALU, no MFU, no TEX - hangs as well.
-* **size 3 is not a substitute.** At size 3 the two-batch shape returns 0, and
-  both `ALU0: MAD r2.l*, u0, ...` followed by a store in a later batch and the
-  same pair inside one batch **hang**.
+A count that is not a multiple of the size hangs, so it is the first thing to
+check before anything else about a wider buffer is measured. Nothing else about
+the wider buffer is unprogrammed: the hang is identical with a program assembled
+at size 1, so it is not the assembler's packet layout, and neither `0xe21`
+(`pseq_to_dw_exec_nb` = 1, 2, 3, 4, 8) nor the `0x12C` field of `0x501` (100,
+150, 300, 600) changes it.
 
-So there is never more than one row in flight, and the register file a backend
-can use is `r0..r3` plus `g0..g7`, the four ALU latches and the three immediates.
+**Batches rotate over the rows.** At size 2 the four-batch shape returns the
+value only when the storing batch has the row the producer ran on:
+
+| store in batch | row at size 2 | size 1 | size 2 (count 8) |
+|--:|--:|:--|:--|
+| 1 | 1 | `0x00000040` | `0x00000000` |
+| 2 | 0 | `0x00000040` | `0x00000040` |
+| 3 | 1 | `0x00000040` | `0x00000000` |
+
+Every producer wrote `r0` in batch 0, and the same program at size 1 returns the
+value from all three store positions. So each row holds its own `r0..r3`, batch
+`i` executes on row `i mod size`, and a value written in one batch is visible to a
+later batch only when the two land on the same row. The three-batch shape used
+for the count table agrees with the rule (3 batches at size 2 -> rows 0, 1, 0, so
+the store in batch 2 lands on row 0), but it is not reproducible: identical
+settings returned `0x00000040` in one run and `0x00000000` in another, so the row
+assignment rests on the four-batch matrix.
+
+Consequences for a harness or a backend: with `alu_buffer_size = N`, `0x520` must
+carry `batches * N`, and a program spanning more than one batch has to keep each
+batch's live values within its own row group - or hand them through the ALU
+latches - because the row file does not carry from batch `i` to batch `i+1`.
+Grate's own driver writes the batch count (`grate_3d_startup_pseq_engine()`), so
+as it stands it can only run size-1 programs.
 
 `GRATE_ALU_BUF_WORD` overrides `0xe20` verbatim. At size 1 every value tried
 (`0x4a000000`, `0x3f000000`, `0x00000000`) produced the expected result, so the
@@ -601,6 +627,74 @@ To reproduce: generate a shader with the wanted `alu_buffer_size`, run
 `tools/assembler --testonly --result`, and wrap every run in `timeout` with a
 `pkill -f tools/assembler` afterwards - a hang wedges the channel until the
 process is killed, and the next run recovers on its own.
+
+## Dither: needs a quantising target and `RT_PARAMS` bit 0
+
+The dither question was stuck because the 565 target sat on index 5, which AR20
+does not store to. The format field lives in `RT_PARAMS`, so the *working* target
+can be reprogrammed instead. Same shader throughout - a constant grey `0.5` store
+to `rt1` - with `GRATE_POKE=0xe11=...` rewriting `RT_PARAMS(1)`, compared as
+whole-frame hashes (16383 words, 256x256):
+
+| programming | distinct words | frame hash |
+|:--|--:|:--|
+| RGBA8888 `0x04040034` | 1 | `051d53bcdbc5` |
+| RGBA8888 + dither bit `0x04040035` | 1 | `051d53bcdbc5` |
+| RGB565 `0x04040018` | 2 | `0136ca65366a` |
+| **RGB565 + dither bit `0x04040019`** | **3** | `90eaa0788ea6` |
+| RGB565 + dither, `0xe26` = 0 / 2 / 3 / 4 | 2 | `0136ca65366a` |
+| RGB565 + dither, `0xe26` = `0xff` | 2 | `1c71244f241d` |
+| RGB565 + dither, `0xe26` = `0xffffffff` | 2 | `72d0655c06f1` |
+
+So a reduced-precision target is dithered only when `RT_PARAMS.dither_enable` is
+set, `0xe26` (`TGR3D_DITHER`) is consumed by the datapath, and an 8-bit-per-channel
+target is never affected (`0xe26` = 0, 1, `0x7` and `0xe27` = 0, 1 all leave the
+RGBA8888 frame bit-identical). The 565+dither frame reproduced exactly on a
+repeat run, and so did the plain 565 frame; two sweeps that disagree on a single
+run should be re-run before being believed.
+
+Grate writes `ctx->dither_unk` to `0xe26` and `1` to `0xe27` unconditionally, so
+the dither frames above are what the driver's own values produce - poking `0xe26`
+to any small value removes the effect, which is how it was found.
+
+## Fragment constants can read zero
+
+On 2026-11-02 the fragment-constant path stopped working on this board while
+everything else kept running. Ten repetitions each, in sequence:
+
+| shader | expected | measured |
+|:--|:--|:--|
+| `tests/grate/asm/fs_uniform.txt` | `0x19334C66` | `0x00000000` **0/10** |
+| one ALU slot, immediate operand (`MAD r2.l*, #1, #1, #0, #1`) | `0x000000FF` | `0x000000FF` 10/10 |
+| `tests/grate/asm/fs_vs_tests.txt` (varyings only, no constants) | `0xFF01FF00` | `0xFF01FF00` 10/10 |
+
+So the engine, the store path, the output conversion and the readback were all
+healthy; only the constant fetch was broken, and every `uN` operand read 0.
+
+Symptoms to watch for:
+
+* a probe that answers `f(0)` instead of `f(x)`: `ex2` returning 1.0 for every
+  input, `sin` returning 0, `rcp`/`rsq` returning +maximum, `sqrt` returning 0,
+  `frc` returning 0;
+* results that change between runs of the *same* command - the shipped uniform
+  case returned `0x19334C66` once and `0x00000000` a few minutes later, which is
+  how this was first spotted;
+* `cdma_timeout_handler: timeout` lines in `dmesg` naming an earlier
+  `assembler` job. Once those appear, treat every later reading as suspect.
+
+State of the board when it happened: 486 MB RAM with 37 MB free, `dmesg`
+flooded with `systemd-journald: Failed to send WATCHDOG=1 notification message`,
+five host1x channel timeouts (`syncpt_load failed: id=26, min=11, max=0`), no
+IOMMU or GPU fault logged, and no root access to reload the module. The
+condition did not clear on its own across processes or minutes, so it needs a
+reboot rather than a retry.
+
+**Every probe needs two controls in the same run:** an immediate-operand shader
+(`MAD r2.l*, #1, #1, #0, #1`, which must store `0xFF`) and the shipped
+`fs_uniform.txt` case (which must store `0x19334C66`). A probe that returns a
+plausible value with neither control has proved nothing, and a probe whose
+operand comes from a uniform cannot be trusted when only the immediate control
+was run.
 
 ## Reading the command stream from `dmesg`
 
@@ -646,6 +740,36 @@ This settled two things pokes could not: `RT_PARAMS(1)` is `0x04040034` (format
 `0xe11` instead cannot isolate its fields: the poke lands *after* the `0x520`
 start word and changes the frame even when it rewrites the driver's own value.
 
+### Reading the vertex program out of a dump
+
+The vertex program is uploaded *inside* the draw job, so the dump carries the
+`NONINCR 0x206` packet verbatim. This is the cheapest oracle for the 128-bit
+field table in [[Vertex Shader ISA]], because the source is known:
+
+```
+[...] 22060008: NONINCR(offset=206, [4000006c, 0040000d, 8106c003, 6001ff80,
+                                     4000006c, 0040010d, 8106c003, 6001ff9d])
+```
+
+Eight words are two instructions of four dwords, high dword first. The first one
+decodes to export index 0, vector write-mask `0xF`, `rA` = attribute 0 with
+swizzle `0x1B` (`.xyzw`), attribute fetch index 0, scalar destination 63 and
+end-of-program clear - which is `MOVv r0.xyzw, a[0].xyzw` in `vs_mov.txt`. The
+full comparison, including the blob's version of the same shader, is in
+[[Vertex Shader ISA]], "Verification against a command-stream dump".
+
+The same dump shows the rest of the vertex-side state in one glance, and it is a
+useful cross-check for the register reference:
+
+* `INCR(offset=300, [00000008, 0000fecd])` is **one 64-bit linker instruction**
+  - `0x300` and `0x301` are its low and high half, since `LINKER_INSTRUCTION(i)`
+  has stride 2 - for the single `LINK` line of `linker_vs_tests.txt`;
+* `NONINCR(offset=604, [])` is an empty MFU upload, and `IMM(offset=500,
+  data=000)` the PSEQ flush before the schedule upload;
+* `IMM(offset=b00, data=001)`, `IMM(offset=e41, data=001)`, `b00=002`,
+  `e41=003`, `b00=003` is the GSHIM/PIPEALIAS sequence of
+  [[GR3D Registers]] 12, visible here in its natural position before the draw.
+
 ## Register pokes: `GRATE_POKE`
 
 Not every register has an API. `GRATE_POKE="0xb00=3,0xc00=0x1ff"` pushes raw
@@ -658,6 +782,47 @@ The control that proves the path works is `GRATE_POKE="0x903=0"`: clearing
 `RT_ENABLE` leaves the colour target untouched, so the readback becomes the clear
 colour (`0x4C4C4C4C` instead of `0xFF01FF00`). Any probe that returns the
 unmodified value without such a control has proved nothing.
+
+### Poke stages: before the start word
+
+`GRATE_POKE` lands at the end of `grate_3d_setup_context()`, which is *after* the
+`0x520` start word, so state that the engine latches when the sequencer starts
+could not be reached. There are now three stages:
+
+| Variable | Position |
+|:--|:--|
+| `GRATE_POKE_EARLY` | after `ALU_BUFFER_SIZE`, **before** `0x520` |
+| `GRATE_POKE_MID` | after the targets and textures, before the program upload |
+| `GRATE_POKE` | end of setup, immediately before the draw |
+
+Measured on the textured 4x4 frame:
+
+| Poke | EARLY | MID | LATE |
+|:--|:--|:--|:--|
+| `0x501=0` | `c48f385cdd85` | `c48f385cdd85` | `c48f385cdd85` |
+| `0x520=0` | no change | - | - |
+| `0x355=0x40000000` | no change | - | frame changes |
+
+So `0x501` is **not** latched at start: zeroing it disables the store no matter
+which stage it is written from, including as the last word before the draw. The
+two "no change" rows are also the proof that EARLY really is early - the driver
+writes `0x520` and `0x355` itself *after* that point, so those pokes are simply
+overwritten.
+
+The unnamed register tails were then re-poked from EARLY (`0x130`, `0x20c`,
+`0x6ff` with `0xffffffff`) and stayed inert, which rules out "latched before the
+poke lands" as the explanation for their inertness.
+
+### A verification trap: a run that never happened reuses the old dump
+
+When a check compares a dumped value with an expectation, guard on the
+assembler's own stderr (`linker: line N: ...`, `fs: line N: ...`) and not on a
+`dmesg` line counter: the ring buffer rotates, so `grep -c` does not grow and
+every case then reports a failure. The opposite mistake is worse - a run that
+never produced a job leaves the *previous* job's line as `tail -1`, so a `LINK`
+line with bad syntax can look like a successful measurement. Both happened here
+while verifying the linker word, before the stderr guard was added;
+`linkertest3.sh` on the device is the corrected form.
 
 **Whole frames, not one pixel.** `--result` reports pixel (0,0), which is often
 insensitive to a change; run with `--expected 0xDEADBEEF` to force the frame dump

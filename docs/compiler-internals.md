@@ -126,12 +126,40 @@ Words 1..3 are built identically with different source offsets. Bit widths in
 this table are *inferred from the gap to the next field*, which is only valid if
 fields do not overlap - treat widths as a hypothesis, the shift amounts as fact.
 
-**This layout matches neither documented unit.** It is not the ALU layout
-(`0..5` rD, `6..18` rC, `19..31` rB, `32..44` rA) and it is not DW (render target
-`2..5`, stencil `10`, `src_regs_select` `15`). Since it emits four words it is a
-128-bit encoding, and no documented unit is 128-bit wide. Either it encodes a
-unit not yet documented, or it serialises a *descriptor* rather than an
-instruction.
+**It is not any unit's instruction word.** Three layouts are documented well
+enough to compare against, and word 0 fits none of them:
+
+| Bits | ALU (64-bit) | DW (32-bit) | vertex (128-bit) | packer |
+|:--|:--|:--|:--|:--|
+| 0..1 | rD | mode | end-of-program | 2-bit field |
+| 2..3 | rD | render target | export index (2..6) | 2-bit field |
+| 4..5 | rD | render target | export index | 2-bit field |
+| 6..7 | rD | flag | export index / scalar dest | 2-bit field |
+| 8..9 | rD | flag | scalar dest | 2-bit field |
+| 10..12 | rD | stencil | scalar dest | 3-bit field |
+| 13 | rD | — | vector write-mask | 1-bit field |
+| 14 | rD | DW flag | vector write-mask | 1-bit field |
+| 15..20 | rD / rC | `src_regs_select` | vector + scalar mask | 6-bit field |
+
+The exclusion is structural, not a matter of field widths. The packer has five
+consecutive 2-bit fields at 0..9, while the vertex layout puts a 5-bit export
+index at 2..6 and a 6-bit scalar destination at 7..12. A packer built from
+`orr acc, acc, field, lsl #N` with shifts of 0, 2, 4, 6, 8 cannot produce a field
+spanning 2..6 at all: a field would have to be split across two `orr`s. So the
+vertex word is out along with the fragment ones.
+
+What the table does look like is a **flag struct serialised member by member**:
+from bit 24 through bit 30 the source offsets step by exactly 4 bytes (`+0xac`,
+`+0xb0`, `+0xb4`, `+0xb8`, `+0xbc`, `+0xc0`, `+0xc4`) into one bit each. That is
+how a struct of booleans and small enums gets packed, not how an opcode word is
+built.
+
+Together with the call site - one `bl` in the whole binary, in a loop that walks
+200-byte nodes and emits 16-byte records, followed by an indirect call through a
+vtable - the answer to "which unit does it belong to" is **none of the
+instruction encoders**. It serialises descriptor/flag records for a backend
+callback, and the fact that its output is 16 bytes wide, like a vertex VLIW
+instruction, is a coincidence of size rather than identity.
 
 ### 0x2a5944 - why the compiler always sets bit 17
 
@@ -428,7 +456,7 @@ the scheduler. That answers half of the open question: the five 48-entry arrays 
 rather than as zero, but the sentinel itself carries no scheduler-specific
 meaning.
 
-## Still unresolved: the packer's identity
+## The packer's caller
 
 What *is* pinned down about the caller: it is the function at **0x1c67fc** -
 neither `0x1c6800` nor `0x1c6498`. A `bl 0x1c67fc` from `0x1c0e68` confirms it,
@@ -462,7 +490,11 @@ had suggested the opposite.
 
 ## Open questions
 
-* which unit the `0x1c6648` 128-bit packer belongs to;
+* ~~which unit the `0x1c6648` 128-bit packer belongs to~~ - **settled: none of
+  them.** Its word 0 matches neither the ALU, the DW nor the (now verified)
+  vertex layout, and the run of one-bit fields fed by consecutive 4-byte
+  struct members identifies it as a flag-struct serialiser, not an instruction
+  encoder (see above);
 * which payload bits of `dw_enc_src()` the hardware consumes, now measured: on a
   colour store, 15 (`src_regs_select`) and 16..17 (the render target class field)
   are used; 10 and 14 belong to the stencil path and IR opcode `0xf4`; 11..13 and

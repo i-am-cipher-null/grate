@@ -143,15 +143,16 @@ Two structural constraints that shape it:
   `r0..r3` by the MFU multiplier. So texture coordinates and store payloads must
   end up in the current row, which forces copies (`r3.lh, r2, #1, #0` style
   moves) around every TEX and DW.
-* `alu_buffer_size` (1..4) decides how many rows are in flight. The blob sets it
-  from its scheduler; the assembler refuses anything but `ALU0..ALU3` in a
-  packet, so 4 rows is the ceiling for the *register* file but the assembler
-  cannot populate 8 halves in one packet (see [[Compiler Internals]]). **On AR20
-  only `alu_buffer_size = 1` runs**: 2 and 4 hang the engine even for a program
-  with no ALU work, and 3 completes some programs with the wrong value and hangs
-  others ([[GR3D Registers]] 14.2). So `r0..r3` are in practice the whole live
-  row-register file, and `r4..r15` are extra storage that the TEX and DW units
-  cannot address.
+* `alu_buffer_size` (1..4) decides how many rows are in flight, one row per
+  *batch*: at size N batch `i` executes on row `i mod N` and each row holds its
+  own `r0..r3`. The blob sets the size from its scheduler, and the assembler
+  cannot fill more than one row group per packet (`ALU0..ALU3`). Running at size
+  N also requires the `0x520` count to be `batches * N` - without that the engine
+  hangs - so a wider buffer is legal but not free ([[GR3D Registers]] 14.2). AR20
+  has run size 2 correctly with the count multiplied; sizes 3 and 4 run but have
+  not returned a correct value yet. `r4..r15` are the rows the ALU can address
+  directly; TEX, DW and the MFU multiplier read only the current row's
+  `r0..r3`, which is why every store and every texture fetch goes through them.
 
 
 ## 3. Data formats
@@ -1191,6 +1192,13 @@ conversion saturates. Accuracy is within the fp20 format for every op measured
 (see [[Writing a Compiler]] 4.5), and `PRESIN`/`PRECOS` do proper range
 reduction, so arguments beyond `2pi` are as accurate as small ones.
 
+One caveat on reading these numbers as ISA behaviour: a probe whose operand
+never arrives computes on zero, and the results then look like opcode
+semantics. `ex2` on a zero operand returns 1.0, `sin` returns 0, `rcp` and
+`rsq` return +maximum and `sqrt` returns 0, which is exactly the pattern a
+broken constant fetch produces. The failure mode and the controls that catch
+it are in [[Hardware Testing]], "Fragment constants can read zero".
+
 Degenerate inputs: `rcp(0)` and `rsq(0)` return +maximum, `sqrt` of a negative
 returns 0, `lg2(0)` returns the minimum, and `rsq` of a negative returns
 +maximum - consistent with `RSQ = RCP(SQRT(x))`, since `sqrt(-4) = 0` and
@@ -1707,17 +1715,43 @@ uniform-heavy shader. The consequences for a backend that mirrors the split:
 * row registers, globals and the pixel packet carry **across chunks** - a value a
   later chunk reads must be in a place the next pass still sees;
 * the **64-batch budget and the 64-instruction budgets apply per chunk**, not per
-  shader (16 `vec4` gives chunks of 3 and 4 batches, comfortably inside the
-  limit, where a single pass would have needed 7);
+  shader (16 `vec4` measured 3, 5 and 1 batches over three chunks, comfortably
+  inside the limit, where a single pass would have needed 9);
 * the constant window is reloaded per chunk, which is the whole point of the
   split - so a chunk must not need more than 32 live scalar constants;
 * only the final chunk may store colour/depth/stencil/coverage, so the store
   schedule in [[Writing a Compiler]] 2.1 applies to it alone.
 
-Still unmeasured: whether the driver may submit chunks in any order (the
-recirculation order is presumably the chunk-table order), and whether anything
-in the hardware enforces the "only the last chunk stores" convention or whether
-an earlier chunk storing to `rt1` would simply be overwritten later.
+**Each chunk is emitted as its own upload pass.** `cgc -F -R`, which prints the
+compiler's own command stream, shows three passes for the 16-`vec4` shader, one
+per chunk, and every pass starts by writing `0` to `0x500`
+(`FP_PSEQ_UPLOAD_INST_BUFFER_FLUSH`, "write 0 to flush before uploading PSEQ
+words") and ends with the ALU-complement writes at `0x806`. So the per-chunk words
+are uploaded into the same six buffers in turn and are never resident together;
+the chunk table in the container exists so the loader knows where each chunk body
+starts. The stream contains no `0x520` start word - that is the driver's - so at
+least one sequencer start per pass is implied.
+
+**The chunks share the register file, and the bodies prove it.** Chunk 2 of the
+same program opens with `mad r2.hl, c3, #1, r2`, accumulating onto the `r2` chunk
+1 wrote, and chunk 3 converts `r0`/`r1` with `.l*` and stores them. A chunk
+boundary therefore does not reset row registers, globals or the pixel packet,
+which is what recirculation means operationally. The three chunk headers are
+`unknown0 = 1, unknown1 = 3`, `1, 5` and `1, 1`: nine batches over three chunks,
+and `unknown0` = 1 in each because no chunk leaves `r0..r3`. An earlier dump of
+the same shader recorded two chunks of 3 and 4 batches for seven batches in
+total, so the split is not fixed by the uniform count - the compiler's scheduler
+decides it.
+
+Not established: how the fragment survives the reload between passes. Nothing in
+the container names a mechanism, and the only register that could gate it,
+`0xe21` (`FP_PSEQ_DW_CFG`), is inert at `alu_buffer_size = 1` on both program
+shapes measured. Whether the pixel is parked in the ALU buffer while the streams
+are re-uploaded, or the driver re-issues the draw (which would need intermediate
+state to survive a draw boundary), is the question a driver port has to answer
+first. The same is true of the "only the last chunk stores" convention: an
+earlier chunk storing to `rt1` would simply be overwritten, so the convention may
+be cosmetic.
 
 The stream **counts must all agree**: PSEQ, MFU schedule, TEX, ALU schedule,
 complement and DW all have exactly one word per batch, so `n` is the batch count
