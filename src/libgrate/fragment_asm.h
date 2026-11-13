@@ -295,7 +295,8 @@ typedef union fragment_tex_instruction {
 		unsigned enable:1;
 		unsigned unk_11:1;
 		unsigned enable_bias:1;
-		unsigned unk_13_31:19;
+		unsigned explicit_lod:1;
+		unsigned unk_14_31:18;
 	};
 
 	uint32_t data;

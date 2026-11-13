@@ -647,7 +647,9 @@ static const char * disassemble_tex(const tex_instr *tex)
 	static char ret[64];
 	char *buf = ret;
 
-	if (tex->enable_bias) {
+	if (tex->explicit_lod) {
+		buf += sprintf(buf, "txl ");
+	} else if (tex->enable_bias) {
 		buf += sprintf(buf, "txb ");
 	} else {
 		buf += sprintf(buf, "tex ");
@@ -667,11 +669,11 @@ static const char * disassemble_tex(const tex_instr *tex)
 		buf += sprintf(buf, "r0, r1, r2");
 	}
 
-	if (tex->enable_bias) {
+	if (tex->enable_bias || tex->explicit_lod) {
 		buf += sprintf(buf, tex->src_regs_select ? ", r1" : ", r3");
 	}
 
-	if (tex->unk_6_9 || tex->unk_11 || tex->unk_13_31) {
+	if (tex->unk_6_9 || tex->unk_11 || tex->unk_14_31) {
 		sprintf(buf, " // 0x%08X", tex->data);
 	}
 

@@ -208,6 +208,7 @@ tex[0-9]{1,2}		{
 
 TEX			return T_TEX_OPCODE;
 TXB			return T_TXB_OPCODE;
+TXL			return T_TXL_OPCODE;
 
 "store"			return T_DW_STORE;
 
