@@ -710,6 +710,33 @@ static const char * disassemble_dw(const dw_instr *dw)
 	return ret;
 }
 
+#define PSEQ_ENABLE_LOW			(1u << 3)
+#define PSEQ_ENABLE_HIGH		(1u << 23)
+#define PSEQ_TARGET_SHIFT		16
+#define PSEQ_DST_PAIR			(1u << 1)
+
+static const char * disassemble_pseq(const pseq_instr *pseq)
+{
+	static char ret[64];
+	char *buf = ret;
+	unsigned dst_pair = (pseq->data & PSEQ_DST_PAIR) ? 1 : 0;
+	unsigned known = PSEQ_ENABLE_LOW | PSEQ_ENABLE_HIGH | PSEQ_DST_PAIR |
+			 (0xfu << PSEQ_TARGET_SHIFT);
+
+	if (!(pseq->data & (PSEQ_ENABLE_LOW | PSEQ_ENABLE_HIGH))) {
+		buf += sprintf(buf, "NOP");
+	} else {
+		buf += sprintf(buf, "load rt%u, r%u, r%u",
+			       (pseq->data >> PSEQ_TARGET_SHIFT) & 0xf,
+			       dst_pair * 2, dst_pair * 2 + 1);
+	}
+
+	if (pseq->data & ~known)
+		sprintf(buf, " // 0x%08X", pseq->data);
+
+	return ret;
+}
+
 const char * fragment_pipeline_disassemble(
 	const pseq_instr *pseq,
 	const mfu_instr *mfu, unsigned mfu_nb,
@@ -732,7 +759,7 @@ const char * fragment_pipeline_disassemble(
 	buf += sprintf(buf, "EXEC\n");
 
 	if (pseq->data != 0x00000000) {
-		buf += sprintf(buf, "\tPSEQ:\t0x%08X\n", pseq->data);
+		buf += sprintf(buf, "\tPSEQ:\t%s\n", disassemble_pseq(pseq));
 	}
 
 	for (i = 0; i < mfu_nb; i++) {

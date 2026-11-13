@@ -228,6 +228,7 @@ static uint32_t float_to_fx10(float f)
 %token T_ALU_DIV2
 
 %token T_DW_STORE
+%token T_PSEQ_LOAD
 %token T_DW_STENCIL
 %token <u> T_DW_RENDER_TARGET
 
@@ -480,6 +481,22 @@ PSEQ_INSTRUCTION:
 	T_PSEQ T_HEX
 	{
 		asm_pseq_instructions[asm_fs_instructions_nb].data = $2;
+	}
+	|
+	T_PSEQ T_PSEQ_LOAD T_DW_RENDER_TARGET ',' T_ROW_REGISTER ',' T_ROW_REGISTER
+	{
+		unsigned dst;
+
+		if ($5 == 0 && $7 == 1) {
+			dst = 0;
+		} else if ($5 == 2 && $7 == 3) {
+			dst = 1;
+		} else {
+			PARSE_ERROR("PSEQ destination registers should be either \"r0,r1\" or \"r2,r3\"");
+		}
+
+		asm_pseq_instructions[asm_fs_instructions_nb].data =
+			0x00800008 | ($3 << 16) | (dst << 1);
 	}
 	|
 	T_PSEQ T_OPCODE_NOP

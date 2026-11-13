@@ -211,6 +211,7 @@ TXB			return T_TXB_OPCODE;
 TXL			return T_TXL_OPCODE;
 
 "store"			return T_DW_STORE;
+"load"			return T_PSEQ_LOAD;
 
 rt[0-9]{1,2}		{
 				fragment_asmlval.u = atoi(yytext + 2);
