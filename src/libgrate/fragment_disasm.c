@@ -684,8 +684,11 @@ static const char * disassemble_dw(const dw_instr *dw)
 {
 	static char ret[64];
 	char *buf = ret;
+	unsigned mode = dw->data & 0x3; /* 1 = target, 2/3 = spill */
+	int slot_undecoded = 0;
 
-	if (dw->enable) {
+	switch (mode) {
+	case 1:
 		buf += sprintf(buf, "store ");
 
 		if (dw->stencil_write && dw->render_target_index == 2) {
@@ -693,17 +696,31 @@ static const char * disassemble_dw(const dw_instr *dw)
 		} else {
 			buf += sprintf(buf, "rt%d, ", dw->render_target_index);
 
-			if (dw->src_regs_select) {
+			if (dw->src_regs_select)
 				buf += sprintf(buf, "r2, r3");
-			} else {
+			else
 				buf += sprintf(buf, "r0, r1");
-			}
+
+			if (dw->render_target_class != 2)
+				buf += sprintf(buf, ", class %u",
+					       dw->render_target_class);
 		}
-	} else {
+		break;
+	case 2:
+		buf += sprintf(buf, "store spill, r0");
+		slot_undecoded = 1;
+		break;
+	case 3:
+		buf += sprintf(buf, "store spill, multi");
+		slot_undecoded = 1;
+		break;
+	default:
 		buf += sprintf(buf, "NOP");
+		break;
 	}
 
-	if (dw->unk_1 || dw->unk_6_9 || dw->unk_11_14 || dw->unk_16_31 != 2) {
+	if (slot_undecoded || dw->unk_6_9 || dw->unk_11_14 ||
+	    dw->unk_18_31) {
 		sprintf(buf, " // 0x%08X", dw->data);
 	}
 

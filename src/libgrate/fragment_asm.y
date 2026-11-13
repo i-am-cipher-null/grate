@@ -230,6 +230,7 @@ static uint32_t float_to_fx10(float f)
 %token T_DW_STORE
 %token T_PSEQ_LOAD
 %token T_DW_STENCIL
+%token T_DW_CLASS
 %token <u> T_DW_RENDER_TARGET
 
 %token <u> T_HEX
@@ -1535,13 +1536,29 @@ ALU_COMPLEMENT:
 	}
 	;
 
+/* Optional class field on an ordinary target store. */
+DW_CLASS:
+	T_DW_CLASS T_NUMBER
+	{
+		if ($2 > 3) {
+			PARSE_ERROR("Invalid DW render target class, 3 is maximum");
+		}
+
+		asm_dw_instructions[asm_fs_instructions_nb].render_target_class = $2;
+	}
+	|
+	{
+		asm_dw_instructions[asm_fs_instructions_nb].render_target_class = 2;
+	}
+	;
+
 DW_INSTRUCTION:
 	T_DW T_HEX
 	{
 		asm_dw_instructions[asm_fs_instructions_nb].data = $2;
 	}
 	|
-	T_DW T_DW_STORE T_DW_RENDER_TARGET ',' T_ROW_REGISTER ',' T_ROW_REGISTER
+	T_DW T_DW_STORE T_DW_RENDER_TARGET ',' T_ROW_REGISTER ',' T_ROW_REGISTER DW_CLASS
 	{
 		asm_dw_instructions[asm_fs_instructions_nb].enable = 1;
 
@@ -1560,7 +1577,7 @@ DW_INSTRUCTION:
 		}
 
 		asm_dw_instructions[asm_fs_instructions_nb].render_target_index = $3;
-		asm_dw_instructions[asm_fs_instructions_nb].unk_16_31 = 2;
+		
 	}
 	|
 	T_DW T_DW_STORE T_DW_STENCIL
@@ -1568,7 +1585,8 @@ DW_INSTRUCTION:
 		asm_dw_instructions[asm_fs_instructions_nb].enable = 1;
 		asm_dw_instructions[asm_fs_instructions_nb].stencil_write = 1;
 		asm_dw_instructions[asm_fs_instructions_nb].render_target_index = 2;
-		asm_dw_instructions[asm_fs_instructions_nb].unk_16_31 = 2;
+		asm_dw_instructions[asm_fs_instructions_nb].render_target_class = 2;
+		
 	}
 	|
 	T_DW T_OPCODE_NOP
