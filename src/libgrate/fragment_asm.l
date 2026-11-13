@@ -146,6 +146,10 @@ lp			return T_ALU_LOWP;
 posx			return T_POSITION_X;
 posy			return T_POSITION_Y;
 pface			return T_POLIGON_FACE;
+cov			{
+				fragment_asmlval.u = FRAGMENT_COVERAGE_REG;
+				return T_ROW_REGISTER;
+			}
 kill			return T_KILL;
 
 rB			return T_ALU_rB;

@@ -1282,8 +1282,8 @@ ALU_REG_ABS:
 ALU_REG:
 	T_ROW_REGISTER ALU_SRC_FLOAT_TYPE
 	{
-		if ($1 > 15) {
-			PARSE_ERROR("Invalid row reg, should be 0..15");
+		if ($1 > 75) {
+			PARSE_ERROR("Invalid row reg, should be 0..75");
 		}
 
 		memset(&yyval.alu_reg, 0, sizeof(yyval.alu_reg));

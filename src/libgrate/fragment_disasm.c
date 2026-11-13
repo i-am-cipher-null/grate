@@ -70,6 +70,9 @@ static const char * reg_name(int reg, int id)
 	case FRAGMENT_POS_Y:
 		sprintf(buf, "posy");
 		break;
+	case FRAGMENT_COVERAGE_REG:
+		sprintf(buf, "cov");
+		break;
 	case FRAGMENT_POLYGON_FACE:
 		sprintf(buf, "pface");
 		break;
@@ -366,6 +369,7 @@ static const char * alu_r(const union fragment_alu_instruction *alu, int reg)
 		case FRAGMENT_LOWP_VEC2_0_1:
 		case FRAGMENT_POS_X:
 		case FRAGMENT_POS_Y:
+		case FRAGMENT_COVERAGE_REG:
 		case FRAGMENT_POLYGON_FACE:
 			precision = 0;
 		}
