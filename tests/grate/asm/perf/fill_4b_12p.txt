@@ -1,0 +1,39 @@
+/*
+ * ALU batch-fill probe: 12 ALU packets packed 3 per batch (4 batches).
+ * Pairs with fill_12b_12p.txt, which executes the same 12 packets one per
+ * batch; any time difference is what a half-empty batch costs.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.uniforms
+	[0].l = "u0";
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0,  #1
+		ALU1:	MAD  r1.lh,  u0,  #1,  #0,  #1
+		ALU2:	MAD  r2.lh,  u0,  #1,  #0,  #1
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0,  #1
+		ALU1:	MAD  r1.lh,  u0,  #1,  #0,  #1
+		ALU2:	MAD  r2.lh,  u0,  #1,  #0,  #1
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0,  #1
+		ALU1:	MAD  r1.lh,  u0,  #1,  #0,  #1
+		ALU2:	MAD  r3.lh,  u0,  #1,  #0,  #1
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u0.l,  #1,  #0,  #1
+		ALU1:	MAD  r2.*h,  u0.l,  #1,  #0,  #1
+		ALU2:	MAD  r3.l*,  u0.l,  #1,  #0,  #1
+		ALU3:	MAD  r3.*h,  u0.l,  #1,  #0,  #1
+	DW:	store rt1, r2, r3
+;

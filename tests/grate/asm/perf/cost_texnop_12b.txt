@@ -1,0 +1,54 @@
+/*
+ * Per-batch cost probe, idle: 11 batches whose only content is a disabled TEX
+ * word, then the ALU+store epilogue. Same batch count as cost_mfu_12b.txt and
+ * fill_12b_12p.txt, but with no work in those 11 batches.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.uniforms
+	[0].l = "u0";
+
+.asm
+EXEC
+	TEX:	NOP
+;
+EXEC
+	TEX:	NOP
+;
+EXEC
+	TEX:	NOP
+;
+EXEC
+	TEX:	NOP
+;
+EXEC
+	TEX:	NOP
+;
+EXEC
+	TEX:	NOP
+;
+EXEC
+	TEX:	NOP
+;
+EXEC
+	TEX:	NOP
+;
+EXEC
+	TEX:	NOP
+;
+EXEC
+	TEX:	NOP
+;
+EXEC
+	TEX:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u0.l,  #1,  #0,  #1
+		ALU1:	MAD  r2.*h,  u0.l,  #1,  #0,  #1
+		ALU2:	MAD  r3.l*,  u0.l,  #1,  #0,  #1
+		ALU3:	MAD  r3.*h,  u0.l,  #1,  #0,  #1
+	DW:	store rt1, r2, r3
+;
