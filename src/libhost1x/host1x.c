@@ -48,6 +48,11 @@ struct host1x *host1x_open(struct host1x_options *options)
 		printf("found\n");
 		if (options->open_display)
 			host1x_drm_display_init(host1x);
+		/* Without a display there is no scanout, so there is no need to
+		 * register a DRM framebuffer. drmModeAddFB*() needs mode-setting
+		 * rights, which are not available on a render node. */
+		if (!host1x->display)
+			host1x->framebuffer_init = NULL;
 		goto out;
 	}
 
