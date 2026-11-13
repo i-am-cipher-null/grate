@@ -1,66 +1,76 @@
-### Geometry Submission (IDX)
+# Tegra 2 (AR20) - geometry submission (IDX)
 
-|         Offset | Description                                                  |
-|---------------:|:-------------------------------------------------------------|
-| 0x100 .. 0x1FF | Attribute buffers memory base address and format description |
-| 0x120          | Input/output buffers bit masks                               |
-| 0x121          | Index buffer memory base address                             |
-| 0x122          | Drawing config                                               |
-| 0x123          | Drawing elements number                                      |
+**Status.** Reference. Addresses, bit positions and values are read off the
+command streams Grate and the blob submit. Fields that have not been isolated are
+marked `unknown`.
 
-#### Offset range 0x100 .. 0x1FF:
+**Scope.** The `IDX` block at `0x100`..`0x126`: attribute buffers and formats, the
+read/write masks, the index buffer and the draw words. The same registers with
+per-field status markers are in [[GR3D Registers]] §2; the draw job itself is in
+[[Command Stream]].
 
-Two consecutive words are used to describe the input attribute buffer: first is memory address and latter is buffer format description. AR20 has total 16 input attribute buffers. 
+| Offset | Description |
+|---:|:--|
+| `0x100`..`0x1ff` | attribute buffer base addresses and format descriptions |
+| `0x120` | input/output buffer bit masks |
+| `0x121` | index buffer base address |
+| `0x122` | drawing configuration |
+| `0x123` | number of drawing elements |
+
+## 1. Attribute buffers (`0x100`..`0x1ff`)
+
+Two consecutive words describe each of the 16 input attribute buffers: the first
+word is the memory address, the second the format description.
 
 **First word**
 
-Attribute buffer memory base address.
+| Bits | Meaning |
+|-----:|:--|
+| 0..31 | memory base address |
 
-|    Bits | Meaning             |
-|--------:|:--------------------|
-| 0 .. 31 | Memory base address |
+**Second word**
 
-**Latter word**
+| Bits | Meaning |
+|-----:|:--|
+| 0..3 | attribute format (component type) |
+| 4..7 | attribute size (component count) |
+| 8..31 | attribute stride, in bytes |
 
-Attribute buffer format description.
+The measured word `0x0000104d` is a `vec4` float32 attribute: format `0xd`, size
+4, stride 16. An earlier revision of this table gave the size field as 4..6 and
+the stride as 8..19; neither narrower bound is established, and the size field has
+to be at least 4 bits to hold the value 4.
 
-|    Bits | Meaning          |
-|--------:|:-----------------|
-| 0 .. 3  | Attribute format |
-| 4 .. 6  | Attribute size   |
-| 8 .. 19 | Attribute stride |
+## 2. Input/output masks (`0x120`)
 
-#### Offset 0x120:
+The masks select which attribute buffers are loaded from DRAM into the VPE and
+which output buffers the vertex shader may write - the engine skips the
+corresponding fetches and stores.
 
-In / out buffers bit masks selects attribute input buffers that would be loaded from the DRAM into VPE and what output buffers would be allowed to be written by VS (to spare some clock cycles presumably).
+| Bits | Meaning |
+|-----:|:--|
+| 0..15 | output buffer write-enable mask |
+| 16..31 | input buffer read-enable mask |
 
-|     Bits | Meaning                              |
-|---------:|:-------------------------------------|
-|  0 .. 15 | Output buffers write-enable bit mask |
-| 16 .. 31 | Input buffers read-enable bit mask   |
+## 3. Index buffer (`0x121`)
 
-#### Offset 0x121:
+| Bits | Meaning |
+|-----:|:--|
+| 0..31 | memory base address of the index buffer |
 
-Memory base address of the index buffer to be fetched into VPE.
+## 4. Drawing configuration (`0x122`)
 
-|    Bits | Meaning              |
-|--------:|:---------------------|
-| 0 .. 31 | Memory base address  |
+How the VPE interprets the input vertices: primitive type and whether an index
+buffer is used.
 
-#### Offset 0x122:
+| Bits | Meaning |
+|-----:|:--|
+| 24..26 | primitive type |
+| 27 | flat-shade last |
+| 28..29 | index buffer type |
 
-Drawing config, specifies how VPE should interpret input vertices's: triangles type / lines / points, use index buffer or not.
+## 5. Element count (`0x123`)
 
-|     Bits | Meaning           |
-|---------:|:------------------|
-| 24 .. 26 | Primitive type    |
-|       27 | Flat-shade last   |
-| 28 .. 29 | Index buffer type |
-
-#### Offset 0x123:
-
-Specifies drawing elements number.
-
-|     Bits | Meaning    |
-|---------:|:-----------|
-| 20 .. 31 | Number + 1 |
+| Bits | Meaning |
+|-----:|:--|
+| 20..31 | number of elements, minus 1 |

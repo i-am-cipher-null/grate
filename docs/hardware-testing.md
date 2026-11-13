@@ -1,3 +1,14 @@
+# Tegra 2 (AR20) - hardware testing
+
+**Status.** Working notes and procedures. Every table was produced on a Tegra 2
+device with the Grate assembler; results that turned out to be probe artefacts are
+kept with the reason, because the same mistakes recur.
+
+**Scope.** How to run assembled programs on the hardware, the environment
+variables and register pokes, and the traps that have produced wrong conclusions.
+The instruction-level results live in [[Fragment Shader ISA]] and
+[[GR3D Registers]].
+
 ## Running the assembler on hardware
 
 `tests/grate/asm_tests.sh` drives `tools/assembler`, which assembles a test
@@ -175,7 +186,7 @@ with no mip chain. A bound mip chain is laid out by `setup_lod_pixbuf()` with
 `ALIGN(width * bpp, 16)` per level, which is tight for the sizes that matter, so
 `--mipmap` hid this bug rather than working around anything about mip selection.
 
-### Block-compressed textures
+## Block-compressed textures
 
 `GRATE_TEX_FORMAT=dxt1` or `=etc1` binds a block-compressed texture instead of
 `RGBA8888`. The harness fills block row `b` with one solid colour, cycling red,
@@ -210,7 +221,7 @@ byte 96, so at pitch `p` it reads data block row `96/p`:
 | dxt1 | white (row 3) | blue (row 2) | black (padding) | green (row 1) |
 | etc1 | white (row 3) | blue (row 2) | `0xFF020202` (padding) | green (row 1) |
 
-### Timing a draw loop
+## Timing a draw loop
 
 `GRATE_DRAW_COUNT=n` draws the same quad `n` times and prints
 `draws=n elapsed_ms=...`, timed from before the first submit to after the
@@ -250,7 +261,7 @@ no `/sys/kernel/debug` at all, no `clk_summary`, no `/sys/devices/*/clocks`, and
 `dmesg` has no GPU clock line. Timings therefore stay in milliseconds, and any
 cycle figure has to name its assumed clock.
 
-### Dumping the words the assembler emits
+## Dumping the words the assembler emits
 
 `GRATE_DUMP_RAW=1` prints the raw vertex, fragment and linker word streams in
 `--testonly` mode. That is how to get the word to base a raw-instruction
@@ -260,7 +271,7 @@ bit 10, LOD bias bit 12. The sampler field is the index itself, so a hand-writte
 `0x...1` samples `tex1` and returns whatever an unbound sampler returns
 (constant garbage), not the texture you bound to `tex0`.
 
-### Extra render targets and textures
+## Extra render targets and textures
 
 `GRATE_RT5=1` allocates a linear surface at index 5 (the `gl_FragData[1]`
 target), binds it, enables it, and prints its first words as `rt5: ...`.
@@ -282,7 +293,7 @@ The spill sweep that used them is a raw `DW: 0x...` word; the plain
 `store rt4, r2, r3` mnemonic emits `0x00028011` (mode 1, index 4), so bits 1:0
 choose the spill mode and bits 10..16 the slot.
 
-### Depth buffer readback
+## Depth buffer readback
 
 **Resolved: `store rt0` was a colour store, and the pair field does not name the
 depth payload.** A plain `store rt0, r2, r3` emits `0x00028001` - mode 1, index

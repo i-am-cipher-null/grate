@@ -1,8 +1,20 @@
-## Vertex assembler
+# Tegra 2 (AR20) - assembler syntax
 
-The vertex assembler program is defined by the five code sections:
+**Status.** Reference for `tools/assembler` and the Grate grammar in
+`src/libgrate/`. Where a mnemonic's meaning is not the hardware encoding, the
+hardware encoding in [[Fragment Shader ISA]] / [[Vertex Shader ISA]] is
+authoritative.
 
-#### .attributes section
+**Scope.** The vertex, fragment and linker grammars: sections, parameters,
+uniforms, every mnemonic the parser accepts, and the field syntax of each
+instruction. This document is the executable reference for the encodings
+documented elsewhere.
+
+## 1. Vertex assembler
+
+A vertex program is written as five sections:
+
+### 1.1 .attributes
 
 Defines input vertex attributes that will be enabled in the input attributes mask.
 
@@ -14,7 +26,7 @@ Example:
 
 Here attributes 0 and 1 will be enable in the input mask. 
 
-#### .exports section
+### 1.2 .exports
 
 Defines output vertex registers that will be enabled in the output attributes mask.
 
@@ -26,7 +38,7 @@ Example:
 
 Here export registers 0 and 7 will be enable in the output mask. 
 
-#### .constants section
+### 1.3 .constants
 
 Defines 32bit float constants that will be populated into the constant/uniform vec4 vertex registers.
 
@@ -38,7 +50,7 @@ Example:
 
 Here a float value 1.5 will be loaded to the "y" component of the constant register 0 and value -100.0 to the "z" of register 12.
 
-#### .uniforms section
+### 1.4 .uniforms
 
 Defines locations of uniforms that will be exposed to a shader user.
 
@@ -50,7 +62,7 @@ Example:
 
 Here two constants locations 100 and 135 will be available for a lookup to a user of the shader program by names "uniform_100" and "uniform_135" respectively.
 
-#### .asm section
+### 1.5 .asm
 
 Defines the actual vertex assembler. Instruction consists of the "EXEC" preamble, modifiers given in parens, one vector operation and one scalar operation, a termination semicolon.
 
@@ -95,17 +107,17 @@ Example:
 
 Here scalar operation is NOP, vector operation is MOV: the content of "x" and "w" components of an attribute register a0 (absolute'd and negated) will be written to the respective components of the destination register r0, as well as to the export register, which is addressed relatively to the address register A0.z by +3. 
 
-## Fragment assembler
+## 2. Fragment assembler
 
 The fragment assembler is defined by the fragment program parameters, the uniform constants and the instructions.
 
-#### Parameters
+### 2.1 Parameters
 
 Fragment program parameters must precede the .constants and .asm sections, they are:
 - alu_buffer_size = N, where N is 1..4 - how many rows are in flight, one row per exec batch. A packet can only fill one row group (`ALU0..ALU3`), and the harness programs the `0x520` start word from the batch count, so N = 1 is the only value that runs as assembled: at N > 1 the count must be `batches * N`, which nothing in this toolchain writes yet (see [[GR3D Registers]] 14.2).
 - pseq_to_dw_exec_nb = N, where N is 0..? - the number of PSEQ instructions executed before the non-NOP DW operation.
 
-#### Constants
+### 2.2 Constants
 
 The .constants code section defines the fragment program constants. The postfix of the constant register index defines the format of the float value and it's sub-location within the register value:
 - ".l" and ".h" the float is converted to fx10 and stored in low/high halves of the constant register respectively
@@ -123,7 +135,7 @@ Example:
 
 Here: 0.1 is stored in the uniform register 0 as fp20, 0.2 is stored in the low halve uniform register 1 as fx10, -0.3 is stored in the high halve uniform register 1 as fx10, a raw hex value 0x12345678 is written to the uniform register 2.
 
-#### Uniforms
+### 2.3 Uniforms
 
 The .uniforms code section defines the fragment program uniforms locations that will be exposed to a shader user. Syntax is akin to the .constants section, a uniform location name is given instead of a constant value.
 
@@ -139,7 +151,7 @@ Here 3 uniforms will be available for a lookup to a shader user:
 - fx10 typed "uniform_1_fx10_low" of constant 1 low halve
 - fx10 typed "uniform_3_fx10_high" of constant 3 high halve
 
-#### Instructions
+### 2.4 Instructions
 
 The .asm section code section defines the actual fragment program instructions. The instruction starts with the "EXEC" preamble, consists of 5 sub-instructions, each representing the respective stage of the fragment processor pipeline, and ends with the termination semicolon.
 
@@ -208,7 +220,8 @@ Example:
 
 Here three MFU sub-instructions and two ALU sub-instructions will be executed consecutively.
 
-To skip the MFU and/or ALU stages, i.e. to not schedule them during an exec batch, they (sub-instructions) should omitted from the instruction.
+To skip the MFU and/or ALU stages, that is to schedule nothing for them in an exec
+batch, omit the sub-instruction.
 
 Example:
 
@@ -240,7 +253,7 @@ Example:
 
 Here the MFU sub-instruction is represented in raw by a two hex values, 0x00000000 is a high 64bit halve and 0x12345678 is low.
 
-#### PSEQ sub-instruction
+### 2.5 PSEQ sub-instruction
 
 The render-target fetch has a mnemonic; every other PSEQ word is written in hex.
 
@@ -260,7 +273,7 @@ raw word for those:
 		PSEQ:	0x00000000
 	;
 
-#### MFU sub-instruction
+### 2.6 MFU sub-instruction
 
 The MFU sub-instruction consists of four sub-operations: special function, 2 multipliers and a fetch-interpolate. It takes the following form:
 
@@ -329,7 +342,7 @@ Example:
 
 Here a reciprocal operation is applied to the register r1, r1 = 1.0 / r1. Multipliers and interpolation are NOP's.
 
-#### TEX sub-instruction
+### 2.7 TEX sub-instruction
 
 Performs texture sampling, takes the following form:
 
@@ -379,7 +392,7 @@ Here the LOD is read from r3 and used directly, ignoring the gradients the
 sampler would otherwise compute. `txl r2, r3, tex0, r0, r1, r2, r3` emits
 `0x2420`, the word that used to have to be written in raw hex.
 
-#### ALU sub-instruction
+### 2.8 ALU sub-instruction
 
 The ALU sub-instruction consists of four ALU instructions, one per ALU, and an ALU_COMPLEMENT hex value (one per exec batch).
 
@@ -462,7 +475,7 @@ Example:
 			ALU3:	imm0.h = -0.187500, imm1 = 8192.000000
 	;
 
-#### DW sub-instruction
+### 2.9 DW sub-instruction
 
 Performs data store to a specified render target. There is only one STORE opcode which takes the following form:
 
@@ -498,7 +511,7 @@ The operation doesn't take any source registers. The stencil data will be stored
 
 Measured behaviour on AR20: this store commits the **late** stencil update, so it matters exactly when the program also writes the kill register. With `kill = 0` (discard-capable, nothing discarded) and the stencil test enabled at ref `0x7F`, a program ending in `store stencil` leaves the surface at `7F`, while the same program ending in `store rt1` leaves it at `00` - the fixed-function update is disabled once the program can discard. With the stencil test disabled the store writes nothing, and a program that discards every fragment writes nothing either. It commits the result of the stencil op, and the "old" value that op works from is taken from `r0/r1`, so a program with `KEEP`-style ops has to fetch the surface first (`PSEQ: 0x00820008`, which loads render target 2 into `r0/r1`); without the fetch the old value is whatever `r0/r1` happen to hold. See the fragment shader ISA document, section 8.2.
 
-## Linker assembler
+## 3. Linker assembler
 
 The linker assembler defines which vertex export registers will be copied to the TRAM, hence the (from)export register-(to)TRAM row locations, to what format the exported vertex register components will be converted during the copying to the TRAM and how the TRAM row component will be interpolated during the rasterization stage of graphics pipeline.
 

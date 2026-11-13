@@ -1,10 +1,14 @@
-# Tegra 2 (AR20) 3D engine - command stream
+# Tegra 2 (AR20) - command stream
 
-Host1x command stream for the 3D engine: CDMA instruction encodings and the
-register pushes that load a fragment program. See [[MMIO Registers]] for the
-address-block overview and [[Fragment Shader ISA]] for the words themselves.
+**Status.** Reference. The CDMA encodings come from NVIDIA's Host1x
+documentation and from the streams Grate and the blob emit; the upload sequence
+is read off `grate-asm.c` and `include/tgr_3d.xml.h`.
 
-See [NVIDIA's Host1x documentation](http://http.download.nvidia.com/tegra-public-appnotes/host1x.html)
+**Scope.** The Host1x CDMA instruction set and the exact register pushes that
+load a fragment program. [[MMIO Registers]] has the address-block overview and
+[[Fragment Shader ISA]] the words themselves.
+
+Reference: [NVIDIA Host1x documentation](http://http.download.nvidia.com/tegra-public-appnotes/host1x.html).
 
 ## 1. CDMA instructions
 
@@ -113,8 +117,7 @@ consistent with the `count[1:0]` / `address[7:2]` layout documented in
 ## 4. Fragment program upload sequence
 
 
-**Known**, from `grate-asm.c` and `include/tgr_3d.xml.h`; this is the definitive
-map; it had not been recorded in `docs/` before.
+Source: `grate-asm.c` and `include/tgr_3d.xml.h`.
 
 | Host1x push | Register | Contents |
 |:--|:--|:--|

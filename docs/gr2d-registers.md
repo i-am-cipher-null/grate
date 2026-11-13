@@ -1,4 +1,4 @@
-# Tegra 2 (AR20) — GR2D register reference
+# Tegra 2 (AR20) - GR2D register reference
 
 The 2D engine has two classes: **0x51** (pixel/fill operations, called *g2d* below)
 and **0x52** (the surface/scaling blitter, *surfd*). Everything Grate pushes for
@@ -179,7 +179,7 @@ share `0x3A`/`0` and are told apart by `CONTROLMAIN`. Across the two classes the
 trigger value does differ, but the class has to be written with `setclass`
 anyway, so the trigger alone never identifies an operation.
 
-## 5. What is not known
+## 5. Gaps
 
 * **The rest of both register blocks.** Everything above `0x049` is unmapped, and
   so is the range `0x001..0x008`, `0x00d..0x010`, `0x018..0x01b`, `0x021..0x02a`.

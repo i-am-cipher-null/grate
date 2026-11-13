@@ -1,10 +1,13 @@
-# Writing a fragment-shader compiler for AR20
+# Tegra 2 (AR20) - writing a fragment-shader compiler
 
 This document is a gap analysis, not an ISA reference. The ISA encoding itself
 lives in [[Fragment Shader ISA]]; the blob compiler's internals live in
 [[Compiler Internals]]. The question answered here is: **if you sit down to
 write a NIR -> AR20 backend for Mesa: which facts are needed, which are
 established, and which are missing?**
+
+**Status.** Gap analysis, revised as questions close. Closed items are kept
+with the measurement that closed them.
 
 It is written against the driver in `src/gallium/drivers/grate/` (Mesa), where
 `grate_program.c` currently converts NIR to TGSI and `fp/pack.c` can already
@@ -14,13 +17,13 @@ pack ALU / MFU / DW / schedule words. Everything below is marked as one of:
 * **inferred** - consistent with the evidence but not isolated by an experiment;
 * **open** - genuinely unknown, with the experiment that would settle it.
 
-### Where each fact lives
+## 0. Where each fact lives
 
-This document deliberately holds only backend design and the gap list. The
-hardware facts moved out of it, and the section numbers that used to name them
-appear all over these notes - so the mapping is:
+This document holds only backend design and the gap list. The hardware facts are
+in the ISA reference; older notes cite the section numbers below, so the mapping
+is:
 
-| was here | now in |
+| old numbering | current location |
 |:--|:--|
 | 2.2 Instruction budget | [[Fragment Shader ISA]] - "Instruction budget" |
 | 2.3 Register file | [[Fragment Shader ISA]] - "Register map and limits" |
@@ -172,10 +175,10 @@ program-sequencer recirculation is "not used in practice, BLOB driver gives up o
 large shaders".
 
 
-### 2.2 Hardware facts (moved to the ISA reference)
+### 2.2 Hardware facts (in the ISA reference)
 
-The budget, register file and precision sections that used to be here describe the
-machine, so they now live in [[Fragment Shader ISA]], at:
+The budget, register file and precision of the machine are in
+[[Fragment Shader ISA]]:
 
 * "Instruction budget" - 64 batches, 64 ALU packets, per-batch unit limits;
 * "Register file" - 16 fp20 / 32 fx10 row registers, globals, ALU latches,
@@ -244,7 +247,7 @@ Four things a backend has to know:
   `gl_FragData[n]` itself instead of assuming the compiler reports it.
 
 The `PRE`/main pairs are one operation in two words and this is now measured
-rather than assumed (4.5): the two words may be in the same batch, consecutive
+rather than assumed ([[Fragment Shader ISA]] 6.1): the two words may be in the same batch, consecutive
 batches, or separated by an empty batch, but they must be given the same
 operand, the `PRE` result cannot be captured as a value, and dropping the `PRE`
 word silently produces a wrong result. So selection and scheduling have to agree
@@ -300,10 +303,10 @@ These have to be lowered or emulated, and their cost is what usually blows the
 ## 4. Scheduling
 
 
-### 4.1-4.3 Hardware behaviour (moved to the ISA reference)
+### 4.1-4.3 Hardware behaviour (in the ISA reference)
 
 The batch layout, the per-unit constraints and the whole forwarding model are
-properties of the machine and now live in [[Fragment Shader ISA]]:
+properties of the machine and are in [[Fragment Shader ISA]]:
 
 * "Batch structure and per-unit limits" - the schedule word (`count[1:0]`,
   `address[7:2]`) and what each unit can issue per batch;
@@ -320,7 +323,7 @@ register with `.lh`. A value a later batch must read has to be written `.lh`
 
 **Open:**
 
-1. ~~**TEX result -> ALU distance.**~~ - **closed**, see [[Fragment Shader ISA]], "Forwarding and the ALU pipeline": the sample is
+1. **TEX result -> ALU distance.** - **closed**, see [[Fragment Shader ISA]], "Forwarding and the ALU pipeline": the sample is
    visible to the ALU in the same batch and in the next one, and ALU-computed
    fp20 coordinates reach the unit one batch later. The only remaining TEX
    question is `LOD` selection itself, not scheduling - partly closed since:
@@ -335,7 +338,7 @@ register with `.lh`. A value a later batch must read has to be written `.lh`
    `textureGrad` is the only form that would need per-quad data.
 
    The same two shaders also pin the pair-select bits of the TEX word, which the
-   ISA table leaves as "???". Raw words (`cgc -F -s -r`):
+   is not named by the encoding alone. Raw words (`cgc -F -s -r`):
 
    | shader | TEX word | set bits |
    |:--|:--|:--|
@@ -351,7 +354,7 @@ register with `.lh`. A value a later batch must read has to be written `.lh`
    `DW: store rt1, r0, r1`). So a backend choosing where to put coordinates and
    where to receive the sample must set these two bits to match - the unit does
    not take the pair from the schedule word.
-2. ~~**Cycle cost of a partially filled batch.**~~ - **measured**, see [[Fragment Shader ISA]], "Performance model": a
+2. **Cycle cost of a partially filled batch.** - **measured**, see [[Fragment Shader ISA]], "Performance model": a
    batch costs about 14x an extra ALU packet, so how full it is barely
    matters and the scheduler does *not* gain a second dimension.
 3. **`pseq_to_dw_exec_nb`** (register `0x546`, bits 6..25) - **not compiler
@@ -374,7 +377,7 @@ derived**, which closes the question in the useful direction. Dumping every
    the accumulate timing across a packet boundary was never measured).
 
 
-## 5. Program layout, container and chunks (moved)
+## 5. Program layout, container and chunks
 
 The upload sequence (which register gets which stream, the `0x820` constants, the
 `0xe20`/`0xe21` words) is driver-level command-stream material and now lives in
@@ -396,11 +399,12 @@ Three points a backend still has to act on:
   the ISA section rather than here.
 
 Arithmetic semantics and the performance model are measured hardware facts and
-have likewise moved to [[Fragment Shader ISA]] ("Arithmetic semantics" and
+are in [[Fragment Shader ISA]] ("Arithmetic semantics" and
 "Performance model"): fp20 truncation, saturation instead of infinity, the
 `PRE`/main pairing rules, SFU accuracy, the 8-bit output conversion, and the
 per-batch cost model with the MFU as the scarce resource. The compiler-relevant
 excerpts are in sections 3.1 and 4 below where they change a decision.
+
 ## 6. I/O: varyings and the linker program
 
 **Known** ([[Shader Linking]]): each *linked* varying is two words at `0x300` -
@@ -537,7 +541,7 @@ Missing for a complete backend:
 
 * **format conversion** - the store is always four fx10; conversion to
   RGBA8888/RGB565/etc. is done by the render-target unit from `RT_PARAMS.FORMAT`.
-  For the 8-bit path the conversion is settled (4.5): `round(x * 255)` with halves
+  For the 8-bit path the conversion is settled ([[Fragment Shader ISA]] 12.6): `round(x * 255)` with halves
   rounding down (`0.5` -> `0x7F`, `0.125` -> `0x20`). `RGB565` is
   `round(x * 31)` per 5-bit channel, `L8` takes the red channel and `A8` the
   alpha channel; the measured table is in [[Fragment Shader ISA]].
@@ -553,7 +557,7 @@ Missing for a complete backend:
 * **blending** - there is no blend instruction; blending is fixed-function and
   lives in the 3D state, so `nir_lower_blend` style needs are a state question,
   not a shader question.
-* ~~MRT works, including several stores per program~~ - **retracted: index 5
+* MRT works, including several stores per program - **retracted: index 5
   never receives a store on AR20.** The *encoding* is real: the blob compiles
   `gl_FragData[0]`/`gl_FragData[1]` to `DW` words `0x00028005` (`store rt1`)
   and `0x00028015` (`store rt5`), both class 2, so index 5 is the spelling for a
@@ -575,11 +579,9 @@ Missing for a complete backend:
 
 ### 9.1 Blocks the backend from being written
 
-1. **Scheduling/forwarding model** - closed (sections 4.3, 4.6).
-   `pseq_to_dw_exec_nb` turned out to be a **no-op in the assembler**: values 1
-   and 4 produce byte-identical 29-word fragments (the two streams diff clean)
-   and identical results, so there is no encoding to discover - whatever the blob
-   intends it for is not emitted.
+1. **Scheduling/forwarding model** - closed. The batch layout, per-unit limits
+   and forwarding rules are in [[Fragment Shader ISA]] sections 4 and 5.14;
+   `pseq_to_dw_exec_nb` is driver state rather than a compiler input (4.4).
 2. **Register allocation over a 16-fp20 file with ALU-latch-side chaining** -
    the encoding is known, the *policy* is not. Nothing is known about whether
    `g0..g7` have any cost penalty, or whether row registers beyond
@@ -592,7 +594,7 @@ Missing for a complete backend:
    batch `i+1` through the row file. See [[GR3D Registers]] 14.2. The
    conservative default stays four fp20 row registers (`r0..r3`) at
    `alu_buffer_size = 1`, which is what the blob path in Grate uses.
-3. ~~TEX operand plumbing~~ - **settled**: coordinates must be in `r0..r3`, and
+3. TEX operand plumbing - **settled**: coordinates must be in `r0..r3`, and
    an ALU in the *previous* batch can write them, which is how
    `tests/grate/asm/tex_cross_batch.txt` feeds `s` and `t` from uniforms. The
    same batch cannot, because the ALU stage runs after TEX (section 10.3).
@@ -606,25 +608,25 @@ Missing for a complete backend:
 
 ### 9.2 Needed for correct code, unknown today
 
-4. ~~`MIN`/`MAX`/`CMP` semantics~~ - partly settled, see [[Fragment Shader ISA]], "Arithmetic semantics". Finite `MIN`/`MAX`
+4. `MIN`/`MAX`/`CMP` semantics - partly settled, see [[Fragment Shader ISA]], "Arithmetic semantics". Finite `MIN`/`MAX`
    order correctly and `CMP` compares the **first product**, not `rA`. **Signed
    zero is not reachable**, so there is no tie-breaking rule to find: building
    `-0` as `0 * -1` produces something `rcp` maps to +infinity exactly like
    `+0` (`0xFF`, the same as `rcp(+0)`), and `MIN`/`MAX` of that pair return it
    under either operand order. Values above `2^33` clamp (see below), which is
    what "the saturated fp20 exponent" turned out to mean.
-5. ~~Whether `saturate` clamps before or after the result scale~~ - **settled,
+5. Whether `saturate` clamps before or after the result scale - **settled,
    and it is the unusual order: the scale is applied first.** `(sat)(/2)` on
    `1.5` gives `0.75` (scale -> 0.75, then saturate), not `0.5`. `(/2)` alone
    works (`0.5 -> 0.25`). **Saturate clamps fx10 writes too**: `1.25` written
    with `.l* (sat)` reads back through the `.l` source form as 1.0 (halved, it
    stores `0x7F`), while the same write without `sat` reads back 1.25 (halved,
    `0x9F`), and a 0.75 control stores `0xBF` either way.
-6. ~~The exact `CMP` predicate~~ - **settled**: it is
+6. The exact `CMP` predicate - **settled**: it is
    `(rA*rB < 0) ? rB : (rC*rD)`. The reference's `(rA < 0)` reading is wrong on
    hardware, and the true branch is `rB`, not the product. See 4.5.
-7. ~~`RECIP`/`RSQ`/`LG2`/`EX2`/`SQRT`/`SIN`/`COS` accuracy, input ranges and the
-   `PRE*` pair~~ - **settled**, details in [[Fragment Shader ISA]], "Arithmetic semantics". Every op is exact to the
+7. `RECIP`/`RSQ`/`LG2`/`EX2`/`SQRT`/`SIN`/`COS` accuracy, input ranges and the
+   `PRE*` pair - **settled**, details in [[Fragment Shader ISA]], "Arithmetic semantics". Every op is exact to the
    precision of its fp20 input; the output is full range (the clamp lives in the
    output stage); `PRE*` + main must be emitted as one pair with the same
    operand, and the `PRE` result cannot be stored or reused.
@@ -686,7 +688,7 @@ Missing for a complete backend:
    cost of an SFU *word*, which is unaffected, but no accuracy claim in this
    document yet rests on a real measurement - accuracy and input ranges remain
    open, now with a working way to observe them.
-8. ~~fp20 conversion rounding on ALU results~~ - **settled: the hardware
+8. fp20 conversion rounding on ALU results - **settled: the hardware
 truncates toward zero, exactly like the assembler.** `x = 1 + eps`, then
 `4096*(x-1)` with an embedded constant for the offset:
 
@@ -710,7 +712,7 @@ record: The probe that would settle it is designed
    and the store sees the first batch's register as 0. So the blocker is the
    register round-trip across two batch boundaries, not the arithmetic. Note
    the subtract there used `-#1` and the multiply took the uniform in rB, though
-   rC may equally be a uniform (4.3). Next step: chain through `aluN`
+   rC may equally be a uniform ([[Fragment Shader ISA]] 5.9). Next step: chain through `aluN`
    lookalikes via `recv`/`send` instead of the register file, or retry at a
    larger `alu_buffer_size` (its `0x520` count has to be multiplied and its rows
    are per batch - see 9.1).
@@ -736,19 +738,18 @@ record: The probe that would settle it is designed
    misreading, not a modifier problem.** `MAD r3.*h, u0, #1, -#1, #1` with
    `u0 = 1.5` writes `0.5` into `r3.hi` (byte 3 = `0x7F`) and nothing into
    `r3.lo`, and with `u0 = 0.75` it computes `-0.25`, which an fx10 write clamps
-   to zero. Both are correct. The note was written while this document still
-   labelled the store bytes from the wrong end.
+   to zero.   Both are correct.
 
 ### 9.3 Needed for performance only
 
-9. ~~Whether the 4 ALU slots of a packet may include a NOP cheaply~~ -
+9. Whether the 4 ALU slots of a packet may include a NOP cheaply -
    **settled**: `count` barely matters, the batch itself is what costs
    (section "Performance model" of [[Fragment Shader ISA]]).
-10. ~~Whether `MFU` and `ALU` really run in parallel for the same batch~~ -
+10. Whether `MFU` and `ALU` really run in parallel for the same batch -
     **settled**: MFU, ALU and TEX all overlap and a batch costs the maximum over
     them; every SFU op costs the same (~3.4 ns/fragment beyond the first in its
     batch); and the limit is per batch rather than per word (section "Performance model" of [[Fragment Shader ISA]]).
-11. ~~Whether a TEX and a DW in the same batch can be independent~~ -
+11. Whether a TEX and a DW in the same batch can be independent -
     **settled: yes.** A batch holding a `tex` into `r2/r3` plus a store of
     ALU-produced values returns exactly the ALU values (`0x7F407F40`), so a DW
     can run alongside a TEX as long as it does not consume the sample.
@@ -791,7 +792,7 @@ emit the packed form - the batch count, not the slot count, is the cost.
 
 ### 9.4 Documentation debt that blocks nothing
 
-12. ~~The undocumented unit 5 (four packed relative slot offsets)~~ - **it has
+12. **The undocumented unit 5** (four packed relative slot offsets) - **it has
     no host upload register on AR20, so it is not a gap that can be closed.**
     The FP class exposes a register for exactly six streams - PSEQ
     (`0x540`/`0x541`), MFU schedule (`0x600`/`0x601`), MFU (`0x603`/`0x604`), TEX
@@ -803,23 +804,22 @@ emit the packed form - the batch count, not the slot count, is the cost.
     `sync_pre` buffers are dead code on this chip - the shared encoder most
     likely serves a later chip that does have the register. Nothing to probe
     until such a chip turns up.
-13. ~~DW bit 14~~ - **confirmed on hardware from a word the assembler itself
+13. **DW bit 14** - **confirmed on hardware from a word the assembler itself
     emits**: it forces an all-zero payload (`0x007F007F` -> `0x00000000`)
     whichever register pair holds the payload, which is exactly the "always a
     zero payload" the compiler corpus showed. The target-class field is measured
     too: bits 16..17 = 2 is the colour target, 1 with index 0 is the depth
-    surface, 3 writes nothing. The depth payload is now characterised as well
-    (the ISA section "Arithmetic semantics"): one register only - the high
-    register of the pair bit 15 does *not* name, so `r3` for `store rt0, r0, r1
-    class 1` - with low half `value * 0x10` and high half `value * 0x4000`,
-    superposed. A backend has to emit the class suffix; a plain `store rt0` is a
-    colour store. **The "128-bit packer at `0x1c6648`" does not
-    exist**: both `0x1c6648` and its overlapping neighbour `0x1c6650` decompile
-    to an item-size/alignment accumulator (`(acc - 1) + align & -align` over a
-    list of items with per-kind sizes), not to `orr`/`lsl` word building, so the
-    packer still has to be located. Stencil writes are answered differently from
-    what was assumed: the `DW` stencil store is dead on this chip, the ref +
-    `REPLACE` stencil path works (see the ISA doc).
+    surface, 3 writes nothing. The depth payload is characterised in
+    [[Fragment Shader ISA]] 8.2: one register only - the high register of the
+    pair bit 15 does *not* name, so `r3` for `store rt0, r0, r1 class 1` - with
+    low half `value * 0x10` and high half `value * 0x4000`, superposed. A backend
+    has to emit the class suffix; a plain `store rt0` is a colour store. The
+    stencil store is a separate mechanism, also settled there.
+14. **The `0x1c6648` "128-bit packer"** - it is not an instruction encoder. Its
+    word 0 fits neither the ALU, the DW nor the verified vertex layout, and its
+    fields are fed by consecutive 4-byte struct members, which identifies it as a
+    flag-struct serialiser. See [[Compiler Internals]]. Nothing a fragment
+    backend emits depends on it.
 
 ## 10. Reproducing the measurements
 
@@ -921,7 +921,8 @@ EXEC
 with `--texture --result`. Because the texture is flat, garbage coordinates are
 harmless - they clamp to the edge - which is what makes the probe small.
 
-Making it discriminating needs three things, all of which bit me once:
+Making it discriminating needs four things, each of which has produced a false
+result before:
 
 * `grate_texture_clear()` then `grate_texture_clear_rect()` for the two-tone
   variant - this does work; a failed coordinate probe is not the texture's fault;
@@ -967,9 +968,9 @@ With both fixed the shipped trio works:
 `asm_tests.sh` now carries the identity-`mvp` case as a regression: any value
 differing from the `0x4C4C4C4C` clear proves the triangle reached the DW unit.
 
-**The coordinates were never the problem.** An earlier round concluded otherwise
-from a handful of framebuffer reads, but both reasons were artefacts of the
-probe. The decisive measurement is the whole frame with a mip chain bound
+**The coordinates are not the problem.** The two failures above were probe
+artefacts, not coordinate handling. The decisive measurement is the whole frame
+with a mip chain bound
 (`--mipmap`, `lod_bias` 0): **32768 white and 32764 black pixels and nothing
 else** - exactly the two-tone split of the bound texture. So the interpolated
 `texcoord` does reach TEX and the sample does reach DW.

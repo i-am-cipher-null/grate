@@ -1,32 +1,51 @@
-## Overview
+# Tegra 2 (AR20) - vertex shader ISA
 
-The Tegra vertex shader ISA is a relatively straight-forward implementation of the Shader Model 2 instruction set. The instruction set seems to be a strict subset of the NV30 vertex-shader.
+**Status.** Reference. The encoding is checked against a command-stream dump and
+against words the blob emits (section 14). Fields and opcodes marked `unknown`
+have no established meaning.
+
+**Scope.** The NV30-derived vertex VLIW: instruction word, vector and scalar
+opcodes, swizzles and masks, predicates, address registers, branching and export.
+Related documents: [[Shader Linking]] for what happens to the exports,
+[[GR3D Registers]] §3 for the VPE registers, [[Fragment Shader ISA]] for the
+other half of the pipeline.
+
+## 1. Overview
+
+The Tegra vertex shader ISA is a close implementation of the Shader Model 2
+instruction set, and a strict subset of the NV30 vertex shader as far as the
+disassembly and the blob's output show.
 
 Each instruction contains up to two operations; one 4-component vector [ALU](https://en.wikipedia.org/wiki/Arithmetic_logic_unit) operation, and one scalar SFU (special function unit) operation. The result of both units is a 4 component-vector, limited by a write-mask.
 
-There's five operands, one destination register per unit (referred to as rD), and three source operands (referred to as rA, rB and rC). The ALU can use up to all three source operands, while the SFU only operates on rC (if at all).
+There are five operands: one destination register per unit (rD) and three source
+operands (rA, rB and rC). The ALU can use all three sources, while the SFU only
+operates on rC.
 
-Vertex processor has 32 local vec4 registers, 16 input vec4 attribute registers, 256 input vec4 constant registers, 16 export vec4 registers, 2 condition registers, 4 address registers. Maximum size of vertex program is 256 VLIW instructions.
+The vertex processor has 32 local vec4 registers, 16 input vec4 attribute
+registers, 256 input vec4 constant registers, 16 export vec4 registers, 2
+condition registers and 4 address registers. A program is at most 256 VLIW
+instructions.
 
-### See also
+### 1.1 See also
 
-#### Nouveau
+**Nouveau (Mesa).**
 
 http://cgit.freedesktop.org/mesa/mesa/tree/src/gallium/drivers/nouveau/nv30/nv30_vertprog.h  
 http://cgit.freedesktop.org/mesa/mesa/tree/src/gallium/drivers/nouveau/nv30/nv30_vertprog.c  
 http://cgit.freedesktop.org/mesa/mesa/tree/src/gallium/drivers/nouveau/nv30/nvfx_vertprog.c  
 
-#### Instruction set specifications:
+**Instruction-set specifications.**
 
 https://www.opengl.org/registry/specs/NV/vertex_program.txt  
 https://www.opengl.org/registry/specs/NV/vertex_program2.txt  
 https://www.opengl.org/registry/specs/NV/vertex_program3.txt  
 
-#### Patents:
+**Patents.**
 
 https://www.google.com/patents/US7755634  
 
-### Instruction word encoding
+## 2. Instruction word encoding
 
 |     Bits | Meaning                     |
 |---------:|:----------------------------|
@@ -37,7 +56,7 @@ https://www.google.com/patents/US7755634
 |      123 | attribute relative addressing enable |
 |      122 | saturate result             |
 |      121 | condition register index    |
-|      120 | ???                         |
+|      120 | unknown                         |
 |      119 | rC absolute value           |
 |      118 | rB absolute value           |
 |      117 | rA absolute value           |
@@ -72,7 +91,7 @@ https://www.google.com/patents/US7755634
 |        1 | constant relative addressing enable |
 |        0 | end of program              |
 
-### vector opcodes
+### 2.1 Vector opcodes
 
 |  Value | Mnemonic | Meaning                                 |
 |-------:|:---------|:----------------------------------------|
@@ -101,12 +120,12 @@ https://www.google.com/patents/US7755634
 |     22 | SSG      | rD = sign(rA)                           |
 |     23 | ARR      | A0 = round(rA)                          |
 |     24 | MVA      | A0.x = A0.z = A0.x + A0.z<br>A0.y = A0.w = A0.y + A0.w |
-|     25 | TXL      | ???                                     |
+|     25 | TXL      | unknown                                     |
 |     26 | PSH      | push(A0)                                |
 |     27 | POP      | A0 = pop()                              |
-| 28..31 | ???      | ???                                     |
+| 28..31 | unknown      | unknown                                     |
 
-### scalar opcodes
+### 2.2 Scalar opcodes
 
 |  Value | Mnemonic | Meaning                                                               |
 |-------:|:---------|:----------------------------------------------------------------------|
@@ -118,20 +137,20 @@ https://www.google.com/patents/US7755634
 |      5 | EXP      | rD = vec4(pow(2.0, floor(rC.x)), fract(rC.x), pow(2.0, rC.x), 1.0)    |
 |      6 | LOG      | rD = vec4(floor(log2(abs(rC.x))), abs(rC.x) / pow(2.0, floor(log2(rC.x))), log2(abs(rC.x)), 1.0) |
 |      7 | LIT      | rD = vec4(1.0, max(rD.x, 0.0), rD.x > 0.0 ? pow(max(rC.y, 0.0), clamp(rC.w, -128.0, 128.0) : 0.0, 1.0) |
-|      8 | BRA      | ???                                                                   |
+|      8 | BRA      | unknown                                                                   |
 |      9 | BRI      | jump(IADDR)                                                           |
-|     10 | CLA      | ???                                                                   |
+|     10 | CLA      | unknown                                                                   |
 |     11 | CLI      | push(IP); jump(IADDR)                                                 |
 |     12 | RET      | jump( pop() )                                                         |
 |     13 | LG2      | rD = log2(rC)                                                         |
 |     14 | EX2      | rD = exp2(rC)                                                         |
 |     15 | SIN      | rD = sin(rC)                                                          |
 |     16 | COS      | rD = cos(rC)                                                          |
-| 17..18 | ???      | ???                                                                   |
+| 17..18 | unknown      | unknown                                                                   |
 |     19 | PUSHA    | push(A0)                                                              |
 |     20 | POPA     | A0 = pop()                                                            |
 
-### swizzle
+### 2.3 Swizzle
 
 | Bits | Meaning            |
 |-----:|:-------------------|
@@ -147,7 +166,7 @@ https://www.google.com/patents/US7755634
 |     2 | source z-component |
 |     3 | source w-component |
 
-### write mask
+### 2.4 Write mask
 
 | Bits | Meaning           |
 |-----:|:------------------|
@@ -156,7 +175,7 @@ https://www.google.com/patents/US7755634
 |    1 | write z-component |
 |    0 | write w-component |
 
-### source operand type
+### 2.5 Source operand type
 
 | Value | Meaning            |
 |------:|:-------------------|
@@ -165,7 +184,7 @@ https://www.google.com/patents/US7755634
 |     2 | attribute          |
 |     3 | constant           |
 
-## Predicates
+## 3. Predicates
 
 There are 2 condition registers, bit "condition register index" selects register to use. Condition register state is stored per .xyzw component, it is set to "equal to 0" on start of vertex program execution, it is altered accordingly to the rD.xyzw of the executed instruction (per-component) to one of the following states:
 
@@ -179,22 +198,22 @@ To execute instruction conditionally: "condition check" bit needs to be enabled 
 
 As the result of a predicate vector instruction, corresponding components of the destination register are set to 1.0f (true) or 0.0f (false).
 
-## Scalar instructions
+## 4. Scalar instructions
 If vector opcode isn't NOP and rD is same as scalar's, then vector result takes precedence.
 
 First component of swizzled source register rC determines actual source for scalar operation and result of that operation is repeated to .xyzw of destination register rD, taking write mask into account.
 
-### MOV instruction
+### 4.1 MOV instruction
 Scalar's MOV acts as vector's MOV, i.e. it fetches and writes all .xyzw components.
 
-## Execution abortion
+## 5. Execution abortion
 Program execution aborts if:
 
   1. rD, rA, rB or rC is set to an invalid value, even if it's not used by a particular instruction. For rA, rB and rC the invalid range is 32-63, for rD it is 32-62.
   2. Export register number is invalid value 16-30.
   3. On stack overflow/underflow.
 
-## Export
+## 6. Export
 
 In order to use result of scalar or vector operation further in shader pipeline, it needs to be stored in the export register.
 
@@ -213,13 +232,13 @@ To use relative addressing:
   1. Bit "export relative addressing enable" needs to be set.
   2. Bitfield "address register select" selected to the required address register.
 
-<!-- Out-of-bounds export not checked -->
+Out-of-bounds export indices are not checked:
 
     export write index = A0.c + export write index
 
-The vertex export index 0 seems to be dedicated solely to the gl_Position.
+Export index 0 is used for `gl_Position` by both the blob and the assembler.
 
-## Address registers
+## 7. Address registers
 There are 4 relative base address registers (A0.xyzw). The ARL (address register load, rA floored) and ARR (address register load, rA rounded) vector operations are altering content of the address registers, so that each component of source register rA.xyzw represents the corresponding address register. The ARA (address register addition) adds 2 address register components together, so that A0 = (A0.x + A0.z, A0.y + A0.w, A0.x + A0.z, A0.y + A0.w).
 
 Destination vector register write mask enables write to the address register component, the actual destination vector register isn't getting affected (like nv30). The address register value can be negative.
@@ -237,7 +256,7 @@ Note on a bit 120: when it is set, the fetched address register is overridden as
 
 Address register A0.xyzw can be pushed/popped to the stack with a PUSHA/POPA scalar and vector operations. Simultaneous and identical scalar-vector push/pop operation within one instruction results into only one push/pop actually being performed, while simultaneous and non-identical into the no-op.
 
-## Constant registers
+## 8. Constant registers
 To multiplex source register rA/rB/rC to constant, its type needs to be set to "constant" and bitfield "constant fetch index" (in range of 0..1023) pointed to the required constant.
 
 To use relative addressing:
@@ -250,32 +269,32 @@ When constant index is out of range, the fetched constant value is assigned to v
 
     fetched constant index = A0.c + constant fetch index
 
-## Attribute registers
+## 9. Attribute registers
 To multiplex source register rA/rB/rC to attribute, its type needs to be set to "attribute" and bitfield "attribute fetch index" pointed to the required vertex attribute.
 
 To use relative addressing:
   1. Bit "attribute relative addressing enable" needs to be set.
   2. Bitfield "address register select" selected to the required address register.
 
-<!-- Out-of-bounds indexes not checked -->
+Out-of-bounds attribute indices are not checked:
 
     fetched attribute index = A0.c + attribute fetch index
 
-## Branching
+## 10. Branching
 Scalars BRA operation is used to jump to an arbitrary instruction. Following nouveau terminology, an argument of the BRA operation is the destination instruction ID (IADDR), it is embedded into the rC swizzle bitfield.
 
 Branching is performed only if the instruction predicate test is positive. So use of "predicate - *" bits is mandatory for the branching instruction.
 
-## Functions
+## 11. Functions
 Scalar instructions CAL and RET are used for the function calling and returning. Function call is essentially a branching operation with an instruction pointer being pushed to the stack. Return from the function is a branching to the address popped from the stack. Requirement of the predicate use is the same as for branching operation for both of CAL and RET operations, CAL's IADDR is embedded to the rC swizzle as well.
 
-## Stack
+## 12. Stack
 Stack is shared by the PUSHA/POPA and CAL/RET operations. Maximum depth of the stack is 8.
 
-## Clamping
+## 13. Clamping
 If bit "saturate result" is set, both vector and scalar operation results are clamped to [0.0f - 1.0f].
 
-## Verification against a command-stream dump
+## 14. Verification against a command-stream dump
 
 The vertex program is uploaded inside the draw job, so when a channel times out
 the kernel echoes the packet back and the field table above can be checked
@@ -337,7 +356,7 @@ compiler that wants the blob's exact word shape should use 63 as the vector
 destination whenever the result is only exported, and may set the three
 predicate bits as a conservative default.
 
-## Opcode usage observed in compiler output
+## 15. Opcode usage observed in compiler output
 
 Decoding blob output for single-construct shaders shows which opcode numbers are
 real. Vector opcodes seen: `1` MOV, `2` MUL, `3` ADD, `4` MAD, `9` MIN, `10` MAX,

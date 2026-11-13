@@ -1,4 +1,4 @@
-# Tegra 2 (AR20) 3D engine - fragment shader ISA
+# Tegra 2 (AR20) - fragment shader ISA
 
 **Status.** Working reference. This document is the encoding and behaviour of the
 fragment-shader pipeline as established on Tegra 2 (AR20) hardware. Statements
@@ -43,10 +43,8 @@ the schedule streams (section 4.3), "chunk" one complete program in the containe
 
 ## 1. Overview
 
-
-The Tegra fragment shader ISA is not as straight forward as [[Vertex Shader ISA]].
-
-The fragment shader is separated into five different instruction streams:
+The fragment ISA is split across five independent instruction streams, which
+makes it more involved than the single-stream [[Vertex Shader ISA]]:
 
 * PSEQ - fetching data from the memory and feeding it to the pipeline as registers data or instructions
 * MFU - multi-function unit, varying interpolate and special functions
@@ -54,7 +52,8 @@ The fragment shader is separated into five different instruction streams:
 * ALU - arithmetic logic unit
 * DW - writing to the output surface / buffers
 
-The different units seems to be synchronized by separate timing streams.
+Each unit is paced by its own timing stream; the scheduling consequences are in
+section 4.
 
 ### 1.1 Instruction flow
 
@@ -194,7 +193,7 @@ section is about what the hardware does with them.
 * `fx10`: signed 10-bit fixed point, scale 1/256, range `[-4.0, 3.996]`,
   resolution `1/256`. The assembler converts by truncating `f * 256`, and the
   hardware does the same: ALU results truncate toward zero at fp20 writeback
-  (1.5 ulp reads back as 1 ulp, section 5.15), so tool and hardware agree and
+  (1.5 ulp reads back as 1 ulp, section 5.16), so tool and hardware agree and
   every intermediate value is predictable from the emitted constants.
 * Arithmetic is *always* one of these two; there is no fp32 anywhere.
 
@@ -394,11 +393,15 @@ raw output), not by a dedicated compare instruction.
 
 ### 5.6 Condition registers
 
-The condition register comprises two fixed10 values, 0.0 or 1.0. In order to write a value to the condition register, the destination register should be selected to the condition register 64..71. To write to the higher part of the condition register, "write high subregister" bit needs to be set; otherwise lower part will be written regardless of the "write low subregister" bit state.
+The condition register comprises two fx10 values, 0.0 or 1.0. In order to write a value to the condition register, the destination register should be selected to the condition register 64..71. To write to the higher part of the condition register, "write high subregister" bit needs to be set; otherwise lower part will be written regardless of the "write low subregister" bit state.
 
     Condition register stored value = !!(ALU result)
 
-Looks like ALU can address up to 2 source CR's in one ALU[0-3] sub-instruction.
+Measured readback, the independence of all 16 entries and visibility across
+packets are in 5.15.
+
+Up to two condition-register sources per `ALU[0-3]` sub-instruction have been
+observed.
 
 ### 5.7 Kill register
 
@@ -713,7 +716,7 @@ produced no observable arithmetic difference in any shape; the encoder in
 [[Compiler Internals]] reads it as "send" in its register tracking, so it is a
 pipeline bit rather than an operand source.
 
-### 5.15 Condition registers
+### 5.15 Condition file in practice
 
 Registers 64..71 are the condition file, and `crN` addresses **16 scalar
 booleans**: `crN` is register `64 + (N >> 1)` with the sub-register bit set to
@@ -884,7 +887,7 @@ Other forwarding facts, from existing working tests rather than new probes:
 * ALU -> DW, same batch: works (`sky_fs.txt`).
 
 
-### 5.15 Arithmetic semantics
+### 5.16 Arithmetic semantics
 
 
 
@@ -1134,7 +1137,7 @@ The MFU unit can fetch and interpolate 4 component vectors per instruction and/o
 | 54..57 | opcode   |
 | 43..53 | mul1     |
 | 32..42 | mul0     |
-| 28..31 | ???      |
+| 28..31 | unknown      |
 | 21..27 | var3     |
 | 14..20 | var2     |
 |  7..13 | var1     |
@@ -1189,7 +1192,7 @@ readable by the unit, and the multipliers reject them as a source too. The outpu
 is **full range**: `rcp(0.5)` really is 2.0 and `sqrt(4)` really is 2.0, checked
 by storing both the value and half of it in one run. Only the 8-bit output
 conversion saturates. Accuracy is within the fp20 format for every op measured
-(see [[Writing a Compiler]] 4.5), and `PRESIN`/`PRECOS` do proper range
+(see section 6.1), and `PRESIN`/`PRECOS` do proper range
 reduction, so arguments beyond `2pi` are as accurate as small ones.
 
 One caveat on reading these numbers as ISA behaviour: a probe whose operand
@@ -1255,32 +1258,32 @@ values in both halves, so re-reading a varying costs a fetch but breaks nothing.
 |  4..7 | source register 1    |
 |  0..3 | source register 0    |
 
-#### 6.3.1 Destination registers
+### 6.3.1 Destination registers
 
 | Value | Meaning            |
 |------:|:-------------------|
-|     0 | ???                |
+|     0 | unknown                |
 |     1 | barycentric weight |
-|  2..3 | ???                |
+|  2..3 | unknown                |
 |     4 | row register 0     |
 |     5 | row register 1     |
 |     6 | row register 2     |
 |     7 | row register 3     |
 
-#### 6.3.2 Source registers
+### 6.3.2 Source registers
 
 The SFU result is evaluated first and is available to use by MUL's via "SFU result" register.
 
 |  Value | Meaning                 |
 |-------:|:------------------------|
 |   0..3 | row register 0..3       |
-|   4..7 | ??? (global registers?) |
-|   8..9 | ???                     |
+|   4..7 | unknown (possibly global registers) |
+|   8..9 | unknown                     |
 |     10 | SFU result              |
 |     11 | barycentric coef 0      |
 |     12 | barycentric coef 1      |
 |     13 | 1.0                     |
-| 14..15 | ???                     |
+| 14..15 | unknown                     |
 
 ### 6.4 Interpolation
 
@@ -1307,12 +1310,12 @@ The TEX instruction takes the texture coordinates and LOD bias from the first ro
 
 |   Bits | Meaning                               |
 |-------:|:--------------------------------------|
-| 14..31 | ???                                   |
+| 14..31 | unknown                                   |
 |     13 | explicit LOD, see below               |
 |     12 | enable bias                           |
-|     11 | ???                                   |
+|     11 | unknown                                   |
 |     10 | enable                                |
-|   6..9 | ???                                   |
+|   6..9 | unknown                                   |
 |      5 | sampled data destination regs select  |
 |      4 | texcoords / lod regs select           |
 |   0..3 | sampler index                         |
@@ -1362,15 +1365,15 @@ Measured payload order for the R2-R3 form: the 32-bit result word is, from MSB
 to LSB, **`r2.lo`, `r2.hi`, `r3.lo`, `r3.hi`** (byte 0 = `r3.hi`, byte 1 =
 `r3.lo`, byte 2 = `r2.hi`, byte 3 = `r2.lo`). That was established by filling all
 four slots with `0.25` (`0x40404040`) and then overwriting exactly one slot with
-`0.75`, four separate runs - see [[Writing a Compiler]] 4.3 for the table.
+`0.75`, four separate runs - see section 8.1 for the table.
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
 | 16..31 | 16..17 = render target class (1 = depth, 2 = other); 18..31 unknown |
 |     15 | source registers select |
-| 11..14 | ??? - bit 14 is functional, see below |
+| 11..14 | unknown - bit 14 is functional, see below |
 |     10 | stencil write           |
-|   6..9 | ??? - no effect on hardware |
+|   6..9 | unknown - no effect on hardware |
 |   2..5 | render target index     |
 |      1 | write mode bit 1 (see 0..1) |
 |      0 | write mode bit 0 (1 = render target write) |
@@ -1535,15 +1538,15 @@ same draw, with one draw and with two.
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
-| 24..31 | ???                     |
+| 24..31 | unknown                     |
 |     23 | enable (?)              |
-| 20..22 | ???                     |
+| 20..22 | unknown                     |
 | 16..19 | render target select    |
-|  4..15 | ???                     |
+|  4..15 | unknown                     |
 |      3 | enable (?)              |
-|      2 | ???                     |
+|      2 | unknown                     |
 |      1 | dest registers select   |
-|      0 | ???                     |
+|      0 | unknown                     |
 
 Note: bit 3 and bit 23 seems to usually be set together. It's not known which one is the actual enable-bit.
 
@@ -1935,9 +1938,8 @@ mul1 is (dst=1, src0=10, src1=12 barycentric coef 1).
 
 For `texture2D(s, uv)` the emitted word is `0x00000430` with
 `sampler_index=0`, `src_regs_select=1`, `sample_dst_regs_select=1` and
-`enable=1` (bit 10). Every bit in the documented `???` ranges - 6..9, 11, 14..31
-
-- as well as the bias bit (12) was **zero**. These ranges therefore appear to be
+`enable=1` (bit 10). Every bit in the documented unknown ranges - 6..9, 11,
+14..31 - as well as the bias bit (12) was **zero**. These ranges therefore appear to be
 reserved rather than carrying undocumented flags for a plain 2D fetch without
 bias. Bit 13 is no longer in that set: it is explicit LOD (see the TEX section),
 and the blob emits it for `textureLod`.
@@ -2014,9 +2016,8 @@ R0-R1, R2-R3, R4-R5 or R6-R7 holding the payload, setting bit 14 makes the store
 write an all-zero payload. So bits 14..15 are not a straightforward pair index
 over the low row registers.
 
-This also corrects the compiler-corpus note that used to be here: bit 7 was seen
-on the rt3 store, but setting it on an rt1 store has no effect at all, so it is
-not a general target-class flag.
+Bit 7 is not a general target-class flag: the compiler sets it on the rt3 store,
+but setting it on an rt1 store has no effect at all.
 
 ### 12.6 Target format conversion
 
@@ -2085,20 +2086,26 @@ matching the disassembler's `rt2`), `dest_regs_select` (bit 1) is 0 meaning
 R0-R1, and bits 3 and 23 are both set - consistent with the note above that they
 usually travel together. No other bits are set.
 
-### 12.9 Still open
-  **settled: the words compose, per component.** Each `LINK` line becomes one
+### 12.9 Claims settled since earlier revisions
+
+The points below were open in the first revision of this document. They are kept
+with the evidence that closed them, because several retractions were caused by
+probe bugs rather than by hardware behaviour ([[Hardware Testing]]).
+
+- **Multiple `LINK` lines and multiple rows** - settled: the words compose, per
+  component. Each `LINK` line becomes one
   word at `0x300` and the next at `0x302` (`grate-asm.c`: `1 + n*2` words, one
   `INCR(0x300, n*2)`), and a linker that writes `x` from one line and `y` from a
   second renders the same frame as a single line writing both. Rows behave the
   same way: reading `t1` with row 1 linked reproduces the frame `t0` gives with
   row 0 linked, and adding row 1 leaves row 0 untouched. The old "same-source
   control did not read equal" was a probe artefact - see the `ipl` note below.
-- ~~why rC reads as zero for a uniform beside a row-register rA/rB~~ -
+- why rC reads as zero for a uniform beside a row-register rA/rB -
   **settled: it does not, and there is no operand-port restriction.** See the
   note under "Operands (rA, rB, rC)" above; the three arrangements (row rA with
   uniform rC, uniform rA with row rC, and no row operand at all) all return
   `0.75` for `1*0.5 + 0.25`.
-- ~~`ipl` results cannot be read back through an ALU operand~~ - **retracted: they
+- `ipl` results cannot be read back through an ALU operand - **retracted: they
   can, with a plain fp20 read.** Slot 0 lands in `r0`, slot 1 in `r1`, a leading
   `NOP` slot leaves its register alone, and `MAD rX.l*, r0, #1, #0, #1` returns
   the interpolated value exactly. Measured with a vertex shader that exports a
@@ -2121,25 +2128,25 @@ usually travel together. No other bits are set.
   runs disagreeing) were artefacts of that read form. So `ipl` output is ordinary
   fp20 data and a compiler may do arithmetic on varyings directly; there is no
   need to launder them through the texture unit.
-- ~~fp20 rounding of ALU results~~ - **settled: the ALU truncates toward zero**
+- fp20 rounding of ALU results - **settled: the ALU truncates toward zero**
   at fp20 writeback (1.5 ulp reads back as 1 ulp), the same as the assembler's
   own packing. See [[Writing a Compiler]] 9.2 item 8. Historical note: the
   amplification probe (`4096*(x-1)`) is what settles it: 1.5 ulp reads back as
   1 ulp, so writes truncate.
-- ~~`PRE` intermediate lifetime~~ - **settled**: at least four intervening
+- `PRE` intermediate lifetime - **settled**: at least four intervening
   batches, per operand register, undisturbed by unrelated SFU ops. See
-  [[Writing a Compiler]] 4.5.
-- ~~fp20 exponent extremes~~ - **settled**: values clamp at `2^33` and `ex2`
+  section 6.1.
+- fp20 exponent extremes - **settled**: values clamp at `2^33` and `ex2`
   underflows at `-31`, so the usable window is about `2^-31 .. 2^33`. Same
   reference.
-- ~~what DW bit 14 does~~ - **settled**: with the payload in any register pair,
+- what DW bit 14 does - **settled**: with the payload in any register pair,
   setting bit 14 makes the store write an all-zero payload (`0x007F007F` ->
   `0x00000000` against a `0x4C4C4C4C` clear). Re-measured from a word the
   assembler itself emits, so the bit position is not in doubt. Bits 14 and 15 are
   independent: bit 15 selects the pair (set = `r2/r3`, clear = `r0/r1`, which is
   what the assembler emits for each spelling), and bits 16..17 are the target
   class where `3` is invalid and writes nothing.
-- ~~where a DW store points~~ - **measured with a `D16` depth surface bound**
+- where a DW store points - **measured with a `D16` depth surface bound**
   (`GRATE_DEPTH=1` in `tools/assembler`, see [[Hardware Testing]]): the **render
   target index (bits 2..5) is the selector**, not the class field. Index 0 is the
   depth surface (because `bind_depth_buffer` puts it there), index 1 is the colour
@@ -2174,7 +2181,7 @@ usually travel together. No other bits are set.
   committed value is the test's result, so under `REPLACE` it is the reference
   value. A tiled stencil surface (`PIX_BUF_LAYOUT_TILED_16x16`) behaves
   identically to a linear one.
-- ~~the `DW` stencil store writes nothing~~ - **retracted: it is the mechanism.**
+- the `DW` stencil store writes nothing - **retracted: it is the mechanism.**
   The earlier negative came from two configurations that cannot show a commit:
   the stencil test disabled (there is no update to commit) and a program that
   discards every fragment (no fragment survives to commit it). The isolating
@@ -2271,7 +2278,7 @@ usually travel together. No other bits are set.
   step) instead of a clear or shader-written colour. So a store whose target is
   not bound leaves the framebuffer in a state no shader produced - do not read it
   back, and treat any index without a surface as "no target".
-- ~~MRT stores work~~ - **retracted.** The `00400040` once read back from a bound
+- MRT stores work - **retracted.** The `00400040` once read back from a bound
   index-5 surface was stale buffer content. Re-running the same two-batch program
   with `RT_PARAMS(5)` set to a working colour word, `RT_ENABLE` = `0x22`, and the
   `0xe35` limit as well leaves the surface `00000000`, and the control with only
@@ -2279,13 +2286,13 @@ usually travel together. No other bits are set.
   in a real draw and still receives nothing (8.2). Index 1 is the only `DW`
   target AR20 implements.
 
-- ~~TEX bits 6..9, 11 and 14..31~~ - **swept and inert on hardware**: with a
+- TEX bits 6..9, 11 and 14..31 - **swept and inert on hardware**: with a
   two-tone texture and `s = 0.7` (the white half), setting bits 6, 7, 8, 9, 11,
   14, 16, 20, 24, 28 and 31 one at a time leaves the sample at `0xFFFFFFFF` in
   every case, identical to the base word `0x00001420`. Readers that change the
   result are bit 12 (bias), bit 13 (explicit LOD) and bits 0..5 (sampler /
   destination / coordinate selects).
-- ~~`sampler_index` with several samplers~~ - **settled**: with tex0 cleared to
+- `sampler_index` with several samplers - **settled**: with tex0 cleared to
   white and tex1 to blue, a TEX word with sampler index 0 samples white
   (`0xFFFFFFFF`) and index 1 samples blue (`0x000000FF`), so bits 0..2 select the
   sampler directly and two textures can be used in one shader.
@@ -2295,14 +2302,14 @@ usually travel together. No other bits are set.
 ## Appendix A. Patents
 
 
-These seems to be for Tegra:
+The following appear to cover the Tegra pipeline:
 
 - [US8314803: "Buffering deserialized pixel data in a graphics processor unit pipeline"](https://patents.google.com/patent/US8314803)
 - [US9183607: "Scoreboard cache coherence in a graphics pipeline"](https://patents.google.com/patent/US9183607)
 - [US7808512: "Bounding region accumulation for graphics rendering"](https://patents.google.com/patent/US7808512)
 - [US8441497: "Interpolation of vertex attributes in a graphics processor"](https://patents.google.com/patent/US8441497)
 
-These seems to be for GoForce (based on filing dates):
+The following predate Tegra and appear to cover GoForce (by filing date):
 
 - [US7969446: "Method for operating low power programmable processor"](https://patents.google.com/patent/US7969446)
 - [US8749576: "Method and system for implementing multiple high precision and low precision interpolators for a graphics pipeline"](https://patents.google.com/patent/US8749576)

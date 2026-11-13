@@ -1,9 +1,19 @@
-# Inside libcgdrv.so: how the proprietary compiler encodes instructions
+# Tegra 2 (AR20) - proprietary fragment compiler (`libcgdrv.so`)
 
 `subprojects/Linux_for_Tegra/libcgdrv.so` is the blob shader compiler that Grate
 drives through `libcgc`. This document maps what is known about its internals.
-Everything here is either read directly from the disassembly (stated as fact) or
-explicitly flagged as inferred.
+
+**Status.** Reverse-engineering notes. Each statement is read directly from the
+disassembly (stated as fact) or explicitly flagged as inferred. The
+reconstruction of the dispatcher comes from a manual decompile, so its symbol
+names are conventions, not names from the binary.
+
+**Scope.** The IR record layout, the scheduler, the per-stream encoders and the
+program container, as far as they determine what a driver has to emit. The
+instruction words themselves are in [[Fragment Shader ISA]].
+
+**Related documents.** [[Fragment Shader ISA]], [[Writing a Compiler]],
+[[Command Stream]].
 
 ## Target shape
 
@@ -40,7 +50,7 @@ JAVA_HOME=<jdk25> ghidra_12.2_PUBLIC/support/analyzeHeadless \
   -postScript DecompileAt.java 0x2af724 0x2a5834
 ```
 
-### Two traps that waste hours
+### Two disassembly traps
 
 1. **Ghidra invents entries mid-function.** On a stripped ARM binary it happily
    creates a function at any branch target. Symptom: decompiled C full of
@@ -193,7 +203,7 @@ a patch on a word that was packed elsewhere.
 
 ## The encoder entry point
 
-A prior manual decompile (kept in the tree) reconstructs the dispatcher as
+A manual decompile of this window reconstructs the dispatcher as
 `encode_ar20_shader_instruction_record()`. It is called once per IR record and
 dispatches on `(info->sched & 0xff) >> 5`:
 
@@ -229,14 +239,6 @@ about) legible:
 | `release_alu_insn` | `0x2b6720` |
 | `pack_alu_const` | `0x2e6490` |
 | `alu_rc_rd_only` | `0x2a1ed8` |
-
-### Correction to the earlier notes in this file
-
-`0x2af6f0` is **`alu_flush_batch`, a real function**, not the tail of its
-predecessor. An earlier revision of this document claimed otherwise and had the
-Ghidra database entry deleted as "mis-detected" - that was wrong, and the
-decompile of it (writing per-row flags from the `read_mask`/`write_mask` at
-context `+0x6c`/`+0x6e`) confirms the helper's role.
 
 ### DW drains `[31:10]` from a helper
 
@@ -383,7 +385,7 @@ between issue of X and Y"; the only ordering constraints visible are the last-us
 rule, the four-slot ALU packet limit and the per-bin capacity of 32 slots per
 unit. Treat any claim about actual hardware timing as still open.
 
-## The 128-bit packer at 0x1c6648
+## 0x1c6648 - the single call site
 
 The whole binary contains exactly **one** call to it, at `0x1c6d1c`:
 
@@ -401,13 +403,6 @@ The whole binary contains exactly **one** call to it, at `0x1c6d1c`:
 So it turns a **200-byte node into a 16-byte (128-bit) record**. Right after the
 loop the caller makes an indirect call through a vtable (`ldr r3,[r5,#0xb0];
 blx r3`) and returns 0 or 1.
-
-This does not look like a per-unit instruction encoder: there is no batching, no
-slot/packet state and no write into any of the context streams (`pseq`/`mfu`/
-`alu`/`dw`). It reads a flat struct and emits a fixed-size serialisation. Given
-that, the most plausible reading is a *descriptor* record (vertex input /
-attribute / stream descriptor) rather than a unit opcode, but that remains a
-guess.
 
 ### Ghidra cannot currently decompile this region
 
@@ -490,14 +485,9 @@ had suggested the opposite.
 
 ## Open questions
 
-* ~~which unit the `0x1c6648` 128-bit packer belongs to~~ - **settled: none of
-  them.** Its word 0 matches neither the ALU, the DW nor the (now verified)
-  vertex layout, and the run of one-bit fields fed by consecutive 4-byte
-  struct members identifies it as a flag-struct serialiser, not an instruction
-  encoder (see above);
-* which payload bits of `dw_enc_src()` the hardware consumes, now measured: on a
-  colour store, 15 (`src_regs_select`) and 16..17 (the render target class field)
-  are used; 10 and 14 belong to the stencil path and IR opcode `0xf4`; 11..13 and
-  18..31 showed no effect at all;
-* what the five 48-entry arrays in `0x2af724` are indexed by (the sentinel itself
-  is now understood - see above);
+* what the five 48-entry arrays in `0x2af724` are indexed by. The sentinel they
+  are seeded with is the compiler's generic "no value" constant, so the arrays
+  track reachability of some 48-entry entity; the entity itself is unknown;
+* whether the `0x1c6648` serialiser consumes a driver-visible record or an
+  internal descriptor. The field layout is established, but no consumer of its
+  output has been identified.

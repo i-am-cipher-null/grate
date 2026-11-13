@@ -1,4 +1,4 @@
-# Tegra 2 (AR20) — GR3D register reference
+# Tegra 2 (AR20) - GR3D register reference
 
 Register-level reference for the 3D engine, block by block. It collects what is
 known about every GR3D register that appears in `include/tgr_3d.xml.h`, in
