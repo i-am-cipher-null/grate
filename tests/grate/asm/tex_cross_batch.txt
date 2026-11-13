@@ -1,0 +1,28 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Cross-batch texture probe: the ALU in the first batch writes the fp20
+ * coordinates into the pixel packet, the second batch samples with them and
+ * stores the result. This isolates (a) whether a prior batch's ALU can feed
+ * TEX and (b) what the texture actually contains, since s and t are uniforms.
+ *
+ * u0 = s, u1 = t. With the harness's two-tone 16x16 texture, s >= 0.5 samples
+ * the white half.
+ */
+
+.uniforms
+	[0] = "u0";
+	[1] = "u1";
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0,  #1
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0,  #1
+		ALU2:	MAD  r2.lh,  #0,  #1,  #0,  #1
+;
+EXEC
+	TEX:	tex r0, r1, tex0, r0, r1, r2
+	DW:	store rt1, r0, r1
+;
