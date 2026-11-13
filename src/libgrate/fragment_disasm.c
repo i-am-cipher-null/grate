@@ -413,7 +413,7 @@ static const char * alu_dst(const union fragment_alu_instruction *alu)
 
 	switch (alu->dst_reg) {
 	case FRAGMENT_CONDITION_REG_0 ... FRAGMENT_CONDITION_REG_7:
-		adj = (alu->write_low_sub_reg || alu->write_low_sub_reg);
+		adj = (alu->write_low_sub_reg || alu->write_high_sub_reg);
 	case FRAGMENT_KILL_REG:
 		buf += sprintf(buf, "%s", reg_name(alu->dst_reg, adj));
 		break;
