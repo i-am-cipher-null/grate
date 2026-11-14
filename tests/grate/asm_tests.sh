@@ -6,6 +6,11 @@ DIR=$(dirname $0)
 &&	$DIR/../../tools/assembler --vs $DIR/asm/vs_function.txt  --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0xFF01FF00 --testonly \
 &&	$DIR/../../tools/assembler --vs $DIR/asm/vs_stack.txt     --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0xFF01FF00 --testonly \
 &&	$DIR/../../tools/assembler --vs $DIR/asm/vs_predicate.txt --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0x667F007F --testonly \
+&&	$DIR/../../tools/assembler --vs $DIR/asm/vs_pred_le.txt --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0x00FFFF00 --testonly \
+&&	$DIR/../../tools/assembler --vs $DIR/asm/vs_pred_ne.txt --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0xFFFF00FF --testonly \
+&&	$DIR/../../tools/assembler --vs $DIR/asm/vs_pred_ge.txt --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0xFF00FFFF --testonly \
+&&	$DIR/../../tools/assembler --vs $DIR/asm/vs_branch_notaken.txt --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0x4C4C4C4C --testonly \
+&&	$DIR/../../tools/assembler --vs $DIR/asm/vs_txl.txt --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0xFF000000 --testonly \
 &&	$DIR/../../tools/assembler --vs $DIR/asm/vs_constant_relative_addressing.txt  --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0x664D331A --testonly \
 &&	$DIR/../../tools/assembler --vs $DIR/asm/vs_attribute_relative_addressing.txt --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0xFF01FF00 --testonly \
 &&	$DIR/../../tools/assembler --vs $DIR/asm/vs_export_relative_addressing.txt    --fs $DIR/asm/fs_vs_tests.txt --lnk $DIR/asm/linker_vs_tests.txt --expected 0x6601FF1A --testonly \

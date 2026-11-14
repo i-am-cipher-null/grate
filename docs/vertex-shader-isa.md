@@ -120,7 +120,7 @@ https://www.google.com/patents/US7755634
 |     22 | SSG      | rD = sign(rA)                           |
 |     23 | ARR      | A0 = round(rA)                          |
 |     24 | MVA      | A0.x = A0.z = A0.x + A0.z<br>A0.y = A0.w = A0.y + A0.w |
-|     25 | TXL      | unknown                                     |
+|     25 | TXL      | aborts the program, see 5.1                 |
 |     26 | PSH      | push(A0)                                |
 |     27 | POP      | A0 = pop()                              |
 | 28..31 | unknown      | unknown                                     |
@@ -137,9 +137,9 @@ https://www.google.com/patents/US7755634
 |      5 | EXP      | rD = vec4(pow(2.0, floor(rC.x)), fract(rC.x), pow(2.0, rC.x), 1.0)    |
 |      6 | LOG      | rD = vec4(floor(log2(abs(rC.x))), abs(rC.x) / pow(2.0, floor(log2(rC.x))), log2(abs(rC.x)), 1.0) |
 |      7 | LIT      | rD = vec4(1.0, max(rD.x, 0.0), rD.x > 0.0 ? pow(max(rC.y, 0.0), clamp(rC.w, -128.0, 128.0) : 0.0, 1.0) |
-|      8 | BRA      | unknown                                                                   |
+|      8 | BRA      | jump(IADDR) if the predicate test passes, see 10                          |
 |      9 | BRI      | jump(IADDR)                                                           |
-|     10 | CLA      | unknown                                                                   |
+|     10 | CLA      | push(IP); jump(IADDR), see 11                                              |
 |     11 | CLI      | push(IP); jump(IADDR)                                                 |
 |     12 | RET      | jump( pop() )                                                         |
 |     13 | LG2      | rD = log2(rC)                                                         |
@@ -198,6 +198,36 @@ To execute instruction conditionally: "condition check" bit needs to be enabled 
 
 As the result of a predicate vector instruction, corresponding components of the destination register are set to 1.0f (true) or 0.0f (false).
 
+### 3.1 The predicate field, measured
+
+Bits 106..108 are a three-bit mask over the three comparison results: bit 108
+selects "greater than 0", bit 107 "equal to 0" and bit 106 "less than 0". A
+destination component is written when the mask bit matching the condition
+register state it tests is set, and the test is per component - destination
+component `c` reads condition register component `p.c`, so the swizzle picks the
+state, not the result. All eight values were run on hardware; see
+[[Hardware Testing]] "Vertex predicates" for the programs.
+
+| Field | Options in the assembler | Components written | Reading |
+|------:|:--|:--|:--|
+| 0 | none | none | never |
+| 1 | `(lt)` | `<0` | less than |
+| 2 | `(eq)` | `=0` | equal |
+| 3 | `(eq)(lt)` | `<0`, `=0` | less or equal |
+| 4 | `(gt)` | `>0` | greater |
+| 5 | `(gt)(lt)` | `<0`, `>0` | not equal |
+| 6 | `(gt)(eq)` | `=0`, `>0` | greater or equal |
+| 7 | `(gt)(eq)(lt)` | all four | always |
+
+Two consequences:
+
+* the field is a mask, not a comparison code, so every one of the six useful
+tests is expressible directly; there is no separate "not equal" opcode;
+* the field alone does nothing. With `condition check` (bit 109) clear the
+predicate bits are ignored and the whole write happens (measured: `0xFFFFFFFF`
+with the field at 0), so a conditional write always needs bit 109. The branch
+instructions are the exception, see section 10.
+
 ## 4. Scalar instructions
 If vector opcode isn't NOP and rD is same as scalar's, then vector result takes precedence.
 
@@ -212,6 +242,26 @@ Program execution aborts if:
   1. rD, rA, rB or rC is set to an invalid value, even if it's not used by a particular instruction. For rA, rB and rC the invalid range is 32-63, for rD it is 32-62.
   2. Export register number is invalid value 16-30.
   3. On stack overflow/underflow.
+
+### 5.1 Vector opcode 25 stops the program
+
+An instruction carrying vector opcode 25 (`TXL`) has no effect on its
+destination and no later instruction runs. The vertex is still emitted, with the
+exports written before it. Measured three ways, each a full-frame run with the
+varying-only fragment shader:
+
+| program | observation | reading |
+|:--|:--|:--|
+| `TXLv r63.xyzw` first, the position export after it | clear colour `0x4C4C4C4C` | no vertex at all, so the export after it never ran |
+| `TXLv r0.xyzw` in the middle, an export of a known constant after it | `0xFF000000` | the later export never reached the framebuffer; `0xFF000000` is what an unwritten varying reads as |
+| `TXLv r63.xyzw` with `export[7]`, after the export was preloaded with `(0.25, 0.5, 0.75, 1.0)` | `0xFFBF7F40` | the preloaded value survives, so the instruction is dropped before it can write |
+
+`TXLv` takes only a destination in the assembler, so its two source slots stay
+at type 0, which section 2.5 lists as "invalid/attribute" - the abort is
+therefore consistent with case 1 above. Whether a fully specified opcode 25
+faults the same way cannot be tested until the grammar can express its operands.
+The blob never emits it, so what a compiler needs to know is that it cannot be
+used as a texture fetch.
 
 ## 6. Export
 
@@ -285,8 +335,26 @@ Scalars BRA operation is used to jump to an arbitrary instruction. Following nou
 
 Branching is performed only if the instruction predicate test is positive. So use of "predicate - *" bits is mandatory for the branching instruction.
 
+Measured on hardware, with `BRAs 3` as the first instruction and an
+end-of-program instruction at 1 and 2:
+
+| predicate | result | reading |
+|:--|:--|:--|
+| `(eq)`, condition register 0 still at its start state (`=0`) | a vertex is drawn | the branch is taken: instructions 1 and 2 are skipped |
+| `(gt)`, same start state | `0x4C4C4C4C` (clear colour) | the branch falls through, the end-of-program instruction at 1 runs, nothing is drawn |
+
+So the branch is conditional on the predicate field, and it needs neither
+`condition check` (bit 109) nor a source operand. The predicate field keeps the
+meaning given in section 3.1: `(gt)(lt)` is the "not equal to 0" test the blob
+uses on its loop edges.
+
 ## 11. Functions
 Scalar instructions CAL and RET are used for the function calling and returning. Function call is essentially a branching operation with an instruction pointer being pushed to the stack. Return from the function is a branching to the address popped from the stack. Requirement of the predicate use is the same as for branching operation for both of CAL and RET operations, CAL's IADDR is embedded to the rC swizzle as well.
+
+Measured: a `CALs`/`RETs` pair - the callee writes a varying and returns - works
+on hardware (`tests/grate/asm/vs_function`), as does pushing and popping the
+address register around a call (`vs_stack`). Both are part of the regression
+suite.
 
 ## 12. Stack
 Stack is shared by the PUSHA/POPA and CAL/RET operations. Maximum depth of the stack is 8.
@@ -385,8 +453,12 @@ instruction index embedded in the `rC` swizzle field exactly as described under
 0x001f94004800000d8106c08080401ffc   scalop=9  preds=gt|lt  rC=..xxyx
 ```
 
-Never observed: vector `28..31`, scalar `17..18`, and `BRA`/`CAL`/`RET` - the
-compiler used BRI for both loop edges and called nothing.
+Never observed *in compiler output*: vector `25` and `28..31`, scalar `17..18`,
+and `BRA`/`CAL`/`RET` - the compiler used BRI for both loop edges and called
+nothing. Of those, `BRA`, `CAL` and `RET` do work when the assembler emits them
+(sections 10 and 11), and vector `25` stops the program (section 5.1); vector
+`28..31` and scalar `17..18` have no spelling in the grammar and remain
+untested.
 
 Two mechanics the output settles:
 
@@ -398,6 +470,9 @@ Two mechanics the output settles:
   carries `condition set` (bit 110) with `condition flags write enable`
   (bit 125) and a scalar write-mask, and the branch reads it back.
 
-Still unmeasured: the exact predicate semantics for the `gt|lt` combination
-(most likely "not equal to zero"), and whether a call (`CAL`) is emitted at all
-for GLSL functions - the compiler inlined everything tried so far.
+The predicate field is now measured rather than guessed: `gt|lt` is a real "not
+equal to zero" test (section 3.1), which is what the blob's loop edges use it
+for. Whether the blob ever emits a `CAL` for a GLSL function is still open - it
+inlined everything tried so far - but a compiler does not need it: inlining
+avoids the 8-entry stack (section 12) and the hardware call path offers nothing
+that a branch does not.

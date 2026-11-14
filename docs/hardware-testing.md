@@ -1211,3 +1211,121 @@ Five gotchas that produced misleading data during those sweeps:
   bad batch count still shows the reference value and the test says nothing. Only
   after a `kill` write does the update move behind the shader and depend on the
   `DW: store stencil` batch actually running ([[GR3D Registers]] 6.1).
+
+## Vertex predicates, branches and opcode 25
+
+The vertex side is read the same way as the fragment side: run the program with
+`fs_vs_tests.txt` as the fragment shader and `linker_vs_tests.txt` as the
+linker, so whatever the vertex program exports as `vcolor` arrives in the
+framebuffer, one varying component per byte:
+
+| varying component | x | y | z | w |
+|:--|--:|--:|--:|--:|
+| result byte | 0 | 1 | 2 | 3 |
+
+An export of `(0.25, 0.5, 0.75, 1.0)` therefore prints `0xFFBF7F40`, which fixes
+the byte order in one run. Two more values need no apparatus:
+
+* an export that never happens reads as `(0, 0, 0, 1)`, i.e. `0xFF000000`;
+* a program that never exports a position draws nothing and the readback is the
+  clear colour `0x4C4C4C4C`.
+
+The programs are run with the vertex program as the only component that changes:
+
+```
+GRATE_DUMP_RAW=1 ./tools/assembler --vs tests/grate/asm/vsx.txt \
+	--fs tests/grate/asm/fs_vs_tests.txt \
+	--lnk tests/grate/asm/linker_vs_tests.txt --result --testonly
+```
+
+`--result` prints the word at pixel (0,0); `GRATE_DUMP_RAW=1` also prints the
+instruction words, which is how the field values below were tied to the words
+that carry them (the predicate field is bits 106..108 of the 128-bit word, so in
+the dumped dword that holds bits 96..127 it is bits 10..12).
+
+### Predicate field sweep
+
+One program per field value, identical apart from the `(lt)`/`(eq)`/`(gt)`
+options on the last instruction: the varying is preloaded with `0.0`, condition
+register 0 is set to `(gt, eq, lt, gt)` from `c[1] = (0.5, 0.0, -0.5, 1.0)` with
+`condition set` and `condition flags write enable`, and the last instruction
+writes `1.0` on the components whose state passes. Each result byte is therefore
+"written" (`0xFF`) or "kept" (`0x00`).
+
+| field | options | `p.xyzw` | `p.wzyx` |
+|------:|:--|--:|--:|
+| 0 | none, with `cc` | `0x00000000` | - |
+| 1 | `(lt)` | `0x00FF0000` | `0x0000FF00` |
+| 2 | `(eq)` | `0x0000FF00` | `0x00FF0000` |
+| 3 | `(eq)(lt)` | `0x00FFFF00` | `0x00FFFF00` |
+| 4 | `(gt)` | `0xFF0000FF` | `0xFF0000FF` |
+| 5 | `(gt)(lt)` | `0xFFFF00FF` | `0xFF00FFFF` |
+| 6 | `(gt)(eq)` | `0xFF00FFFF` | `0xFFFF00FF` |
+| 7 | `(gt)(eq)(lt)` | `0xFFFFFFFF` | `0xFFFFFFFF` |
+
+The `p.xyzw` column reads back directly: `y` holds the `=0` state and is the only
+component written for field 2, `z` holds `<0` and is the only one for field 1, and
+`x` and `w` hold `>0` and are the two for field 4. The second column is the
+control for the swizzle: for fields 1, 2, 5 and 6 the written components move,
+and what moves with them is which state each destination component tests - so
+the field is a mask over the three comparison results and the swizzle chooses
+the state per component. Field 0 *with* `cc` writes nothing, while field 0
+without `cc` writes everything (`0xFFFFFFFF`), so bit 109 is the gate.
+
+`tests/grate/asm/vs_pred_le.txt`, `vs_pred_ne.txt` and `vs_pred_ge.txt` are the
+field 3, 5 and 6 programs and are in `asm_tests.sh` with the words above.
+
+### Branch taken and not taken
+
+`BRAs 3` as the first instruction, end-of-program instructions at 1 and 2, and
+the position export at 3:
+
+| predicate | result | reading |
+|:--|:--|:--|
+| `(eq)`, condition register 0 at its start state (`=0`) | a vertex is drawn | jumps to 3, so 1 and 2 are skipped |
+| `(gt)`, same start state | `0x4C4C4C4C` | falls through to the end-of-program instruction at 1, so nothing is drawn |
+
+The branch is therefore conditional and needs neither `condition check` nor a
+source operand. `vs_branch_notaken.txt` is the second row and is in
+`asm_tests.sh`.
+
+### Opcode 25 (`TXL`)
+
+An instruction with vector opcode 25 stops the program without writing anything:
+
+| program | result | reading |
+|:--|:--|:--|
+| `TXLv r63.xyzw` first, position export after it | `0x4C4C4C4C` | no vertex at all, so the export after it never ran |
+| `TXLv r0.xyzw` in the middle, then an export of `(0.25, 0.5, 0.75, 1.0)` | `0xFF000000` | that export never ran, and `0xFF000000` is an unwritten varying |
+| `TXLv r63.xyzw` with `export[7]`, after preloading the export with `(0.25, 0.5, 0.75, 1.0)` | `0xFFBF7F40` | the preload survived, so the instruction is dropped before it writes |
+
+`vs_txl.txt` in `asm_tests.sh` is the middle row. `TXLv` has no operands, so its
+sources stay at type 0 ("invalid/attribute"), which is why the abort fits case 1
+of [[Vertex Shader ISA]] section 5; a fully specified opcode 25 is not
+expressible in the grammar and stays untested.
+
+## Depth-format textures
+
+`GRATE_TEX_FORMAT=d16` binds a 16-bit linear depth surface as texture 0. The
+surface is filled from the CPU (gr2d has no known 16-bit fill) with four bands
+repeating across the columns - `0x0000`, `0x4000`, `0x8000`, `0xFFFF` - because
+`host1x_pixelbuffer_load_data` needs the data at the pixelbuffer's own pitch,
+which for `D16_LINEAR` is `width * 2`. `GRATE_TEX_ZERO` leaves the surface at
+zero instead, the same switch the block formats use.
+
+```
+GRATE_TEX_FORMAT=d16 ./tools/assembler --vs tests/grate/asm/filter_quad_vs.txt \
+	--fs tests/grate/asm/filter_quad_fs.txt \
+	--lnk tests/grate/asm/filter_quad_linker.txt --texture \
+	--vs_mat4 '["mvp"]=(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)' \
+	--fs_uniform '["lod_bias"]=0' --expected 0xDEADBEEF --testonly
+```
+
+The whole frame reads `0x00000000`, and so does the zeroed surface - the fill
+makes no difference, so the sampler is not reading the texels. The control is
+the same run on an RGB surface with `GRATE_TEX_ROWCOLOR=1`, which returns four
+row colours (`0x000000FF`, `0x0000FF00`, `0x00FF0000`, `0xFFFFFFFF`, 16384 pixels
+of each), so the coordinates, the filter and the destination registers are
+sound. What a `D16` descriptor does with the surface is therefore still open;
+all that is established is that it does not deliver its 16-bit texels through
+this path.

@@ -82,7 +82,7 @@ section 4.
 | 64..71 | condition registers, in pairs | 8 CRs, each holding two fx10 `0.0`/`1.0` |
 | 72 | `posx` | `8192 + frag.x` |
 | 73 | `posy` | `8192 + (height - 1) - frag.y` |
-| 74 | `cov` | primitive coverage; reads 0 on AR20 (see section 8.2) |
+| 74 | `cov` | primitive coverage; fx10 low half only - the fp20 read returns 0 (section 5.8) |
 | 75 | `pface` | polygon face |
 | 76 | kill | write non-zero to discard |
 
@@ -525,11 +525,23 @@ driver's vertex program (`vs_mov`) copies attributes to the exports and
 assembler's own quad is clockwise in screen space, so before the geometry could
 be mirrored only one winding had ever been sampled.
 
-Coverage (`r74.l`) reads `0x33` for the harness quad in both windings. Whether
-that is a 4-bit primitive mask widened to `0x33`, or the fragment's subpixel
-position within the quad, is not established: the constant is the same for every
-pixel of the frame and for both windings, and no experiment has yet varied the
-primitive shape at pixel granularity.
+**Coverage is a constant on AR20.** `cov.l` / `r74.l` reads `0x33` - exactly 51
+in the fx10 low half, since `(x2)` returns `0x66` and `(/2)` returns `0x1A`
+(25.5, rounded) - for every fragment in every shape tried:
+
+| variation | coverage byte |
+|:--|:--|
+| full-frame quad, both windings | `0x33` |
+| quad translated by 0.25, 0.5 and 0.75 px | `0x33`; at 0.5 px and above the boundary column drops to the clear colour instead of being shaded partially |
+| quad scaled to a quarter of the frame | `0x33` |
+| quad rotated 20, 30 and 45 degrees | `0x33`, with 8088 / 10124 / 11246 pixels left uncovered |
+
+AR20 therefore does not expose a per-fragment coverage mask through register 74:
+a primitive edge that crosses a pixel centre either shades the fragment with
+`0x33` or does not shade it at all. The value behaves like a fixed constant the
+shader unit supplies, so nothing that wants a real coverage mask - alpha to
+coverage, per-sample effects - has a source for it. The earlier "coverage reads
+0" was the fp20 access form, not the hardware.
 
 ### 5.9 Operands rA, rB and rC
 
@@ -591,7 +603,7 @@ Patents:
 | 64..71 | condition registers     |
 |     72 | fragment x-position     |
 |     73 | fragment y-position     |
-|     74 | primitive coverage (reads 0 on AR20) |
+|     74 | primitive coverage, readable as `cov.l` only (section 5.8) |
 |     75 | polygon face            |
 |     76 | kill (discard) fragment |
 
@@ -1427,11 +1439,20 @@ pair. Bit 14 is not the projective divide of NV30 either: with the R coordinate
 at 2.0 the result is unchanged whether bit 14 is set or clear, whereas a divide
 would halve `s`. The sweep is `probe_tex_unknown.sh`.
 
-"Inert" is scoped to what the driver can bind: `GRATE_TEX_FORMAT` accepts only
-`RGBA8888`, `dxt1` and `etc1`, all as linear 2D surfaces, so nothing here covers
-a cube map, a depth surface used as a texture or a shadow sampler. Those texture
-types have no binding path in the test driver, which is a limit of the harness
-rather than a statement about the bits.
+"Inert" is scoped to what the driver can bind: `GRATE_TEX_FORMAT` accepts
+`RGBA8888`, `dxt1`, `etc1` and `d16`, all as linear 2D surfaces, so nothing here
+covers a cube map or a shadow sampler. Those two have no binding path in the test
+driver, which is a limit of the harness rather than a statement about the bits.
+
+A depth surface *can* be bound (`GRATE_TEX_FORMAT=d16`, a 16-bit linear surface
+filled from the CPU with four bands `0x0000`, `0x4000`, `0x8000`, `0xFFFF`), and
+it samples as **zero in every component**: the whole frame reads `0x00000000`,
+and so does an all-zero fill of the same surface. The RGBA path over the same
+coordinates and the same fragment program returns four distinct row colours, so
+the coordinates, the filter settings and the destination registers are not the
+cause. Whatever the sampler does with a `D16` descriptor, it is not reading the
+surface's 16-bit texels; whether some other descriptor combination reaches them
+is open. The measurement is in [[Hardware Testing]] "Depth-format textures".
 
 ### 7.1 Coordinate and LOD register selection
 

@@ -237,6 +237,49 @@ static int parse_command_line(struct vs_asm_test *test, int argc, char *argv[])
 }
 
 /*
+ * Depth-format test texture: a 16-bit linear depth surface, filled from the CPU
+ * because gr2d has no fill path for it that is known to write 16-bit texels.
+ * Four bands (0x0000, 0x4000, 0x8000, 0xFFFF) repeat across the columns, so the
+ * sampler's conversion is readable from a single frame: a band shows up as a
+ * distinct colour, and a nearest filter keeps the bands sharp.
+ */
+static int upload_depth_texture(struct grate *grate,
+				struct grate_texture *tex,
+				unsigned width, unsigned height)
+{
+	static const uint16_t band[4] = { 0x0000, 0x4000, 0x8000, 0xFFFF };
+	unsigned pitch = tex->pixbuf->pitch, x, y;
+	uint16_t *data;
+	int err;
+
+	if (pitch < width * 2)
+		return -1;
+
+	data = calloc(height, pitch);
+	if (!data)
+		return -1;
+
+	/* GRATE_TEX_ZERO leaves the surface at zero, the same switch the block
+	 * formats use, to separate "the sampler read my data" from "it reads a
+	 * constant". */
+	if (!getenv("GRATE_TEX_ZERO")) {
+		for (y = 0; y < height; y++) {
+			for (x = 0; x < width; x++)
+				data[y * (pitch / 2) + x] =
+					band[(x * 4 / width) & 3];
+		}
+	}
+
+	err = host1x_pixelbuffer_load_data(grate->host1x, tex->pixbuf, data,
+					   pitch, height * pitch,
+					   PIX_BUF_FMT_D16_LINEAR,
+					   PIX_BUF_LAYOUT_LINEAR);
+	free(data);
+
+	return err;
+}
+
+/*
  * Block-compressed test textures.
  *
  * The sampler has no pitch field (docs/hardware-testing.md), so it walks rows
@@ -582,13 +625,17 @@ int main(int argc, char *argv[])
 				fmt = PIX_BUF_FMT_DXT1;
 			else if (!strcmp(fmt_env, "etc1"))
 				fmt = PIX_BUF_FMT_ETC1;
+			else if (!strcmp(fmt_env, "d16"))
+				fmt = PIX_BUF_FMT_D16_LINEAR;
 			else {
 				fprintf(stderr, "unknown GRATE_TEX_FORMAT \"%s\"\n",
 					fmt_env);
 				return 1;
 			}
 
-			if ((tex_w & 3) || (tex_h & 3)) {
+			/* only the block formats are laid out in 4x4 blocks */
+			if (fmt != PIX_BUF_FMT_D16_LINEAR &&
+			    ((tex_w & 3) || (tex_h & 3))) {
 				fprintf(stderr, "GRATE_TEX_FORMAT needs multiples of 4\n");
 				return 1;
 			}
@@ -612,6 +659,14 @@ int main(int argc, char *argv[])
 
 		if (fmt == PIX_BUF_FMT_RGBA8888) {
 			if (setup_rgba_texture(grate, tex, tex_w, tex_h, test.mipmap))
+				return 1;
+		} else if (fmt == PIX_BUF_FMT_D16_LINEAR) {
+			if (test.mipmap) {
+				fprintf(stderr, "GRATE_TEX_FORMAT has no mipmap path\n");
+				return 1;
+			}
+
+			if (upload_depth_texture(grate, tex, tex_w, tex_h))
 				return 1;
 		} else {
 			/* gr2d cannot fill a block-compressed surface */
