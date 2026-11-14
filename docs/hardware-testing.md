@@ -128,6 +128,65 @@ error`), even though they are separate hardware units. Two consequences:
 
 ## Raw instruction-word experiments
 
+The bit fields no mnemonic can reach are swept one bit at a time with raw words.
+Three sweeps close the remaining "unknown" ranges of the fragment ISA, and each
+is only trusted together with its controls, because a bit sweep on an insensitive
+sample reports every bit as inert:
+
+| probe | word | control that proves the sample is sensitive | result |
+|:--|:--|:--|:--|
+| `probe_pseq_fetch.sh` | PSEQ fetch `0x00810008` | batch 0 and batch 1 leave different values in `r0/r1` | bits 3 and 23 both required, bit 24 must be clear; 20..22, 25..31 inert |
+| `probe_pseq_bits.sh` | PSEQ fetch | same round trip | bits 4..15 inert |
+| `probe_tex_unknown.sh` | TEX sample `0x00001420` | bit 4 and bit 5 flips, and `s = 0.1`, all change the result | bits 6..9, 11, 14..31 inert for a 2D colour texture |
+| `probe_dw_high.sh` | DW `0x00028001` | the payload reads back as `0x4C4C4C4C` | bits 18..31 inert on the colour target |
+| `probe_dw_high_surfaces.sh` | DW depth `0x00010001`, stencil `0x00020409` | the base words store `0x300C` and `0x7F` | bits 18..31 inert on both |
+| `probe_mfu_unknown.sh` | MFU word `0x104006D0`/`0x00000000` | mul0 sources 0..3 reproduce `r0..r3` (`0x1A`, `0x33`, `0x4D`, `0x66`) | pad bits 28..31 inert; sources 4..9/14/15 are neither row nor global registers |
+| `probe_mfu_globals.sh` | same | globals primed and cleared give different source values if 4..7 alias them | 4..7 are byte-identical either way, so they do not |
+
+The MFU and payload probes also show two traps. Priming with `.lh` leaves a
+value-dependent residue byte, which made a first MFU run report a constant
+`0xEB` in a byte that had nothing to do with the multiplier - prime with `.l*`
+and store single halves when the question is *where* a value lands. And the
+colour payload order is `r2.lo`, `r2.hi`, `r3.lo`, `r3.hi` in bytes 0..3, which
+an earlier `store rt3` run had backwards because the coverage target drops that
+register pair entirely.
+
+The PSEQ sweep needs a round trip rather than a readback, because a fetch that
+does nothing and a fetch that returns zero both leave zeros in the destination
+registers: the program stores a known value in batch 0, overwrites the registers
+in batch 1 without storing, then fetches and stores in batch 2. A working fetch
+reproduces batch 0's byte pattern, a dead word reproduces batch 1's.
+
+`scripts/grate-probe.sh` is the one-draw driver these probes share. It ships the
+command as a script instead of pasting it into the ssh line, since argument
+values like `--vs_mat4 '["mvp"]=(1,0,...)'` do not survive two layers of
+quoting. It takes `VS_FILE=<path>` to override the vertex program, and
+`--expected 0x...` to force a full frame dump instead of one pixel.
+
+**`--vs_mat4` does nothing with the default vertex program.** `vs_mov` copies the
+attribute to the export and never touches the matrix, so a probe that mirrors or
+scales the draw silently runs the default geometry; only `filter_quad_vs` (which
+multiplies by `c[0..3]`) applies it. Combined with `--expected`, that is how to
+tell "the shader produced this" from "the geometry never covered the pixel".
+
+**`GRATE_FRONT_CW=1`** calls `grate_3d_ctx_set_front_direction_is_cw(ctx, true)`
+instead of `false`. It changes the *state*, so it only exercises things that read
+the state - one-sided stencil, culling - and **it does not change what the
+fragment program sees in register 75**; that register carries the raw winding.
+
+To exercise the opposite winding, mirror the geometry: `VS_FILE` set to
+`filter_quad_vs` (the only vertex program that applies `mvp`) with
+`--vs_mat4 '["mvp"]=(-1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)'`. The same pixels are then
+covered by an oppositely wound triangle, which is the only way to observe a bit
+that follows the primitive rather than the state.
+
+**Read special registers through the half they live in.** Registers 74 and 75
+have no fp20 read - `pface`, `cov`, `r74` and `r75` all return `0` - and must be
+written `pface.l` / `cov.l`. Registers 72 and 73 have an fp20 read, but the value
+sits in the high half (`r72.h`, not `r72.l`). A probe that reads the wrong half
+reports a constant zero, which looks exactly like a register the hardware does
+not drive.
+
 `tools/assembler` takes `--result`, which always prints the result word:
 
 ```
@@ -570,6 +629,259 @@ Two habits worth keeping:
   tile, which is why an apparent linear ramp read off that dump has the wrong
   slope. The word for pixel `(x, y)` is
   `(y / 16 * (width / 16) + x / 16) * 256 + (y % 16) * 16 + x % 16`.
+
+## Behaviour tests (`tests/grate/asm_behavior.sh`)
+
+`asm_tests.sh` asserts expected pixels; this runner is the characterisation tool
+next to it. It changes one variable per draw and records what came back, because
+the question it answers is "what does the hardware do if I change this" rather
+than "does it still match".
+
+```
+$ cd ~/build/grate
+$ GRATE_ASSEMBLER=$HOME/build/grate/tools/assembler \
+  GRATE_ASM_DATA=$HOME/build/grate/tests/grate/asm \
+      meson devenv -C . sh asm_behavior.sh -l /tmp/behavior.log
+```
+
+From inside the tree (`tests/grate/asm_behavior.sh`) the two variables are
+unnecessary - it resolves the assembler exactly like `asm_tests.sh`. `-l -`
+prints without logging, and naming a case limits a run to one experiment
+(`sh asm_behavior.sh dw_class`), so a follow-up question costs one draw per
+variant instead of the whole set.
+
+Every row is `case`, `variant`, `observation`, `interpretation` in separate
+columns, and the log opens with what is needed to reproduce the run: date,
+`uname`, the SoC line the assembler reports, the assembler's build date and the
+source revision. A new log starts with a **control** run of the shipped
+`fs_vs_tests.txt` (must print `0xFF01FF00`); without that row the rest cannot be
+told apart from a board whose constant path has died, which is a failure mode
+that already cost a day here.
+
+Cases: `dw_index`, `dw_class`, `dw_class_bind`, `dw_bit14`, `dw_spill`,
+`dw_spill_payload`, `dw_spill_wide`, `dw_spill_slot`, `dw_mrt`, `pseq_fetch`,
+`alu_cond`, `alu_precision`. The DW cases bind depth,
+coverage and stencil together (`GRATE_DEPTH`, `GRATE_COVERAGE`, `GRATE_STENCIL`,
+`GRATE_STENCIL_TEST`) so one run says which target a store reached instead of
+needing one run per surface; `dw_class_bind` instead varies *which* surfaces are
+bound, and `dw_spill` / `dw_mrt` bind only index 4 or 5 (`GRATE_RT4`,
+`GRATE_RT5`).
+
+### Baseline from the first run
+
+`store rtN, r0, r1` with `r0 = 0.25`, `r1 = 0.5`, all surfaces bound:
+
+| variant | colour | depth | coverage | stencil |
+|:--|:--|:--|:--|:--|
+| `rt0` | clear `4C4C4C4C` | `2000` | `00000000` | `7F` |
+| `rt1` | `007F0040` | `8000` | `00000000` | `7F` |
+| `rt2` | clear | `8000` | `00000000` | `40` |
+| `rt3` | clear | `8000` | `007F0040` | `7F` |
+
+`rt2` writing `40` rather than `7F` is the expected result of not using the
+`stencil write` bit (bit 10): the surface keeps the position-shaped value the
+stencil section describes, so the row displays a trap rather than a stored value.
+
+Other rows from the same run, and what they pin down: class 3 drops on colour and
+coverage while 0, 1 and 2 write; bit 14 turns the payload into zeros on colour
+and coverage and leaves depth at `8000`; `PSEQ: load rt3, r0, r1` returns
+`00FF00BF` (the stored surface) where the un-fetched control returns `007F0040`
+(the primed registers); `(gt)` leaves `r2` at the earlier batch's value for
+`u0 = 0` and takes `u0` for `u0 = 1`; `.l*` versus `.lh` on the same `0.25` gives
+`00400040` versus `E700E700`.
+
+**Class 1 is enabled by a bound depth surface**, and `dw_class_bind` is the
+matrix that says so - `store rt3, r0, r1 class 1` on the coverage target with
+everything but the binding held fixed:
+
+| bound | `cov3` |
+|:--|:--|
+| coverage | `00000000` - dropped |
+| coverage + depth | `007F0040` - written |
+| coverage + stencil | `00000000` - dropped |
+| coverage + depth + stencil | `007F0040` - written |
+| class 2 control, both bindings | `007F0040` |
+
+So the field is neither a type tag (the write lands on rt3) nor an index filter
+(it is the *binding*, not the target, that decides). That is what the class field
+is written up as in [[Fragment Shader ISA]] 8.2.
+
+Two design traps this cost, both worth remembering when adding a case:
+
+* **a fetch test must make the surface differ from the registers.** The first
+  version stored the primed registers to `rt3` and fetched them back, so fetch
+  and no-fetch printed the same word and the test proved nothing. It now stores
+  `0.75 / 1.0` to the surface in one batch and re-primes `r0/r1` with
+  `0.25 / 0.5` before the fetch;
+* **a conditional write needs a value already in the destination.** Writing `r2`
+  under `(gt)` says nothing unless an earlier batch put a different value there,
+  otherwise "false" and "true" both read whatever the register held;
+* **a zero surface cannot show a write of zeros.** The first `dw_spill` rows
+  called mode 3 bit 10 inert because the spill surface read `nz = 0`; on a
+  freshly allocated surface that means "no nonzero data anywhere", not "no
+  write". Filling the surface with a nonzero word in an earlier batch turned the
+  same word into `wf = EF000000` - the low half overwritten with zero. The cost
+  of the fix is that `nz` then saturates at 65536, so the prefill rows cannot see
+  a *nonzero* write away from word 0.
+
+### Second run: spill halves, index 5 and the class matrix
+
+| case / variant | readback |
+|:--|:--|
+| `dw_spill` mode 1 `0x00028011`, `0.75/0.5` | `rt4 = EF00F300`, `nz = 65536` |
+| prefill + mode 2 slot 0 `0x00028012` | `wf = EF00F300` - untouched |
+| prefill + mode 2 bit 12 `0x00029002` | `wf = EF00F300` - untouched, with and without `GRATE_RT_LIMIT=1` |
+| prefill + mode 3 bit 10 `0x00028403` | `wf = EF000000` - low half zeroed |
+| prefill + mode 3 bit 11 `0x00028803` | `wf = 00F4F300` - high half written |
+| prefill + mode 3 bits 10+11 `0x00028C03` | `wf = 00F40000` - both halves |
+| `dw_mrt` control `store rt1` | `rt5 = 00000000` |
+| `dw_mrt` `store rt5, 0.75/0.5` | `rt5 = EF00F300` |
+| `dw_mrt` `store rt5, 0.25/0.5` | `rt5 = EF00E700` - follows the payload |
+| `dw_mrt` `store rt5 ... class 1` | `rt5 = 00000000` |
+| `dw_mrt` store, re-prime, `PSEQ load rt5` | colour `F700F300` = `rt5`, not the primed `00400040` |
+
+Two of these retract statements in [[Fragment Shader ISA]] 8.2, and both are
+cases where the earlier probe's readout could not see the answer:
+
+* **index 5 does receive a store.** Bound and enabled through the path a draw
+  uses, `store rt5` fills the surface and a `PSEQ` fetch of index 5 returns those
+  words. The earlier negative poked `RT_PARAMS`/`RT_ENABLE` by hand; the store
+  path was never the problem.
+* **mode 3 bits 10 and 11 are the two halves of one spill word**, bit 10 the low
+  half and bit 11 the high half, each holding a different representation of the
+  register - see the third run below. Bit 10 commits zero for an fp20 payload, so
+  only the prefill rows can see it.
+
+### Third run: the two halves of a spill word, and where it lands
+
+`dw_spill_payload` holds the prefill fixed and sweeps priming precision against
+value; `dw_spill_wide` dumps the whole 65536-word surface, so it needs no prefill
+and reports how many words were written and where.
+
+| case / variant | readback |
+|:--|:--|
+| `dw_spill_payload` `.lh` `0.25`, bit 10 | `wf = EF000000` - low half zero |
+| `dw_spill_payload` `.l*` `0.25`, bit 10 | `wf = EF000040` |
+| `dw_spill_payload` `.l*` `1.5`, bit 10 | `wf = EF000180` - no clamp at 1.0 |
+| `dw_spill_payload` `.l*` `2.0`, bit 10 | `wf = EF0001FF` - saturated |
+| `dw_spill_payload` `.lh` `0.25`, bit 11 | `wf = 00E8F300` |
+| `dw_spill_payload` `.lh` `2.0`, bit 11 | `wf = 0100F300` |
+| `dw_spill_payload` `.l*` `0.5`, bit 11, prefill `0.25` | `wf = 00E8E700` |
+| `dw_spill_payload` `.l*` `0.5`, bit 11, prefill `1.0` | `wf = 00F8F700` |
+| `dw_spill_wide` mode 1 control | 65536 words, `0..65535` |
+| `dw_spill_wide` `0x00028403` | 38 words, `0..148` |
+| `dw_spill_wide` `0x00068403` (bit 18) | 38 words, `128..276` |
+| `dw_spill_wide` `0x000A8403` (bit 19) | 38 words, `256..404` |
+| `dw_spill_wide` `0x00228403` (bit 21) | 38 words, `1024..1172` |
+| `dw_spill_wide` `0x00029002` (mode 2 bit 12) | 152 words, `1280..1431` |
+| `dw_spill_wide` `0x00028012` (mode 2 bit 4) | 0 words |
+
+What that settles:
+
+* the spill word holds **two representations of one register**: fp20 in the high
+  half, 8-fractional-bit fixed point in the low half. Writing a register in one
+  precision leaves the other half stale, which is why an `.lh` payload writes zero
+  low and an `.l*` payload leaves the high half at the last fp20 value - `0.75`
+  in the first runs, `0.25` and `1.0` when the prefill was changed to match;
+* the fixed-point half saturates at `0x1FF` (`2.0`), so "no clamp at 1.0" is right
+  only up to `1.5`;
+* mode 2 bit 12 (`152 words from word 1280`) **does** reproduce, contiguously.
+
+The cost of that last point is the same trap in a new dress: the prefill that
+makes a zero write visible also fills all 65536 words, so `nz` saturates and
+`first` becomes 0 - the row then says "written" but not *where*. The
+whole-surface dump answers "where" and cannot see a zero write. Neither readout is
+the general one: prefill for zeros, dump for offsets, and keep both cases. The
+first `dw_spill_wide` attempt did the opposite and measured `written=0` on every
+row, because the `.lh` payload writes zero and a nonzero scan cannot see that.
+
+### Fourth run: the slot field, and what a spill word keeps
+
+`dw_spill_slot` primes all four row registers as fx10 and walks the even slot
+bits against the whole-surface dump; `dw_spill_payload` gained the values that
+separate the fp20 fields.
+
+| case / variant | readback |
+|:--|:--|
+| `dw_spill_slot` mode 1 control | 65536 words, `0..65535` |
+| slot 0 (bit 10) `0x00028403` | 38 words, `0..148`, `word0 = 00000040` (r0) |
+| slot 2 (bit 12) `0x00029003` | 38 words, `1..149`, `word0 = 00000080` (r1) |
+| slot 4 (bit 14) `0x0002C003` | 38 words, `2..150`, `word0 = 000000C0` (r2) |
+| slot 6 (bit 16) `0x00038003` | 38 words, `3..151`, `word0 = 00000100` (r3) |
+| `dw_spill_payload` `.lh` `0.5625` | `wf = 00F1F300` |
+| `dw_spill_payload` `.lh` `-0.25` | `wf = 02E8F300` |
+| `dw_spill_payload` `.lh` `3.0` | `wf = 0104F300` |
+| `dw_spill_payload` `.l*` `2.0` | `wf = EF0001FF` - saturated |
+| `dw_spill_payload` `.l*` `-0.25` | `wf = EF0003C0` - `1024 - 64` |
+
+What that settles:
+
+* **a spill packet is four words, one per row register, and a mode-3 spill fills
+  one half-word of it** - bits 10/12/14/16 are the low halves of words 0..3 and
+  11/13/15/17 the high halves. That is where the stride of four comes from;
+* **the low half is the register's fx10 content**, which the negative value pins
+  down: `-0.25` writes `0x3C0 = 1024 - 64`, a 10-bit two's-complement field, and
+  that is also why `2.0` saturates at `0x1FF` instead of `0x200`;
+* **the high half is not the fp20 word**: it is `8*exponent + top 3 mantissa
+  bits` with the sign in bit 9 (`0.5625` -> `0x71`, `0.625` -> `0x72` via
+  `0x00F1`/`0x00F2`, `3.0` -> `0x104`, `-0.5` -> `0x02F0`). Ten significand bits
+  are dropped, so the previous "exactly the fp20 encoding" was one step too
+  strong.
+
+Two more traps, both the same family as the earlier ones:
+
+* **an undefined half looks like data.** After an `.l*` write the fp20 half is
+  read back as `0xFA`..`0xFE` depending on the fragment - nonzero, varying, and
+  entirely meaningless. Any high-half value measured after an fx10 write has to
+  be discarded, which is why `dw_spill_slot` sweeps only the even bits;
+* **a slot index is not an offset.** Mode 3 writes one half-word of the packet
+  and strides by four; mode 2 writes the same half-word four times contiguously
+  and starts at word 1280. The two modes agreeing on the value but not on the
+  layout is what made the first, prefill-based sweep read as noise.
+
+## DW field sweep across the surfaces
+
+`probe_dw_fields.sh` runs the single-bit experiment on five destinations at once -
+colour with each source pair, depth, the stencil late-update word and coverage -
+flipping bits 6..14 and 18..31 and setting the class field to 0..3. The DW word is
+found by diffing the program's raw stream against the same program with `DW: nop`,
+so the probe never depends on a hand-decoded field position, and every row is
+written to a TSV as `target, base_word, op, value, word, readback`.
+
+Base words measured on the board (payload `r0 = 0.25, r1 = 0.5, r2 = 0.75`,
+`r3 = 1.0`, all four written to both halves in two ALU batches, store in a third):
+
+| target | base word |
+|:--|:--|
+| colour 0, `r2/r3` | `0x00028005` |
+| colour 0, `r0/r1` | `0x00020005` |
+| depth, `class 1` | `0x00010001` |
+| stencil | `0x00020409` |
+| coverage | `0x0002000D` |
+
+Results: bits 6..9, 11..13 and 18..31 are inert on all five; bit 14 zeroes the
+payload on colour and coverage and does nothing on depth; class 3 drops the store
+on all five, class 0 and 2 always write, and class 1 writes on depth and colour
+but drops on stencil and coverage (one coverage run with a depth surface also
+bound accepted it, so that row is the one loose end). On index 2 the
+`stencil write` bit (bit 10) is what commits a real stencil value: without it the
+surface reads `40`, the position-shaped garbage that section
+"Depth buffer readback" already warns about, for every class but 3. The depth payload reads
+`0x300C` for `0.75`, which is the documented `lo * 0x10 | hi * 0x4000`
+superposition. The full tables are in [[Fragment Shader ISA]] 8.2 and 12.5.
+
+Two things this probe cost, both worth checking in any future sweep:
+
+* **`grep ... | sed ...` reports a missing match as an empty field.** The first
+  run's coverage block produced no `cov3:` line at all (that block's rows are
+  blank in the TSV) and the probe recorded it as an empty readback instead of a
+  failure, because the pipeline's exit status is `sed`'s and `sed` succeeds on
+  empty input. Capture the match in a variable and test it, or a block that never
+  ran is indistinguishable from a block that wrote nothing;
+* **a single-run class column is not data.** One sweep row reported `class 1` on
+  rt1 as untouched while the same cell wrote on two later repeats, which is how
+  the "class 1 = depth" reading survived as long as it did. Repeat any cell whose
+  result contradicts the model before recording either outcome.
 
 ## `alu_buffer_size`: the count has to be multiplied, and batches rotate over rows
 

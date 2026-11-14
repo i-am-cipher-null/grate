@@ -529,6 +529,17 @@ not the per-slot opcode complement one might expect from the name.
 The render-target addresses are not here; they are at `0xe00 + i`, and the
 surfaces' formats and pitches at `0xe10 + i`.
 
+**`RT_ENABLE` also gates class-1 `DW` stores.** A class-1 word is dropped on every
+target while no depth surface is bound, and writes normally to whatever index it
+names once one is: `store rt3, r0, r1 class 1` on the coverage target reads
+`00000000` with coverage bound alone and `007F0040` with a depth surface also
+bound, reproducibly (`tests/grate/asm_behavior.sh dw_class_bind`). Class 0 and 2
+stores are indifferent to the binding. Whether the gate is enable bit 0 or the
+`DEPTH_BUFFER` bit 16 - or simply a valid `RT_PTR(0)` - was not separated. So the
+field is a validity gate on the depth datapath, not a surface selector, which is
+why a class column measured with only a colour target bound reports every
+non-depth index as "dropped" ([[Fragment Shader ISA]] 8.2).
+
 ## 11. Fragment data cache, FDC (`0xa00`..`0xa0c`)
 
 | Addr | Name | Status | Fields / notes |
@@ -872,15 +883,16 @@ names them:
   (565 only reachable through index 5) does not apply: `RT_PARAMS(1)` takes a
   format word like any other parameter.
 * **Indices 5..15 of the render-target arrays** (`0xe05`.., `0xe15`..) are
-  addressable and enable-able, but index 5 takes no `DW` store even when given the
-  exact params word, enable bit and limit register a working target uses (see
-  [[Fragment Shader ISA]] 8.2), and nothing ever writes 6..15. The working set on
-  AR20 is 0..4; whether later chips implement the rest is unknown. A command-stream
-  dump shows index 5 otherwise programmed exactly like a working target
-  (`RT_PARAMS(5) = 0x00040034`: RGBA8888, pitch 1024, linear) with `RT_ENABLE =
-  0x22`, and the only field that differs from the colour target is bit 26, which
-  is `RT_PARAMS.TILED` (`0x04000000` in `tgr_3d.xml.h`) - so the block is not a
-  programming mistake.
+  addressable and enable-able, and **index 5 does take a `DW` store** when it is
+  bound and enabled the way a draw binds it - `store rt5` fills the surface and a
+  `PSEQ` fetch of index 5 returns those words ([[Fragment Shader ISA]] 8.2,
+  `tests/grate/asm_behavior.sh dw_mrt`). The earlier "takes no store" result came
+  from programming the slot out of a command-stream dump instead of through the
+  binding, so it measured the register values rather than the datapath. Nothing
+  observed writes 6..15, so the working set on AR20 is 0..5 as far as measurement
+  goes. The dump that started this (`RT_PARAMS(5) = 0x00040034`: RGBA8888, pitch
+  1024, linear, `RT_ENABLE = 0x22`, bit 26 = `RT_PARAMS.TILED`) is still a useful
+  record of what a real draw programs.
 * **`TEXTURE_DESC1` bits 5..7, 13..26 and 30..31, and `TEXTURE_DESC2` bits 0..5**:
   no field name exists in `tgr_3d.xml.h` for any of them and no measurement has
   given them an effect. The named fields, the `NOT_POW2_DIMENSIONS` and

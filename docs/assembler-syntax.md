@@ -430,9 +430,9 @@ ALU registers:
 - lp - the low-precision vec2 register, hardware register 31
 - crN - condition register, N is 0..15 (stored in pairs, so `cr0`/`cr1` share one hardware register)
 - kill - discard register, hardware register 76; write-only, any non-zero value discards the fragment
-- posx / posy - fragment position, hardware registers 72 and 73
-- pface - polygon face, hardware register 75
-- cov - primitive coverage, hardware register 74; reads 0 on AR20
+- posx / posy - fragment position, hardware registers 72 and 73; readable as fp20 or per half, value in the high half
+- pface - polygon face, hardware register 75; **fx10 only**, readable as `pface.l`
+- cov - primitive coverage, hardware register 74; **fx10 only**, readable as `cov.l`
 
 `rN` with N above 15 names the register file by hardware number as well, so
 `r16`..`r23` are the general purpose registers, `r24`..`r27` the ALU result
@@ -445,7 +445,7 @@ without a mnemonic, and `cov` is simply a spelling of `r74`.
 - crN - Condition register, N is 0..15
 - posx - Fragment position X + 8192.0
 - posy - 8192.0 + (target height - 1) - Fragment position Y
-- pface - Polygon face direction
+- pface - Polygon face: 1.0 for one screen-space winding, 0.0 for the other; the raw winding bit, not pre-compared against the front-direction state. Registers 74 and 75 have no fp20 read (it returns 0), so a bare `pface`/`cov` assembles to the low half and `.h` is a parse error.
 - rB / rC - Only applicable to the rD. The rD source is a copy of either ALU source register rB or rC.
 - kill - discard the fragment
 

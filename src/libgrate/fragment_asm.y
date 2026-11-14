@@ -1340,15 +1340,26 @@ ALU_REG:
 		 * register file by hardware number: 16..23 globals, 24..31 ALU
 		 * latches, 64..71 condition registers, 72..75 the per-fragment
 		 * specials (posx, posy, coverage, pface). A source read of a
-		 * special register is legal; writing one is not. */
+		 * special register is legal; writing one is not.
+		 *
+		 * 74 and 75 are fx10-only: the fp20 read returns 0 on hardware, so a
+		 * bare access is the low half rather than a read of nothing. 72 and
+		 * 73 keep their fp20 read, which saturates. */
 		if ($1 > 75) {
 			PARSE_ERROR("Invalid row reg, should be 0..75");
 		}
 
+		if (($1 == FRAGMENT_COVERAGE_REG || $1 == FRAGMENT_POLYGON_FACE) &&
+		    $2.lowp.enable && $2.lowp.high) {
+			PARSE_ERROR("Registers 74 and 75 are fx10-only, use .l");
+		}
+
 		memset(&yyval.alu_reg, 0, sizeof(yyval.alu_reg));
 		yyval.alu_reg.index = FRAGMENT_ROW_REG($1);
-		yyval.alu_reg.lowp.enable = $2.lowp.enable;
-		yyval.alu_reg.lowp.high = $2.lowp.high;
+		yyval.alu_reg.lowp.enable = ($1 == FRAGMENT_COVERAGE_REG ||
+					   $1 == FRAGMENT_POLYGON_FACE) ? 1
+									  : $2.lowp.enable;
+		yyval.alu_reg.lowp.high = 0;
 		yyval.alu_reg.absolute = 0;
 		yyval.alu_reg.minus_one = 0;
 		yyval.alu_reg.rD = 0;
@@ -1462,13 +1473,20 @@ ALU_REG:
 		yyval.alu_reg.rD = 0;
 	}
 	|
-	T_POLIGON_FACE
+	T_POLIGON_FACE ALU_SRC_FLOAT_TYPE
 	{
+		/* The face lives in the fx10 low half (docs/fragment-shader-isa.md
+		 * 5.8); the fp20 read of register 75 is always 0, so a bare `pface`
+		 * means `pface.l` and `.h` is rejected. */
+		if ($2.lowp.enable && $2.lowp.high) {
+			PARSE_ERROR("pface is fx10-only, use pface.l");
+		}
+
 		memset(&yyval.alu_reg, 0, sizeof(yyval.alu_reg));
 		yyval.alu_reg.index = FRAGMENT_POLYGON_FACE;
 		yyval.alu_reg.absolute = 0;
 		yyval.alu_reg.minus_one = 0;
-		yyval.alu_reg.lowp.enable = 0;
+		yyval.alu_reg.lowp.enable = 1;
 		yyval.alu_reg.lowp.high = 0;
 		yyval.alu_reg.rD = 0;
 	}

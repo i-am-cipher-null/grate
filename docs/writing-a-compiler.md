@@ -236,13 +236,13 @@ Four things a backend has to know:
   5 = colour 1, the blob's `SURF_OUT1`);
 * **one DW per batch**, so each extra target costs a whole batch against a
   64-batch budget;
-* **on AR20 index 5 accepts the store and writes nothing.** All five targets can
-  be enabled and parameterised at once (`RT_ENABLE` = `0x0001002f`), and the
-  index-5 surface still stays zero over six variants, including one with
-  `RT_PARAMS(5)` copied from a working colour word ([[GR3D Registers]] 14.3,
-  [[Fragment Shader ISA]] 8.2). AR20 is a GL ES 2.0 part, where `gl_FragData`
-  with an index above 0 does not exist, so a backend for it should refuse MRT
-  rather than spend a batch emitting the word;
+* **index 5 does receive the store.** Measured through the binding a draw uses,
+  a `store rt5` fills the surface and a `PSEQ` fetch of index 5 reads it back
+  ([[Fragment Shader ISA]] 8.2); the earlier "accepts the store and writes
+  nothing" came from poking `RT_PARAMS(5)`/`RT_ENABLE` by hand. AR20 is still a
+  GL ES 2.0 part, where `gl_FragData` with an index above 0 does not exist, so a
+  backend can keep refusing MRT - but that is now an API decision rather than a
+  hardware limitation;
 * **the blob compiles the write anyway, with 0 errors**, so a driver must gate
   `gl_FragData[n]` itself instead of assuming the compiler reports it.
 
@@ -557,22 +557,20 @@ Missing for a complete backend:
 * **blending** - there is no blend instruction; blending is fixed-function and
   lives in the 3D state, so `nir_lower_blend` style needs are a state question,
   not a shader question.
-* MRT works, including several stores per program - **retracted: index 5
-  never receives a store on AR20.** The *encoding* is real: the blob compiles
-  `gl_FragData[0]`/`gl_FragData[1]` to `DW` words `0x00028005` (`store rt1`)
-  and `0x00028015` (`store rt5`), both class 2, so index 5 is the spelling for a
-  second colour target (`SURF_OUT1`) - but the datapath is absent. A program that
-  stores to index 1 in one batch and index 5 in a later one leaves the index-5
-  surface all-zero (four words read back `00000000`) in six variants: as-is; with
-  `RT_PARAMS(5)` set to a working colour word (`0x04040034`); with `RT_ENABLE` =
-  `0x22`; with the limit register at `0xe35` as well; with only the enable bit;
-  and with only index 1 enabled as the control. A complete dump of a real draw
-  shows the index-5 slot live and parameterised exactly like the four that work -
-  `RT_PARAMS(5)` = `0x00040034`, `RT_PTR(5)` set, `RT_ENABLE` = `0x0001002f` -
-  and it still receives nothing ([[GR3D Registers]] 14.3). The `00400040` seen in
-  an earlier run was stale buffer content, not a write. A backend therefore emits
-  exactly one `DW` store per fragment, to index 1; AR20 is a GL ES 2.0 part, where
-  a `gl_FragData` index above 0 does not exist.
+* MRT works, including several stores per program - **reinstated.** The
+  *encoding* is real and the datapath is there: the blob compiles
+  `gl_FragData[0]`/`gl_FragData[1]` to `DW` words `0x00028005` (`store rt1`) and
+  `0x00028015` (`store rt5`), both class 2, and with index 5 bound through the
+  binding a draw uses, `store rt5` fills that surface and a `PSEQ: load rt5`
+  reads the words back ([[Fragment Shader ISA]] 8.2, measured by
+  `tests/grate/asm_behavior.sh dw_mrt`). The earlier all-zero sweeps poked
+  `RT_PARAMS(5)`, `RT_ENABLE` and the limit by hand; a complete dump of a real
+  draw shows the slot live and parameterised like the four that work
+  ([[GR3D Registers]] 14.3), so the difference between that program and a working
+  one is the register values, not the store. AR20 is still a GL ES 2.0 part,
+  where a `gl_FragData` index above 0 does not exist, so a backend may keep
+  emitting exactly one store per fragment - but that is a decision about the API,
+  not a workaround for missing hardware.
 * **alpha-to-coverage, dithering per fragment** - no encoding.
 
 ## 9. The gap list, ordered by what blocks a compiler

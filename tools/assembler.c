@@ -734,6 +734,8 @@ int main(int argc, char *argv[])
 	grate_3d_ctx_set_viewport_scale(ctx, options.width, options.height, 0.5f);
 	grate_3d_ctx_use_guardband(ctx, true);
 	grate_3d_ctx_set_front_direction_is_cw(ctx, false);
+	if (getenv("GRATE_FRONT_CW"))
+		grate_3d_ctx_set_front_direction_is_cw(ctx, true);
 	grate_3d_ctx_set_cull_face(ctx, GRATE_3D_CTX_CULL_FACE_NONE);
 	grate_3d_ctx_set_scissor(ctx, 0, options.width, 0, options.height);
 	grate_3d_ctx_set_point_coord_range(ctx, 0.0f, 1.0f, 0.0f, 1.0f);
@@ -920,6 +922,21 @@ int main(int argc, char *argv[])
 			fprintf(stdout, "rt4: %08X %08X %08X %08X nz=%u first=%u wf=%08X wf1=%08X\n",
 				r32[0], r32[1], r32[2], r32[3], nz, first,
 				r32[first], r32[first + 1]);
+		}
+	}
+
+	if (rt4 && getenv("GRATE_RT4_DUMP")) {
+		void *dmap = NULL;
+
+		/* A spill probe needs the whole surface, not four words. */
+		if (host1x_bo_mmap(rt4->bo, &dmap) == 0 && dmap) {
+			FILE *f = fopen(getenv("GRATE_RT4_DUMP"), "wb");
+
+			if (f) {
+				fwrite(dmap, 4, options.width * options.height, f);
+				fclose(f);
+				fprintf(stdout, "rt4dump: %s\n", getenv("GRATE_RT4_DUMP"));
+			}
 		}
 	}
 
