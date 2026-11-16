@@ -138,7 +138,7 @@ def execute(command, env, timeout):
 
 def run_step(assembler, output, program, base_args, base_env, step, phase,
              iteration, timeout, writer, stream):
-    if not isinstance(step, dict) or not isinstance(step.get("name"), str):
+    if not isinstance(step, dict) or not isinstance(step.get("name"), str) or not step.get("name"):
         raise ValueError(f"{phase}: each step needs a name")
     name = step["name"]
     paths = source_files(output, program, step, f"{phase}-{name}", iteration)
@@ -255,6 +255,8 @@ def main():
             raise ValueError("manifest must define at least one variant")
         if any(not isinstance(c, dict) or c.get("expected") is None for c in controls):
             raise ValueError("every control needs an expected result word")
+        if any(not isinstance(v, dict) or not isinstance(v.get("name"), str) or not v.get("name") for v in variants):
+            raise ValueError("every variant needs a name")
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -276,6 +278,10 @@ def main():
         parser.error(f"output directory is not empty: {out}")
     out.mkdir(parents=True, exist_ok=True)
 
+    inherited_environment = {
+        key: value for key, value in os.environ.items()
+        if key.startswith("GRATE_") or key in ("DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR")
+    }
     metadata = {
         "name": name,
         "created_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
@@ -287,6 +293,7 @@ def main():
         "git_status": git_value("status", "--short"),
         "uname": " ".join(os.uname()) if hasattr(os, "uname") else None,
         "device_model": device_model(),
+        "inherited_environment": inherited_environment,
         "repeat": repeat,
         "control_repeat": control_repeat,
         "timeout_seconds": timeout,
