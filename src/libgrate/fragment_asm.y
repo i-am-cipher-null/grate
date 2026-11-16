@@ -531,6 +531,12 @@ MFU_INSTRUCTIONS: MFU_INSTRUCTIONS MFU_INSTRUCTION
 	;
 
 MFU_INSTRUCTION:
+	T_MFU T_HEX
+	{
+		asm_mfu_instructions[asm_mfu_instructions_nb].part0 = (uint32_t)$2;
+		asm_mfu_instructions[asm_mfu_instructions_nb].part1 = (uint32_t)($2 >> 32);
+	}
+	|
 	T_MFU T_HEX ',' T_HEX
 	{
 		asm_mfu_instructions[asm_mfu_instructions_nb].part0 = $4;
@@ -985,6 +991,12 @@ ALU_IMMEDIATE:
 	;
 
 ALU_OPERATION:
+	T_HEX
+	{
+		yyval.aluX_instr.part0 = (uint32_t)$1;
+		yyval.aluX_instr.part1 = (uint32_t)($1 >> 32);
+	}
+	|
 	T_HEX ',' T_HEX
 	{
 		yyval.aluX_instr.part0 = $3;

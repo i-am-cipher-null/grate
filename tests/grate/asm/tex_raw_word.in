@@ -1,0 +1,25 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Raw TEX-word sweep template. Keep the surrounding program identical
+ * between runs.
+ */
+
+.uniforms
+	[0] = "lod";
+
+.asm
+EXEC
+	MFU:	sfu: rcp r4
+		mul0: bar, sfu, bar0
+		mul1: bar, sfu, bar1
+		ipl: t0.fp20, t0.fp20, NOP, NOP
+
+	ALU:
+		ALU0:	MAD  r3.lh,  u0,  #1,  #0,  #1
+;
+EXEC
+	TEX:	@TEX_WORD@
+	DW:	store rt1, r2, r3
+;

@@ -1,0 +1,83 @@
+{
+  "name": "raw-tex-word-sweep",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/filter_quad_vs.txt",
+    "fs": "tests/grate/asm/tex_raw_word.in",
+    "lnk": "tests/grate/asm/filter_quad_linker.txt"
+  },
+  "controls": [
+    {
+      "name": "fragment-pipeline-control",
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    },
+    {
+      "name": "compiler-explicit-lod-control",
+      "fs": "tests/grate/asm/tex_explicit_lod.txt",
+      "expected": "0x00545454",
+      "args": [
+        "--texture",
+        "--mipmap",
+        "--vs_mat4",
+        "[\"mvp\"]=(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)",
+        "--fs_uniform",
+        "[\"lod\"]=2"
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "name": "raw-explicit-lod",
+      "expected": "0x00545454",
+      "replace": {
+        "fs": {
+          "@TEX_WORD@": "0x00002420"
+        }
+      },
+      "args": [
+        "--texture",
+        "--mipmap",
+        "--vs_mat4",
+        "[\"mvp\"]=(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)",
+        "--fs_uniform",
+        "[\"lod\"]=2"
+      ]
+    },
+    {
+      "name": "raw-lod-bias",
+      "replace": {
+        "fs": {
+          "@TEX_WORD@": "0x00001420"
+        }
+      },
+      "args": [
+        "--texture",
+        "--mipmap",
+        "--vs_mat4",
+        "[\"mvp\"]=(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)",
+        "--fs_uniform",
+        "[\"lod\"]=2"
+      ]
+    },
+    {
+      "name": "raw-derivative-lod",
+      "replace": {
+        "fs": {
+          "@TEX_WORD@": "0x00000420"
+        }
+      },
+      "args": [
+        "--texture",
+        "--mipmap",
+        "--vs_mat4",
+        "[\"mvp\"]=(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)",
+        "--fs_uniform",
+        "[\"lod\"]=2"
+      ]
+    }
+  ]
+}

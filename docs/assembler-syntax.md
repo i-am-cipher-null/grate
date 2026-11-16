@@ -230,15 +230,21 @@ Example:
 
 Here PSEQ/TEX/DW are NOP's, one MFU sub-instruction is scheduled and ALU stage is skipped.
 
-Since not all sub-instructions are known yet, the "OPCODE operands" could be replaced with a raw hex value. The number of the hex words depends on the size of the sub-instruction; for example MFU instruction is 64bit sized, so two hex words, separated by a comma, will be necessary for it.
+The "OPCODE operands" can also be replaced with raw hexadecimal words. PSEQ, TEX and DW take one 32-bit word. MFU and each ALU lane take one 64-bit word; write that as one 64-bit literal. The existing two-part form remains accepted for 64-bit words: the first value is the high 32 bits and the second is the low 32 bits.
 
 Example:
 
 	EXEC
-		MFU:	0x00000000, 0x12345678
+		MFU:	0x0000000012345678
+		ALU:
+			ALU0:	0x0000000012345678
 	;
 
-Here the MFU sub-instruction is represented in raw by a two hex values, 0x00000000 is a high 64bit halve and 0x12345678 is low.
+The 64-bit MFU value above is equivalent to the two-part form:
+
+	EXEC
+		MFU:	0x00000000, 0x12345678
+	;
 
 #### PSEQ sub-instruction
 
