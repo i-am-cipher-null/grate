@@ -1,0 +1,73 @@
+{
+  "name": "tex-register-select",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/tex_src_select.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "arguments": [
+    "--texture"
+  ],
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "shipped-texture-sample",
+      "fs": "tests/grate/asm/tex_cross_batch.txt",
+      "expected": "0x00000000",
+      "args": [
+        "--fs_uniform",
+        "[\"u0\"]=0.1",
+        "--fs_uniform",
+        "[\"u1\"]=0.5"
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "name": "src0-dst0",
+      "replace": {
+        "fs": {
+          "@TEX_INSTR@": "tex r0, r1, tex0, r0, r1, r2",
+          "@STORE@": "store rt1, r0, r1"
+        }
+      },
+      "expected": "0x00000000"
+    },
+    {
+      "name": "src0-dst1",
+      "replace": {
+        "fs": {
+          "@TEX_INSTR@": "tex r2, r3, tex0, r0, r1, r2",
+          "@STORE@": "store rt1, r2, r3"
+        }
+      },
+      "expected": "0x00000000"
+    },
+    {
+      "name": "src1-dst0",
+      "replace": {
+        "fs": {
+          "@TEX_INSTR@": "tex r0, r1, tex0, r2, r3, r0",
+          "@STORE@": "store rt1, r0, r1"
+        }
+      },
+      "expected": "0xFFFFFFFF"
+    },
+    {
+      "name": "src1-dst1",
+      "replace": {
+        "fs": {
+          "@TEX_INSTR@": "tex r2, r3, tex0, r2, r3, r0",
+          "@STORE@": "store rt1, r2, r3"
+        }
+      },
+      "expected": "0xFFFFFFFF"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * ALU addition-disable probe (bit 59, the `MUL` mnemonic).
+ *
+ * The ISA reference (5.13) says the field turns the multiply-add into two
+ * multiplies whose fx10 results land in the low and high halves of the
+ * destination. That comes from the patent and had never been measured.
+ *
+ * Operand layout matters here: rD is a 6-bit field (1 bit of register select
+ * plus modifiers), so it can only name one of the other sources or the
+ * constant 1.0 - `MAD r2.l*, u0, u1, u2, u3` is a parse error ("Invalid src
+ * register"). The encodable form omits rD, which means rD = 1.0, and leaves
+ * rC as the only independent second source:
+ *
+ *   rA*rB = u0*u1 = 0.5*0.5  = 0.25   (0x40 as an 8-bit channel)
+ *   rC*rD = u2*1  = 0.75*1.0 = 0.75   (0xBF)
+ *
+ * so MAD stores 0.25+0.75 = 1.0 (0xFF), while MUL stores the first product
+ * alone if addition disable really drops the addend, or both products in the
+ * two halves if 5.13 is right. The two candidate words differ, which is the
+ * point.
+ *
+ * batch 1 prefills both fx10 halves of r2 with 0.5 (0x7F), so a half the probe
+ * does not write reads 0x7F and cannot be confused with either product. The DW
+ * readback is r3.hi, r3.lo, r2.hi, r2.lo, so the low two bytes are r2 and one
+ * store covers both halves.
+ */
+
+.constants
+	[0] = 0.5;
+	[1] = 0.5;
+	[2] = 0.75;
+	[4] = 0.5;
+	[5] = 0.5;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u4,  #1,  #0
+		ALU1:	MAD  r2.*h,  u5,  #1,  #0
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	@ALU_INSTR@
+	DW:	store rt1, r2, r3
+;

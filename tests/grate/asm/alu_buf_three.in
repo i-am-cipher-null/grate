@@ -1,0 +1,42 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Multi-row ALU buffer: where does a batch's store read from?
+ *
+ * Three batches, two producers and one store in the last batch:
+ *
+ *   batch 0  r2.lo = 0.25, no store
+ *   batch 1  r3.hi = 0.5,  no store
+ *   batch 2  store rt1, r2, r3
+ *
+ * If batch i runs on row i mod N and the store reads its own batch's row:
+ *
+ *   N=1  rows 0,0,0  both values -> 0x7F000040
+ *   N=2  rows 0,1,0  r2 only     -> 0x00000040
+ *   N=3  rows 0,1,2  nothing     -> 0x00000000
+ *   N=4  rows 0,1,2  nothing     -> 0x00000000
+ *
+ * so the four sizes give three distinct words. The manifest pokes the whole
+ * 0x520 start word, not just the count: 0x20006000 | batches*N. A bare count
+ * drops the start bits and hangs the engine.
+ */
+
+.constants
+	[0] = 0.25;
+	[1] = 0.5;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u0,  #1,  #0
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r3.*h,  u1,  #1,  #0
+	DW:	NOP
+;
+EXEC
+	DW:	store rt1, r2, r3
+;

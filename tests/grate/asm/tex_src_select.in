@@ -1,0 +1,50 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * TEX coordinate / destination register selection probe.
+ *
+ * TEX bits 4 and 5 pick which row registers the sample reads and writes:
+ *
+ *   bit 5  destination   0 -> r0, r1        1 -> r2, r3
+ *   bit 4  coordinates   0 -> S,T,R = r0,r1,r2   1 -> S,T,R = r2,r3,r0
+ *
+ * Bit 5 is measured (writing-a-compiler.md 10.4, the `txb` word is 0x1420 and
+ * `tex` 0x0420). Bit 4 is written up in the ISA reference (7.1) but has no
+ * measurement behind it, and it is the one that matters for register
+ * allocation: with it, a shader can keep the sampled colour in r0/r1 and the
+ * coordinates in r2/r3 and skip the copies around every TEX.
+ *
+ * The harness's default texture is 4x4 RGBA8888 with columns 0..1 black and
+ * 2..3 white, so S alone decides the colour. All four row registers get
+ * distinct fp20 values:
+ *
+ *   r0 = 0.05   r1 = 0.25   r2 = 0.75   r3 = 0.95
+ *
+ * Coordinates have to be fp20 (`.lh`), never an fx10 half. That also gives the
+ * probe a built-in failure signature: if TEX does not run, the store reads the
+ * coordinates back, and an fp20 write read as two fx10 halves is a nonzero,
+ * log-encoded byte pair, not 0x00000000.
+ *
+ *   select 0 reads S = r0 = 0.05 -> texel column 0 -> black
+ *   select 1 reads S = r2 = 0.75 -> texel column 3 -> white
+ */
+
+.constants
+	[0] = 0.05;
+	[1] = 0.25;
+	[2] = 0.75;
+	[3] = 0.95;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0,  #1
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0,  #1
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0,  #1
+		ALU3:	MAD  r3.lh,  u3,  #1,  #0,  #1
+;
+EXEC
+	TEX:	@TEX_INSTR@
+	DW:	@STORE@
+;

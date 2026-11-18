@@ -1,0 +1,96 @@
+{
+  "name": "alu-addition-disable",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/alu_add_disable.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "prefill-only",
+      "replace": {
+        "fs": {
+          "@ALU_INSTR@": "NOP"
+        }
+      },
+      "expected": "0x00007F7F"
+    },
+    {
+      "name": "mad-three-operand-control",
+      "replace": {
+        "fs": {
+          "@ALU_INSTR@": "MAD  r2.l*,  u0,  u1,  u2"
+        }
+      },
+      "expected": "0x00007FFF"
+    },
+    {
+      "name": "mul-low-mask",
+      "replace": {
+        "fs": {
+          "@ALU_INSTR@": "MUL  r2.l*,  u0,  u1,  u2"
+        }
+      },
+      "expected": "0x0000BF40"
+    },
+    {
+      "name": "mul-high-mask",
+      "replace": {
+        "fs": {
+          "@ALU_INSTR@": "MUL  r2.*h,  u0,  u1,  u2"
+        }
+      },
+      "expected": "0x000040BF"
+    },
+    {
+      "name": "mul-both-mask-fp20",
+      "replace": {
+        "fs": {
+          "@ALU_INSTR@": "MUL  r2.lh,  u0,  u1,  u2"
+        }
+      },
+      "expected": "0x0000E700"
+    },
+    {
+      "name": "mul-rd-is-rb",
+      "replace": {
+        "fs": {
+          "@ALU_INSTR@": "MUL  r2.l*,  u0,  u1,  u2,  rB"
+        }
+      },
+      "expected": "0x00006040"
+    },
+    {
+      "name": "mul-rd-is-rc",
+      "replace": {
+        "fs": {
+          "@ALU_INSTR@": "MUL  r2.l*,  u0,  u1,  u2,  rC"
+        }
+      },
+      "expected": "0x00008F40"
+    },
+    {
+      "name": "mad-rd-is-rb-control",
+      "replace": {
+        "fs": {
+          "@ALU_INSTR@": "MAD  r2.l*,  u0,  u1,  u2,  rB"
+        }
+      },
+      "expected": "0x00007F9F"
+    }
+  ]
+}

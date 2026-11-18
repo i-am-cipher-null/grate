@@ -1,0 +1,21 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Immediate-operand control.
+ *
+ * Uses no fragment constants at all, so it separates "the ALU and the store
+ * work" from "the constants reached the shader". docs/hardware-testing.md
+ * records a board state where every uN operand read zero while this word was
+ * still correct ten times out of ten, so every uniform-driven probe has to
+ * carry it in the same run.
+ *
+ * MAD r2.l*, #1, #1, #0, #1 stores 1.0 in the low byte of r2: 0x000000FF.
+ */
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  #1,  #1,  #0,  #1
+	DW:	store rt1, r2, r3
+;

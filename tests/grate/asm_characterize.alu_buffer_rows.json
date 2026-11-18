@@ -1,0 +1,72 @@
+{
+  "name": "alu-buffer-rows",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/alu_buf_three.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "size1-baseline",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006003"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "1"
+        }
+      },
+      "expected": "0x7F000040"
+    },
+    {
+      "name": "size2-two-rows",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "2"
+        }
+      },
+      "expected": "0x7F000040"
+    },
+    {
+      "name": "size3-documented-zero",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006009"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3"
+        }
+      },
+      "expected": "0x00000000"
+    },
+    {
+      "name": "size4-documented-zero",
+      "environment": {
+        "GRATE_POKE": "0x520=0x2000600c"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "4"
+        }
+      },
+      "expected": "0x00000000"
+    }
+  ]
+}
