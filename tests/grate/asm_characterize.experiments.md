@@ -787,6 +787,9 @@ positions, and the last four groups also export data back through the same
 | `p3-pos-rg`, `p3-interp-rg`, `p3-coef` | `0xDC40E800`, `0xE300F2AB`, `0xF2ABE300` | the sample moved across the quad's diagonal |
 | `p4-pos-rg`, `p4-coef` | `0xEEFFEEFF`, `0xEEFFEFFF` | the sample at the quad centre |
 | `p4-interp-rg`, `p4-interp-ba` | `0x0000EFFF`, `0xF700EEFF` | the interpolated colour there |
+| `constvar2-rg`, `constvar2-ba` | `0xE700EF00`, `0xF7000000` | the same constant exported as two components reads identically |
+| `s1a-*`, `s1b-*` | see below | single-triangle samples, triangle (0,1,2) collapsed |
+| `wwa-*`, `wwb-*` | see below | the same, with unequal clip w per vertex |
 
 The readback is a log byte, so the difference to the `0x78` scale reference
 divided by 8 is log2 of the coefficient, and the scale in r4 cancels:
@@ -813,74 +816,101 @@ lowest vertex is at the pixel's corner and the rasteriser covers the pixel with
 an interior fragment, so its coefficients are 0.84..0.92 and 0.0016..0.0018
 rather than 1 and 0. Read it as a near-corner sample, not as an exact vertex.
 
-#### What the sample point actually is
+#### The sample point, and what the weights are
 
-Three things had to be measured before the weights could be compared with
-anything, and all three are in the table above.
+Three things had to be measured before the selectors could be named.
 
 The *store order* is not the varying's component order. Exporting a constant
-`(0.25, 0.5, 0.75, 1.0)` and fetching it back gives `(0.5, 0.25, 0.75, 1.0)`:
-with `store rt1, r0, r1` the low half of the word carries the varying's `y` and
-the high half its `x`, while `z` and `w` keep their order. Every two-component
-readback in this section is decoded with that exchange applied.
+`(0.25, 0.5, 0.75, 1.0)` and fetching it back gives `(0.5, 0.25, 0.75, 1.0)`
+(`constvar-rg`): with `store rt1, r0, r1` the low half of the result word
+carries the varying's `y` and the high half its `x`, while `z` and `w` keep
+their order. A two-component export of the same constant reads identically
+(`constvar2-rg`), so the exchange is not the export's component mask. It cannot
+be pinned to the store by writing the halves the other way round either - the ISA
+only encodes the pairs `r0,r1` and `r2,r3`, so `store rt1, r1, r0` does not
+assemble. Every two-component readback below is decoded with the exchange
+applied, and the uneven-w probe at the end is the one place where that matters
+for more than bookkeeping.
 
-The *sample position* is the uniform offset, once the untranslated position is
-exported as the varying. At the centre offset `(-0.95, -0.95)` the two
-components are equal (`0xEEFF` = 0.46, so x = y = -0.08) - the sample is at the
-middle of the quad, and the harness's corner pixel plus the offset predict
-exactly that.
+The *vertex colours are the unit vectors* `(1,0,0)`, `(0,1,0)`, `(0,0,1)`,
+`(1,0,0)` on v0..v3 (`tools/assembler.c`), drawn as triangles (0, 1, 2) and
+(1, 2, 3). In a triangle whose vertices are v1, v2, v3 the interpolated colour is
+therefore `(w3, w1, w2)` - red is v3's weight, green v1's, blue v2's - so on
+`w = 1` geometry the colour readback gives all three weights directly, with no
+geometry to model. In triangle (0, 1, 2) it is `(w0, w1, w2)`.
 
-The *vertex colours* are fixed by `tools/assembler.c`: v0 (top left) red, v1
-(bottom left) green, v2 (top right) blue, v3 (bottom right) red, drawn as
-triangles (0, 1, 2) and (1, 2, 3). At the centre the interpolated colour reads
-R 0, G 0.50, B 0.46, which is the bottom-left/bottom-right/blue mix the geometry
-predicts for the (1, 2, 3) triangle: w_BL 0.52, w_TR 0.48, w_BR 0 - red is the
-weight of the one vertex the sample is furthest from, and it reads zero.
+The *single-triangle probe* removes the shared diagonal. The vertex shader moves
+the blue vertex (v2) onto v0 with `x += -2 * a[1].z`, which collapses triangle
+(0, 1, 2) onto a line, so every sample is interior to (1, 2, 3). Its attribute
+stays at the original corner, so the interpolated position is a weighted sum of
+the original corners rather than the sample's own coordinate - the colour is the
+reliable readback there, not the position.
 
-At that same point the two selectors read 0.50 and 0.46: src11 is the
-bottom-left weight and src12 the top-right one, matching the green and blue
-channels one for one. That is the cleanest identification this probe gives.
+With that, the selectors have a name. In triangle (1, 2, 3):
 
-#### What it does not settle
+| variant | colour `(R,G,B)` under the exchange | selectors | reading |
+|:--|:--|:--|:--|
+| `p1-coef`, `p1-interp-*` | 0.044, 0.648, 0.177 | 0.648, 0.177 | src11 = green = w1, src12 = blue = w2 |
+| `p4-*` (centre) | 0, 0.50, 0.46 | 0.50, 0.46 | src11 = w1, src12 = w2 |
+| `s1a-*` | 0.42, 0.46, 0.05 | 0.46, 0.05 | src11 = w1, src12 = w2 |
+| `s1b-*` | 0.42, 0.18, 0.33 | 0.18, 0.33 | src11 = w1, src12 = w2 |
 
-Away from the centre the three readbacks stop agreeing. At `p3` the interpolated
-position puts the sample at (-0.80, -0.46), above the quad's diagonal, where
-triangle (0, 1, 2) predicts a colour of (0.73, 0.18, 0.10); the measured colour
-is (0.18, 0.65) for R and G, which is triangle (1, 2, 3)'s prediction. The two
-disagree by about 0.25 in weight - much more than the one-step 9% readback
-resolution - so the off-centre positions cannot name the selectors yet, and the
-`p1` colour, whose R and G are each about 13% away from the geometric weights,
-is not usable either. The centre sample is the only point where position, colour
-and both selectors agree, and one agreeing point is not a vertex mapping.
+and in triangle (0, 1, 2):
 
-The third weight is still only implied as 1 - w0 - w1, and its independence is
-what would test the normalization. At the centre w0 + w1 is 0.96 rather than 1,
-which is the same size as the truncation of two log bytes and therefore not a
-statement about the hardware.
+| variant | colour `(R,G,B)` | selectors | reading |
+|:--|:--|:--|:--|
+| `p3-coef`, `p3-interp-rg` | 0.177, 0.648, - | 0.177, 0.648 | src11 = red = w0, src12 = green = w1 |
 
-#### Recorded runs
+So `src11` is the barycentric weight of the covering triangle's first vertex and
+`src12` that of its second, in the index order the harness draws. Both triangles
+agree with that rule, and the (1, 2, 3) rule is measured at four separate sample
+points, including two where the sample is the only triangle's interior.
 
-`tests/grate/asm/results/pin-barycentric` and `verify-barycentric` hold 88 rows
-each - 28 variants, three repeats, plus the controls - with the per-row source
-hashes. Their metadata carries two manifest hashes because pinning rewrites the
-manifest with the measured expectations: `defbea40...` is the manifest that was
-run, `9351d0f7...` the one with the pins added, and both are expected to differ.
-Re-running the pinned manifest from a clean checkout of `b849059`
-(`git clone` into `/tmp`, no working-tree changes) reproduced all 88 words with
-no mismatches, so the pin is a property of the committed inputs rather than of
-the working tree that produced it.
+This is also where the earlier reading went wrong: with the exchange ignored, the
+p3 colour looks like it belongs to the other triangle, and the weights appear to
+swap between samples. Nothing in the hardware needed to change for the rule to
+hold - only the decode.
+
+#### Normalization
+
+Because the colour channels are the weights, all three are now measured
+independently rather than two and a remainder: at p1 0.044 + 0.648 + 0.177 =
+0.869, at the centre 0 + 0.50 + 0.46 = 0.96, at `s1a` 0.42 + 0.46 + 0.05 = 0.93,
+at `s1b` 0.42 + 0.18 + 0.33 = 0.93. Every sum is short of 1 by 4-13%, and each
+channel is truncated to three mantissa bits, so the deficit is the same size as
+the readback's own step. The sum is consistent with exact normalization but does
+not prove it: a uniform scale applied to all three would look identical.
+
+#### Unequal w
+
+The last group sets clip w from the colour attribute (`w = 1 + a[1].z`, so the
+blue vertex has w = 2 and the others w = 1), which projects the quad into a
+trapezium and turns on perspective-correct interpolation:
+
+| variant | word | reading |
+|:--|--:|:--|
+| `wwa-coef` | `0xE100F4FF` | src11 0.77, src12 0.15 |
+| `wwa-interp-rg`, `wwa-interp-ba` | `0x0000F4FF`, `0xF700E100` | colour 0 / 0.77 / 0.15 |
+| `wwb-coef` | `0xF000E700` | src11 0.25, src12 0.55 |
+| `wwb-interp-rg`, `wwb-interp-ba` | `0xE700F000`, `0xF700DF00` | colour 0.55 / 0.25 / 0.12 |
+
+At `wwa` the selectors and the colour agree exactly as on the `w = 1` quad. At
+`wwb` they do not, which is expected if the colour is perspective-corrected
+(`sum (w_i/w_i) A_i / sum (w_i/w_i)`) while the selectors are not: the two are
+different quantities once w varies. Which of the two carries the 1/w the
+interpolation model applies is a question for the projected geometry of each
+sample, and is not settled here - the words above are recorded so it can be
+answered without re-running the probe.
 
 ### What is left
 
 The other SFU operations can now be driven with known inputs (`.lh` primes) and
 characterised one at a time; the two-row-register zero is still a description
-rather than a mechanism; and the sample position, the interpolated colour and the
-two selectors agree at the quad centre but not at the three off-centre positions,
-which is the first thing to explain before the selectors can be named by vertex.
-Sampling inside a single triangle - drawing one triangle at a time rather than
-the quad's two - would remove the shared diagonal that `p3` straddles. The constant in r4 is resolved only to one readback step, so a probe
-that reads the operand at a coarser magnitude would be needed to do better than
-"about 2^16".
+rather than a mechanism; and the unequal-w words are recorded but not yet
+interpreted, which needs the projected geometry of each sample and the 1/w the
+interpolation model applies. The constant in r4 is resolved only to one readback
+step, so a probe that reads the operand at a coarser magnitude would be needed to
+do better than "about 2^16".
 
 ## What the runner cost
 

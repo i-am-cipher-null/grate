@@ -1,0 +1,33 @@
+/*
+ * Constant varying exported as two components.
+ *
+ * Same constant as vs_constvar.txt, but the export writes x and y only, so a
+ * difference in the readback between the two shows the packing depends on the
+ * export's component mask rather than on the store.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.constants
+	[100].x = 0.25;
+	[100].y = 0.5;
+	[100].z = 0.75;
+	[100].w = 1.0;
+
+.asm
+
+EXEC(export[0]=vector)
+	MOVv r63.xyzw, a[0].xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r63.xy**, c[100].xyzw
+	NOPs
+;

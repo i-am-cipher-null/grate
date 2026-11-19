@@ -388,9 +388,47 @@ def bary_variants():
     const = variant("constvar-ba", word(interp, FULL_IPL), True, STORE_23)
     const["vs"] = "tests/grate/asm/vs_constvar.txt"
     out.append(const)
-    out.append(offset("p1-coef-noipl", -0.5, -0.4, word(coef, None)))
-    out.append(offset("p1-interp-rg", -0.5, -0.4, word(interp, FULL_IPL), STORE_01))
-    out.append(offset("p1-interp-ba", -0.5, -0.4, word(interp, FULL_IPL), STORE_23))
+
+    # And does a two-component export pack the same way as the four-component
+    # one? Same constant, only the export mask differs.
+    const = variant("constvar2-rg", word(interp, FULL_IPL), True, STORE_01)
+    const["vs"] = "tests/grate/asm/vs_constvar2.txt"
+    out.append(const)
+    const = variant("constvar2-ba", word(interp, FULL_IPL), True, STORE_23)
+    const["vs"] = "tests/grate/asm/vs_constvar2.txt"
+    out.append(const)
+
+    def group(prefix, vs_col, vs_pos, dx, dy):
+        """Coefficient, colour and position readback at one sample point."""
+        for name, build, store, shader in (
+            ("coef", lambda: word(coef), STORE_23, vs_col),
+            ("interp-rg", lambda: word(interp, FULL_IPL), STORE_01, vs_col),
+            ("interp-ba", lambda: word(interp, FULL_IPL), STORE_23, vs_col),
+            ("pos-rg", lambda: word(interp, FULL_IPL), STORE_01, vs_pos),
+        ):
+            entry = variant(f"{prefix}-{name}", build(), True, store)
+            entry["vs"] = shader
+            entry["args"] = ["--vs_uniform", f'["offset"]=({dx},{dy},0.0,0.0)']
+            out.append(entry)
+
+    # One triangle: v2 is moved onto v0, so (0,1,2) is degenerate and (1,2,3) -
+    # (-1,-1), (-1,1), (1,-1) in quad coordinates - is the only triangle drawn.
+    # There is no shared diagonal to land on: every sample is interior.
+    group("s1a", "tests/grate/asm/vs_single_col.txt", "tests/grate/asm/vs_single_pos.txt", -1.2, -0.4)
+    group("s1b", "tests/grate/asm/vs_single_col.txt", "tests/grate/asm/vs_single_pos.txt", -0.4, -0.8)
+
+    # Unequal clip w: the blue vertex gets w = 2, the others keep w = 1, so the
+    # projected quad is a perspective trapezium and interpolation must divide by
+    # the interpolated w. The colour varying and the position varying are both
+    # read back, which is what separates perspective-correct from screen-space
+    # interpolation without modelling the rasteriser.
+    group("wwa", "tests/grate/asm/vs_ww_col.txt", "tests/grate/asm/vs_ww_pos.txt", -0.5, -0.5)
+    group("wwb", "tests/grate/asm/vs_ww_col.txt", "tests/grate/asm/vs_ww_pos.txt", -0.4, -0.9)
+
+    # One triangle only: triangle (0,1,2) is collapsed, so (1,2,3) - bottom-left,
+    # top-right, bottom-right - is the only triangle left. A sample inside it has
+    # weights (w_BL, w_TR, w_BR) = ((0.5-y)/2, (x+1)/2 - w_BR, (x-y)/2) with no
+    # diagonal to fall on, and its colour is (R, G, B) = (w_BR, w_BL, w_TR).
     return out
 
 

@@ -1,0 +1,39 @@
+/*
+ * One-triangle probe, colour varying.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.uniforms
+	[100] = "offset";
+
+.constants
+	[101].x = -2.0;
+
+.asm
+
+EXEC
+	ADDv r10.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;
+
+EXEC
+	MULv r12.xyzw, a[1].zzzz, c[101].xyzw
+	NOPs
+;
+
+EXEC(export[0]=vector)
+	ADDv r63.xyzw, r10.xyzw, r12.xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r63.xyzw, a[1].xyzw
+	NOPs
+;
