@@ -1000,6 +1000,8 @@ models differ by less than a step.
 `tests/grate/asm/results/pin-persp` and `verify-persp` hold 118 rows each - 38
 variants and three repeats plus the controls - and pin `ac5628fe...` from
 `a7eec1ce...`: the same two-hash arrangement, both runs passing 118/118.
+Re-running the pinned manifest from a clean checkout of `2e8460b` (`git clone`
+into /tmp, no working-tree changes) reproduced all 118 words with no mismatches.
 
 `tests/grate/asm/results/pin-barycentric` and `verify-barycentric` hold 133 rows
 each - 43 variants, three repeats, plus the controls - with the per-row source
