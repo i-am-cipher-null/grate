@@ -41,7 +41,14 @@ Instructions schedule specifies the number of MFU instructions or ALU instructio
 | 2..7 | Address                           |
 | 0..1 | Number of instructions to execute |
 
-If the "number of instructions to execute" is 0, then the pipeline stage is NOP, however still takes 1 clock cycle. The "address" is the number of pushed instructions before the instruction to execute, so unit[Address] ... unit[Address + Number of instructions to execute] instructions (or instruction packets) will be executed, where unit stands for MFU or ALU.
+If the "number of instructions to execute" is 0, then the pipeline stage is NOP, however still takes 1 clock cycle. The "address" is the index of the first instruction or packet to execute.
+
+The current fragment assembler enforces a maximum of 64 execution batches, 64
+MFU words and 64 ALU packets in total, with at most three MFU words and three
+ALU packets in one batch. Each ALU packet contains up to four scalar slots, so
+the 64-ALU limit counts packets, not individual slot operations. These are
+limits enforced by Grate's assembler and schedule fields; they should not be
+read as proof of every possible hardware limit.
 
 ## Registers
 
