@@ -1,0 +1,66 @@
+/*
+ * Perspective probe, scalar varying.
+ *
+ * The clip position is premultiplied by a per-vertex w, so the projected
+ * (NDC) triangle is identical for every w and only the interpolation weight
+ * changes. w is 1 everywhere except the blue vertex, where it is
+ * 1 + wdelta, giving the reviewer's w = 1, 2 and 4.
+ *
+ * The varying is a scalar made from the vertex colours so each corner has a
+ * different value, set per variant through the `ar`, `ag` and `ab` uniforms:
+ * the red vertex (v3) contributes `ar`, green (v1) `ag`, blue (v2) `ab`. The
+ * base points use (1.0, 0.5, 0.25) for (v3, v1, v2) and the asymmetric family
+ * overrides them. It is replicated across all four components, so the store's
+ * x/y exchange does not matter and no channel ordering enters the decode.
+ *
+ * One constant register index per instruction: the assembler rejects a MAD
+ * that names two, so the w scale and the +1 are folded into the position
+ * MAD's addend instead of a separate add.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vscalar";
+
+.uniforms
+	[100] = "offset";
+	[101] = "wdelta";
+	[104] = "ag";
+	[105] = "ab";
+	[106] = "ar";
+
+.asm
+
+EXEC
+	ADDv r10.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;
+
+EXEC
+	MULv r11.xyzw, a[1].zzzz, c[101].xxxx
+	NOPs
+;
+
+EXEC(export[0]=vector)
+	MADv r63.xyzw, r10.xyzw, r11.xxxx, r10.xyzw
+	NOPs
+;
+
+EXEC
+	MULv r14.xyzw, a[1].xxxx, c[106].xxxx
+	NOPs
+;
+
+EXEC
+	MADv r15.xyzw, a[1].yyyy, c[104].xxxx, r14.xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MADv r63.xyzw, a[1].zzzz, c[105].xxxx, r15.xyzw
+	NOPs
+;

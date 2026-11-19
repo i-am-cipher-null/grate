@@ -1,0 +1,1206 @@
+{
+  "name": "perspective-selector",
+  "created_utc": "2026-11-19T23:34:32+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.persp.json",
+  "manifest_sha256": "a7eec1ce8bed3f841e2b1ab272bb1d0e2fad5c005151a777be25760b5446174e",
+  "assembler": "/home/freebuff/build/grate/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "e37a0b39505915dabc7ebe9b180017172eb513f4",
+  "git_status": "M tests/grate/asm/make_mfu_selector.py\n?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/results/pin-persp/\n?? tests/grate/asm/vs_persp_col.txt\n?? tests/grate/asm/vs_persp_pos.txt\n?? tests/grate/asm_characterize.persp.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 10.0,
+  "manifest_data": {
+    "name": "perspective-selector",
+    "repeat": 3,
+    "timeout": 10,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/mfu_sel.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "q1-pos",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_pos.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)"
+        ],
+        "expected": "0xF520F200"
+      },
+      {
+        "name": "q1-w1-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0xF200DE00"
+      },
+      {
+        "name": "q1-w1-scale",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src13, sfu mul1: r3, src13, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0x78007800"
+      },
+      {
+        "name": "q1-w1-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0xEB00EB00"
+      },
+      {
+        "name": "q1-w2-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(1,0.0,0.0,0.0)"
+        ],
+        "expected": "0xF08DE3FF"
+      },
+      {
+        "name": "q1-w2-scale",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src13, sfu mul1: r3, src13, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(1,0.0,0.0,0.0)"
+        ],
+        "expected": "0x7C007C00"
+      },
+      {
+        "name": "q1-w2-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(1,0.0,0.0,0.0)"
+        ],
+        "expected": "0xEECBEECB"
+      },
+      {
+        "name": "q1-w4-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0xEB00E700"
+      },
+      {
+        "name": "q1-w4-scale",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src13, sfu mul1: r3, src13, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0x7F007F00"
+      },
+      {
+        "name": "q1-w4-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0xF027F027"
+      },
+      {
+        "name": "q2-pos",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_pos.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)"
+        ],
+        "expected": "0xF100E9FF"
+      },
+      {
+        "name": "q2-w1-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0xE9FFE9FF"
+      },
+      {
+        "name": "q2-w1-scale",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src13, sfu mul1: r3, src13, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0x78007800"
+      },
+      {
+        "name": "q2-w1-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0xF0FFF0FF"
+      },
+      {
+        "name": "q2-w2-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(1,0.0,0.0,0.0)"
+        ],
+        "expected": "0xE300EBFF"
+      },
+      {
+        "name": "q2-w2-scale",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src13, sfu mul1: r3, src13, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(1,0.0,0.0,0.0)"
+        ],
+        "expected": "0x79007900"
+      },
+      {
+        "name": "q2-w2-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(1,0.0,0.0,0.0)"
+        ],
+        "expected": "0xF100F100"
+      },
+      {
+        "name": "q2-w4-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0xDC00EC00"
+      },
+      {
+        "name": "q2-w4-scale",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src13, sfu mul1: r3, src13, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0x7A007A00"
+      },
+      {
+        "name": "q2-w4-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0xF2FFF2FF"
+      },
+      {
+        "name": "q3-pos",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_pos.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.4,-0.2,0.0,0.0)"
+        ],
+        "expected": "0xE300DC40"
+      },
+      {
+        "name": "q3-w1-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.4,-0.2,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0xDC40F300"
+      },
+      {
+        "name": "q3-w1-scale",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src13, sfu mul1: r3, src13, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.4,-0.2,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0x78007800"
+      },
+      {
+        "name": "q3-w1-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.4,-0.2,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0xEFFFEFFF"
+      },
+      {
+        "name": "q3-w2-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.4,-0.2,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(1,0.0,0.0,0.0)"
+        ],
+        "expected": "0xD400F4FF"
+      },
+      {
+        "name": "q3-w2-scale",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src13, sfu mul1: r3, src13, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.4,-0.2,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(1,0.0,0.0,0.0)"
+        ],
+        "expected": "0x78FF78FF"
+      },
+      {
+        "name": "q3-w2-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.4,-0.2,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(1,0.0,0.0,0.0)"
+        ],
+        "expected": "0xEF00EF00"
+      },
+      {
+        "name": "q3-w4-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.4,-0.2,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0xCD94F400"
+      },
+      {
+        "name": "q3-w4-scale",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src13, sfu mul1: r3, src13, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.4,-0.2,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0x78007800"
+      },
+      {
+        "name": "q3-w4-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.4,-0.2,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.25,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0xEF00EF00"
+      },
+      {
+        "name": "q1-asym-w1-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(0.375,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(1.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.0625,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0xF200DE00"
+      },
+      {
+        "name": "q1-asym-w1-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(0.375,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(1.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.0625,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0xE8A2E8A2"
+      },
+      {
+        "name": "q1-asym-w4-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(0.375,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(1.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.0625,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0xEB00E700"
+      },
+      {
+        "name": "q1-asym-w4-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(0.375,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(1.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.0625,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0xEF00EF00"
+      },
+      {
+        "name": "q2-asym-w1-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(0.375,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(1.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.0625,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0xE9FFE9FF"
+      },
+      {
+        "name": "q2-asym-w1-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(0.375,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(1.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.0625,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(0,0.0,0.0,0.0)"
+        ],
+        "expected": "0xF1B7F1B7"
+      },
+      {
+        "name": "q2-asym-w4-coef",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src11, sfu mul1: r3, src12, sfu ipl: t0.fp20, NOP, NOP, NOP",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(0.375,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(1.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.0625,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0xDC00EC00"
+      },
+      {
+        "name": "q2-asym-w4-scalar",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_persp_col.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-1.35,-0.65,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ar\"]=(0.375,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ag\"]=(1.5,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"ab\"]=(0.0625,0.0,0.0,0.0)",
+          "--vs_uniform",
+          "[\"wdelta\"]=(3,0.0,0.0,0.0)"
+        ],
+        "expected": "0xF4A4F4A4"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 118,
+    "passed": 118,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

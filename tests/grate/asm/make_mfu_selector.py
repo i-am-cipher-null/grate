@@ -35,6 +35,7 @@ pinned from its own run:
     --set fp20    whether the register named in `sfu:` is the value it reads
     --set w       what row 4 carries, by scaling the vertex clip w
     --set bary    selectors 11 and 12 against interpolated data
+    --set persp   the selectors and a scalar varying as clip w changes
 
     make_mfu_selector.py --set dst                # no expectations yet
     make_mfu_selector.py --set dst --results DIR  # pin to the words from DIR
@@ -269,6 +270,8 @@ def fp20_variants():
 
 
 VS_OFFSET = "tests/grate/asm/vs_offset.txt"
+VS_PERSP = "tests/grate/asm/vs_persp_col.txt"
+VS_PERSP_POS = "tests/grate/asm/vs_persp_pos.txt"
 VS_POS = "tests/grate/asm/vs_pos.txt"
 PARTIAL_IPL = "ipl: t0.fp20, NOP, NOP, NOP"
 FULL_IPL = "ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20"
@@ -432,6 +435,94 @@ def bary_variants():
     return out
 
 
+def persp_variants():
+    """Screen-space geometry held fixed, clip w varied at one vertex.
+
+    The earlier unequal-w probe moved the projected triangle as well, so its
+    two samples could not be compared point by point. This set removes that:
+    the vertex shader premultiplies the clip position by a per-vertex w, so
+    x/w and y/w - the projected positions the rasteriser sees - are the same
+    for every w and only the interpolation weights change. w is 1 at every
+    vertex except the blue one, which carries 1 + wdelta.
+
+    Three sample points inside triangle (1, 2, 3) - the only one of the
+    harness's two triangles with y < x - are fixed by the quad offset, so the
+    screen-space weights lambda are the same across w:
+
+        q1  (0.75, 0.45)    (0.125, 0.725, 0.15)
+        q2  (0.35, -0.35)   (0.325, 0.325, 0.35)
+        q3  (-0.6, -0.8)    (0.8, 0.1, 0.1)
+
+    With w = 4 at the blue vertex the two candidate models predict, for the
+    scalar varying whose vertex values are 1.0 (v3), 0.5 (v1) and 0.25 (v2):
+
+        screen space   sum lambda_i A_i                    0.394 0.594 0.525
+        perspective    sum (lambda_i A_i / w_i) / sum ...   0.565 0.705 0.547
+
+    and the selectors themselves either stay at (lambda_1, lambda_2) or move
+    to (lambda_1/w_1, lambda_2/w_2) over sum (lambda_j/w_j), which for q1 is
+    (0.274, 0.397) - far outside the readback's one-step resolution, so q1
+    decides this even with the truncation.
+
+    Each point is read three ways at each w: the coefficient derived from the
+    subunits, the scalar varying, and src13 x rcp(r4) - the latter is the
+    anchor for r4 itself, so a coefficient that moves can be attributed to the
+    selector rather than to the reciprocal. The `-pos` variant reads the
+    sample point back at w = 1 to confirm the offset arithmetic.
+    """
+    coef = ("r2, src11, sfu", "r3, src12, sfu")
+    scale = ("r2, src13, sfu", "r3, src13, sfu")
+    interp = ("bar, sfu, bar0", "bar, sfu, bar1")
+
+    def word(mul, ipl=PARTIAL_IPL):
+        return f"sfu: rcp r4 mul0: {mul[0]} mul1: {mul[1]} {ipl}"
+
+    def values(ar, ag, ab):
+        """The three vertex values as uniforms: red v3, green v1, blue v2."""
+        return ["--vs_uniform", f'["ar"]=({ar},0.0,0.0,0.0)',
+                "--vs_uniform", f'["ag"]=({ag},0.0,0.0,0.0)',
+                "--vs_uniform", f'["ab"]=({ab},0.0,0.0,0.0)']
+
+    def at(x, y):
+        return ["--vs_uniform",
+                f'["offset"]=({round(-(1.0 + x), 6)},{round(-(1.0 + y), 6)},0.0,0.0)']
+
+    def emit(name, args, mul, store):
+        ipl = FULL_IPL if mul is interp else PARTIAL_IPL
+        entry = variant(name, word(mul, ipl), True, store)
+        entry["vs"] = VS_PERSP
+        entry["args"] = args
+        out.append(entry)
+
+    points = (("q1", 0.75, 0.45), ("q2", 0.35, -0.35), ("q3", -0.6, -0.8))
+    unit = values(1.0, 0.5, 0.25)
+    asym = values(0.375, 1.5, 0.0625)
+    out = []
+    for label, x, y in points:
+        base = at(x, y)
+        pos = variant(f"{label}-pos", word(interp, FULL_IPL), True, STORE_01)
+        pos["vs"] = "tests/grate/asm/vs_persp_pos.txt"
+        pos["args"] = base
+        out.append(pos)
+        for w in (1, 2, 4):
+            args = base + unit + ["--vs_uniform",
+                                  f'["wdelta"]=({w - 1},0.0,0.0,0.0)']
+            emit(f"{label}-w{w}-coef", args, coef, STORE_23)
+            emit(f"{label}-w{w}-scale", args, scale, STORE_23)
+            emit(f"{label}-w{w}-scalar", args, interp, STORE_01)
+
+    # The asymmetric value set - three different values, none a power of two -
+    # on the two points that discriminate, so the interpolation equation is
+    # checked without relying on the vertex-colour channel order.
+    for label, x, y in points[:2]:
+        for w in (1, 4):
+            args = at(x, y) + asym + ["--vs_uniform",
+                                      f'["wdelta"]=({w - 1},0.0,0.0,0.0)']
+            emit(f"{label}-asym-w{w}-coef", args, coef, STORE_23)
+            emit(f"{label}-asym-w{w}-scalar", args, interp, STORE_01)
+    return out
+
+
 SETS = {
     "src": ("mfu-selector-source", "tests/grate/asm_characterize.mfu_selector_src.json",
             src_variants),
@@ -446,6 +537,8 @@ SETS = {
              fp20_variants),
     "bary": ("barycentric-coefficients",
               "tests/grate/asm_characterize.barycentric.json", bary_variants),
+    "persp": ("perspective-selector",
+              "tests/grate/asm_characterize.persp.json", persp_variants),
 }
 
 CONTROLS = [

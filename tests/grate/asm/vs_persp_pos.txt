@@ -1,0 +1,47 @@
+/*
+ * Perspective probe, position varying.
+ *
+ * Same program as vs_persp_col.txt, but the varying is the vertex position
+ * mapped to 0..1, so the sample point can be read back without the collapsed
+ * triangle the earlier one-triangle probe used - here both of the harness's
+ * triangles are drawn and the sample is chosen inside (1, 2, 3). Read at
+ * wdelta = 0, where every vertex has w = 1 and the interpolation is affine.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vpos";
+
+.uniforms
+	[100] = "offset";
+	[101] = "wdelta";
+
+.constants
+	[102].x = 0.5;
+	[102].y = 0.5;
+
+.asm
+
+EXEC
+	ADDv r10.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;
+
+EXEC
+	MULv r11.xyzw, a[1].zzzz, c[101].xxxx
+	NOPs
+;
+
+EXEC(export[0]=vector)
+	MADv r63.xyzw, r10.xyzw, r11.xxxx, r10.xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MADv r63.xy**, a[0].xyzw, c[102].xxxx, c[102].yyyy
+	NOPs
+;

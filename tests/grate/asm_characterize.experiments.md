@@ -894,15 +894,112 @@ trapezium and turns on perspective-correct interpolation:
 | `wwb-coef` | `0xF000E700` | src11 0.25, src12 0.55 |
 | `wwb-interp-rg`, `wwb-interp-ba` | `0xE700F000`, `0xF700DF00` | colour 0.55 / 0.25 / 0.12 |
 
-At `wwa` the selectors and the colour agree exactly as on the `w = 1` quad. At
-`wwb` they do not, which is expected if the colour is perspective-corrected
-(`sum (w_i/w_i) A_i / sum (w_i/w_i)`) while the selectors are not: the two are
-different quantities once w varies. Which of the two carries the 1/w the
-interpolation model applies is a question for the projected geometry of each
-sample, and is not settled here - the words above are recorded so it can be
-answered without re-running the probe.
+At `wwa` the selectors and the colour agree; at `wwb` they do not. This probe
+turns w on, but it also moves the projected triangle - the shader sets clip w
+without premultiplying x, y and z, so the vertices divide by a different w and
+the trapezium is not the quad the `w = 1` samples were taken on. The two samples
+therefore cannot be compared point by point, and the disagreement says nothing
+yet about which quantity carries the 1/w. The `persp` set below holds the
+projection fixed and answers it.
+
+#### Perspective correction with the projection held fixed
+
+The `persp` set (38 variants) premultiplies the clip position by a per-vertex w,
+so `x/w` and `y/w` - everything the rasteriser sees - are identical for every w
+and only the interpolation weights move. w is 1 at every vertex except the blue
+one, which carries `1 + wdelta` for wdelta in 0, 1, 3, i.e. w = 1, 2 and 4. The
+sample points sit inside triangle (1, 2, 3), where lambda = `(1-x)/2`,
+`(1+y)/2`, `1 - lambda_1 - lambda_2`:
+
+| point | sample | lambda | w = 4: `D` |
+|:--|:--|:--|:--|
+| `q1` | (0.75, 0.45) | 0.125, 0.725, 0.15 | 0.456 |
+| `q2` | (0.35, -0.35) | 0.325, 0.325, 0.35 | 0.756 |
+| `q3` | (-0.6, -0.8) | 0.8, 0.1, 0.1 | 0.925 |
+
+`D` is the perspective denominator `sum lambda_i / W_i`. Each point is read at
+each w three ways: the coefficient (`src11`/`src12` times `rcp(r4)`), a scalar
+varying, and `src13 x rcp(r4)` as an anchor for `r4` itself. A `-pos` variant
+reads the sample point back with the same program (both triangles drawn, the
+position exported as the varying), which is how the three rows above are
+confirmed: the words put the samples at (0.756, 0.354), (0.242, -0.379) and
+(-0.631, -0.799), each within one readback step of the intended point.
+
+**The ratio of the two selectors scales with w, exactly.** This needs no model
+of the geometry at all - both selectors are read from the same word, so their
+ratio is free of the readback's absolute scale:
+
+| point | w = 1 | w = 2 | w = 4 | ratio to the w = 1 row |
+|:--|:--|:--|:--|:--|
+| `q2` | 1.000 | 2.000 | 4.000 | x2.00, x4.00 |
+| `q3` | 7.33 | 16.0 | 29.3 | x2.18, x4.00 |
+| `q1` | 0.180 | 0.324 | 0.707 | x1.80, x3.93 |
+
+So `src11 / src12 = (lambda_1 / W_1) / (lambda_2 / W_2)`: the second selector is
+divided by its vertex's w and the first is divided by 1. A screen-space pair
+would keep the ratio constant across w, and these move by 2 and 4.
+
+**The anchor moves with `D`.** `src13 x rcp(r4)` reads `1/(65536 D)`:
+
+| point | w | reading | `1/(65536 D)` |
+|:--|:--|:--|:--|
+| `q2` | 2 | 1.81e-5 | 1.81e-5 |
+| `q2` | 4 | 1.99e-5 | 1.99e-5 |
+| `q1` | 4 | 3.05e-5 | 3.10e-5 |
+| `q3` | 2, 4 | 1.66e-5, 1.66e-5 | 1.61e-5, 1.65e-5 |
+
+`q3` is the case where `D` moves by less than one readback step, so its word not
+moving is consistent rather than evidence. Reading the two rows together, `r4`
+carries the fragment's interpolated `1/w` - the same `D` the coefficient path
+divides by - which is what section 6.4 of the docs calls the `1.0 / w` the
+coefficient is multiplied with.
+
+**The coefficient is the perspective weight.** With `coef = selector x rcp(r4)`
+the second selector's coefficient separates the candidates, since a screen-space
+selector would give `lambda_2 / D`, which is above 1 for w = 2 and 4 and would
+read saturated:
+
+| point | w | measured | `(lambda_2/W_2)/D` | `lambda_2/D` |
+|:--|:--|:--|:--|:--|
+| `q1` | 2 | 0.545 - 0.595 | 0.569 | 1.137 |
+| `q1` | 4 | 0.354 - 0.386 | 0.397 | 1.589 |
+| `q2` | 2 | 0.177 - 0.193 | 0.194 | 0.388 |
+| `q2` | 4 | 0.096 - 0.105 | 0.107 | 0.430 |
+| `q3` | 4 | 0.026 - 0.029 | 0.027 | 0.108 |
+
+Every row is within one readback step of the perspective value and 2 to 4 steps
+from the screen-space one. The first selector's coefficient has both models
+agree (its vertex has w = 1) and is within a step of `lambda_1 / D` throughout.
+
+**The interpolated varying is perspective-corrected too**, which is what makes
+the above the same quantity the varying path uses rather than a coincidence:
+
+| sample | w | measured | perspective | screen space |
+|:--|:--|:--|:--|:--|
+| `q1` | 4 | 0.545 - 0.595 | 0.565 | 0.394 |
+| `q2` | 4 | 0.648 - 0.707 | 0.705 | 0.594 |
+| `q2` asymmetric | 4 | 0.771 - 0.841 | 0.825 | 0.639 |
+
+The vertex values are `(1.0 at v3, 0.5 at v1, 0.25 at v2)` for the first two
+rows and `(0.375, 1.5, 0.0625)` for the third, set through uniforms. The
+asymmetric set exists to remove the vertex-colour channel order from the decode:
+the varying is one scalar made from the three colour channels and then
+replicated across all four components, so neither the store's x/y exchange nor
+the channel-to-vertex mapping enters these numbers.
+
+What this does not settle: every value here is a one-step bracket (three mantissa
+bits, 12.5% wide in value) and the predictions sit inside them, so the probe
+cannot separate exact normalization from a common factor on all weights - the
+same caveat as the equal-w sums. `q3` is in the set as the control where the two
+models differ by less than a step.
 
 #### Recorded runs
+
+#### Recorded runs
+
+`tests/grate/asm/results/pin-persp` and `verify-persp` hold 118 rows each - 38
+variants and three repeats plus the controls - and pin `ac5628fe...` from
+`a7eec1ce...`: the same two-hash arrangement, both runs passing 118/118.
 
 `tests/grate/asm/results/pin-barycentric` and `verify-barycentric` hold 133 rows
 each - 43 variants, three repeats, plus the controls - with the per-row source
@@ -918,11 +1015,11 @@ working tree that produced it.
 
 The other SFU operations can now be driven with known inputs (`.lh` primes) and
 characterised one at a time; the two-row-register zero is still a description
-rather than a mechanism; and the unequal-w words are recorded but not yet
-interpreted, which needs the projected geometry of each sample and the 1/w the
-interpolation model applies. The constant in r4 is resolved only to one readback
-step, so a probe that reads the operand at a coarser magnitude would be needed to
-do better than "about 2^16".
+rather than a mechanism; and the readback's three mantissa bits bound everything
+here to one step, which is why an exact normalization constant is still not
+measured. The constant in r4 is resolved to the same one step; the `persp` set
+pins its *relative* behaviour against `D` instead, so a probe that reads the
+operand at a coarser magnitude would only be needed for the absolute value.
 
 ## What the runner cost
 

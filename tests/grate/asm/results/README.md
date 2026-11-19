@@ -319,3 +319,19 @@ invalidate another; generate such a manifest with
 * commit: 62b8b53dec8fa84c1cc7aa8e862946257b37bd7a with a dirty tree
 * created: 2026-11-19T23:07:35+00:00; 133 rows, repeat 3, timeout 10.0 s
 * summary: 133 passed, 0 failed of 133 - passed
+
+## pin-persp
+
+* manifest: `asm_characterize.persp.json` (sha256 ac5628fec50d)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: e37a0b39505915dabc7ebe9b180017172eb513f4 with a dirty tree
+* created: 2026-11-19T23:33:02+00:00; 118 rows, repeat 3, timeout 10.0 s
+* summary: 118 passed, 0 failed of 118 - passed
+
+## verify-persp
+
+* manifest: `asm_characterize.persp.json` (sha256 a7eec1ce8bed)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: e37a0b39505915dabc7ebe9b180017172eb513f4 with a dirty tree
+* created: 2026-11-19T23:34:32+00:00; 118 rows, repeat 3, timeout 10.0 s
+* summary: 118 passed, 0 failed of 118 - passed
