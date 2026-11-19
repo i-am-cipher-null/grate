@@ -858,6 +858,18 @@ what would test the normalization. At the centre w0 + w1 is 0.96 rather than 1,
 which is the same size as the truncation of two log bytes and therefore not a
 statement about the hardware.
 
+#### Recorded runs
+
+`tests/grate/asm/results/pin-barycentric` and `verify-barycentric` hold 88 rows
+each - 28 variants, three repeats, plus the controls - with the per-row source
+hashes. Their metadata carries two manifest hashes because pinning rewrites the
+manifest with the measured expectations: `defbea40...` is the manifest that was
+run, `9351d0f7...` the one with the pins added, and both are expected to differ.
+Re-running the pinned manifest from a clean checkout of `b849059`
+(`git clone` into `/tmp`, no working-tree changes) reproduced all 88 words with
+no mismatches, so the pin is a property of the committed inputs rather than of
+the working tree that produced it.
+
 ### What is left
 
 The other SFU operations can now be driven with known inputs (`.lh` primes) and
