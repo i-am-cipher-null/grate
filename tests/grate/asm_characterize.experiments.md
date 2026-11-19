@@ -902,6 +902,18 @@ interpolation model applies is a question for the projected geometry of each
 sample, and is not settled here - the words above are recorded so it can be
 answered without re-running the probe.
 
+#### Recorded runs
+
+`tests/grate/asm/results/pin-barycentric` and `verify-barycentric` hold 133 rows
+each - 44 variants, three repeats, plus the controls - with the per-row source
+hashes. Their metadata carries two manifest hashes because pinning rewrites the
+manifest with the measured expectations: `17fb3a60...` is the manifest that was
+run, `cbd45ac8...` the one with the pins added, and both are expected to differ.
+Re-running the pinned manifest from a clean checkout of `ccc7abe` (`git clone`
+into `/tmp`, no working-tree changes) reproduced all 133 words with no
+mismatches, so the pin is a property of the committed inputs rather than of the
+working tree that produced it.
+
 ### What is left
 
 The other SFU operations can now be driven with known inputs (`.lh` primes) and
