@@ -1,0 +1,68 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Eight-batch variant of asm/alu_buf_matrix.in.
+ *
+ * The four-batch matrix shows that at alu_buffer_size = N one DW executes per
+ * group of N batches, and that at sizes 3 and 4 the four-batch program returns
+ * zero from every store. Eight batches is a whole number of groups for sizes
+ * 2 and 4, and two groups plus a remainder for size 3, so this shape separates
+ * "no DW ever executes at these sizes" from "the DW needs a complete group".
+ *
+ * A variant that wants six active batches at size 3 leaves the last two
+ * batches as NOP/NOP; an empty batch still occupies its place in the batch
+ * stream, which is what the grouping needs to see.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+	[4] = 0.5;
+	[5] = 0.625;
+	[6] = 0.75;
+	[7] = 0.875;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@B0@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B1@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@B2@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@B3@
+	DW:	@D3@
+;
+EXEC
+	ALU:
+		ALU0:	@B4@
+	DW:	@D4@
+;
+EXEC
+	ALU:
+		ALU0:	@B5@
+	DW:	@D5@
+;
+EXEC
+	ALU:
+		ALU0:	@B6@
+	DW:	@D6@
+;
+EXEC
+	ALU:
+		ALU0:	@B7@
+	DW:	@D7@
+;

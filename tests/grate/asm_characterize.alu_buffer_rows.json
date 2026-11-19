@@ -47,23 +47,11 @@
     {
       "name": "size3-documented-zero",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x20006009"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "size4-documented-zero",
-      "environment": {
-        "GRATE_POKE": "0x520=0x2000600c"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "4"
         }
       },
       "expected": "0x00000000"

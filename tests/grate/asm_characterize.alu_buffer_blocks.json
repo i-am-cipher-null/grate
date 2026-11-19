@@ -1,0 +1,248 @@
+{
+  "name": "alu-buffer-blocks",
+  "repeat": 3,
+  "timeout": 10,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/alu_buf_blocks8.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "b8-n1-store-s0-8b",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006008"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "1",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "NOP",
+          "@B6@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D6@": "NOP",
+          "@B7@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D7@": "NOP"
+        }
+      },
+      "expected": "0x00000010"
+    },
+    {
+      "name": "b8-n1-ladder-all-8b",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006008"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "1",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "store rt1, r2, r3",
+          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D2@": "store rt1, r2, r3",
+          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "store rt1, r2, r3",
+          "@B6@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D6@": "store rt1, r2, r3",
+          "@B7@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D7@": "store rt1, r2, r3"
+        }
+      },
+      "expected": "0x000000BF"
+    },
+    {
+      "name": "b8-n2-store-s0-8b",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006010"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "2",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "NOP",
+          "@B6@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D6@": "NOP",
+          "@B7@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D7@": "NOP"
+        }
+      },
+      "expected": "0x00000000"
+    },
+    {
+      "name": "b8-n2-ladder-all-8b",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006010"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "2",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "store rt1, r2, r3",
+          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D2@": "store rt1, r2, r3",
+          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "store rt1, r2, r3",
+          "@B6@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D6@": "store rt1, r2, r3",
+          "@B7@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D7@": "store rt1, r2, r3"
+        }
+      },
+      "expected": "0x00000000"
+    },
+    {
+      "name": "b8-n4-store-s0-8b",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006020"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "4",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "NOP",
+          "@B6@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D6@": "NOP",
+          "@B7@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D7@": "NOP"
+        }
+      },
+      "expected": "0x00000000"
+    },
+    {
+      "name": "b8-n4-ladder-all-8b",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006020"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "4",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "store rt1, r2, r3",
+          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D2@": "store rt1, r2, r3",
+          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "store rt1, r2, r3",
+          "@B6@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D6@": "store rt1, r2, r3",
+          "@B7@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D7@": "store rt1, r2, r3"
+        }
+      },
+      "expected": "0x00000000"
+    },
+    {
+      "name": "b8-n2-store-s0-8b-count8",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006008"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "2",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "NOP",
+          "@B6@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D6@": "NOP",
+          "@B7@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D7@": "NOP"
+        }
+      },
+      "expected": "0x00000040"
+    },
+    {
+      "name": "b8-n2-store-s0-8b-count12",
+      "environment": {
+        "GRATE_POKE": "0x520=0x2000600C"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "2",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "NOP",
+          "@B6@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D6@": "NOP",
+          "@B7@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@D7@": "NOP"
+        }
+      },
+      "expected": "0x00000000"
+    }
+  ]
+}

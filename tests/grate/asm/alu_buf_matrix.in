@@ -1,0 +1,56 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * ALU buffer matrix: which batch's write is visible to which later batch?
+ *
+ * Four batches, each with one ALU packet and one DW operation, both chosen per
+ * variant. Every test therefore has the same batch geometry and only the write
+ * and the store move. ALU NOP writes 0.0 to r31 (fragment_asm.y), so a batch
+ * with no intended write still leaves r0..r3 untouched.
+ *
+ * The store picks which four halves are read back: `store rt1, r2, r3` puts
+ * r3.hi, r3.lo, r2.hi, r2.lo into the result word from the MSB, and
+ * `store rt1, r0, r1` does the same for r0/r1. Any slot the variant did not
+ * write is a built-in control: it shows what a row reads back as before a
+ * write, so a value can only be credited to a batch that wrote it.
+ *
+ * Sentinels are chosen so the readback identifies the write that landed. The
+ * .l* form stores the value as fx10 in one half; 0.25 is 0x40 and 0.5 is 0x7F,
+ * and the constants below cover the rest of the range.
+ *
+ * The manifest pokes the whole 0x520 start word, 0x20006000 | batches * size.
+ * A bare count drops the start bits and hangs the engine at every size.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+	[4] = 0.5;
+	[5] = 0.625;
+	[6] = 0.75;
+	[7] = 0.875;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@B0@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B1@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@B2@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@B3@
+	DW:	@D3@
+;
