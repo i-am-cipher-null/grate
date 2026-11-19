@@ -791,12 +791,12 @@ positions, and the last four groups also export data back through the same
 The readback is a log byte, so the difference to the `0x78` scale reference
 divided by 8 is log2 of the coefficient, and the scale in r4 cancels:
 
-| position | src11 | src12 |
+| sample point in the quad | src11 | src12 |
 |:--|--:|--:|
-| corner (0, 0), near the bottom-left vertex | 0.84..0.92 | 0.0016..0.0018 |
-| p1 (-0.5, -0.4) | 0.60..0.65 | 0.165..0.18 |
-| p2 (-0.25, -0.2) | 0.71..0.77 | 0.088..0.096 |
-| p4, quad centre | 0.50..0.54 | 0.459..0.50 |
+| corner pixel, offset `(0, 0)` | 0.84..0.92 | 0.0016..0.0018 |
+| `(-0.50, -0.65)`, offset `(-0.5, -0.4)` | 0.60..0.65 | 0.165..0.18 |
+| offset `(-0.25, -0.2)` only, position not exported | 0.71..0.77 | 0.088..0.096 |
+| `(-0.08, -0.08)`, the quad centre | 0.50..0.54 | 0.459..0.50 |
 
 So both selectors are per-pixel weights: they move with the sample position, and
 they are delivered with the fragment rather than fetched - dropping the `ipl`
