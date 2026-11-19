@@ -63,7 +63,7 @@ This means that there's a 14 bit significand, with 13 bits explicitly stored. A 
 
 The FX10 format is similar to [most signed fixed-point formats](https://en.wikipedia.org/wiki/Fixed-point_arithmetic), using 10 bits of storage, and a scaling-factor of 1/256.
 
-This means we have a minumum value of -4.0, and a maximum value of ~3.996.
+FX10 is a signed 10-bit two's-complement value with eight fractional bits. Its representable range is -2.0 through 511/256 (approximately 1.9961).
 
 ## ALU instruction word encoding
 
@@ -105,11 +105,11 @@ Unlike a regular ALU instruction, the ALU3 instruction words, constituting immed
 #### Opcodes:
 
 | opcode | Mnemonic | Meaning            | pseudo-code                |
-|-------:|:--------:|:-------------------|:---------------------------|
+|-------:|:--------:|:-------------------|:------------------------------|
 |      0 |    MAD   | Multiply-Add       | rA * rB + rC * rD          |
 |      1 |    MIN   | Minimum            | min(rA * rB, rC * rD)      |
 |      2 |    MAX   | Maximum            | max(rA * rB, rC * rD)      |
-|      3 |    CMP   | Compare and select | (rA < 0) ? rB : (rC * rD)  |
+|      3 |   CSEL   | Conditional select | (rA * rB < 0) ? rB : (rC * rD) |
 
 #### Scale result:
 
@@ -124,12 +124,15 @@ Unlike a regular ALU instruction, the ALU3 instruction words, constituting immed
 
 The conditional operation is applied to the ALU's result, so the final result is either 0.0 (false) or 1.0 (true).
 
-| Value | Meaning                  |
-|------:|:-------------------------|
-|     0 | no comparison            |
-|     1 | zero                     |
-|     2 | greater than zero        |
-|     3 | greater or equal to zero |
+| Value | Meaning                  | Assembler spelling |
+|------:|:-------------------------|:-------------------|
+|     0 | no comparison            | none               |
+|     1 | result equals zero       | eq                 |
+|     2 | result greater than zero | gt                 |
+|     3 | result >= zero           | ge                 |
+
+A non-zero condition code replaces the arithmetic result with a Boolean 0.0
+or 1.0 result. No additional condition-enable bit is required.
 
 #### Condition registers:
 
@@ -215,6 +218,12 @@ When bit "addition disable" is set, the Multiply-Add operation turns into two mu
 |:----------------------:|:---------------------:|:---------------:|:----------------:|
 |            1           |           0           |      rC\*rD     |       rA\*rB     |
 |            0           |           1           |      rA\*rB     |       rC\*rD     |
+
+For ordinary ALU destinations, the write mask also determines the stored
+format: writing both halves (`.lh`) stores an FP20 value, while writing only
+the low or high half (`.l*` or `.*h`) stores an FX10 value in that half.
+A later unqualified FP20 read uses the high half, so a low-half-only FX10
+write is not a suitable producer for such a read.
 
 ## MFU instruction word encoding
 
