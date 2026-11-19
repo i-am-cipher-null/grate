@@ -167,3 +167,19 @@ invalidate another; generate such a manifest with
 * commit: 687cc90b5fbd18542b47477b55aafa97b532feed with a dirty tree
 * created: 2026-11-19T20:43:56+00:00; 226 rows, repeat 3, timeout 10.0 s
 * summary: 226 passed, 0 failed of 226 - passed
+
+## pin-dwpos
+
+* manifest: `dwpos.json` (sha256 491942c8573d)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 45fdd777581611b415e19406020ce1c12f477ee3 with a dirty tree
+* created: 2026-11-19T20:57:41+00:00; 16 rows, repeat 3, timeout 10.0 s
+* summary: 16 passed, 0 failed of 16 - passed
+
+## verify-dwpos
+
+* manifest: `asm_characterize.alu_buffer_arb_dwpos.json` (sha256 1f376dba2082)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 45fdd777581611b415e19406020ce1c12f477ee3 with a dirty tree
+* created: 2026-11-19T20:59:12+00:00; 16 rows, repeat 3, timeout 10.0 s
+* summary: 16 passed, 0 failed of 16 - passed

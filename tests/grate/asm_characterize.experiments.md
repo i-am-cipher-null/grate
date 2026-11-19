@@ -30,7 +30,7 @@ have to be absolute - a relative manifest path fails with
 repository root from the script's own path, so the manifest and the `program`
 stages it names still resolve against the source tree.
 
-The six `alu_buffer_*` manifests are generated. Regenerate one after changing
+The seven `alu_buffer_*` manifests are generated. Regenerate one after changing
 its test table, and pin its words only from a run whose repeats agreed:
 
     python3 tests/grate/asm/make_alu_buffer_matrix.py                    # matrix
@@ -39,6 +39,7 @@ its test table, and pin its words only from a run whose repeats agreed:
     python3 tests/grate/asm/make_alu_buffer_matrix.py --mode xgroup      # two groups
     python3 tests/grate/asm/make_alu_buffer_matrix.py --mode arb         # two DWs
     python3 tests/grate/asm/make_alu_buffer_matrix.py --mode pseq        # two DWs, field swept
+    python3 tests/grate/asm/make_alu_buffer_matrix.py --mode dwpos       # one DW, each position
     python3 tests/grate/asm/make_alu_buffer_matrix.py --results <run dir>
 
 Run one size at a time (`--sizes N --out /tmp/m_nN.json`) and pin the checked-in
@@ -268,17 +269,57 @@ is responsible is not measured.
 
 The effect is **per group**, not per program: `-local` puts two DWs in group 0
 and the usual one in group 1 of a two-group program, and group 1 still stores
-its own last batch (`0x60` at size 2, `0x9F` at size 3, `0xDF` at size 4). A
-group with one DW stores; a group with two does not; the neighbouring groups are
-unaffected.
+its own last batch (`0x60` at size 2, `0x9F` at size 3, `0xDF` at size 4). The
+neighbouring groups are unaffected.
+
+The `-b` row is why "a group with one DW stores" is not the rule: the lone DW
+there is in the group's *second* batch, and it stores nothing. Every single-DW
+control above puts its DW in the first batch, so the earlier statement was only
+established for that position. `--mode dwpos` measures the others.
 
 This is a rule about what is observed, not about why. Two DWs could be dropped
 at decode, arbitrated away, or the group's store could be assigned an execution
 slot that never comes; the template programs `pseq_to_dw_exec_nb = 1`, and a
-program with more DWs than that field describes may simply not get a slot. Three
+program with more DWs than that field describes may simply not get a slot (the
+pseq_to_dw_exec_nb sweep below tests that one and does not support it). Three
 DWs in one group, a second DW in a group that also leaves an incomplete tail,
-and the same experiment at a buffer size above 4 are untested, so "more than one
-DW in a group suppresses that group's store" is where the evidence stops.
+and the same experiment at a buffer size above 4 are untested, so the
+statements here stay rules about arrangements rather than about a mechanism.
+
+### Where in the group the one DW sits
+
+A group's only DW was placed in its first batch in every control so far, and the
+`-b` row shows the second batch failing at sizes 2, 3 and 4. `--mode dwpos` fills
+in the remaining positions of a size-4 group, with the same distinct write in
+every batch and the template's `pseq_to_dw_exec_nb = 1`:
+
+| DW position in a 4-batch group | result |
+|:--|:--|
+| batch 0 (`dwpos-n4-b0`) | `0x00000060` |
+| batch 1 (`dwpos-n4-b1`) | `0x00000000` |
+| batch 2 (`dwpos-n4-b2`) | `0x00000000` |
+| batch 3 (`dwpos-n4-b3`) | `0x00000000` |
+
+So the observable DW behaviour is **position-dependent inside the group**, and
+the position is the group's first batch. A lone DW in batch 1, 2 or 3 produces no
+observable store. That is not a store reading a row nobody wrote: every batch
+writes its own sentinel, and a store at batch 0 returns `0x60`, the group's last
+byte, rather than the byte of the batch its DW sits in. `dwpos-n4-b0` is the same
+program as `arb-n4-a` and returns the same word from an independent run.
+
+"First batch" is relative to the group, not the program: the two-group runs put
+a DW at the start of group 1 with no DW in group 0 (`xg-n4-wgroup1-store-g1`,
+`0x40`) and it stores, and `arb-n4-local` still gets group 1's last byte while
+group 0 carries two DWs.
+
+This reads back into the two-DW result. `-a-b` differs from `-a` only by adding a
+DW in batch 1, and a lone DW in batch 1 already stores nothing, so the pair's
+zero is not by itself evidence of arbitration between two contending DWs: both
+readings - a second DW cancels the group's store, or a DW outside the first batch
+disables the slot - fit every run here. Recorded as measured over sizes 2 to 4,
+the data say: an observable store comes from a group whose DW is in the group's
+first batch and which has no other DW, and every other arrangement tested
+produces nothing. Which of the two readings holds is not separated by these runs.
 
 ### At other `pseq_to_dw_exec_nb` values
 
@@ -294,16 +335,17 @@ not measured.
 `--mode pseq` repeats the three discriminating sequences at 1, 2, 3, 4 and then
 at 6, 8, 16 and 31, the last four inside the 6..31 range the blob's driver
 writes: a limit that only showed at the field's normal settings would not appear
-below them. The single-DW case stays the control at every value.
+below them. The single-DW control stays in batch 0 at every value, which the
+position sweep above shows is the one position where a lone DW stores at all.
 
-| `pseq_to_dw_exec_nb` | `-a` (one DW), n2 / n3 / n4 | `-a-b` | `-a-b-zero` |
+| `pseq_to_dw_exec_nb` | `-a` (one DW, batch 0), n2 / n3 / n4 | `-a-b` | `-a-b-zero` |
 |--:|:--|:--|:--|
 | 1, 2, 3, 4 | `0x20` / `0x40` / `0x60` | `0x00000000` | `0x00000000` |
 | 6, 8, 16, 31 | `0x20` / `0x40` / `0x60` | `0x00000000` | `0x00000000` |
 
 Reserving up to 31 PSEQ-to-DW executions changes nothing. Every value stores the
-group's last byte exactly once when the group has one DW, and produces nothing
-when it has two, and the zero-returning second DW again makes the two zero cases
+group's last byte exactly once when the group has one DW in batch 0, and produces
+nothing when it has two, and the zero-returning second DW again makes the two zero cases
 indistinguishable: nothing becomes visible in either program.
 
 Because the header is not the only path to the register, two variants at size 4

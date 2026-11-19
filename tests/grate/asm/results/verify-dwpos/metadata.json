@@ -1,0 +1,168 @@
+{
+  "name": "alu-buffer-dw-position",
+  "created_utc": "2026-11-19T20:59:12+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.alu_buffer_arb_dwpos.json",
+  "manifest_sha256": "1f376dba2082f7646387fbc6ad1fdb05ec2af8deafe3efb2d4c03cf59bc2c7cb",
+  "assembler": "/home/freebuff/build/grate/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "45fdd777581611b415e19406020ce1c12f477ee3",
+  "git_status": "M tests/grate/asm/make_alu_buffer_matrix.py\n?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/results/pin-dwpos/\n?? tests/grate/asm_characterize.alu_buffer_arb_dwpos.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 10.0,
+  "manifest_data": {
+    "name": "alu-buffer-dw-position",
+    "repeat": 3,
+    "timeout": 10,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/alu_buf_blocks8.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "dwpos-n4-b0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000060"
+      },
+      {
+        "name": "dwpos-n4-b1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "NOP",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "dwpos-n4-b2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "NOP",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "dwpos-n4-b3",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "NOP",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 16,
+    "passed": 16,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

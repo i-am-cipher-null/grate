@@ -15,6 +15,7 @@ the ALU packet and the DW operation of each batch change.
     make_alu_buffer_matrix.py --mode xgroup         # two groups: does a write survive?
     make_alu_buffer_matrix.py --mode arb            # one group, two DWs: who wins
     make_alu_buffer_matrix.py --mode pseq           # the same, at pseq_to_dw_exec_nb 1..4
+    make_alu_buffer_matrix.py --mode dwpos          # one DW at each position of a group
 
 Each size's program is exactly as long as the count it runs at. The 0x520 count
 is the number of batches to execute (measured with the group ladder), so a count
@@ -564,7 +565,9 @@ def arb_variants(sizes=(2, 3, 4)):
 
     Every batch of the group writes its own byte, so a store at the group's end
     names the last batch. The first batch's DW is the one the ladder shows
-    firing. A second DW in the same group then has three ways to behave:
+    firing, and it is the only position that stores on its own: `b` below puts
+    the group's lone DW in the second batch and gets nothing, which `--mode
+    dwpos` confirms for the other positions of a size-4 group. A second DW in the same group then has three ways to behave:
 
       ignored     the word is the first DW's, unchanged
       overriding  the second DW stores too and its value lands last
@@ -716,6 +719,47 @@ def build_pseq_manifest(sizes=(2, 3, 4), pseq_values=PSEQ_VALUES):
                            sizes, "tests/grate/asm/alu_buf_pseq.in")
 
 
+def dwpos_variants(size=4):
+    """One DW, at each batch position of one group: does the position matter?
+
+    `--mode arb`'s single-DW control always puts the DW in batch 0, so "a group
+    with one DW stores" is established for that position only, and its two-DW
+    variants put the second DW in batch 1 or in the group's last batch. A DW
+    anywhere else, with the rest of the group carrying no DW, has not been
+    measured.
+
+    The group is unchanged from `--mode arb` - every batch writes its own
+    sentinel byte - and exactly one DW sits in batch 0, 1, 2 or 3.
+    pseq_to_dw_exec_nb stays at the template's 1, since the sweep in `--mode
+    pseq` showed that moving it does not change the outcome.
+
+    No expected value is assumed. The word read back is whatever row the store
+    reads, and the arb measurement shows that this is not the row of the batch
+    the DW sits in: `a` has its DW in batch 0 and returns 0x60, the last batch's
+    byte. The four words therefore separate three readings:
+
+      all 0x60             the store reads the group's last row wherever its
+                           DW is, so the position is not what a single DW
+                           depends on
+      0x10/0x20/0x40/0x60  the store reads the row of the DW's own batch
+      zero outside batch 0 the store itself depends on the position
+    """
+    batches_at = size
+    table = sentinels(batches_at)
+    batches = [write("r2", "lo", table[index]) for index in range(batches_at)]
+    out = []
+    for position in range(batches_at):
+        dw = [NOP] * batches_at
+        dw[position] = STORE23
+        out.append((f"dwpos-n{size}-b{position}", size, batches_at, batches, dw))
+    return out
+
+
+def build_dwpos_manifest(size=4):
+    return _group_manifest("alu-buffer-dw-position", dwpos_variants(size), (size,),
+                           "tests/grate/asm/alu_buf_blocks8.in")
+
+
 def measured(path):
     """variant name -> the single result word every repeat agreed on."""
     words = {}
@@ -737,7 +781,7 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--mode",
                         choices=("matrix", "blocks", "ladder", "leak", "count", "sweep",
-                                 "xgroup", "arb", "pseq"),
+                                 "xgroup", "arb", "pseq", "dwpos"),
                         default="matrix",
                         help="which manifest to generate (default: %(default)s)")
     parser.add_argument("--results", help="characterization run directory to pin expectations from")
@@ -773,6 +817,9 @@ def main():
     elif args.mode == "pseq":
         manifest = build_pseq_manifest(tuple(args.sizes) if args.sizes else (2, 3, 4))
         out = args.out or "tests/grate/asm_characterize.alu_buffer_arb_pseq.json"
+    elif args.mode == "dwpos":
+        manifest = build_dwpos_manifest()
+        out = args.out or "tests/grate/asm_characterize.alu_buffer_arb_dwpos.json"
     else:
         manifest = build_manifest(args.sizes or SIZES, args.count)
         out = args.out or "tests/grate/asm_characterize.alu_buffer_matrix.json"
