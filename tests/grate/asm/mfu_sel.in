@@ -1,0 +1,40 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * One MFU word, isolated: how does the multiplier's source number select its
+ * operand, and what do the numbers past the four row registers read?
+ *
+ * Batch 0 primes the four row registers with four distinct constants, so a
+ * multiplier reading row register N returns byte N of the .constants table
+ * (0x10, 0x20, 0x40, 0x60) and no other number can. Batch 1 holds exactly one
+ * MFU sub-instruction - a single mul0 with the source under test - and batch 2
+ * stores r2. Between variants only that one source field changes.
+ *
+ * The multiplier reads its operands from the current row, and at
+ * alu_buffer_size 1 the program has a single row, so what batch 0 primed is
+ * what batch 1's multiplier reads. The destination is r2, the same register the
+ * store reads, so a multiplier that does not write r2 leaves the primed 0x40 in
+ * place - which is what the variant with no MFU word returns.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@P0@
+		ALU1:	@P1@
+		ALU2:	@P2@
+		ALU3:	@P3@
+;
+EXEC
+	MFU:	@MFU@
+;
+EXEC
+	DW:	store rt1, r2, r3
+;

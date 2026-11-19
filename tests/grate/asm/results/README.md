@@ -183,3 +183,35 @@ invalidate another; generate such a manifest with
 * commit: 45fdd777581611b415e19406020ce1c12f477ee3 with a dirty tree
 * created: 2026-11-19T20:59:12+00:00; 16 rows, repeat 3, timeout 10.0 s
 * summary: 16 passed, 0 failed of 16 - passed
+
+## pin-dwpos2
+
+* manifest: `dwpos3.json` (sha256 af7d111bfcb1)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f0994d5a2ecb8c8ba18d62aa7d85a69317ead886 with a dirty tree
+* created: 2026-11-19T21:11:59+00:00; 19 rows, repeat 3, timeout 10.0 s
+* summary: 19 passed, 0 failed of 19 - passed
+
+## verify-dwpos2
+
+* manifest: `asm_characterize.alu_buffer_arb_dwpos.json` (sha256 b4d25b83f718)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f0994d5a2ecb8c8ba18d62aa7d85a69317ead886 with a dirty tree
+* created: 2026-11-19T21:12:12+00:00; 19 rows, repeat 3, timeout 10.0 s
+* summary: 19 passed, 0 failed of 19 - passed
+
+## pin-mfusrc
+
+* manifest: `asm_characterize.mfu_selector_src.json` (sha256 78d7d7f15d8f)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f0994d5a2ecb8c8ba18d62aa7d85a69317ead886 with a dirty tree
+* created: 2026-11-19T21:20:47+00:00; 76 rows, repeat 3, timeout 10.0 s
+* summary: 76 passed, 0 failed of 76 - passed
+
+## verify-mfusrc
+
+* manifest: `asm_characterize.mfu_selector_src.json` (sha256 927ca8ca1133)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f0994d5a2ecb8c8ba18d62aa7d85a69317ead886 with a dirty tree
+* created: 2026-11-19T21:21:21+00:00; 76 rows, repeat 3, timeout 10.0 s
+* summary: 76 passed, 0 failed of 76 - passed

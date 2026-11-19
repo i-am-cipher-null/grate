@@ -135,6 +135,35 @@
       },
       "fs": "tests/grate/asm/alu_buf_blocks8.in",
       "expected": "0x00000000"
+    },
+    {
+      "name": "dwpos-n3-b2",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006003"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D2@": "store rt1, r2, r3",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP",
+          "@B6@": "NOP",
+          "@D6@": "NOP",
+          "@B7@": "NOP",
+          "@D7@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_blocks8.in",
+      "expected": "0x00000000"
     }
   ]
 }

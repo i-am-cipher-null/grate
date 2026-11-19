@@ -743,6 +743,10 @@ def dwpos_variants(size=4):
                            depends on
       0x10/0x20/0x40/0x60  the store reads the row of the DW's own batch
       zero outside batch 0 the store itself depends on the position
+
+    One cell of the size 2..4 position matrix is added at the end: batches 0 and
+    1 are measured by `--mode arb` at every size, so the only position nothing
+    had covered is batch 2 of a size-3 group.
     """
     batches_at = size
     table = sentinels(batches_at)
@@ -752,6 +756,11 @@ def dwpos_variants(size=4):
         dw = [NOP] * batches_at
         dw[position] = STORE23
         out.append((f"dwpos-n{size}-b{position}", size, batches_at, batches, dw))
+    batches_at = 3
+    table = sentinels(batches_at)
+    batches = [write("r2", "lo", table[index]) for index in range(batches_at)]
+    dw = [NOP, NOP, STORE23]
+    out.append(("dwpos-n3-b2", batches_at, batches_at, batches, dw))
     return out
 
 
