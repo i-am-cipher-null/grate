@@ -30,7 +30,7 @@ have to be absolute - a relative manifest path fails with
 repository root from the script's own path, so the manifest and the `program`
 stages it names still resolve against the source tree.
 
-The three `alu_buffer_*` manifests are generated. Regenerate one after changing
+The six `alu_buffer_*` manifests are generated. Regenerate one after changing
 its test table, and pin its words only from a run whose repeats agreed:
 
     python3 tests/grate/asm/make_alu_buffer_matrix.py                    # matrix
@@ -38,6 +38,7 @@ its test table, and pin its words only from a run whose repeats agreed:
     python3 tests/grate/asm/make_alu_buffer_matrix.py --mode blocks      # group probes
     python3 tests/grate/asm/make_alu_buffer_matrix.py --mode xgroup      # two groups
     python3 tests/grate/asm/make_alu_buffer_matrix.py --mode arb         # two DWs
+    python3 tests/grate/asm/make_alu_buffer_matrix.py --mode pseq        # two DWs, field swept
     python3 tests/grate/asm/make_alu_buffer_matrix.py --results <run dir>
 
 Run one size at a time (`--sizes N --out /tmp/m_nN.json`) and pin the checked-in
@@ -260,9 +261,10 @@ So it is not "the DW must be the last operation" and not "the later DW wins": a
 group with the first batch's DW *and* any second DW stores nothing at all. The
 zero-returning control makes that more than an inference from a zero word -
 `-a-b-zero` puts `store rt1, r0, r1` second, and `r0`/`r1` are never written, so
-a second DW that fired would read `0x00000000` while `-a-b` (both storing the
-written register) would still read the written byte. Both read zero, so no store
-ran in either case.
+a second DW that stored would read `0x00000000` while `-a-b` (both storing the
+written register) would still read the written byte. Both read zero, so neither
+program produced an observable store - which of the two DWs, or the group's slot,
+is responsible is not measured.
 
 The effect is **per group**, not per program: `-local` puts two DWs in group 0
 and the usual one in group 1 of a two-group program, and group 1 still stores
@@ -277,6 +279,50 @@ program with more DWs than that field describes may simply not get a slot. Three
 DWs in one group, a second DW in a group that also leaves an incomplete tail,
 and the same experiment at a buffer size above 4 are untested, so "more than one
 DW in a group suppresses that group's store" is where the evidence stops.
+
+### At other `pseq_to_dw_exec_nb` values
+
+The template programs `pseq_to_dw_exec_nb = 1`, so "more than one DW in a group
+costs the group its store" could be a property of that configuration rather than
+of the instructions: one reserved PSEQ-to-DW execution, two DWs asking for it.
+The field is not a comment: in the source, `grate-asm.c` copies the header value
+to `shader->pseq_to_dw_nb` and `grate_3d_set_pseq_dw_cfg()` programs it into
+`FP_PSEQ_DW_CFG` (`0x546`) before the `0x520` start word, so rewriting the header
+changes a register write rather than a comment. That path is read from the code,
+not measured.
+
+`--mode pseq` repeats the three discriminating sequences at 1, 2, 3, 4 and then
+at 6, 8, 16 and 31, the last four inside the 6..31 range the blob's driver
+writes: a limit that only showed at the field's normal settings would not appear
+below them. The single-DW case stays the control at every value.
+
+| `pseq_to_dw_exec_nb` | `-a` (one DW), n2 / n3 / n4 | `-a-b` | `-a-b-zero` |
+|--:|:--|:--|:--|
+| 1, 2, 3, 4 | `0x20` / `0x40` / `0x60` | `0x00000000` | `0x00000000` |
+| 6, 8, 16, 31 | `0x20` / `0x40` / `0x60` | `0x00000000` | `0x00000000` |
+
+Reserving up to 31 PSEQ-to-DW executions changes nothing. Every value stores the
+group's last byte exactly once when the group has one DW, and produces nothing
+when it has two, and the zero-returning second DW again makes the two zero cases
+indistinguishable: nothing becomes visible in either program.
+
+Because the header is not the only path to the register, two variants at size 4
+keep the header at 1 and write `0x546` directly in `GRATE_POKE_EARLY` (the poke
+stage before the start word, when the sequencer latches it). `pseq1-n4-a-poke`
+(`0x546 = 31 << 6`) still returns its `0x60`, so the program runs with the field
+widened by a route that does not involve the header, and `pseq1-n4-a-b-poke`
+still returns zero. The sweep above is therefore a register sweep and its zero is
+not a header value that was parsed and dropped.
+
+So a shortfall of reserved slots is not the explanation at any value of this
+field, or the field does not gate that slot the way its name suggests. Which of
+those holds is untested here, and so is whether the second DW is being dropped
+before or after the field is consulted.
+
+Only the eight values 1, 2, 3, 4, 6, 8, 16 and 31, sizes 2 to 4, and the three
+sequences above are measured.
+Size 1 is left out because a group is a single batch and so has no second batch
+to hold a second DW; three DWs in one group remain untested at every value.
 
 ### Across a group boundary
 

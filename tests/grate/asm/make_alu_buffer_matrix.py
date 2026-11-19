@@ -14,6 +14,7 @@ the ALU packet and the DW operation of each batch change.
     make_alu_buffer_matrix.py --mode sweep          # count -> how many batches ran
     make_alu_buffer_matrix.py --mode xgroup         # two groups: does a write survive?
     make_alu_buffer_matrix.py --mode arb            # one group, two DWs: who wins
+    make_alu_buffer_matrix.py --mode pseq           # the same, at pseq_to_dw_exec_nb 1..4
 
 Each size's program is exactly as long as the count it runs at. The 0x520 count
 is the number of batches to execute (measured with the group ladder), so a count
@@ -495,17 +496,29 @@ def build_leak_manifest(sequence=LEAK_SEQUENCE):
     }
 
 
-def blocks8_variant(name, size, count, batches, dw):
-    """One variant of the eight-batch template, with a count that runs it once."""
+def blocks8_variant(name, size, count, batches, dw, pseq=None, extra_env=None):
+    """One variant of the eight-batch template, with a count that runs it once.
+
+    `pseq` is pseq_to_dw_exec_nb. Left at None the variant uses the shared
+    template, whose field is 1; given a value it uses the copy that carries the
+    placeholder, so the shared template and its pinned manifests never change.
+    """
     replace = {"@ABUF@": str(size)}
+    fs = "tests/grate/asm/alu_buf_blocks8.in"
+    if pseq is not None:
+        replace["@PDW@"] = str(pseq)
+        fs = "tests/grate/asm/alu_buf_pseq.in"
     for index in range(8):
         replace[f"@B{index}@"] = batches[index] if index < len(batches) else NOP
         replace[f"@D{index}@"] = dw[index] if index < len(dw) else NOP
+    environment = {"GRATE_POKE": f"0x520=0x{START_WORD | count:08X}"}
+    if extra_env:
+        environment.update(extra_env)
     return {
         "name": name,
-        "environment": {"GRATE_POKE": f"0x520=0x{START_WORD | count:08X}"},
+        "environment": environment,
         "replace": {"fs": replace},
-        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "fs": fs,
     }
 
 
@@ -555,7 +568,7 @@ def arb_variants(sizes=(2, 3, 4)):
 
       ignored     the word is the first DW's, unchanged
       overriding  the second DW stores too and its value lands last
-      suppressing  no store runs, so the word stays at the clear value
+      suppressing  nothing becomes visible, so the word stays at clear
 
     `store rt1, r2, r3` (STORE23) returns the written byte and `store rt1, r0,
     r1` (STORE01) returns zero because r0 and r1 are never written, which is
@@ -605,8 +618,7 @@ def arb_variants(sizes=(2, 3, 4)):
 
 
 def _group_manifest(title, variants, sizes, fs_default):
-    pinned = [blocks8_variant(name, size, count, batches, dw)
-              for name, size, count, batches, dw in variants]
+    pinned = [blocks8_variant(*row) for row in variants]
     return {
         "name": title,
         "repeat": 3,
@@ -631,6 +643,79 @@ def build_arb_manifest(sizes=(2, 3, 4)):
                            "tests/grate/asm/alu_buf_blocks8.in")
 
 
+# The field is 7 bits wide (grate-asm.c reads it back as ``(word >> 6) & 0x7f``)
+# but the blob's driver only ever writes 6..31, so the sweep covers the review's
+# small values, the documented range's ends and two points between.
+PSEQ_VALUES = (1, 2, 3, 4, 6, 8, 16, 31)
+
+
+def pseq_variants(sizes=(2, 3, 4), pseq_values=PSEQ_VALUES):
+    """The arbitration sequences again, at each pseq_to_dw_exec_nb value.
+
+    `--mode arb` runs at the template's default (`pseq_to_dw_exec_nb = 1`) and
+    shows that a second DW in a group costs that group its store. This mode asks
+    whether that is a property of the instructions or of the execution slot the
+    field describes: the same programs at 1, 2, 3 and 4 say whether reserving
+    more PSEQ-to-DW executions lets the second DW run.
+
+    Only the two sequences that separate the readings are repeated, plus the
+    single-DW positive control:
+
+      a          one DW, the group's last batch stores its written byte
+      a-b        two DWs, both storing the written register
+      a-b-zero   two DWs, the second storing r0/r1 and so returning zero
+
+    A non-zero `a` at every value is the control: the field itself does not stop
+    the one-DW case from storing. If `a-b` turns non-zero, the second DW started
+    running. If `a-b` stays zero while `a-b-zero` also stays zero, nothing is
+    observable in either program.
+
+    Values 1 to 4 are what the review asked for; 6, 8, 16 and 31 are inside the
+    range the blob's driver programs into 0x546, because a limit that only shows
+    at the field's normal settings would not appear below them.
+
+    The fragment header is not the only way to that register, so the last two
+    variants keep the header at 1 and write 0x546 directly in GRATE_POKE_EARLY
+    (before the 0x520 start word, which is when the sequencer latches it). That
+    pair says whether the header value reaches the register at all, so a zero
+    from the sweep above cannot be an artefact of a header that is parsed and
+    then ignored.
+    """
+    out = []
+    for pseq in pseq_values:
+        for size in sizes:
+            batches_at = size
+            table = sentinels(batches_at)
+            batches = [write("r2", "lo", table[index]) for index in range(batches_at)]
+            for tag, fill in (("a", {0: STORE23}),
+                              ("a-b", {0: STORE23, 1: STORE23}),
+                              ("a-b-zero", {0: STORE23, 1: STORE01})):
+                dw = [NOP] * batches_at
+                for index, instruction in fill.items():
+                    dw[index] = instruction
+                out.append((f"pseq{pseq}-n{size}-{tag}", size, batches_at,
+                            batches, dw, pseq))
+
+    # 31 << 6: the field as TGR3D_VAL() packs it
+    if 4 in sizes:
+        batches_at = 4
+        table = sentinels(batches_at)
+        batches = [write("r2", "lo", table[index]) for index in range(batches_at)]
+        poke = {"GRATE_POKE_EARLY": f"0x546=0x{31 << 6:08X}"}
+        for tag, fill in (("a-poke", {0: STORE23}),
+                          ("a-b-poke", {0: STORE23, 1: STORE23})):
+            dw = [NOP] * batches_at
+            for index, instruction in fill.items():
+                dw[index] = instruction
+            out.append((f"pseq1-n4-{tag}", 4, batches_at, batches, dw, 1, poke))
+    return out
+
+
+def build_pseq_manifest(sizes=(2, 3, 4), pseq_values=PSEQ_VALUES):
+    return _group_manifest("alu-buffer-arb-pseq", pseq_variants(sizes, pseq_values),
+                           sizes, "tests/grate/asm/alu_buf_pseq.in")
+
+
 def measured(path):
     """variant name -> the single result word every repeat agreed on."""
     words = {}
@@ -652,7 +737,7 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--mode",
                         choices=("matrix", "blocks", "ladder", "leak", "count", "sweep",
-                                 "xgroup", "arb"),
+                                 "xgroup", "arb", "pseq"),
                         default="matrix",
                         help="which manifest to generate (default: %(default)s)")
     parser.add_argument("--results", help="characterization run directory to pin expectations from")
@@ -685,6 +770,9 @@ def main():
     elif args.mode == "arb":
         manifest = build_arb_manifest(tuple(args.sizes) if args.sizes else (2, 3, 4))
         out = args.out or "tests/grate/asm_characterize.alu_buffer_arb.json"
+    elif args.mode == "pseq":
+        manifest = build_pseq_manifest(tuple(args.sizes) if args.sizes else (2, 3, 4))
+        out = args.out or "tests/grate/asm_characterize.alu_buffer_arb_pseq.json"
     else:
         manifest = build_manifest(args.sizes or SIZES, args.count)
         out = args.out or "tests/grate/asm_characterize.alu_buffer_matrix.json"

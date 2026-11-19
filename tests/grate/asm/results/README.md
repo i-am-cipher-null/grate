@@ -151,3 +151,19 @@ invalidate another; generate such a manifest with
 * commit: 3c36ef062f67a67627b323ea5bfb630762838d77 with a dirty tree
 * created: 2026-11-19T20:14:08+00:00; 70 rows, repeat 3, timeout 10.0 s
 * summary: 70 passed, 0 failed of 70 - passed
+
+## pin-arbpseq
+
+* manifest: `asm_characterize.alu_buffer_arb_pseq.json` (sha256 a9b3832de8a9)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 687cc90b5fbd18542b47477b55aafa97b532feed with a dirty tree
+* created: 2026-11-19T20:43:14+00:00; 226 rows, repeat 3, timeout 10.0 s
+* summary: 226 passed, 0 failed of 226 - passed
+
+## verify-arbpseq
+
+* manifest: `asm_characterize.alu_buffer_arb_pseq.json` (sha256 6254f2c06cb4)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 687cc90b5fbd18542b47477b55aafa97b532feed with a dirty tree
+* created: 2026-11-19T20:43:56+00:00; 226 rows, repeat 3, timeout 10.0 s
+* summary: 226 passed, 0 failed of 226 - passed
