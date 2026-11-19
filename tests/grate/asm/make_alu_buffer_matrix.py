@@ -12,6 +12,8 @@ the ALU packet and the DW operation of each batch change.
     make_alu_buffer_matrix.py --mode blocks         # eight-batch group probe instead
     make_alu_buffer_matrix.py --mode ladder         # just the batch-naming tests, per size
     make_alu_buffer_matrix.py --mode sweep          # count -> how many batches ran
+    make_alu_buffer_matrix.py --mode xgroup         # two groups: does a write survive?
+    make_alu_buffer_matrix.py --mode arb            # one group, two DWs: who wins
 
 Each size's program is exactly as long as the count it runs at. The 0x520 count
 is the number of batches to execute (measured with the group ladder), so a count
@@ -57,8 +59,10 @@ above the length as its own experiment.
                     at S. Whether the file is uniform rather than a special case
                     for r2/r3.
   baseline          nothing written at all: what an untouched row reads back as.
-                    First and last in each group, so a change across the run
-                    would show as state left behind by earlier draws.
+                    At the first and the last store position that actually
+                    fires, so a change across the run would show as state left
+                    behind by earlier draws, and the word means "a store read
+                    untouched state" rather than "no store ran".
 """
 
 import argparse
@@ -139,11 +143,17 @@ def variants_for(size):
     batches_at = BATCHES_FOR[size]
     count = batches_at
     table = sentinels(batches_at)
+    reads = store_positions(size, batches_at)
     out = []
 
     # Control: nothing is written. Whatever this returns is what an untouched
     # row reads back as, so no other variant can credit that value to a write.
-    out.append((f"{p}-baseline-s1", no_writes(batches_at), store(1, STORE23, batches_at), count))
+    # It has to be read where the DW fires: batch 1 starts a group only at size
+    # 1, so the first version of this control (a store hard-coded at batch 1)
+    # ran no store at all at sizes 2 to 4 and measured the clear colour instead
+    # of untouched state.
+    out.append((f"{p}-baseline-s{reads[0]}", no_writes(batches_at),
+                store(reads[0], STORE23, batches_at), count))
 
     # Ladder: every batch writes its own constant, so a store that sees the
     # state of one batch returns a value that names it.
@@ -172,8 +182,6 @@ def variants_for(size):
             out.append((f"{p}-conf-b0b1-s{at}-{tag}", batches,
                         store(at, STORE23, batches_at), count))
 
-    reads = store_positions(size, batches_at)
-
     # Two different registers written one batch apart and read together: are the
     # registers independent, or does one write displace the other?
     for tag, first, second in (("r2lo-r3hi", ("r2", "lo", LOW), ("r3", "hi", HIGH)),
@@ -196,9 +204,12 @@ def variants_for(size):
                 out.append((f"{p}-slot-{reg}-{half}-s{at}",
                             batches, store(at, instruction, batches_at), count))
 
-    # Same as the opening control, last in the group.
-    out.append((f"{p}-baseline-s1-again", no_writes(batches_at),
-                store(1, STORE23, batches_at), count))
+    # Same as the opening control, at the last store position of the program.
+    # Size 4 has one firing position in a four-batch program, so there the pair
+    # brackets the run instead of naming two groups.
+    again = "" if reads[-1] != reads[0] else "-again"
+    out.append((f"{p}-baseline-s{reads[-1]}{again}", no_writes(batches_at),
+                store(reads[-1], STORE23, batches_at), count))
     return out
 
 
@@ -484,6 +495,142 @@ def build_leak_manifest(sequence=LEAK_SEQUENCE):
     }
 
 
+def blocks8_variant(name, size, count, batches, dw):
+    """One variant of the eight-batch template, with a count that runs it once."""
+    replace = {"@ABUF@": str(size)}
+    for index in range(8):
+        replace[f"@B{index}@"] = batches[index] if index < len(batches) else NOP
+        replace[f"@D{index}@"] = dw[index] if index < len(dw) else NOP
+    return {
+        "name": name,
+        "environment": {"GRATE_POKE": f"0x520=0x{START_WORD | count:08X}"},
+        "replace": {"fs": replace},
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+    }
+
+
+def xgroup_variants(sizes=SIZES):
+    """Two complete groups: is a write from group 0 still readable in group 1?
+
+    The four-batch matrix gives every size one group (two at size 1), so it
+    cannot separate "state persists across a group boundary" from "state is
+    per-group". Size 4 in particular has a single group there. Each variant
+    here is two whole groups (2 * size batches, count 2 * size), so it runs the
+    program once and group 1's store is judged on state group 0 left.
+
+    `w0` writes once in group 0 and never again; `store-g1` leaves only group
+    1's DW, so the word it returns is group 0's write if the state survived,
+    and zero if the group boundary cleared it. `nowrite-store-g1` is the same
+    program with nothing written, which separates "reads zero because the store
+    fired and saw cleared state" from "the store did not fire at all".
+    """
+    out = []
+    for size in sizes:
+        batches_at = 2 * size
+        starts = (0, size)
+        for tag, writes, stores in (
+                ("w0-store-both", {0: LOW}, starts),
+                ("w0-store-g0", {0: LOW}, (0,)),
+                ("w0-store-g1", {0: LOW}, (size,)),
+                ("nowrite-store-g1", {}, (size,)),
+                ("nowrite-store-both", {}, starts),
+                ("wgroup1-store-g1", {size: LOW}, (size,)),
+                ("weach-store-both", {0: LOW, size: HIGH}, starts)):
+            batches = [NOP] * batches_at
+            for index, const in writes.items():
+                batches[index] = write("r2", "lo", const)
+            dw = [NOP] * batches_at
+            for index in stores:
+                dw[index] = STORE23
+            out.append((f"xg-n{size}-{tag}", size, batches_at, batches, dw))
+    return out
+
+
+def arb_variants(sizes=(2, 3, 4)):
+    """One group, more than one DW: ignored, overriding, or suppressing?
+
+    Every batch of the group writes its own byte, so a store at the group's end
+    names the last batch. The first batch's DW is the one the ladder shows
+    firing. A second DW in the same group then has three ways to behave:
+
+      ignored     the word is the first DW's, unchanged
+      overriding  the second DW stores too and its value lands last
+      suppressing  no store runs, so the word stays at the clear value
+
+    `store rt1, r2, r3` (STORE23) returns the written byte and `store rt1, r0,
+    r1` (STORE01) returns zero because r0 and r1 are never written, which is
+    what makes the last two cases distinguishable: `-same` pins two DWs of the
+    same instruction, `-zero` puts the zero-returning one second. Suppression
+    zeroes both, a later DW that runs zeroes only `-zero`, and an ignored DW
+    leaves both at the written byte.
+
+    `-local` is the same experiment over two groups: two DWs in group 0 and the
+    usual single DW in group 1 of a two-group program, which says whether an
+    extra DW costs only its own group its store or the whole program's.
+    """
+    out = []
+    for size in sizes:
+        batches_at = size
+        table = sentinels(batches_at)
+        batches = [write("r2", "lo", table[index]) for index in range(batches_at)]
+        last = batches_at - 1
+        layout = {
+            "a": {0: STORE23},
+            "b": {1: STORE23},
+            "a-b": {0: STORE23, 1: STORE23},
+            "a-b-zero": {0: STORE23, 1: STORE01},
+            "all": {index: STORE23 for index in range(batches_at)},
+        }
+        if size > 2:
+            layout["a-last"] = {0: STORE23, last: STORE23}
+            layout["a-last-zero"] = {0: STORE23, last: STORE01}
+        for tag, fill in layout.items():
+            dw = [NOP] * batches_at
+            for index, instruction in fill.items():
+                dw[index] = instruction
+            out.append((f"arb-n{size}-{tag}", size, batches_at, batches, dw))
+
+        # Two DWs in group 0, one in group 1: group 1's store is judged on its
+        # own group, so a non-zero word means the extra DW only costs its own
+        # group.
+        two = 2 * size
+        table = sentinels(two)
+        batches = [write("r2", "lo", table[index]) for index in range(two)]
+        dw = [NOP] * two
+        dw[0] = STORE23
+        dw[1] = STORE23
+        dw[size] = STORE23
+        out.append((f"arb-n{size}-local", size, two, batches, dw))
+    return out
+
+
+def _group_manifest(title, variants, sizes, fs_default):
+    pinned = [blocks8_variant(name, size, count, batches, dw)
+              for name, size, count, batches, dw in variants]
+    return {
+        "name": title,
+        "repeat": 3,
+        "timeout": 10,
+        "program": {
+            "vs": "tests/grate/asm/vs_mov.txt",
+            "fs": fs_default,
+            "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        },
+        "controls": CONTROLS,
+        "variants": pinned,
+    }
+
+
+def build_xgroup_manifest(sizes=SIZES):
+    return _group_manifest("alu-buffer-xgroup", xgroup_variants(sizes), sizes,
+                           "tests/grate/asm/alu_buf_blocks8.in")
+
+
+def build_arb_manifest(sizes=(2, 3, 4)):
+    return _group_manifest("alu-buffer-arb", arb_variants(sizes), sizes,
+                           "tests/grate/asm/alu_buf_blocks8.in")
+
+
 def measured(path):
     """variant name -> the single result word every repeat agreed on."""
     words = {}
@@ -504,7 +651,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--mode",
-                        choices=("matrix", "blocks", "ladder", "leak", "count", "sweep"),
+                        choices=("matrix", "blocks", "ladder", "leak", "count", "sweep",
+                                 "xgroup", "arb"),
                         default="matrix",
                         help="which manifest to generate (default: %(default)s)")
     parser.add_argument("--results", help="characterization run directory to pin expectations from")
@@ -531,6 +679,12 @@ def main():
     elif args.mode == "sweep":
         manifest = build_sweep_manifest()
         out = args.out or "tests/grate/asm_characterize.alu_buffer_sweep.json"
+    elif args.mode == "xgroup":
+        manifest = build_xgroup_manifest(args.sizes or SIZES)
+        out = args.out or "tests/grate/asm_characterize.alu_buffer_xgroup.json"
+    elif args.mode == "arb":
+        manifest = build_arb_manifest(tuple(args.sizes) if args.sizes else (2, 3, 4))
+        out = args.out or "tests/grate/asm_characterize.alu_buffer_arb.json"
     else:
         manifest = build_manifest(args.sizes or SIZES, args.count)
         out = args.out or "tests/grate/asm_characterize.alu_buffer_matrix.json"

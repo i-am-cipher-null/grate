@@ -961,7 +961,7 @@
       "expected": "0x40000000"
     },
     {
-      "name": "n1-baseline-s1-again",
+      "name": "n1-baseline-s2",
       "environment": {
         "GRATE_POKE": "0x520=0x20006004"
       },
@@ -971,9 +971,9 @@
           "@B0@": "NOP",
           "@D0@": "NOP",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "NOP",
+          "@D2@": "store rt1, r2, r3",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
@@ -981,7 +981,7 @@
       "expected": "0x00000000"
     },
     {
-      "name": "n2-baseline-s1",
+      "name": "n2-baseline-s0",
       "environment": {
         "GRATE_POKE": "0x520=0x20006004"
       },
@@ -989,9 +989,9 @@
         "fs": {
           "@ABUF@": "2",
           "@B0@": "NOP",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
@@ -1921,7 +1921,7 @@
       "expected": "0x40000000"
     },
     {
-      "name": "n2-baseline-s1-again",
+      "name": "n2-baseline-s2",
       "environment": {
         "GRATE_POKE": "0x520=0x20006004"
       },
@@ -1931,9 +1931,9 @@
           "@B0@": "NOP",
           "@D0@": "NOP",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "NOP",
+          "@D2@": "store rt1, r2, r3",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
@@ -1941,7 +1941,7 @@
       "expected": "0x00000000"
     },
     {
-      "name": "n3-baseline-s1",
+      "name": "n3-baseline-s0",
       "environment": {
         "GRATE_POKE": "0x520=0x20006006"
       },
@@ -1949,9 +1949,9 @@
         "fs": {
           "@ABUF@": "3",
           "@B0@": "NOP",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
@@ -3766,7 +3766,7 @@
       "expected": "0x40000000"
     },
     {
-      "name": "n3-baseline-s1-again",
+      "name": "n3-baseline-s3",
       "environment": {
         "GRATE_POKE": "0x520=0x20006006"
       },
@@ -3776,11 +3776,11 @@
           "@B0@": "NOP",
           "@D0@": "NOP",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP",
+          "@D3@": "store rt1, r2, r3",
           "@B4@": "NOP",
           "@D4@": "NOP",
           "@B5@": "NOP",
@@ -3791,7 +3791,7 @@
       "expected": "0x00000000"
     },
     {
-      "name": "n4-baseline-s1",
+      "name": "n4-baseline-s0",
       "environment": {
         "GRATE_POKE": "0x520=0x20006004"
       },
@@ -3799,9 +3799,9 @@
         "fs": {
           "@ABUF@": "4",
           "@B0@": "NOP",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
@@ -4571,7 +4571,7 @@
       "expected": "0x40000000"
     },
     {
-      "name": "n4-baseline-s1-again",
+      "name": "n4-baseline-s0-again",
       "environment": {
         "GRATE_POKE": "0x520=0x20006004"
       },
@@ -4579,9 +4579,9 @@
         "fs": {
           "@ABUF@": "4",
           "@B0@": "NOP",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",

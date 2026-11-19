@@ -36,6 +36,8 @@ its test table, and pin its words only from a run whose repeats agreed:
     python3 tests/grate/asm/make_alu_buffer_matrix.py                    # matrix
     python3 tests/grate/asm/make_alu_buffer_matrix.py --mode ladder      # ladder
     python3 tests/grate/asm/make_alu_buffer_matrix.py --mode blocks      # group probes
+    python3 tests/grate/asm/make_alu_buffer_matrix.py --mode xgroup      # two groups
+    python3 tests/grate/asm/make_alu_buffer_matrix.py --mode arb         # two DWs
     python3 tests/grate/asm/make_alu_buffer_matrix.py --results <run dir>
 
 Run one size at a time (`--sizes N --out /tmp/m_nN.json`) and pin the checked-in
@@ -162,9 +164,10 @@ move. Size 3 uses a six-batch template (`asm/alu_buf_matrix6.in`): four batches
 cannot be split into groups of three, and an incomplete final group is not a
 fair test of anything. `asm/make_alu_buffer_matrix.py` expands the table into
 `asm_characterize.alu_buffer_matrix.json` (210 variants, sizes 1 to 4),
-`..._ladder.json` (34, the batch-naming tests alone) and `..._blocks.json` (12,
-the eight- and six-batch group probes), and pins their words from a named run
-(`--results DIR`).
+`..._ladder.json` (34, the batch-naming tests alone), `..._blocks.json` (12, the
+eight- and six-batch group probes), `..._xgroup.json` (28, two complete groups
+per variant) and `..._arb.json` (22, two DWs in one group), and pins their words
+from a named run (`--results DIR`).
 
 **Every program runs at a count equal to its own batch count**: 4 at sizes 1, 2
 and 4, 6 at size 3. That is not a detail. The first version of this matrix poked
@@ -185,7 +188,15 @@ Sentinels are chosen so the word names the write. `r2.lo` lands in bits 0..7,
 `r2.hi` in 8..15, `r3.lo` in 16..23 and `r3.hi` in 24..31 of the result, and
 `.l*` stores fx10, so batch 0 reads `0x10`, batch 1 `0x20`, batch 2 `0x40`,
 batch 3 `0x60`, batch 4 `0x7F` and batch 5 `0x9F`. An untouched row reads
-`0x00000000` before and after every group, so no value below is leftover state.
+`0x00000000` at the first and the last store position that fires, so no value
+below is leftover state. The control has to store where the DW runs: an earlier
+version kept its store at batch 1, which starts a group only at size 1, so at
+sizes 2 to 4 its zero meant "no store executed" rather than "a store read
+cleared state". The two controls are now the first and last entry of
+`store_positions()`, which is why they are named `-s0`/`-s2` at size 2 and
+`-s0`/`-s3` at size 3; size 4 has one firing position in a four-batch program,
+so there the pair (`-s0`, `-s0-again`) brackets the run instead of naming two
+groups.
 
 **The registers are one shared file, not one row per batch.** A store in a later
 group still sees an earlier group's write: at size 2 `r2.lo` in batch 0 and
@@ -231,11 +242,62 @@ three-batch blocks: writes from batches 0, 1 and 2 appear in columns 0 and 3,
 and writes from batches 3, 4 and 5 only in column 3, since the group-1 store
 runs after them.
 
-**A store in every batch suppresses the group's DW.** With `store rt1, r2, r3`
-in every batch, size 1 is unaffected (each batch stores its own value) but sizes
-2, 3 and 4 return `0x00000000` even though the same program with a store only in
-the group's first batch returns a value. The group's DW fires only when the
-other batches of the group leave the DW slot empty.
+**A second DW in the group suppresses that group's store.** A store in every
+batch zeroes sizes 2, 3 and 4, so the obvious reading was "the DW must be alone
+in its group". `--mode arb` asks the smaller question: which combinations of two
+DWs do that? One group per variant (`count = size`), every batch writing its own
+byte, so the single-DW case names the group's last batch:
+
+| DW placed in | size 2 | size 3 | size 4 |
+|:--|:--|:--|:--|
+| first batch only (`-a`) | `0x20` | `0x40` | `0x60` |
+| second batch only (`-b`) | `0x00000000` | `0x00000000` | `0x00000000` |
+| first and second (`-a-b`) | `0x00000000` | `0x00000000` | `0x00000000` |
+| first and last (`-a-last`) | - | `0x00000000` | `0x00000000` |
+| every batch (`-all`) | `0x00000000` | `0x00000000` | `0x00000000` |
+
+So it is not "the DW must be the last operation" and not "the later DW wins": a
+group with the first batch's DW *and* any second DW stores nothing at all. The
+zero-returning control makes that more than an inference from a zero word -
+`-a-b-zero` puts `store rt1, r0, r1` second, and `r0`/`r1` are never written, so
+a second DW that fired would read `0x00000000` while `-a-b` (both storing the
+written register) would still read the written byte. Both read zero, so no store
+ran in either case.
+
+The effect is **per group**, not per program: `-local` puts two DWs in group 0
+and the usual one in group 1 of a two-group program, and group 1 still stores
+its own last batch (`0x60` at size 2, `0x9F` at size 3, `0xDF` at size 4). A
+group with one DW stores; a group with two does not; the neighbouring groups are
+unaffected.
+
+This is a rule about what is observed, not about why. Two DWs could be dropped
+at decode, arbitrated away, or the group's store could be assigned an execution
+slot that never comes; the template programs `pseq_to_dw_exec_nb = 1`, and a
+program with more DWs than that field describes may simply not get a slot. Three
+DWs in one group, a second DW in a group that also leaves an incomplete tail,
+and the same experiment at a buffer size above 4 are untested, so "more than one
+DW in a group suppresses that group's store" is where the evidence stops.
+
+### Across a group boundary
+
+The four-batch matrix gives most sizes a single group, so it cannot say whether
+`r0..r3` survive a group boundary or are re-cleared at it. `--mode xgroup` runs
+two whole groups (2 * size batches at `count = 2 * size`) with one write in group
+0, nothing in group 1, and a store at each group's start:
+
+| size | group 1 store, written in group 0 | same, nothing written | written in group 1 |
+|--:|:--|:--|:--|
+| 1 | `0x40` | `0x00000000` | `0x40` |
+| 2 | `0x40` | `0x00000000` | `0x40` |
+| 3 | `0x40` | `0x00000000` | `0x40` |
+| 4 | `0x40` | `0x00000000` | `0x40` |
+
+`0x40` is the written `0.25`. The write survives at every size, including size 4,
+which the matrix could only see inside one group. The "nothing written" column
+is the control that the group-1 store fired and read cleared state, so the
+`0x40` is not a default. Writing a *different* constant in each group's first
+batch (`-weach`) returns group 1's `0x7F`, so each group's store sees the newest
+write rather than a rotated or per-group copy of the file.
 
 ### What the low field of `0x520` counts
 
@@ -318,8 +380,8 @@ a scheduler would do anyway.
 carry from batch `i` to batch `i+1`") is wrong: the registers are one file and
 values carry across batch boundaries at every size. What actually limits a wider
 buffer is the DW: at size N only the first batch of each group can store, only
-if the other N-1 batches leave their DW slots empty, and the batch count has to
-be a multiple of N. A size-2 program can therefore hand values across the
+if the group has no other DW at all (a second one costs that group its store,
+see the arbitration table), and the batch count has to be a multiple of N. A size-2 program can therefore hand values across the
 boundary and store once per two batches, so it looks like it should halve the
 store cost of the 13-batch `filter_quad` shape. **Measured: not resolved either way.** This
 benchmark cannot separate one store per fragment from two (see "The size-2 store
@@ -332,11 +394,15 @@ store lands at its own batch and the count is the batch count.
   and poking the bare count replaces the start bits and hangs every size
   including 2. The same applies to the pokes quoted in
   `docs/hardware-testing.md`.
-* **a store of an untouched row is `0x00000000`, so a zero is evidence.** Every
-  group starts with the untouched-row control and ends with the same control
-  again; both read zero, which is what lets "nothing visible" be a measurement
-  rather than a missing one. A run that returns zero everywhere is only
-  believable next to a variant that returns non-zero.
+* **a store of an untouched row is `0x00000000`, so a zero is evidence - but
+  only where the store runs.** Every group starts with the untouched-row control
+  and ends with the same control again; both read zero, which is what lets
+  "nothing visible" be a measurement rather than a missing one. A run that
+  returns zero everywhere is only believable next to a variant that returns
+  non-zero. The control has to be placed at a store position that fires: the
+  first version kept its store at batch 1, which starts a group only at size 1,
+  so at sizes 2 to 4 it ran no store at all and its zero proved nothing. Both
+  controls now use the first and last entry of `store_positions()`.
 * **check the poke the manifest actually carries before blaming the hardware.**
   See below: a whole run of sizes 3 and 4 returned zero because every variant
   was poked with the wrong count, and it looked exactly like a nondeterministic

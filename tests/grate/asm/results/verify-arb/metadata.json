@@ -1,0 +1,690 @@
+{
+  "name": "alu-buffer-arb",
+  "created_utc": "2026-11-19T20:14:08+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.alu_buffer_arb.json",
+  "manifest_sha256": "ded52c8780374bea6419b3004dda0737567e0aa6a88a8a76795f75e4480d74e3",
+  "assembler": "/home/freebuff/build/grate/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "3c36ef062f67a67627b323ea5bfb630762838d77",
+  "git_status": "M tests/grate/asm/make_alu_buffer_matrix.py\n M tests/grate/asm_characterize.alu_buffer_ladder.json\n M tests/grate/asm_characterize.alu_buffer_matrix.json\n?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/results/matrix-count-fixed/\n?? tests/grate/asm/results/run-arb/\n?? tests/grate/asm/results/run-ladder_all/\n?? tests/grate/asm/results/run-xg/\n?? tests/grate/asm/results/verify-ladder/\n?? tests/grate/asm/results/verify-matrix/\n?? tests/grate/asm/results/verify-xgroup/\n?? tests/grate/asm_characterize.alu_buffer_arb.json\n?? tests/grate/asm_characterize.alu_buffer_xgroup.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 10.0,
+  "manifest_data": {
+    "name": "alu-buffer-arb",
+    "repeat": 3,
+    "timeout": 10,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/alu_buf_blocks8.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "arb-n2-a",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006002"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "NOP",
+            "@D2@": "NOP",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000020"
+      },
+      {
+        "name": "arb-n2-b",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006002"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "NOP",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "NOP",
+            "@D2@": "NOP",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n2-a-b",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006002"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "NOP",
+            "@D2@": "NOP",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n2-a-b-zero",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006002"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r0, r1",
+            "@B2@": "NOP",
+            "@D2@": "NOP",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n2-all",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006002"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "NOP",
+            "@D2@": "NOP",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n2-local",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000060"
+      },
+      {
+        "name": "arb-n3-a",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000040"
+      },
+      {
+        "name": "arb-n3-b",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "NOP",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n3-a-b",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n3-a-b-zero",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r0, r1",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n3-all",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n3-a-last",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n3-a-last-zero",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r0, r1",
+            "@B3@": "NOP",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n3-local",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006006"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "NOP",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x0000009F"
+      },
+      {
+        "name": "arb-n4-a",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000060"
+      },
+      {
+        "name": "arb-n4-b",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "NOP",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n4-a-b",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n4-a-b-zero",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r0, r1",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n4-all",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n4-a-last",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n4-a-last-zero",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r0, r1",
+            "@B4@": "NOP",
+            "@D4@": "NOP",
+            "@B5@": "NOP",
+            "@D5@": "NOP",
+            "@B6@": "NOP",
+            "@D6@": "NOP",
+            "@B7@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "arb-n4-local",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006008"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "NOP",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "expected": "0x000000DF"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 70,
+    "passed": 70,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
