@@ -237,8 +237,8 @@ write is not a suitable producer for such a read.
 The MFU unit can fetch and interpolate 4 component vectors per instruction and/or evaluate scalar special functions. Based on [this design](http://pctuning.tyden.cz/ilustrace3/soucek/g80/paper-164.pdf).
 
 |   Bits | Meaning  |
-|-------:|:---------|
-| 58..63 | register |
+|-------:|:------------------------|
+| 58..63 | SFU destination register |
 | 54..57 | opcode   |
 | 43..53 | mul1     |
 | 32..42 | mul0     |
@@ -248,20 +248,29 @@ The MFU unit can fetch and interpolate 4 component vectors per instruction and/o
 |  7..13 | var1     |
 |   0..6 | var0     |
 
-| opcode | Mnemonic | Meaning                      | pseudo-code         |
-|-------:|:--------:|:-----------------------------|:--------------------|
-|      0 |    NOP   | No operation                 |                     |
-|      1 |    RCP   | Reciprocal                   | rD = 1.0 / rA       | 
-|      2 |    RSQ   | Reciprocal square root       | rD = 1.0 / sqrt(rA) |
-|      3 |    LG2   | Logarithm base 2             | rD = log2(rA)       |
-|      4 |    EX2   | Exponent base 2, second step | rD = pow(2.0, rA)   |
-|      5 |   SQRT   | Square root                  | rD = sqrt(rA)       |
-|      6 |    SIN   | Sine, second step            | rD = sin(rA)        |
-|      7 |    COS   | Cosine, second step          | rD = cos(rA)        |
-|      8 |    FRC   | Fractional value             | rD = rA - floor(rA) |
-|      9 |  PREEX2  | Exponent base 2, first step  | rD = pow(2.0, rA)   |
-|     10 |  PRESIN  | Sine, first step             | rD = sin(rA)        |
-|     11 |  PRECOS  | Cosine, first step           | rD = cos(rA)        |
+| opcode | Mnemonic | Meaning                      | pseudo-code                    |
+|-------:|:--------:|:-----------------------------|:-------------------------------|
+|      0 |    NOP   | No operation                 |                                |
+|      1 |    RCP   | Reciprocal                   | rA = 1.0 / rA                  |
+|      2 |    RSQ   | Reciprocal square root       | rA = 1.0 / sqrt(rA)            |
+|      3 |    LG2   | Logarithm base 2             | rA = log2(rA)                  |
+|      4 |    EX2   | Exponent base 2, second step | rA = pow(2.0, rA)              |
+|      5 |   SQRT   | Square root                  | rA = sqrt(rA)                  |
+|      6 |    SIN   | Sine, second step            | rA = sin(rA)                   |
+|      7 |    COS   | Cosine, second step          | rA = cos(rA)                   |
+|      8 |    FRC   | Fractional value             | rA = rA - floor(rA)            |
+|      9 |  PREEX2  | Exponent base 2, first step  | prepares EX2 from rA           |
+|     10 |  PRESIN  | Sine, first step             | prepares SIN from rA           |
+|     11 |  PRECOS  | Cosine, first step           | prepares COS from rA           |
+
+**PREEX2/EX2, PRESIN/SIN and PRECOS/COS are paired operations.** Hardware
+tests show that the PRE operation prepares an internal intermediate consumed
+by the corresponding second-step operation; it is not a normal result that can
+be stored and reused. Both words must use the same operand register, and that
+register must not be written between the two operations. The pair can be
+separated by intervening batches (at least four were tested), but omitting the
+PRE operation produces incorrect results. The maximum lifetime of the
+intermediate is not known.
 
 #### var0..3:
 
@@ -299,30 +308,69 @@ The varying id corresponds to the TRAM component: var0 is TRAM.x, var1 is TRAM.y
 |     6 | row register 2     |
 |     7 | row register 3     |
 
+Hardware tests of the destination selector show that values 4, 5, 6 and 7 write row
+registers 0, 1, 2 and 3, respectively. Values 0..3 did not change any of the
+four row registers in the tested store probes; their other destination meanings
+are not established.
+
 ##### mul0..1 source registers:
 
-The SFU result is evaluated first and is available to use by MUL's via "SFU result" register.
+The six-bit field at bits 58..63 selects the SFU destination register.
+The opcode summaries below retain the working assumption that `rA` is both
+the SFU input and destination. Hardware tests identify the destination
+selector, but have not independently verified the input source or confirmed
+that input and destination are the same register; that relationship remains
+unclear.
 
-|  Value | Meaning                 |
-|-------:|:------------------------|
-|   0..3 | row register 0..3       |
-|   4..7 | ??? (global registers?) |
-|   8..9 | ???                     |
-|     10 | SFU result              |
-|     11 | barycentric coef 0      |
-|     12 | barycentric coef 1      |
-|     13 | 1.0                     |
-| 14..15 | ???                     |
+The SFU result is evaluated before the multiplier result and is available to
+MUL through source selector 10. Tests with RCP and SQRT, and with different
+SFU destination-register selections, show that selector 10 exposes the SFU
+result independently of the selected destination register.
+
+|  Value | Meaning                                  |
+|-------:|:-----------------------------------------------|
+|   0..3 | row register 0..3                        |
+|   4..7 | ??? (global registers?)                  |
+|   8..9 | ???                                      |
+|     10 | SFU result                               |
+|     11 | presumed barycentric coefficient 0 (unverified) |
+|     12 | presumed barycentric coefficient 1 (unverified) |
+|     13 | 1.0                                      |
+| 14..15 | ???                                      |
+
+Hardware tests show that both multiplier source fields can select row
+registers 0..3 when the other source is selector 13 (1.0). The tested
+src13 × srcN and srcN × src13 cases produced the corresponding row-register
+values. This establishes row-register reads through both fields in that test;
+it does not explain the zero results observed when both sources select row
+registers.
+
+Selectors 11 and 12 produced the same observed value in a probe without
+varying data being fetched. That probe does not establish that they are
+barycentric coefficients; their meanings remain unverified.
 
 #### Interpolation
 
-The barycentric interpolation weights are the MUL's results written to the "barycentric weight" destination register. The weight w0 (related to the first triangle vertex - the "barycentric coef 0" source register) is hardwired to the result of the mul0, the second vertex w1 ("barycentric coef 1" source register) to the mul1. Again, only destination "barycentric weight" registers are hardwired, "barycentric coef" sources are not. The third vertex weight is derived from the w0 and w1 as "1.0 - w0 - w1". The SFU operation should be set to "rcp r4".
+The current interpolation model assigns the MUL results written to the
+"barycentric weight" destination to the first two vertex weights, with the
+third derived as "1.0 - w0 - w1". The source-selector identities for the
+barycentric coefficients and the complete interpolation path have not yet
+been independently verified by the selector tests.
+
+The proposed calculation is:
 
 	barycentric weight = barycentric coef * 1.0 / w
 
+This requires a reciprocal of the fragment's W value, but the SFU input
+selection has not yet been established by the hardware tests. In particular,
+the register named in an SFU operation such as RCP or SQRT is its destination
+in the tested encodings; it must not be treated as evidence of the SFU input.
+
 #### Fragment w component
 
-The w component is stored in the r4 and available to the first instruction of the scheduled MFU instructions sequence.
+The existing pipeline model places the fragment W component in r4 and makes
+it available to the first scheduled MFU instruction. The relationship between
+that value and the SFU input is still to be verified.
 
 #### Fragment z component
 
