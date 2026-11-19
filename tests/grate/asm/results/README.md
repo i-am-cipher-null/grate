@@ -303,3 +303,19 @@ invalidate another; generate such a manifest with
 * commit: 6896330c1f19b22d16a287de3c356f13d7298c11 with a dirty tree
 * created: 2026-11-19T22:09:39+00:00; 40 rows, repeat 3, timeout 10.0 s
 * summary: 40 passed, 0 failed of 40 - passed
+
+## pin-barycentric
+
+* manifest: `asm_characterize.barycentric.json` (sha256 cafbf09f5642)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 8f8703c3d58b406d14944f6b26e7eb324be6b519 with a dirty tree
+* created: 2026-11-19T22:26:15+00:00; 55 rows, repeat 3, timeout 10.0 s
+* summary: 55 passed, 0 failed of 55 - passed
+
+## verify-barycentric
+
+* manifest: `asm_characterize.barycentric.json` (sha256 26f8a43843b2)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 8f8703c3d58b406d14944f6b26e7eb324be6b519 with a dirty tree
+* created: 2026-11-19T22:27:03+00:00; 55 rows, repeat 3, timeout 10.0 s
+* summary: 55 passed, 0 failed of 55 - passed

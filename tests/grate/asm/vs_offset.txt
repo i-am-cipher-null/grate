@@ -1,0 +1,31 @@
+/*
+ * Vertex shader that translates the quad by one uniform.
+ *
+ * The translation is in clip space and w is left at 1, so the offset is also
+ * the shift in normalized device coordinates and the projected quad keeps its
+ * size. The colour export is untouched, so the program is otherwise the same
+ * as vs_mov.txt.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.uniforms
+	[100] = "offset";
+
+.asm
+
+EXEC(export[0]=vector)
+	ADDv r63.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r63.xyzw, a[1].xyzw
+	NOPs
+;

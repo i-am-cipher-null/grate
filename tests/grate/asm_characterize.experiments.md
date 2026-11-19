@@ -760,12 +760,63 @@ returned one word for all three w. Naming a row the pipeline does not fill
 cannot test what the pipeline fills, and the flat result looked like "the SFU
 ignores w" until the operand itself was checked.
 
+### Selectors 11 and 12 against real interpolation
+
+The source sweep read `0xFF00` for both selectors, which is the readback of a
+value at or above 2.0 - not a 0..1 weight - and it did so without fetching a
+varying, so it could not say what they are. `--set bary` (17 variants) reads them
+with the vertex shader translating the quad, because the harness reads pixel
+(0, 0), which in the untranslated quad sits on a vertex where two of the three
+weights are zero. Both readings are taken at three positions.
+
+| variant | word | reading |
+|:--|--:|:--|
+| `p0-none` | `0x00600040` | no MFU word: the primed rows |
+| `p0-raw`, `p1-raw` | `0xFF00FF00` | both selectors at or above 2.0 on their own |
+| `p2-raw` | `0xFF40FF00` | still saturated; the low byte is the readback's residue |
+| `p0-scale`, `p1-scale`, `p2-scale` | `0x78007800` | `1.0 x rcp(r4)`, the scale reference |
+| `p0-coef` | `0xAF00F600` | src11 `F6`, src12 `AF` |
+| `p1-coef` | `0xE300F200` | src11 `F2`, src12 `E3` |
+| `p2-coef` | `0xDC40F400` | src11 `F4`, src12 `DC` |
+| `p1-coef-noipl` | `0xE300F200` | identical with no fetch in the word |
+| `p1-swap-coef`, `p2-swap-coef` | `0xF200E300`, `0xF400DC40` | the fields mirror, so the value follows the selector, not the multiplier |
+| `p1-interp-rg`, `p1-interp-ba` | `0xD300F200`, `0xF700E300` | a full `ipl` with `bar` weights, storing the interpolated varying |
+
+The readback is a log byte, so the difference to the `0x78` scale reference
+divided by 8 is log2 of the coefficient, and the scale in r4 cancels:
+
+| position | src11 | src12 |
+|:--|--:|--:|
+| corner (0, 0) | 0.84..0.92 | 0.0016..0.0018 |
+| p1 (-0.5, -0.4) | 0.60..0.65 | 0.165..0.18 |
+| p2 (-0.25, -0.2) | 0.71..0.77 | 0.088..0.096 |
+
+So both selectors are per-pixel weights: they move with the sample position,
+they are near 1 at the vertex the pixel sits on, and they are delivered with the
+fragment rather than fetched - dropping the `ipl` leaves them byte-identical. On
+their own they read as saturated because they carry a 2^16 scale; multiplying by
+`rcp(r4)`, which is w/2^16, cancels it and gives the coefficient itself. That is
+the arithmetic of section 6.4's `weight = coef * 1.0 / w` at w = 1, measured
+with the same word that measures `rcp(r4)`.
+
+The two multipliers must also be shown not to be the thing that decides: with
+`src12` and `src11` exchanged the two fields exchange with them
+(`0xF200E300` against `0xE300F200`), so the numbers follow the selector.
+
+What this does not establish is which vertex each selector names. The
+interpolated colour at p1 reads 0.63 / 0.04 / 0.18, which matches the two
+measured weights, but the varying's TRAM row and component order are not pinned
+down (the caveat in section 6.2 of [[Fragment Shader ISA]] applies), so the
+channel-to-vertex mapping cannot be read off. The third weight is only implied as
+1 - w0 - w1, and the readback truncates its mantissa, so every coefficient above
+is quoted as a one-step range of about 9%.
+
 ### What is left
 
 The other SFU operations can now be driven with known inputs (`.lh` primes) and
-characterised one at a time; selectors 11 and 12 still need real interpolated
-data; and the two-row-register zero is still a description rather than a
-mechanism. The constant in r4 is resolved only to one readback step, so a probe
+characterised one at a time; the varying's TRAM row and component mapping still
+needs a clean two-export probe before the weights can be named by vertex; and the
+two-row-register zero is still a description rather than a mechanism. The constant in r4 is resolved only to one readback step, so a probe
 that reads the operand at a coarser magnitude would be needed to do better than
 "about 2^16".
 

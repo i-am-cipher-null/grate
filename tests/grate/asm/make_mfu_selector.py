@@ -25,7 +25,7 @@ in bits 0..15 and the second in bits 16..31, .lo before .hi within each half. So
 the primed r3 (0x60) above it, which doubles as a marker that the prime arrived;
 `store rt1, r0, r1` covers r0 and r1 the same way.
 
-Six sets, one manifest each - the sets are separate experiments and each is
+Seven sets, one manifest each - the sets are separate experiments and each is
 pinned from its own run:
 
     --set src     one per source number, in the first source field
@@ -34,6 +34,7 @@ pinned from its own run:
     --set sfu     the SFU result as a source, with and without an SFU word
     --set fp20    whether the register named in `sfu:` is the value it reads
     --set w       what row 4 carries, by scaling the vertex clip w
+    --set bary    selectors 11 and 12 against interpolated data
 
     make_mfu_selector.py --set dst                # no expectations yet
     make_mfu_selector.py --set dst --results DIR  # pin to the words from DIR
@@ -267,6 +268,81 @@ def fp20_variants():
     return [variant(name, word, True, STORE_23, "fp20") for name, word in out]
 
 
+VS_OFFSET = "tests/grate/asm/vs_offset.txt"
+PARTIAL_IPL = "ipl: t0.fp20, NOP, NOP, NOP"
+FULL_IPL = "ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20"
+
+
+def offset(name, dx, dy, word, store=STORE_23):
+    """Same program, the vertex shader moves the quad by a uniform offset.
+
+    The harness reads pixel (0,0), which in the untranslated quad sits on the
+    top-left vertex, so the barycentric weights there are (1, 0, 0). Moving the
+    quad puts that pixel inside the triangle where all three weights are
+    non-zero; translating by the clip-space offset is exact because w stays 1.
+    """
+    entry = variant(name, word, True, store)
+    entry["vs"] = VS_OFFSET
+    entry["args"] = ["--vs_uniform", f'["offset"]=({dx},{dy},0.0,0.0)']
+    return entry
+
+
+def bary_variants():
+    """What do selectors 11 and 12 read, with interpolation actually running?
+
+    The source sweep read 0xFF00 for both, which is the readback of a value at
+    or above 2.0 - not a 0..1 weight - and it did so without fetching anything.
+    So the numbers say nothing yet about what they are. Two readings separate
+    the candidates:
+
+      * raw (`src11 x #1`) shows the magnitude class only, since anything at or
+        above 2.0 reads as FF;
+      * scaled (`src11 x sfu`) multiplies by rcp(r4), which the same word also
+        measures with 1.0 (`src13 x sfu`). The readback is a log byte, so the
+        difference of the two bytes is 8*log2(coef) and the coefficient comes
+        out without needing to know the unit's scale.
+
+    A coefficient is a function of the pixel's position in the triangle, not of
+    the vertex data, so each reading is taken at three positions: the corner
+    (1, 0, 0), and two interior points where the weights differ. The last two
+    variants fetch the colour varying for real and store the interpolated
+    result, which gives the weights from the vertex colours (red, green, blue)
+    as an independent check of the position.
+
+    The partial `ipl` writes only r0, so it cannot clobber the r2/r3 the
+    multipliers write in the same word; `noipl` drops the fetch entirely.
+    """
+    raw = ("r2, src11, #1", "r3, src12, #1")
+    coef = ("r2, src11, sfu", "r3, src12, sfu")
+    scale = ("r2, src13, sfu", "r3, src13, sfu")
+    interp = ("bar, sfu, bar0", "bar, sfu, bar1")
+
+    def word(mul, ipl=PARTIAL_IPL):
+        text = (f"sfu: rcp r4 mul0: {mul[0]} mul1: {mul[1]}")
+        return text + (f" {ipl}" if ipl else "")
+
+    # fb_data[0] is the row at NDC y = -1, so both offsets are negative: the
+    # quad has to move down-left for pixel (0, 0) to fall inside it.
+    positions = (("p0", 0.0, 0.0), ("p1", -0.5, -0.4), ("p2", -0.25, -0.2))
+    out = [offset("p0-none", 0.0, 0.0, None)]
+    for label, dx, dy in positions:
+        out.append(offset(f"{label}-raw", dx, dy, word(raw)))
+        out.append(offset(f"{label}-coef", dx, dy, word(coef)))
+        out.append(offset(f"{label}-scale", dx, dy, word(scale)))
+    # Does the p2 raw reading belong to selector 12 or to the mul1 slot? The
+    # same two products with the multipliers exchanged answer that.
+    swap_raw = ("r2, src12, #1", "r3, src11, #1")
+    swap_coef = ("r2, src12, sfu", "r3, src11, sfu")
+    out.append(offset("p1-swap-raw", -0.5, -0.4, word(swap_raw)))
+    out.append(offset("p1-swap-coef", -0.5, -0.4, word(swap_coef)))
+    out.append(offset("p2-swap-raw", -0.25, -0.2, word(swap_raw)))
+    out.append(offset("p2-swap-coef", -0.25, -0.2, word(swap_coef)))
+    out.append(offset("p1-coef-noipl", -0.5, -0.4, word(coef, None)))
+    out.append(offset("p1-interp-rg", -0.5, -0.4, word(interp, FULL_IPL), STORE_01))
+    out.append(offset("p1-interp-ba", -0.5, -0.4, word(interp, FULL_IPL), STORE_23))
+    return out
+
+
 SETS = {
     "src": ("mfu-selector-source", "tests/grate/asm_characterize.mfu_selector_src.json",
             src_variants),
@@ -279,6 +355,8 @@ SETS = {
     "w": ("sfu-input-w", "tests/grate/asm_characterize.sfu_input_w.json", w_variants),
     "fp20": ("sfu-operand", "tests/grate/asm_characterize.sfu_operand.json",
              fp20_variants),
+    "bary": ("barycentric-coefficients",
+              "tests/grate/asm_characterize.barycentric.json", bary_variants),
 }
 
 CONTROLS = [
