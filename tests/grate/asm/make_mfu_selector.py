@@ -25,13 +25,15 @@ in bits 0..15 and the second in bits 16..31, .lo before .hi within each half. So
 the primed r3 (0x60) above it, which doubles as a marker that the prime arrived;
 `store rt1, r0, r1` covers r0 and r1 the same way.
 
-Four sets, one manifest each - the sets are separate experiments and each is
+Six sets, one manifest each - the sets are separate experiments and each is
 pinned from its own run:
 
     --set src     one per source number, in the first source field
     --set dst     which row register the destination field writes
     --set field   row register in the second source field, against 1.0
     --set sfu     the SFU result as a source, with and without an SFU word
+    --set fp20    whether the register named in `sfu:` is the value it reads
+    --set w       what row 4 carries, by scaling the vertex clip w
 
     make_mfu_selector.py --set dst                # no expectations yet
     make_mfu_selector.py --set dst --results DIR  # pin to the words from DIR
@@ -62,16 +64,17 @@ STORE_23 = "store rt1, r2, r3"
 STORE_01 = "store rt1, r0, r1"
 
 
-def prime_slots(enabled=True):
+def prime_slots(fmt="fx10"):
     out = []
     for index, const in enumerate(PRIME):
-        out.append(f"MAD  r{index}.l*,  u{const},  #1,  #0" if enabled else NOP)
+        mask = {"fx10": "l*", "fp20": "lh"}[fmt]
+        out.append(f"MAD  r{index}.{mask},  u{const},  #1,  #0")
     return out
 
 
-def variant(name, word=None, primed=True, store=STORE_23):
+def variant(name, word=None, primed=True, store=STORE_23, fmt="fx10"):
     """One variant: the same program, only the fields under test differ."""
-    slots = prime_slots(primed)
+    slots = prime_slots(fmt) if primed else [NOP] * 4
     replace = {f"@P{index}@": slot for index, slot in enumerate(slots)}
     replace["@MFU@"] = word or NOP
     replace["@STORE@"] = store
@@ -150,6 +153,60 @@ def field_variants():
     return [variant(name, word, primed) for name, word, primed in out]
 
 
+VS_SCALE = "tests/grate/asm/vs_scale_w.txt"
+
+
+def scaled(name, scale, word, store=STORE_23):
+    """Same program, the vertex shader scales clip x, y, z and w together.
+
+    Scaling all four components leaves x/w, y/w and z/w unchanged, so the quad
+    covers the same pixels and the only input that moves is the clip-space w
+    that goes into the fragment's r4. The scale is a vertex uniform, so the
+    stage sources are byte-identical across variants and only the argument
+    differs; a value of 1.0 is the anchor that must reproduce the unscaled
+    program's word.
+    """
+    entry = variant(name, word, True, store)
+    entry["vs"] = VS_SCALE
+    entry["args"] = ["--vs_uniform",
+                     f'["clip_scale"]=({scale},{scale},{scale},{scale})']
+    return entry
+
+
+def w_variants():
+    """Does the SFU read the fragment w that docs 6.5 puts in r4?
+
+    Docs 6.5 puts the fragment's w in row 4 for the first MFU instruction, so
+    the SFU operand is r4 - the register the unit reads *and* writes. Only the
+    vertex shader's clip w then changes. Measured: the operand is about 2^16/w,
+    so rcp moves two octaves per fourfold w, rsq lands on 1/256 and 1/128, and
+    sqrt and lg2 saturate at every w. The no-SFU variants are the baseline at
+    the same w, so a changed word cannot be credited to the primes moving.
+
+    A vertex uniform that did not arrive would collapse the quad to w = 0 at
+    the origin, which shows up as a lost word, not as the anchor, so the 1.0
+    variants double as a check that the scaling stage works at all.
+    """
+    out = [
+        ("w1-sqrt4", 1.0, "sfu: sqrt r4 mul0: r2, src10, #1"),
+        ("w0.25-sqrt4", 0.25, "sfu: sqrt r4 mul0: r2, src10, #1"),
+        ("w4-sqrt4", 4.0, "sfu: sqrt r4 mul0: r2, src10, #1"),
+        ("w1-rcp4", 1.0, "sfu: rcp r4 mul0: r2, src10, #1"),
+        ("w0.25-rcp4", 0.25, "sfu: rcp r4 mul0: r2, src10, #1"),
+        ("w4-rcp4", 4.0, "sfu: rcp r4 mul0: r2, src10, #1"),
+        ("w0.25-nosfu", 0.25, "mul0: r2, src10, #1"),
+        ("w4-nosfu", 4.0, "mul0: r2, src10, #1"),
+        # sqrt saturates at every w, so the operand's size needs its own ops:
+        # lg2 of a ~2^16 operand saturates, of a 0..4 one it does not, and
+        # rsq of 2^16 is 1/256 while rsq of 1 is 1.
+        ("w1-lg2-4", 1.0, "sfu: lg2 r4 mul0: r2, src10, #1"),
+        ("w4-lg2-4", 4.0, "sfu: lg2 r4 mul0: r2, src10, #1"),
+        ("w1-rsq-4", 1.0, "sfu: rsq r4 mul0: r2, src10, #1"),
+        ("w4-rsq-4", 4.0, "sfu: rsq r4 mul0: r2, src10, #1"),
+    ]
+    return [scaled(name, scale, word) for name, scale, word in out]
+
+
 def sfu_variants():
     """Does source 10 expose the SFU result, and does it need the same word?
 
@@ -163,8 +220,10 @@ def sfu_variants():
     `sfu: rcp r1` moves the SFU's output to a register the store pair does not
     read in the r2/r3 variants, so an unchanged r3 in `sfu-rcp1-src10` shows that
     src10 is SFU state rather than a row register. `sqrt r3` is there because
-    rcp(0.375) saturates: sqrt(0.375) is inside the range, so the value src10
-    returns can be compared with the SFU's own store.
+    rcp saturates, so a second operation with a different range is worth having.
+    These primes are fx10, which leaves the fp20 operand the unit reads at
+    zero, so what it computes here is sqrt and rcp of the format's floor;
+    `--set fp20` supplies real operands and `--set w` looks at row 4.
     """
     out = [
         ("sfu-rcp3-src10", "sfu: rcp r3 mul0: r2, src10, #1", STORE_23),
@@ -174,11 +233,38 @@ def sfu_variants():
         ("sfu-rcp1-src10", "sfu: rcp r1 mul0: r2, src10, #1", STORE_23),
         ("sfu-rcp1-only", "sfu: rcp r1", STORE_01),
         ("sfu-sqrt3-src10", "sfu: sqrt r3 mul0: r2, src10, #1", STORE_23),
-        # sqrt(0.375) and sqrt(0.0625) differ by 0.36, so if the named register is
-        # the input the two variants cannot return the same value.
+        # r0 and r3 hold different fx10 values (0.0625 and 0.375). They agree
+        # here, which is what `--set fp20` explains: the fp20 byte the unit
+        # reads lives above the low fx10 half, so both rows look alike to it.
         ("sfu-sqrt0-src10", "sfu: sqrt r0 mul0: r2, src10, #1", STORE_23),
     ]
     return [variant(name, word, True, store) for name, word, store in out]
+
+
+def fp20_variants():
+    """Is the register named in `sfu:` the value the unit reads?
+
+    The syntax doc describes the operand as in place - `sfu: RCP r1` means
+    r1 = 1.0 / r1 - but the value has to be there in fp20. A `.l*` prime writes
+    only the low fx10 half of the row, and section 12.7's readback shows the
+    fp20 byte one byte above it, so an fx10 prime leaves the unit reading the
+    floor of the format. `.lh` writes the whole row as fp20.
+
+    With real fp20 primes the op has a result to check against 12.7's table:
+    0.0625 -> D7, 0.25 -> E7, 0.375 -> EB, so sqrt(0.0625) = 0.25 -> E7,
+    sqrt(0.25) = 0.5 -> EF and sqrt(0.375) = 0.612 -> F0 (the mantissa is
+    truncated to the three bits the readback carries). Different results per
+    named register are the evidence that the register is the input.
+    """
+    out = [
+        ("fp20-none-store23", None),
+        ("fp20-sqrt3-only", "sfu: sqrt r3"),
+        ("fp20-sqrt3-src10", "sfu: sqrt r3 mul0: r2, src10, #1"),
+        ("fp20-sqrt2-src10", "sfu: sqrt r2 mul0: r2, src10, #1"),
+        ("fp20-sqrt0-src10", "sfu: sqrt r0 mul0: r2, src10, #1"),
+        ("fp20-rcp3-src10", "sfu: rcp r3 mul0: r2, src10, #1"),
+    ]
+    return [variant(name, word, True, STORE_23, "fp20") for name, word in out]
 
 
 SETS = {
@@ -190,6 +276,9 @@ SETS = {
               "tests/grate/asm_characterize.mfu_selector_field.json", field_variants),
     "sfu": ("mfu-selector-sfu-result", "tests/grate/asm_characterize.mfu_selector_sfu.json",
             sfu_variants),
+    "w": ("sfu-input-w", "tests/grate/asm_characterize.sfu_input_w.json", w_variants),
+    "fp20": ("sfu-operand", "tests/grate/asm_characterize.sfu_operand.json",
+             fp20_variants),
 }
 
 CONTROLS = [

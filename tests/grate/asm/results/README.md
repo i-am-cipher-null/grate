@@ -271,3 +271,35 @@ invalidate another; generate such a manifest with
 * commit: 550426e24e48260a3e9e644ed7f2fc634d365c52 with a dirty tree
 * created: 2026-11-19T21:41:36+00:00; 76 rows, repeat 3, timeout 10.0 s
 * summary: 76 passed, 0 failed of 76 - passed
+
+## pin-sfu-operand
+
+* manifest: `asm_characterize.sfu_operand.json` (sha256 5d6d3ba37a62)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 6896330c1f19b22d16a287de3c356f13d7298c11 with a dirty tree
+* created: 2026-11-19T22:05:43+00:00; 22 rows, repeat 3, timeout 10.0 s
+* summary: 22 passed, 0 failed of 22 - passed
+
+## pin-sfu-input-w
+
+* manifest: `asm_characterize.sfu_input_w.json` (sha256 e9a5d1a55467)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 6896330c1f19b22d16a287de3c356f13d7298c11 with a dirty tree
+* created: 2026-11-19T22:08:26+00:00; 40 rows, repeat 3, timeout 10.0 s
+* summary: 40 passed, 0 failed of 40 - passed
+
+## verify-sfu-operand
+
+* manifest: `asm_characterize.sfu_operand.json` (sha256 c61cdfc0979d)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 6896330c1f19b22d16a287de3c356f13d7298c11 with a dirty tree
+* created: 2026-11-19T22:09:25+00:00; 22 rows, repeat 3, timeout 10.0 s
+* summary: 22 passed, 0 failed of 22 - passed
+
+## verify-sfu-input-w
+
+* manifest: `asm_characterize.sfu_input_w.json` (sha256 eda9e278ed84)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 6896330c1f19b22d16a287de3c356f13d7298c11 with a dirty tree
+* created: 2026-11-19T22:09:39+00:00; 40 rows, repeat 3, timeout 10.0 s
+* summary: 40 passed, 0 failed of 40 - passed

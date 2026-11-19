@@ -1,0 +1,328 @@
+{
+  "name": "sfu-input-w",
+  "created_utc": "2026-11-19T22:09:39+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.sfu_input_w.json",
+  "manifest_sha256": "eda9e278ed843b2f73ea76b850b528f786d748ea857a4ebdda2bdf8ae1af4b9f",
+  "assembler": "/home/freebuff/build/grate/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "6896330c1f19b22d16a287de3c356f13d7298c11",
+  "git_status": "M tests/grate/asm/make_mfu_selector.py\n M tests/grate/asm_characterize.experiments.md\n?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/results/pin-sfu-input-w/\n?? tests/grate/asm/results/pin-sfu-operand/\n?? tests/grate/asm/vs_scale_w.txt\n?? tests/grate/asm_characterize.sfu_input_w.json\n?? tests/grate/asm_characterize.sfu_operand.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 10.0,
+  "manifest_data": {
+    "name": "sfu-input-w",
+    "repeat": 3,
+    "timeout": 10,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/mfu_sel.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "w1-sqrt4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: sqrt r4 mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+        ],
+        "expected": "0x0060FF00"
+      },
+      {
+        "name": "w0.25-sqrt4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: sqrt r4 mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+        ],
+        "expected": "0x0060FF00"
+      },
+      {
+        "name": "w4-sqrt4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: sqrt r4 mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+        ],
+        "expected": "0x0060FF00"
+      },
+      {
+        "name": "w1-rcp4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+        ],
+        "expected": "0x00607800"
+      },
+      {
+        "name": "w0.25-rcp4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+        ],
+        "expected": "0x00606800"
+      },
+      {
+        "name": "w4-rcp4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+        ],
+        "expected": "0x00608700"
+      },
+      {
+        "name": "w0.25-nosfu",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+        ],
+        "expected": "0x00600000"
+      },
+      {
+        "name": "w4-nosfu",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+        ],
+        "expected": "0x00600000"
+      },
+      {
+        "name": "w1-lg2-4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: lg2 r4 mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+        ],
+        "expected": "0x0060FF00"
+      },
+      {
+        "name": "w4-lg2-4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: lg2 r4 mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+        ],
+        "expected": "0x0060FF00"
+      },
+      {
+        "name": "w1-rsq-4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rsq r4 mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+        ],
+        "expected": "0x0060B700"
+      },
+      {
+        "name": "w4-rsq-4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@MFU@": "sfu: rsq r4 mul0: r2, src10, #1",
+            "@STORE@": "store rt1, r2, r3"
+          }
+        },
+        "fs": "tests/grate/asm/mfu_sel.in",
+        "vs": "tests/grate/asm/vs_scale_w.txt",
+        "args": [
+          "--vs_uniform",
+          "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+        ],
+        "expected": "0x0060BF00"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 40,
+    "passed": 40,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

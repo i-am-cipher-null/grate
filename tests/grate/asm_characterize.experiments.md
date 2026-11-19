@@ -689,25 +689,85 @@ multipliers, so `sfu: rcp r3 mul0: r2, src10, #1` is a single word.
 
 So source 10 exposes the SFU result of the same MFU word, and it is SFU state
 rather than a row register: moving the SFU's output to r1 leaves r3 primed while
-src10 still returns 0xFF00. The named row register is the SFU's destination, not
-its input - `sqrt r0` and `sqrt r3` return the same value - and the input is not
-established by these runs; docs section 6.5 puts the w component in r4 for the
-first MFU instruction, and none of these variants vary that.
+src10 still returns 0xFF00.
 
-The SFU's output does not read like the linear byte payload the primes use:
-`rcp` of a 0.375 register saturates to `0xFF00`, and `sqrt` of it returns
-`0x7BFF` where the linear byte scale gives about `0x9C` for 0.612. The 16-bit
-values `0xFF00`, `0x7BFF` and the `0xF700` of the 1.0 x 1.0 product are recorded
-as measured; their encoding is open, and the SFU's input is a candidate cause
-that these runs do not separate from a different store conversion.
+### What the SFU reads
+
+The `--set sfu` words above cannot say what the unit reads, because every one of
+them primed the rows with `.l*`, and that writes only the low fx10 half of a row.
+Section 12.7 of [[Fragment Shader ISA]] reads an fp20 destination back through
+the byte above that half, so an fx10 prime leaves the fp20 field zero and the
+unit computes on the floor of the format: sqrt(2^-31) is 2^-15.5, whose readback
+byte is `0x7B`, and rcp(2^-31) is 2^31, which saturates to `0xFF`. That is the
+whole of `0x7BFF` and `0xFF00` - they are not the root and reciprocal of the
+primed 0.375.
+
+`--set fp20` (6 variants) writes the rows with `.lh`, which stores a real fp20
+value, so the op finally has a result to check against section 12.7's table.
+
+| variant | word | reading |
+|:--|--:|:--|
+| `fp20-none-store23` | `0xEB00E700` | no MFU word: the fp20 primes, r2 0.25 -> `E7`, r3 0.375 -> `EB` |
+| `fp20-sqrt3-only` | `0xF000E700` | sqrt of r3 (0.375) -> `F0`; r2 untouched |
+| `fp20-sqrt3-src10` | `0xF000F000` | src10 returns the same fp20 the SFU wrote to r3 |
+| `fp20-sqrt2-src10` | `0xEB00EF00` | sqrt of r2 (0.25) = 0.5 -> `EF`; r3 keeps `EB` |
+| `fp20-sqrt0-src10` | `0xEB00E700` | sqrt of r0 (0.0625) = 0.25 -> `E7` |
+| `fp20-rcp3-src10` | `0xFF00FF00` | rcp of 0.375 = 2.67, above 2.0, so it saturates |
+
+Three named registers give three different results, each the root of the value
+primed there, so the register in `sfu: op rN` is the operand - in place, as
+`docs/assembler-syntax.md` says (`sfu: RCP r1` means r1 = 1.0 / r1) - and the
+earlier "the named register is the destination, not the input" reading is
+withdrawn. `fp20-sqrt3-only` shows that same register receiving the result.
+`0xF0` for sqrt(0.375) is the readback of 0.5625: 0.6124 with its mantissa
+truncated to the three bits the byte carries, which is the byte that predictor
+gives, while the unrounded value would land a step higher.
+
+The `0xF700` of the 1.0 x 1.0 product is settled by the same table: fp20 1.0
+reads back as `F7 00`, so it is exactly 1.0 rather than an unexplained value.
+
+### Row 4 and the clip w
+
+`--set w` (12 variants) points the SFU at r4, the register docs section 6.5
+gives the fragment's w, and moves only the vertex shader: `vs_scale_w.txt`
+multiplies clip x, y, z and w by one uniform, so x/w, y/w and z/w do not change
+and the quad covers the same pixels.
+
+| variant | w | word | reading |
+|:--|--:|--:|:--|
+| `w1-sqrt4`, `w0.25-sqrt4`, `w4-sqrt4` | 1, 0.25, 4 | `0x0060FF00` | sqrt >= 2.0 at every w |
+| `w1-rcp4` | 1 | `0x00607800` | rcp ~ 1/2^16 |
+| `w0.25-rcp4` | 0.25 | `0x00606800` | two octaves lower, so the operand is four times larger |
+| `w4-rcp4` | 4 | `0x00608700` | two octaves higher, four times smaller |
+| `w1-lg2-4`, `w4-lg2-4` | 1, 4 | `0x0060FF00` | lg2 >= 2.0, so the operand is at least 4 |
+| `w1-rsq-4` | 1 | `0x0060B700` | rsq = 1/256, so the operand is 2^16 |
+| `w4-rsq-4` | 4 | `0x0060BF00` | rsq = 1/128, so the operand is 2^14 = 2^16/4 |
+| `w0.25-nosfu`, `w4-nosfu` | 0.25, 4 | `0x00600000` | baseline: no SFU word, so nothing reaches the store |
+
+So r4 follows the fragment's w, and what the unit reads there is the reciprocal
+as a plain number: about 2^16 / w. rcp moves two octaves for a fourfold w, rsq
+lands on 1/256 and 1/128, and sqrt and lg2 both saturate - a 0..1 operand would
+make sqrt(1/4) = 0.5 (`EF`) and lg2(1/4) = -2 (`E7`) at w = 4, and both read
+`FF` instead. The readback resolves eight steps per octave, so the constant is
+consistent with 2^16 to within one step; the register supplies 1/w on a
+16.16-style fixed scale rather than as a fraction, which is why the unit's
+result is scaled too (rcp of it is w/2^16). The no-SFU baselines are identical
+at both w, so the store word did not move with the geometry, and the scale-1.0
+anchors reproduce the earlier unscaled words.
+
+A trap to record: the first attempt at this run named r3 instead of r4 and
+returned one word for all three w. Naming a row the pipeline does not fill
+cannot test what the pipeline fills, and the flat result looked like "the SFU
+ignores w" until the operand itself was checked.
 
 ### What is left
 
-Not yet measured: the SFU's input path, the encoding of values in the `.hi` byte
-of a stored half, and whether the multiplier's two row-register refusal is a
-read-port limit (the measured facts support "two row-register operands return
-zero", not a mechanism). Combining SFU, multiplier and interpolation in one
-program is the step after the input path.
+The other SFU operations can now be driven with known inputs (`.lh` primes) and
+characterised one at a time; selectors 11 and 12 still need real interpolated
+data; and the two-row-register zero is still a description rather than a
+mechanism. The constant in r4 is resolved only to one readback step, so a probe
+that reads the operand at a coarser magnitude would be needed to do better than
+"about 2^16".
 
 ## What the runner cost
 

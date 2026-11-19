@@ -1,0 +1,31 @@
+/*
+ * Vertex shader that scales clip x, y, z and w by one uniform.
+ *
+ * Scaling all four components by the same positive value leaves x/w, y/w and
+ * z/w unchanged, so the quad stays where it was on screen and the only thing
+ * the fragment stage sees differently is the clip-space w. The color export is
+ * untouched so the program is otherwise the same as vs_mov.txt.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.uniforms
+	[100] = "clip_scale";
+
+.asm
+
+EXEC(export[0]=vector)
+	MULv r63.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r63.xyzw, a[1].xyzw
+	NOPs
+;
