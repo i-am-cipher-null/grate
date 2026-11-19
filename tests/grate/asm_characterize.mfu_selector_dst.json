@@ -1,0 +1,348 @@
+{
+	"name": "mfu-selector-destination",
+	"repeat": 3,
+	"timeout": 10,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_sel.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "dst4-store01",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst4, src3, #1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00200060"
+		},
+		{
+			"name": "dst5-store01",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst5, src3, #1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00600010"
+		},
+		{
+			"name": "dst6-store23",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst6, src0, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00600010"
+		},
+		{
+			"name": "dst7-store23",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst7, src0, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00100040"
+		},
+		{
+			"name": "none-store01",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00200010"
+		},
+		{
+			"name": "none-store23",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "NOP",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00600040"
+		},
+		{
+			"name": "dst4-store23",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst4, src3, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00600040"
+		},
+		{
+			"name": "dst5-store23",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst5, src3, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00600040"
+		},
+		{
+			"name": "dst6-store01",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst6, src0, #1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00200010"
+		},
+		{
+			"name": "dst7-store01",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst7, src0, #1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00200010"
+		},
+		{
+			"name": "dst0-store01",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst0, #1, #1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00200010"
+		},
+		{
+			"name": "dst0-store23",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst0, #1, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00600040"
+		},
+		{
+			"name": "dst1-store01",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst1, #1, #1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00200010"
+		},
+		{
+			"name": "dst1-store23",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst1, #1, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00600040"
+		},
+		{
+			"name": "dst2-store01",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst2, #1, #1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00200010"
+		},
+		{
+			"name": "dst2-store23",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst2, #1, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00600040"
+		},
+		{
+			"name": "dst3-store01",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst3, #1, #1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00200010"
+		},
+		{
+			"name": "dst3-store23",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: dst3, #1, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00600040"
+		}
+	]
+}

@@ -1,0 +1,168 @@
+{
+	"name": "mfu-selector-sfu-result",
+	"repeat": 3,
+	"timeout": 10,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_sel.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "sfu-rcp3-src10",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "sfu: rcp r3 mul0: r2, src10, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0xFF00FF00"
+		},
+		{
+			"name": "nosfu-src10",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "mul0: r2, src10, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00600000"
+		},
+		{
+			"name": "sfu-rcp3-src0",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "sfu: rcp r3 mul0: r2, src0, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0xFF000010"
+		},
+		{
+			"name": "sfu-rcp3-only",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "sfu: rcp r3",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0xFF000040"
+		},
+		{
+			"name": "sfu-rcp1-src10",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "sfu: rcp r1 mul0: r2, src10, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x0060FF00"
+		},
+		{
+			"name": "sfu-rcp1-only",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "sfu: rcp r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0xFF000010"
+		},
+		{
+			"name": "sfu-sqrt3-src10",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "sfu: sqrt r3 mul0: r2, src10, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x7BFF7BFF"
+		},
+		{
+			"name": "sfu-sqrt0-src10",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.l*,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.l*,  u3,  #1,  #0",
+					"@MFU@": "sfu: sqrt r0 mul0: r2, src10, #1",
+					"@STORE@": "store rt1, r2, r3"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_sel.in",
+			"expected": "0x00607BFF"
+		}
+	]
+}

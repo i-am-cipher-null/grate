@@ -625,13 +625,89 @@ operands - `mul0: r3, src0, src1` and `mul0: r3, src2, src3` - leaves r3 at
 `0x00` where it was primed at 0.375, so the multiplier ran and wrote zero
 rather than not running. Row x `#1` multiplies correctly in both field
 positions (`src-00`..`src-03` put the row in the first field, `const13-times-src0`
-puts it in the second), so the zero is specific to two row-register sources:
-at most one operand can be a row register. Which field refuses is not separated
-by these runs.
+puts it in the second), so the zero is specific to two row-register sources,
+not to one field refusing a row register.
 
-Next, per the review: vary the destination independently, then put an SFU word
-in front of the multiplier to give source 10 a value, and only then combine the
-two paths in one program.
+### Where the destination writes
+
+`--set dst` (18 variants), same program, only the destination number changes.
+Rows 4..7 multiply a row register whose value differs from the destination's
+prime, so a write shows as a changed byte; each is also read through the store
+pair it does *not* name, which must return its no-MFU baseline.
+
+| variant | word | reading |
+|:--|--:|:--|
+| `none-store01` | `0x00200010` | baseline: r0.lo 0x10, r1.lo 0x20 |
+| `none-store23` | `0x00600040` | baseline: r2.lo 0x40, r3.lo 0x60 |
+| `dst4-store01` | `0x00200060` | `dst4` wrote r0 (0x60 = 0.375), r1 untouched |
+| `dst5-store01` | `0x00600010` | `dst5` wrote r1, r0 untouched |
+| `dst6-store23` | `0x00600010` | `dst6` wrote r2 (0x10 = 0.0625), r3 untouched |
+| `dst7-store23` | `0x00100040` | `dst7` wrote r3, r2 untouched |
+| `dst4-store23`, `dst5-store23` | `0x00600040` | the r2/r3 pair is the baseline, so only r0/r1 moved |
+| `dst6-store01`, `dst7-store01` | `0x00200010` | the r0/r1 pair is the baseline, so only r2/r3 moved |
+| `dst0..dst3-store01/store23` | `0x00200010`, `0x00600040` | both pairs are the baselines for all four numbers |
+
+So destination 4..7 is a plain row-register index that writes exactly one
+register, and 0..3 write none of the four row registers. The 0..3 variants use
+1.0 as both operands, whose product carries `0xF7` in the `.hi` byte (see
+`src-13`), so a write into a row register could not hide behind a prime.
+
+### The second source field
+
+`--set field` (8 variants). The source sweep only ever put the number under test
+in the first field, and `src0` is the only row register the second field had been
+shown with.
+
+| variant | word | | variant | word |
+|:--|--:|:--|:--|--:|
+| `src13-x-src0` | `0x00600010` | | `src0-x-src13` | `0x00600010` |
+| `src13-x-src1` | `0x00600020` | | `src1-x-src13` | `0x00600020` |
+| `src13-x-src2` | `0x00600040` | | `src2-x-src13` | `0x00600040` |
+| `src13-x-src3` | `0x00600060` | | `src3-x-src13` | `0x00600060` |
+
+Each order returns the same word, so both fields select row registers and 13
+multiplies as 1.0 in either slot. That is what rules out the obvious explanation
+of the two-row-register zeros - the second field cannot be the field that
+refuses, because it selects a row register correctly when the other operand is
+1.0.
+
+### Source 10 and the SFU result
+
+`--set sfu` (8 variants). One MFU word holds an sfu sub-instruction and both
+multipliers, so `sfu: rcp r3 mul0: r2, src10, #1` is a single word.
+
+| variant | word | reading |
+|:--|--:|:--|
+| `nosfu-src10` | `0x00600000` | comparison: the same multiply with no sfu sub-instruction |
+| `sfu-rcp3-src10` | `0xFF00FF00` | r3 = 0xFF00 is the SFU's write, r2 = 0xFF00 the multiply |
+| `sfu-rcp1-src10` | `0x0060FF00` | SFU wrote r1 instead, r3 keeps its 0x60 prime, src10 still 0xFF00 |
+| `sfu-rcp3-src0` | `0xFF000010` | the sfu sub-instruction does not disturb a multiply of r0 |
+| `sfu-rcp3-only` | `0xFF000040` | the SFU alone wrote r3 = 0xFF00, both bytes changed |
+| `sfu-rcp1-only` | `0xFF000010` | the SFU alone wrote r1 = 0xFF00, r0 untouched |
+| `sfu-sqrt3-src10` | `0x7BFF7BFF` | sqrt into r3, and src10 returns the same value |
+| `sfu-sqrt0-src10` | `0x00607BFF` | sqrt naming r0 gives the same 0x7BFF, r3 keeps its prime |
+
+So source 10 exposes the SFU result of the same MFU word, and it is SFU state
+rather than a row register: moving the SFU's output to r1 leaves r3 primed while
+src10 still returns 0xFF00. The named row register is the SFU's destination, not
+its input - `sqrt r0` and `sqrt r3` return the same value - and the input is not
+established by these runs; docs section 6.5 puts the w component in r4 for the
+first MFU instruction, and none of these variants vary that.
+
+The SFU's output does not read like the linear byte payload the primes use:
+`rcp` of a 0.375 register saturates to `0xFF00`, and `sqrt` of it returns
+`0x7BFF` where the linear byte scale gives about `0x9C` for 0.612. The 16-bit
+values `0xFF00`, `0x7BFF` and the `0xF700` of the 1.0 x 1.0 product are recorded
+as measured; their encoding is open, and the SFU's input is a candidate cause
+that these runs do not separate from a different store conversion.
+
+### What is left
+
+Not yet measured: the SFU's input path, the encoding of values in the `.hi` byte
+of a stored half, and whether the multiplier's two row-register refusal is a
+read-port limit (the measured facts support "two row-register operands return
+zero", not a mechanism). Combining SFU, multiplier and interpolation in one
+program is the step after the input path.
 
 ## What the runner cost
 
