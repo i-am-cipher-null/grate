@@ -1,0 +1,68 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Six-batch ALU buffer matrix, for alu_buffer_size = 3.
+ *
+ * Same tests as asm/alu_buf_matrix.in, with six batches instead of four: at
+ * size 3 four batches leave a two-batch tail, and an incomplete final group is
+ * not guaranteed to execute its DW at all (it hung or zeroed every store in
+ * earlier runs). Six batches is two complete groups.
+ *
+ * The manifest runs this program at count 6. The 0x520 count is the number of
+ * batches to execute, at every size (measured with the group ladder), so a
+ * count equal to the program length runs each batch once. A larger count runs
+ * the program again, and the second pass sees the first pass's rows - which
+ * looks exactly like "a write survives into a later group".
+ *
+ * The store picks which four halves are read back: `store rt1, r2, r3` puts
+ * r3.hi, r3.lo, r2.hi, r2.lo into the result word from the MSB, and
+ * `store rt1, r0, r1` does the same for r0/r1. Any half the variant did not
+ * write is a built-in control: it shows what a row reads back as before a
+ * write, so a value can only be credited to a batch that wrote it.
+ *
+ * The .constants table gives each batch a distinct byte, so a readback names
+ * exactly one batch: 0x10, 0x20, 0x40, 0x60, 0x7F, 0x9F for batches 0..5.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+	[4] = 0.5;
+	[5] = 0.625;
+	[6] = 0.75;
+	[7] = 0.875;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@B0@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B1@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@B2@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@B3@
+	DW:	@D3@
+;
+EXEC
+	ALU:
+		ALU0:	@B4@
+	DW:	@D4@
+;
+EXEC
+	ALU:
+		ALU0:	@B5@
+	DW:	@D5@
+;

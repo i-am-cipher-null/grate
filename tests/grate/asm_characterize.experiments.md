@@ -35,16 +35,25 @@ its test table, and pin its words only from a run whose repeats agreed:
 
     python3 tests/grate/asm/make_alu_buffer_matrix.py                    # matrix
     python3 tests/grate/asm/make_alu_buffer_matrix.py --mode ladder      # ladder
-    python3 tests/grate/asm/make_alu_buffer_matrix.py --mode blocks      # 8-batch
+    python3 tests/grate/asm/make_alu_buffer_matrix.py --mode blocks      # group probes
     python3 tests/grate/asm/make_alu_buffer_matrix.py --results <run dir>
+
+Run one size at a time (`--sizes N --out /tmp/m_nN.json`) and pin the checked-in
+manifest from those runs: a count that hangs wedges the channel for every later
+variant in the same run, so a single combined sweep can turn one bad size into
+four. `tests/grate/asm/results/` keeps the raw `results.tsv` of the runs quoted
+below.
 
 Each manifest runs two controls first, refuses to start the sweep if either
 fails, and repeats the controls afterwards. A run is only counted when the
 process exits 0 and prints exactly one `result 0x........` line whose value
 matches `expected`, which every variant here carries.
 
-Results below are from commit `250b1f3` on a Toshiba AC100 / Dynabook AZ
-(Tegra 20, `7.2.0-gd1efa725955b`, armv7l).
+Results below are from a Toshiba AC100 / Dynabook AZ (Tegra 20,
+`7.2.0-gd1efa725955b`, armv7l). The matrix numbers are the count-matched rerun
+(commit `071394e` plus the generator change that made the count equal to each
+program's batch count); the earlier figures they replace are marked as such
+where they would otherwise be read as current.
 
 ## 1. ALU addition disable: two multiplies per slot
 
@@ -143,54 +152,67 @@ should not see the row-1 write at all. The matrix below replaces that shape.
 
 (the fourth variant, the same shape at size 4, is gone: three batches are not a
 whole number of four-batch groups and that program hung, see "Batch counts that
-are not a multiple of the size").
+leave an incomplete group").
 
 ### The matrix
 
-`asm/alu_buf_matrix.in` is a fixed four-batch program, one ALU packet and one
-DW operation per batch, both chosen per variant, so only the write and the store
-move. `asm/make_alu_buffer_matrix.py` expands the test table into three
-manifests - `asm_characterize.alu_buffer_matrix.json` (192 variants, sizes 1 to
-4), `..._ladder.json` (32, the same batch-naming tests without the grid, for a
-quick re-check) and `..._blocks.json` (8, the eight-batch program) - and pins
-their words from a named run (`--results DIR`). Per buffer size the tests are a
-write x store grid (16), a *ladder* that gives every batch its own constant (4),
-a store-in-every-batch form (2), two writes to one register in both orders (6),
-two registers together in both orders (2), all eight register halves (16) and an
+`asm/alu_buf_matrix.in` is a four-batch program, one ALU packet and one DW
+operation per batch, both chosen per variant, so only the write and the store
+move. Size 3 uses a six-batch template (`asm/alu_buf_matrix6.in`): four batches
+cannot be split into groups of three, and an incomplete final group is not a
+fair test of anything. `asm/make_alu_buffer_matrix.py` expands the table into
+`asm_characterize.alu_buffer_matrix.json` (210 variants, sizes 1 to 4),
+`..._ladder.json` (34, the batch-naming tests alone) and `..._blocks.json` (12,
+the eight- and six-batch group probes), and pins their words from a named run
+(`--results DIR`).
+
+**Every program runs at a count equal to its own batch count**: 4 at sizes 1, 2
+and 4, 6 at size 3. That is not a detail. The first version of this matrix poked
+8, 9 and 8 at a four-batch program; since one count is one batch, sizes 2 to 4
+ran their program twice, and a second pass starts from the rows the first pass
+left. Both oddities recorded in that version - a write surviving into a later
+group, and size 3 storing from batch 3 - are what a repeated program produces,
+and neither survives the matched count.
+
+Per buffer size the tests are a write x store grid (16 at four batches, 36 at
+six), a *ladder* that gives every batch its own constant (4 or 6), a
+store-in-every-batch form (2), two writes to one register in both orders (3 or 5
+store positions, each way), two registers together in both orders (2), every
+register half read at the group starts that actually fire (8 or 16) and an
 untouched-row control first and last in the group (2).
 
 Sentinels are chosen so the word names the write. `r2.lo` lands in bits 0..7,
 `r2.hi` in 8..15, `r3.lo` in 16..23 and `r3.hi` in 24..31 of the result, and
-`.l*` stores fx10, so `0.0625` is `0x10`, `0.25` `0x40`, `0.5` `0x7F` and `0.75`
-`0xBF`. An untouched row reads `0x00000000` before and after every group, so no
-value below can be leftover state.
+`.l*` stores fx10, so batch 0 reads `0x10`, batch 1 `0x20`, batch 2 `0x40`,
+batch 3 `0x60`, batch 4 `0x7F` and batch 5 `0x9F`. An untouched row reads
+`0x00000000` before and after every group, so no value below is leftover state.
 
 **The registers are one shared file, not one row per batch.** A store in a later
-group still sees an earlier group's write: at size 2 the two-register test
-(`r2.lo` in batch 0, `r3.hi` in batch 1, read in batch 2) returns `7F000040` in
-both orders, and the value a store reads is simply whatever was written last.
-Batch `i` does not own a private `r0..r3`. At size 1 the same holds across every
-batch boundary, which is why the same-register test returns `0x7F` for `0.25`
-then `0.5` and `0x40` for the reversed order: the later write wins.
+group still sees an earlier group's write: at size 2 `r2.lo` in batch 0 and
+`r3.hi` in batch 1 read back together at the second group's store as
+`0x7F000040` in both orders; the same pair reads the same word at every
+group-start store at sizes 3 and 4, and every register half is visible from both
+groups at size 3. Batch `i` does not own a private `r0..r3`. At size 1 the same
+holds across every batch boundary, which is why the same-register test returns
+`0x7F` for `0.25` then `0.5`, and `0x40` for the reversed order.
 
 **At size N the DW runs once per group of N batches, from the first batch of the
 group, at the end of it.** The ladder names the batch each store sees:
 
-| size | store in batch 0 | 1 | 2 | 3 |
-|--:|:--|:--|:--|:--|
-| 1 | batch 0 | batch 1 | batch 2 | batch 3 |
-| 2 | batch 1 | nothing | batch 3 | nothing |
-| 3 | batch 2 | nothing | nothing | `0x40`, batch 1's value |
-| 4 | batch 3 | nothing | nothing | nothing |
+| size | store in batch 0 | 1 | 2 | 3 | 4 | 5 |
+|--:|:--|:--|:--|:--|:--|:--|
+| 1 | batch 0 | batch 1 | batch 2 | batch 3 | - | - |
+| 2 | batch 1 | nothing | batch 3 | nothing | - | - |
+| 3 | batch 2 | nothing | nothing | batch 5 | nothing | nothing |
+| 4 | batch 3 | nothing | nothing | nothing | - | - |
 
 Size 1 is the trivial case: every batch's DW fires at the end of its own batch
-and sees its own write. Sizes 2 and 4 are the rule exactly: only batches 0 and
-2 (size 2) or batch 0 (size 4) store, each at the end of its group, so each sees
-the last write of its group - including, at size 2, a write made in batch 3 by a
-store in batch 2, which is *earlier* in program order. Size 3 is the rule plus
-one extra: batch 3's store also lands, and at a size-3 group boundary it should
-not, since batch 3 starts a group that only has one member. It returns batch 1's
-value, which is neither its own write nor its group's state.
+and sees its own write. Sizes 2, 3 and 4 are the rule exactly: only the group's
+first batch stores, at the end of its group, so it sees the last write of its
+group - including writes made in a *later* batch of the same group, which are
+only later in program order because the DW runs at the group's end. Size 3 shows
+two groups doing this independently, group 0's store naming batch 2 and group
+1's naming batch 5.
 
 The four-batch grid at size 2 is the same rule (`40` is the written `0.25`, `.`
 is `0x00000000`):
@@ -204,16 +226,16 @@ is `0x00000000`):
 
 At size 1 the grid is lower-triangular (a write is visible to its own batch's
 store and every later one); at size 4 it is a single non-empty column, because
-only batch 0 stores and it sees every write. At size 3 the writes from batches
-0, 1 and 2 appear in columns 0 and 3 and batch 3's write only in column 3 - the
-same extra store as the ladder's batch 3.
+only batch 0 stores and it sees every write. At size 3 the grid is two
+three-batch blocks: writes from batches 0, 1 and 2 appear in columns 0 and 3,
+and writes from batches 3, 4 and 5 only in column 3, since the group-1 store
+runs after them.
 
 **A store in every batch suppresses the group's DW.** With `store rt1, r2, r3`
-in all four batches, sizes 1 is unaffected (each batch stores its own value) but
-sizes 2 and 4 return `0x00000000` even though the same program with a store only
-in batch 0 returns a value, and size 3 returns `0x40` for both constant orders.
-The group's DW fires only when the other batches of the group leave the DW slot
-empty.
+in every batch, size 1 is unaffected (each batch stores its own value) but sizes
+2, 3 and 4 return `0x00000000` even though the same program with a store only in
+the group's first batch returns a value. The group's DW fires only when the
+other batches of the group leave the DW slot empty.
 
 ### What the low field of `0x520` counts
 
@@ -252,30 +274,45 @@ Two edges, both measured:
   nondeterministic hardware and is not.
 
 So the working count is the batch count; the slack is about two counts at size 1
-and none worth using at sizes 2 to 4. `WORKING_COUNT` in the generator pins one
-per size for the manifests: 4, 8, 9 and 8 for sizes 1 to 4.
+and none worth using at sizes 2 to 4. Every manifest therefore runs its program
+at the count equal to its length: 4 at sizes 1, 2 and 4, 6 at size 3.
+
+**Reconciling this with `docs/hardware-testing.md` (reverse-engineering branch).**
+That section reads the same field as execution slots and concludes the count must
+be `batches * alu_buffer_size`. Both readings are of one field, and the
+discriminator is small: a **two-batch** program at size 2 poked with count 2.
+Under the slot reading, 2 is one batch's worth of slots, so the store in batch 0
+fires and names `0x10`; the measured word names batch 1 (`0x20`), so a count of 2
+is two batches. Every count in the old table that works is consistent with that:
+6 on a three-batch program at size 2 is three complete groups, so the program
+runs twice and the store still lands. Its hang rows (3, 5 and 7 at size 2) are
+counts that leave an incomplete final group, not counts that are not multiples of
+the size - the same hazard the size-4 row below documents. The old "batches
+rotate over rows" table was measured with count 8 on a four-batch program, which
+is two passes; at a matched count the grid shows one group's write visible to the
+next group's store, so there is no rotation and there is one register file.
 
 A count that hangs does not just fail itself: it wedges the channel and every
 later variant in the same run times out. That is why the count probes
 (`--mode count`) are ordered with the expected rejects last, and why a manifest
 that needs an unknown count should be run on its own.
 
-### Batch counts that are not a multiple of the size
+### Batch counts that leave an incomplete group
 
-One shape is still not repeatable: a program whose batch count is not a multiple
-of `alu_buffer_size` at size 4. Three batches at size 4 with count 12 returned
-`0x00000000` three times in the first session and hung three times in the second,
-with no change to the template or the poke. Three batches at size 3 (count 9) is
-stable and returns zero, which is what the group rule predicts: batches 0..2 are
-exactly one group, the store is in batch 2, and only the group's first batch
-stores. So the unstable case is specifically an incomplete final group at size 4,
-which is also why that variant was removed from
-`asm_characterize.alu_buffer_rows.json` rather than pinned.
+One edge is still not repeatable: a program whose batch count leaves an
+incomplete final group. Three batches at size 4 returned `0x00000000` three times
+in one session and hung three times in another, with no change to the template or
+the poke; with the count read as batches, 12 also means the three-batch program
+re-fetched four times, and which pass aligns a store with a group start depends
+on the shape. Three batches at size 3 is a complete group and behaves normally.
+The practical rule is unchanged: keep the batch count a multiple of the size,
+which is what a scheduler would do anyway. The size-3 case that used to look
+anomalous was this hazard plus an over-count, not a third DW.
 
 The register reference notes that size 3 "runs *some* programs, hangs others";
 this is a size-4 example of the same thing, and the honest rule for a shader
-compiler is that the batch count must be a multiple of the size, which is what a
-scheduler would do anyway.
+compiler is unchanged: keep the batch count a multiple of the size, which is what
+a scheduler would do anyway.
 
 **What this changes for a backend.** The old guidance ("the row file does not
 carry from batch `i` to batch `i+1`") is wrong: the registers are one file and
@@ -284,10 +321,10 @@ buffer is the DW: at size N only the first batch of each group can store, only
 if the other N-1 batches leave their DW slots empty, and the batch count has to
 be a multiple of N. A size-2 program can therefore hand values across the
 boundary and store once per two batches, so it looks like it should halve the
-store cost of the 13-batch `filter_quad` shape. **Measured: it does not.** One
-extra store per fragment is below this harness's noise floor (see "The size-2
-store win, measured" below), and `alu_buffer_size = 1` stays the default because
-every store lands at its own batch and the count is the batch count.
+store cost of the 13-batch `filter_quad` shape. **Measured: not resolved either way.** This
+benchmark cannot separate one store per fragment from two (see "The size-2 store
+win, measured" below), and `alu_buffer_size = 1` stays the default because every
+store lands at its own batch and the count is the batch count.
 
 **Traps, in the order they cost time.**
 
@@ -347,11 +384,16 @@ were 134.0 (`base`), 153.6 (`alu`), 156.8 (`st2`) and 147.7 (`n2`) ms, with `n2`
 which is worth several ms and looks exactly like the predicted win. Rotating the
 order turned the sign over.
 
-**Verdict: no measurable size-2 win**, on a shape where the fragment program is
-known to execute and the store layout differs by one store per fragment. One store
-per fragment sits at or below this harness's noise floor. Structurally that is the
-result to expect: at size 2 half the batches cannot store at all, and the count
-cannot be raised to buy them back because it is the batch count.
+**Verdict: not resolved by this benchmark.** The shape is one where the fragment
+program is known to execute and the store layout differs by one store per
+fragment, and the benchmark still cannot tell the two apart: size 2 measured 29 ms
+slower with the order rotated and 2 to 9 ms faster with it fixed, while the
+control that does four times the ALU work moved further than the difference under
+test. Calling that "no win" would be over-reading the data; the honest statement
+is that one store per fragment is smaller than this benchmark's drift. The size-2
+side is also constrained structurally: at size 2 half the batches cannot store at
+all, and the count cannot be raised to buy them back because it is the batch
+count.
 
 Two traps produced confident numbers that meant nothing before this shape was
 established:
@@ -395,7 +437,7 @@ Five things that produced wrong results first:
   `python3 -c 'import json,collections; ...'` over `GRATE_POKE`) before
   concluding that the hardware changed its mind.
 * **one hang invalidates the rest of the run, not just itself.** A count that
-  is not a multiple of the size (4 at size 3) timed out, and every later variant
+  leaves an incomplete final group (4 batches at size 3) timed out, and every later variant
   in that run timed out too - including variants that pass on their own in a
   fresh run - because the wedged channel does not recover while the manifest is
   still going. The runner reports those as ordinary failures. Keep known-risky

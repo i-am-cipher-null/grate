@@ -13,9 +13,16 @@ the ALU packet and the DW operation of each batch change.
     make_alu_buffer_matrix.py --mode ladder         # just the batch-naming tests, per size
     make_alu_buffer_matrix.py --mode sweep          # count -> how many batches ran
 
-The blocks mode uses asm/alu_buf_blocks8.in: one DW per group of N batches fits
-four batches exactly at sizes 1, 2 and 4, so sizes 3 and 4 only get a fair test
-with a batch count that is a whole number of groups.
+Each size's program is exactly as long as the count it runs at. The 0x520 count
+is the number of batches to execute (measured with the group ladder), so a count
+above the program length runs the program again, and the second pass then sees
+the first pass's rows - indistinguishable from a write surviving into a later
+group. Four batches is a whole number of groups at sizes 1, 2 and 4; size 3 gets
+a six-batch program (asm/alu_buf_matrix6.in) and count 6, so its stores are
+judged on complete groups rather than an incomplete tail.
+
+The blocks mode uses asm/alu_buf_blocks8.in with count 8 at sizes 1, 2 and 4 and
+count 6 at size 3, for the same reason.
 
 The first form is the measurement pass. The second reads DIR/results.tsv and
 copies each variant's word into the manifest as its expected value, but only
@@ -36,10 +43,12 @@ The tests per buffer size are:
                     batch: the readback names the batch whose store ran last,
                     so DW participation is visible separately from row state.
 
-A count that is not a multiple of the size hangs the engine and leaves the
-channel wedged for the rest of the run, so every variant here uses the
-documented count. Keep it that way when adding tests: one hang turns every
-later variant in the same run into a timeout.
+Past the end of the program the count stops tracking batches: at size 1 counts 9
+to 11 clamp at the last batch and 12 and up return the first constant, and far
+past the program the channel wedges (EMEM address decode error, then nvrm_init
+failed) for every later run. Every variant here therefore uses a count equal to
+its program length. Keep it that way when adding tests, and treat any count
+above the length as its own experiment.
   conf-b0b1-s<S>    the same register written twice, 0.25 then 0.5, read at S;
                     and the same with the order reversed. Which write wins.
   two-reg-s2        two different registers written one batch apart, read
@@ -67,19 +76,45 @@ LOW = 2
 HIGH = 4
 
 SIZES = (1, 2, 3, 4)
-BATCHES = 4
-# 0x520 counts execution slots: one batch occupies alu_buffer_size of them, and
-# the top bits (0x20004000 | 0x2000) are mandatory on AR20.
+
+# 0x520's low field is the number of batches to execute, at every size (measured
+# with the group ladder: count 2 at size 2 lands the second batch's store, not
+# the first group's). The top bits (0x20004000 | 0x2000) are mandatory on AR20;
+# a bare count hangs.
 START_WORD = 0x20006000
-SLOT_STORES = (1, 2)
-# 0x520 counts that land stores for the four-batch shape, three runs each. At
-# sizes 1 and 2 this is the documented batches * size; at sizes 3 and 4 it is
-# not, and the documented 12 and 16 land nothing from any store (measured four
-# times each). A count of 4 at size 3 hangs, so the working counts are not
-# interchangeable between sizes.
-WORKING_COUNT = {1: 4, 2: 8, 3: 9, 4: 8}
+
+# Batches in each size's program, which is also the count it runs at. Size 3
+# needs a whole number of groups, so it gets six batches from its own template
+# instead of four with an incomplete two-batch tail.
+BATCHES_FOR = {1: 4, 2: 4, 3: 6, 4: 4}
+TEMPLATE = {4: "tests/grate/asm/alu_buf_matrix.in",
+            6: "tests/grate/asm/alu_buf_matrix6.in"}
+
+
+def store_positions(size, batches):
+    """Batch positions whose DW executes: the first batch of every group.
+
+    A store anywhere else in a group never runs, so a slot test placed there
+    returns zero for every register and proves nothing. At size 1 every batch
+    starts a group, so read after the write instead (positions 1 and 2) to see
+    the value persist across batches; at larger sizes read at the group starts,
+    which are also the positions the ladder shows firing.
+    """
+    starts = [index for index in range(batches) if index % size == 0]
+    return tuple(starts[1:3]) if size == 1 else tuple(starts)
 # The ladder gives each batch its own readable byte: 0x10, 0x40, 0x7F, 0xBF.
 LADDER = (0, 2, 4, 6)
+
+
+def sentinels(batches):
+    """A distinct constant per batch, in batch order.
+
+    The .constants table gives 0.0625, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75 and
+    0.875 as 0x10, 0x20, 0x40, 0x60, 0x7F, 0x9F, 0xBF and 0xDF, so batch i of a
+    program with up to eight batches returns byte i + 1 of that table and a
+    readback names exactly one batch.
+    """
+    return LADDER8[:batches]
 
 
 
@@ -89,114 +124,118 @@ def write(reg, half, const):
     return f"MAD  {mask},  u{const},  #1,  #0"
 
 
-def no_writes():
-    return [NOP] * BATCHES
+def no_writes(batches):
+    return [NOP] * batches
 
 
-def store(at, instruction):
-    dw = [NOP] * BATCHES
+def store(at, instruction, batches):
+    dw = [NOP] * batches
     dw[at] = instruction
     return dw
 
 
 def variants_for(size):
     p = f"n{size}"
-    count = BATCHES * size
+    batches_at = BATCHES_FOR[size]
+    count = batches_at
+    table = sentinels(batches_at)
     out = []
 
     # Control: nothing is written. Whatever this returns is what an untouched
     # row reads back as, so no other variant can credit that value to a write.
-    out.append((f"{p}-baseline-s1", no_writes(), store(1, STORE23), count))
+    out.append((f"{p}-baseline-s1", no_writes(batches_at), store(1, STORE23, batches_at), count))
 
     # Ladder: every batch writes its own constant, so a store that sees the
     # state of one batch returns a value that names it.
-    for at in range(BATCHES):
-        batches = [write("r2", "lo", LADDER[index]) for index in range(BATCHES)]
-        out.append((f"{p}-ladder-s{at}", batches, store(at, STORE23), count))
-    for tag, table in (("fwd", LADDER), ("rev", LADDER[::-1])):
-        batches = [write("r2", "lo", table[index]) for index in range(BATCHES)]
-        dw = [STORE23] * BATCHES
-        out.append((f"{p}-ladder-all-{tag}", batches, dw, count))
+    for at in range(batches_at):
+        batches = [write("r2", "lo", table[index]) for index in range(batches_at)]
+        out.append((f"{p}-ladder-s{at}", batches, store(at, STORE23, batches_at), count))
+    for tag, order in (("fwd", table), ("rev", table[::-1])):
+        batches = [write("r2", "lo", order[index]) for index in range(batches_at)]
+        out.append((f"{p}-ladder-all-{tag}", batches, [STORE23] * batches_at, count))
 
     # The mapping: one write, one store, every pair of batch positions.
-    for where in range(BATCHES):
-        for at in range(BATCHES):
-            batches = no_writes()
+    for where in range(batches_at):
+        for at in range(batches_at):
+            batches = no_writes(batches_at)
             batches[where] = write("r2", "lo", LOW)
-            out.append((f"{p}-vis-w{where}-s{at}", batches, store(at, STORE23), count))
+            out.append((f"{p}-vis-w{where}-s{at}", batches, store(at, STORE23, batches_at), count))
 
     # Two writes to the same register, one batch apart, read at each later
     # position, in both orders: does the older write survive, or is it the
     # latest one that a store sees?
     for order, tag in (((LOW, HIGH), "025050"), ((HIGH, LOW), "050025")):
-        for at in (1, 2, 3):
-            batches = no_writes()
+        for at in range(1, batches_at):
+            batches = no_writes(batches_at)
             batches[0] = write("r2", "lo", order[0])
             batches[1] = write("r2", "lo", order[1])
-            out.append((f"{p}-conf-b0b1-s{at}-{tag}", batches, store(at, STORE23), count))
+            out.append((f"{p}-conf-b0b1-s{at}-{tag}", batches,
+                        store(at, STORE23, batches_at), count))
+
+    reads = store_positions(size, batches_at)
 
     # Two different registers written one batch apart and read together: are the
     # registers independent, or does one write displace the other?
     for tag, first, second in (("r2lo-r3hi", ("r2", "lo", LOW), ("r3", "hi", HIGH)),
                                ("r3hi-r2lo", ("r3", "hi", HIGH), ("r2", "lo", LOW))):
-        batches = no_writes()
+        batches = no_writes(batches_at)
         batches[0] = write(*first)
         batches[1] = write(*second)
-        out.append((f"{p}-two-reg-s2-{tag}", batches, store(2, STORE23), count))
+        out.append((f"{p}-two-reg-s2-{tag}", batches,
+                    store(reads[-1], STORE23, batches_at), count))
 
     # Every register and both halves, one slot per variant, so the mapping is
     # not a special case for the registers the other tests happen to use. The
     # three slots the variant did not write stay at their baseline value.
     for reg in ("r0", "r1", "r2", "r3"):
         for half in ("lo", "hi"):
-            for at in SLOT_STORES:
-                batches = no_writes()
+            for at in reads:
+                batches = no_writes(batches_at)
                 batches[0] = write(reg, half, LOW)
                 instruction = STORE23 if reg in ("r2", "r3") else STORE01
                 out.append((f"{p}-slot-{reg}-{half}-s{at}",
-                            batches, store(at, instruction), count))
+                            batches, store(at, instruction, batches_at), count))
 
     # Same as the opening control, last in the group.
-    out.append((f"{p}-baseline-s1-again", no_writes(), store(1, STORE23), count))
+    out.append((f"{p}-baseline-s1-again", no_writes(batches_at),
+                store(1, STORE23, batches_at), count))
     return out
 
 
 def blocks_variants():
-    """Eight batches, one store or a store per batch, for the group probe."""
-    out = []
-    # size -> how many of the eight batches do anything
-    for size, active in ((1, 8), (2, 8), (4, 8)):
-        count = 8 * size
-        for mode in ("store-s0", "ladder-all"):
-            batches = [NOP] * 8
-            dw = [NOP] * 8
-            for index in range(active):
-                batches[index] = write("r2", "lo", LADDER[index % len(LADDER)])
-                if mode == "ladder-all" or index == 0:
-                    dw[index] = STORE23
-            out.append((f"b8-n{size}-{mode}-{active}b", batches, dw, count))
+    """One DW per group of N batches: eight batches, six at size 3.
 
-    # Eight batches at size 2 land nothing with the documented count of 16,
-    # while four batches at size 2 do with 8. Counts 8, 12 and 16 on the same
-    # program separate "the count needs to be batches * size" from "the wider
-    # buffer only ran once". Count 8 repeats what four batches do, while 12 and
-    # the documented 16 - the plain b8-n2-store-s0-8b variant above - land
-    # nothing. Last in the list: a count the engine rejects hangs, and a
-    # hang poisons every later variant in the run.
-    for size, count in ((2, 8), (2, 12)):
-        batches = [write("r2", "lo", LADDER[index % len(LADDER)]) for index in range(8)]
-        dw = [STORE23] + [NOP] * 7
-        out.append((f"b8-n{size}-store-s0-8b-count{count}", batches, dw, count))
+    At every size the count equals the batch count, so this runs the program
+    once. `store-s0` fills only the first group's DW, `store-groups` fills the
+    first batch of every group, and `ladder-all` puts a store in every batch -
+    which suppresses the group DW and is the control for that rule.
+    """
+    out = []
+    for size in (1, 2, 3, 4):
+        batches_at = 6 if size == 3 else 8
+        table = sentinels(batches_at)
+        for mode in ("store-s0", "store-groups", "ladder-all"):
+            batches = [NOP] * batches_at
+            dw = [NOP] * batches_at
+            for index in range(batches_at):
+                batches[index] = write("r2", "lo", table[index])
+                if (mode == "ladder-all"
+                        or (mode == "store-s0" and index == 0)
+                        or (mode == "store-groups" and index % size == 0)):
+                    dw[index] = STORE23
+            out.append((f"b{batches_at}-n{size}-{mode}", batches, dw, batches_at))
     return out
 
 
 def build_blocks_manifest():
     variants = []
     for name, batches, dw, count in blocks_variants():
-        replace = {"@ABUF@": str(1)}
-        for index, batch in enumerate(batches):
-            replace[f"@B{index}@"] = batch
-            replace[f"@D{index}@"] = dw[index]
+        replace = {"@ABUF@": "1"}
+        # The template has eight batches; a six-batch variant leaves the last
+        # two as NOP/NOP, which the count never reaches.
+        for index in range(8):
+            replace[f"@B{index}@"] = batches[index] if index < len(batches) else NOP
+            replace[f"@D{index}@"] = dw[index] if index < len(dw) else NOP
         variants.append({
             "name": name,
             "environment": {"GRATE_POKE": f"0x520=0x{START_WORD | count:08X}"},
@@ -225,10 +264,10 @@ def build_blocks_manifest():
 # 0x7F, 0x9F, 0xBF, 0xDF for batches 0..7.
 LADDER8 = (0, 1, 2, 3, 4, 5, 6, 7)
 
-# Counts swept per size. 0 and >= 128 hang, and a count that is not a multiple
-# of the size hangs as well, so only multiples are swept (everything is a
-# multiple of 1): a hang wedges the channel and every later variant in the same
-# run with it, which is what makes an unhung sweep worth the restriction.
+# Counts swept per size. A count past the program clamps at the last batch and
+# then re-fetches from the first constant (measured), and far past it the channel
+# wedges, so the sweep stops where the evidence stops instead of mapping the
+# failure: one wedge takes every later variant in the run with it.
 SWEEP = {1: tuple(range(1, 11)),
          2: (2, 4, 6, 8, 10, 12, 14, 16),
          3: (3, 6, 9, 12),
@@ -303,19 +342,23 @@ CONTROLS = [
 def build_manifest(sizes=SIZES, count=None):
     variants = []
     for size in sizes:
-        # The count that reproduces, not batches * size: the matrix is the
-        # proof, so it may only use counts that survive a re-run.
-        variant_count = count or WORKING_COUNT[size]
+        # Count == program length: one count is one batch at every size, so this
+        # runs each batch exactly once instead of repeating the program.
+        variant_count = count or BATCHES_FOR[size]
         for name, batches, dw, _ in variants_for(size):
             replace = {"@ABUF@": str(size)}
-            for index in range(BATCHES):
+            for index in range(len(batches)):
                 replace[f"@B{index}@"] = batches[index]
                 replace[f"@D{index}@"] = dw[index]
-            variants.append({
+            variant = {
                 "name": name,
                 "environment": {"GRATE_POKE": f"0x520=0x{START_WORD | variant_count:08X}"},
                 "replace": {"fs": replace},
-            })
+            }
+            template = TEMPLATE[len(batches)]
+            if template != TEMPLATE[4]:
+                variant["fs"] = template
+            variants.append(variant)
 
     names = [variant["name"] for variant in variants]
     if len(names) != len(set(names)):
@@ -327,7 +370,7 @@ def build_manifest(sizes=SIZES, count=None):
         "timeout": 10,
         "program": {
             "vs": "tests/grate/asm/vs_mov.txt",
-            "fs": "tests/grate/asm/alu_buf_matrix.in",
+            "fs": TEMPLATE[4],
             "lnk": "tests/grate/asm/linker_vs_tests.txt",
         },
         "controls": CONTROLS,
@@ -338,29 +381,33 @@ def build_manifest(sizes=SIZES, count=None):
 def build_ladder_manifest(sizes, count=None):
     """Only the tests that name a batch: the ladder, its all-batch form and the
     untouched-row control, at the count that makes stores land for that size.
-    Cheap enough to re-run per size, which keeps a count that hangs away from
-    the tests that would otherwise be measured after it."""
+    Cheap enough to re-run per size, which keeps a size in its own run."""
     variants = []
     for size in sizes:
+        batches_at = BATCHES_FOR[size]
         for name, batches, dw, _ in variants_for(size):
             if not ("ladder" in name or "baseline" in name):
                 continue
             replace = {"@ABUF@": str(size)}
-            for index in range(BATCHES):
+            for index in range(len(batches)):
                 replace[f"@B{index}@"] = batches[index]
                 replace[f"@D{index}@"] = dw[index]
-            variants.append({
+            variant = {
                 "name": name,
-                "environment": {"GRATE_POKE": f"0x520=0x{START_WORD | (count or WORKING_COUNT[size]):08X}"},
+                "environment": {"GRATE_POKE": f"0x520=0x{START_WORD | (count or batches_at):08X}"},
                 "replace": {"fs": replace},
-            })
+            }
+            template = TEMPLATE[batches_at]
+            if template != TEMPLATE[4]:
+                variant["fs"] = template
+            variants.append(variant)
     return {
         "name": "alu-buffer-ladder",
         "repeat": 3,
         "timeout": 10,
         "program": {
             "vs": "tests/grate/asm/vs_mov.txt",
-            "fs": "tests/grate/asm/alu_buf_matrix.in",
+            "fs": TEMPLATE[4],
             "lnk": "tests/grate/asm/linker_vs_tests.txt",
         },
         "controls": CONTROLS,
@@ -411,14 +458,18 @@ def build_leak_manifest(sequence=LEAK_SEQUENCE):
             if not ("ladder" in name or "baseline" in name):
                 continue
             replace = {"@ABUF@": str(size)}
-            for index in range(BATCHES):
+            for index in range(len(batches)):
                 replace[f"@B{index}@"] = batches[index]
                 replace[f"@D{index}@"] = dw[index]
-            variants.append({
+            variant = {
                 "name": f"{name}-{tag}",
                 "environment": {"GRATE_POKE": f"0x520=0x{START_WORD | count:08X}"},
                 "replace": {"fs": replace},
-            })
+            }
+            template = TEMPLATE[len(batches)]
+            if template != TEMPLATE[4]:
+                variant["fs"] = template
+            variants.append(variant)
     return {
         "name": "alu-buffer-leak",
         "repeat": 3,

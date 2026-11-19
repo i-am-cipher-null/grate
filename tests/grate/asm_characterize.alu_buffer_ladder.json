@@ -50,11 +50,11 @@
           "@ABUF@": "1",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
@@ -70,15 +70,15 @@
           "@ABUF@": "1",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000040"
+      "expected": "0x00000020"
     },
     {
       "name": "n1-ladder-s2",
@@ -90,15 +90,15 @@
           "@ABUF@": "1",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x0000007F"
+      "expected": "0x00000040"
     },
     {
       "name": "n1-ladder-s3",
@@ -110,15 +110,15 @@
           "@ABUF@": "1",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
-      "expected": "0x000000BF"
+      "expected": "0x00000060"
     },
     {
       "name": "n1-ladder-all-fwd",
@@ -130,15 +130,15 @@
           "@ABUF@": "1",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
-      "expected": "0x000000BF"
+      "expected": "0x00000060"
     },
     {
       "name": "n1-ladder-all-rev",
@@ -148,11 +148,11 @@
       "replace": {
         "fs": {
           "@ABUF@": "1",
-          "@B0@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B0@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
@@ -183,7 +183,7 @@
     {
       "name": "n2-baseline-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -203,38 +203,38 @@
     {
       "name": "n2-ladder-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000040"
+      "expected": "0x00000020"
     },
     {
       "name": "n2-ladder-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
@@ -243,38 +243,38 @@
     {
       "name": "n2-ladder-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x000000BF"
+      "expected": "0x00000060"
     },
     {
       "name": "n2-ladder-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
@@ -283,18 +283,18 @@
     {
       "name": "n2-ladder-all-fwd",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
@@ -303,16 +303,16 @@
     {
       "name": "n2-ladder-all-rev",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
-          "@B0@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B0@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
@@ -323,7 +323,7 @@
     {
       "name": "n2-baseline-s1-again",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -343,7 +343,7 @@
     {
       "name": "n3-baseline-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -355,135 +355,220 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-ladder-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
-          "@D3@": "NOP"
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x0000007F"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000040"
     },
     {
       "name": "n3-ladder-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
-          "@D3@": "NOP"
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-ladder-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
-          "@D3@": "NOP"
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-ladder-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
-          "@D3@": "store rt1, r2, r3"
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000040"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x0000009F"
+    },
+    {
+      "name": "n3-ladder-s4",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-ladder-s5",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "store rt1, r2, r3"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-ladder-all-fwd",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
-          "@D3@": "store rt1, r2, r3"
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "store rt1, r2, r3"
         }
       },
-      "expected": "0x00000040"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-ladder-all-rev",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
-          "@B0@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B0@": "MAD  r2.l*,  u5,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
           "@B1@": "MAD  r2.l*,  u4,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u0,  #1,  #0",
-          "@D3@": "store rt1, r2, r3"
+          "@B3@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "MAD  r2.l*,  u1,  #1,  #0",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D5@": "store rt1, r2, r3"
         }
       },
-      "expected": "0x00000040"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-baseline-s1-again",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -495,15 +580,20 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n4-baseline-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -523,38 +613,38 @@
     {
       "name": "n4-ladder-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x000000BF"
+      "expected": "0x00000060"
     },
     {
       "name": "n4-ladder-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
@@ -563,18 +653,18 @@
     {
       "name": "n4-ladder-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
@@ -583,18 +673,18 @@
     {
       "name": "n4-ladder-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
@@ -603,18 +693,18 @@
     {
       "name": "n4-ladder-all-fwd",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
@@ -623,16 +713,16 @@
     {
       "name": "n4-ladder-all-rev",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
-          "@B0@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B0@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
@@ -643,7 +733,7 @@
     {
       "name": "n4-baseline-s1-again",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {

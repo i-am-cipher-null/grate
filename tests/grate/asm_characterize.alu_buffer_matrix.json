@@ -50,11 +50,11 @@
           "@ABUF@": "1",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
@@ -70,15 +70,15 @@
           "@ABUF@": "1",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000040"
+      "expected": "0x00000020"
     },
     {
       "name": "n1-ladder-s2",
@@ -90,15 +90,15 @@
           "@ABUF@": "1",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x0000007F"
+      "expected": "0x00000040"
     },
     {
       "name": "n1-ladder-s3",
@@ -110,15 +110,15 @@
           "@ABUF@": "1",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
-      "expected": "0x000000BF"
+      "expected": "0x00000060"
     },
     {
       "name": "n1-ladder-all-fwd",
@@ -130,15 +130,15 @@
           "@ABUF@": "1",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
-      "expected": "0x000000BF"
+      "expected": "0x00000060"
     },
     {
       "name": "n1-ladder-all-rev",
@@ -148,11 +148,11 @@
       "replace": {
         "fs": {
           "@ABUF@": "1",
-          "@B0@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B0@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
@@ -983,7 +983,7 @@
     {
       "name": "n2-baseline-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1003,38 +1003,38 @@
     {
       "name": "n2-ladder-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000040"
+      "expected": "0x00000020"
     },
     {
       "name": "n2-ladder-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
@@ -1043,38 +1043,38 @@
     {
       "name": "n2-ladder-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x000000BF"
+      "expected": "0x00000060"
     },
     {
       "name": "n2-ladder-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
@@ -1083,18 +1083,18 @@
     {
       "name": "n2-ladder-all-fwd",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
@@ -1103,16 +1103,16 @@
     {
       "name": "n2-ladder-all-rev",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
-          "@B0@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B0@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
@@ -1123,7 +1123,7 @@
     {
       "name": "n2-vis-w0-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1143,7 +1143,7 @@
     {
       "name": "n2-vis-w0-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1163,7 +1163,7 @@
     {
       "name": "n2-vis-w0-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1183,7 +1183,7 @@
     {
       "name": "n2-vis-w0-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1203,7 +1203,7 @@
     {
       "name": "n2-vis-w1-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1223,7 +1223,7 @@
     {
       "name": "n2-vis-w1-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1243,7 +1243,7 @@
     {
       "name": "n2-vis-w1-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1263,7 +1263,7 @@
     {
       "name": "n2-vis-w1-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1283,7 +1283,7 @@
     {
       "name": "n2-vis-w2-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1303,7 +1303,7 @@
     {
       "name": "n2-vis-w2-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1323,7 +1323,7 @@
     {
       "name": "n2-vis-w2-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1343,7 +1343,7 @@
     {
       "name": "n2-vis-w2-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1363,7 +1363,7 @@
     {
       "name": "n2-vis-w3-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1383,7 +1383,7 @@
     {
       "name": "n2-vis-w3-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1403,7 +1403,7 @@
     {
       "name": "n2-vis-w3-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1423,7 +1423,7 @@
     {
       "name": "n2-vis-w3-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1443,7 +1443,7 @@
     {
       "name": "n2-conf-b0b1-s1-025050",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1463,7 +1463,7 @@
     {
       "name": "n2-conf-b0b1-s2-025050",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1483,7 +1483,7 @@
     {
       "name": "n2-conf-b0b1-s3-025050",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1503,7 +1503,7 @@
     {
       "name": "n2-conf-b0b1-s1-050025",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1523,7 +1523,7 @@
     {
       "name": "n2-conf-b0b1-s2-050025",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1543,7 +1543,7 @@
     {
       "name": "n2-conf-b0b1-s3-050025",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1563,7 +1563,7 @@
     {
       "name": "n2-two-reg-s2-r2lo-r3hi",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1583,7 +1583,7 @@
     {
       "name": "n2-two-reg-s2-r3hi-r2lo",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1601,29 +1601,29 @@
       "expected": "0x7F000040"
     },
     {
-      "name": "n2-slot-r0-lo-s1",
+      "name": "n2-slot-r0-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r0.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r0, r1",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00000040"
     },
     {
       "name": "n2-slot-r0-lo-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1641,29 +1641,29 @@
       "expected": "0x00000040"
     },
     {
-      "name": "n2-slot-r0-hi-s1",
+      "name": "n2-slot-r0-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r0.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r0, r1",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00004000"
     },
     {
       "name": "n2-slot-r0-hi-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1681,29 +1681,29 @@
       "expected": "0x00004000"
     },
     {
-      "name": "n2-slot-r1-lo-s1",
+      "name": "n2-slot-r1-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r1.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r0, r1",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00400000"
     },
     {
       "name": "n2-slot-r1-lo-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1721,29 +1721,29 @@
       "expected": "0x00400000"
     },
     {
-      "name": "n2-slot-r1-hi-s1",
+      "name": "n2-slot-r1-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r1.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r0, r1",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x40000000"
     },
     {
       "name": "n2-slot-r1-hi-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1761,29 +1761,29 @@
       "expected": "0x40000000"
     },
     {
-      "name": "n2-slot-r2-lo-s1",
+      "name": "n2-slot-r2-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00000040"
     },
     {
       "name": "n2-slot-r2-lo-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1801,29 +1801,29 @@
       "expected": "0x00000040"
     },
     {
-      "name": "n2-slot-r2-hi-s1",
+      "name": "n2-slot-r2-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r2.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00004000"
     },
     {
       "name": "n2-slot-r2-hi-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1841,29 +1841,29 @@
       "expected": "0x00004000"
     },
     {
-      "name": "n2-slot-r3-lo-s1",
+      "name": "n2-slot-r3-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r3.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00400000"
     },
     {
       "name": "n2-slot-r3-lo-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1881,29 +1881,29 @@
       "expected": "0x00400000"
     },
     {
-      "name": "n2-slot-r3-hi-s1",
+      "name": "n2-slot-r3-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "2",
           "@B0@": "MAD  r3.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x40000000"
     },
     {
       "name": "n2-slot-r3-hi-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1923,7 +1923,7 @@
     {
       "name": "n2-baseline-s1-again",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -1943,7 +1943,7 @@
     {
       "name": "n3-baseline-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -1955,135 +1955,220 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-ladder-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
-          "@D3@": "NOP"
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x0000007F"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000040"
     },
     {
       "name": "n3-ladder-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
-          "@D3@": "NOP"
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-ladder-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
-          "@D3@": "NOP"
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-ladder-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
-          "@D3@": "store rt1, r2, r3"
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000040"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x0000009F"
+    },
+    {
+      "name": "n3-ladder-s4",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-ladder-s5",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "store rt1, r2, r3"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-ladder-all-fwd",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
-          "@D3@": "store rt1, r2, r3"
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+          "@D5@": "store rt1, r2, r3"
         }
       },
-      "expected": "0x00000040"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-ladder-all-rev",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
-          "@B0@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B0@": "MAD  r2.l*,  u5,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
           "@B1@": "MAD  r2.l*,  u4,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u0,  #1,  #0",
-          "@D3@": "store rt1, r2, r3"
+          "@B3@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "MAD  r2.l*,  u1,  #1,  #0",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "MAD  r2.l*,  u0,  #1,  #0",
+          "@D5@": "store rt1, r2, r3"
         }
       },
-      "expected": "0x00000040"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w0-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2095,15 +2180,20 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000040"
     },
     {
       "name": "n3-vis-w0-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2115,15 +2205,20 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w0-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2135,15 +2230,20 @@
           "@B2@": "NOP",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w0-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2155,15 +2255,70 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "store rt1, r2, r3"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000040"
+    },
+    {
+      "name": "n3-vis-w0-s4",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w0-s5",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "store rt1, r2, r3"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w1-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2175,15 +2330,20 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000040"
     },
     {
       "name": "n3-vis-w1-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2195,15 +2355,20 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w1-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2215,15 +2380,20 @@
           "@B2@": "NOP",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w1-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2235,15 +2405,70 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "store rt1, r2, r3"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000040"
+    },
+    {
+      "name": "n3-vis-w1-s4",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w1-s5",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "store rt1, r2, r3"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w2-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2255,15 +2480,20 @@
           "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000040"
     },
     {
       "name": "n3-vis-w2-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2275,15 +2505,20 @@
           "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w2-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2295,15 +2530,20 @@
           "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w2-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2315,15 +2555,70 @@
           "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "store rt1, r2, r3"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000040"
+    },
+    {
+      "name": "n3-vis-w2-s4",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w2-s5",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "store rt1, r2, r3"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w3-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2335,15 +2630,20 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "MAD  r2.l*,  u2,  #1,  #0",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w3-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2355,15 +2655,20 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "MAD  r2.l*,  u2,  #1,  #0",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w3-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2375,15 +2680,20 @@
           "@B2@": "NOP",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "MAD  r2.l*,  u2,  #1,  #0",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-vis-w3-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2395,15 +2705,370 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "MAD  r2.l*,  u2,  #1,  #0",
-          "@D3@": "store rt1, r2, r3"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000040"
+    },
+    {
+      "name": "n3-vis-w3-s4",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w3-s5",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "store rt1, r2, r3"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w4-s0",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w4-s1",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "store rt1, r2, r3",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w4-s2",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "store rt1, r2, r3",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w4-s3",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000040"
+    },
+    {
+      "name": "n3-vis-w4-s4",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w4-s5",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "store rt1, r2, r3"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w5-s0",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w5-s1",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "store rt1, r2, r3",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w5-s2",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "store rt1, r2, r3",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w5-s3",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000040"
+    },
+    {
+      "name": "n3-vis-w5-s4",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-vis-w5-s5",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "NOP",
+          "@D0@": "NOP",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D5@": "store rt1, r2, r3"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-conf-b0b1-s1-025050",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2415,15 +3080,20 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-conf-b0b1-s2-025050",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2435,15 +3105,20 @@
           "@B2@": "NOP",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-conf-b0b1-s3-025050",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2455,15 +3130,70 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "store rt1, r2, r3"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000040"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x0000007F"
+    },
+    {
+      "name": "n3-conf-b0b1-s4-025050",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-conf-b0b1-s5-025050",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "store rt1, r2, r3"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-conf-b0b1-s1-050025",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2475,15 +3205,20 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-conf-b0b1-s2-050025",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2495,15 +3230,20 @@
           "@B2@": "NOP",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n3-conf-b0b1-s3-050025",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2515,15 +3255,70 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "store rt1, r2, r3"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000040"
+    },
+    {
+      "name": "n3-conf-b0b1-s4-050025",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "store rt1, r2, r3",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
+    },
+    {
+      "name": "n3-conf-b0b1-s5-050025",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@D0@": "NOP",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "store rt1, r2, r3"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000000"
     },
     {
       "name": "n3-two-reg-s2-r2lo-r3hi",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2533,17 +3328,22 @@
           "@B1@": "MAD  r3.*h,  u4,  #1,  #0",
           "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
+          "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x7F000040"
     },
     {
       "name": "n3-two-reg-s2-r3hi-r2lo",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2553,17 +3353,47 @@
           "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
+          "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x7F000040"
     },
     {
-      "name": "n3-slot-r0-lo-s1",
+      "name": "n3-slot-r0-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r0.l*,  u2,  #1,  #0",
+          "@D0@": "store rt1, r0, r1",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000040"
+    },
+    {
+      "name": "n3-slot-r0-lo-s3",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2571,59 +3401,49 @@
           "@B0@": "MAD  r0.l*,  u2,  #1,  #0",
           "@D0@": "NOP",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "store rt1, r0, r1",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000040"
     },
     {
-      "name": "n3-slot-r0-lo-s2",
+      "name": "n3-slot-r0-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "3",
-          "@B0@": "MAD  r0.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r0, r1",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n3-slot-r0-hi-s1",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r0.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r0, r1",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00004000"
     },
     {
-      "name": "n3-slot-r0-hi-s2",
+      "name": "n3-slot-r0-hi-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2633,17 +3453,47 @@
           "@B1@": "NOP",
           "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "store rt1, r0, r1",
+          "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "store rt1, r0, r1",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00004000"
     },
     {
-      "name": "n3-slot-r1-lo-s1",
+      "name": "n3-slot-r1-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r1.l*,  u2,  #1,  #0",
+          "@D0@": "store rt1, r0, r1",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00400000"
+    },
+    {
+      "name": "n3-slot-r1-lo-s3",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2651,59 +3501,49 @@
           "@B0@": "MAD  r1.l*,  u2,  #1,  #0",
           "@D0@": "NOP",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "store rt1, r0, r1",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00400000"
     },
     {
-      "name": "n3-slot-r1-lo-s2",
+      "name": "n3-slot-r1-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "3",
-          "@B0@": "MAD  r1.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r0, r1",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n3-slot-r1-hi-s1",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r1.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r0, r1",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x40000000"
     },
     {
-      "name": "n3-slot-r1-hi-s2",
+      "name": "n3-slot-r1-hi-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2713,17 +3553,47 @@
           "@B1@": "NOP",
           "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "store rt1, r0, r1",
+          "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "store rt1, r0, r1",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x40000000"
     },
     {
-      "name": "n3-slot-r2-lo-s1",
+      "name": "n3-slot-r2-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
+      },
+      "replace": {
+        "fs": {
+          "@ABUF@": "3",
+          "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@D0@": "store rt1, r2, r3",
+          "@B1@": "NOP",
+          "@D1@": "NOP",
+          "@B2@": "NOP",
+          "@D2@": "NOP",
+          "@B3@": "NOP",
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
+        }
+      },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000040"
+    },
+    {
+      "name": "n3-slot-r2-lo-s3",
+      "environment": {
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2731,59 +3601,49 @@
           "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D0@": "NOP",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00000040"
     },
     {
-      "name": "n3-slot-r2-lo-s2",
+      "name": "n3-slot-r2-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "3",
-          "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n3-slot-r2-hi-s1",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r2.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00004000"
     },
     {
-      "name": "n3-slot-r2-hi-s2",
+      "name": "n3-slot-r2-hi-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2793,37 +3653,47 @@
           "@B1@": "NOP",
           "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
+          "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00004000"
     },
     {
-      "name": "n3-slot-r3-lo-s1",
+      "name": "n3-slot-r3-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r3.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00400000"
     },
     {
-      "name": "n3-slot-r3-lo-s2",
+      "name": "n3-slot-r3-lo-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2833,37 +3703,47 @@
           "@B1@": "NOP",
           "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
+          "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x00400000"
     },
     {
-      "name": "n3-slot-r3-hi-s1",
+      "name": "n3-slot-r3-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
           "@ABUF@": "3",
           "@B0@": "MAD  r3.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x40000000"
     },
     {
-      "name": "n3-slot-r3-hi-s2",
+      "name": "n3-slot-r3-hi-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2873,17 +3753,22 @@
           "@B1@": "NOP",
           "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
+          "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "store rt1, r2, r3",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
+      "expected": "0x40000000"
     },
     {
       "name": "n3-baseline-s1-again",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006009"
+        "GRATE_POKE": "0x520=0x20006006"
       },
       "replace": {
         "fs": {
@@ -2895,15 +3780,20 @@
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
-          "@D3@": "NOP"
+          "@D3@": "NOP",
+          "@B4@": "NOP",
+          "@D4@": "NOP",
+          "@B5@": "NOP",
+          "@D5@": "NOP"
         }
       },
+      "fs": "tests/grate/asm/alu_buf_matrix6.in",
       "expected": "0x00000000"
     },
     {
       "name": "n4-baseline-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -2923,38 +3813,38 @@
     {
       "name": "n4-ladder-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x000000BF"
+      "expected": "0x00000060"
     },
     {
       "name": "n4-ladder-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
@@ -2963,18 +3853,18 @@
     {
       "name": "n4-ladder-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "NOP"
         }
       },
@@ -2983,18 +3873,18 @@
     {
       "name": "n4-ladder-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "NOP",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "NOP",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "NOP",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
@@ -3003,18 +3893,18 @@
     {
       "name": "n4-ladder-all-fwd",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
-          "@B3@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
         }
       },
@@ -3023,16 +3913,16 @@
     {
       "name": "n4-ladder-all-rev",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
-          "@B0@": "MAD  r2.l*,  u6,  #1,  #0",
+          "@B0@": "MAD  r2.l*,  u3,  #1,  #0",
           "@D0@": "store rt1, r2, r3",
-          "@B1@": "MAD  r2.l*,  u4,  #1,  #0",
+          "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D1@": "store rt1, r2, r3",
-          "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+          "@B2@": "MAD  r2.l*,  u1,  #1,  #0",
           "@D2@": "store rt1, r2, r3",
           "@B3@": "MAD  r2.l*,  u0,  #1,  #0",
           "@D3@": "store rt1, r2, r3"
@@ -3043,7 +3933,7 @@
     {
       "name": "n4-vis-w0-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3063,7 +3953,7 @@
     {
       "name": "n4-vis-w0-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3083,7 +3973,7 @@
     {
       "name": "n4-vis-w0-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3103,7 +3993,7 @@
     {
       "name": "n4-vis-w0-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3123,7 +4013,7 @@
     {
       "name": "n4-vis-w1-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3143,7 +4033,7 @@
     {
       "name": "n4-vis-w1-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3163,7 +4053,7 @@
     {
       "name": "n4-vis-w1-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3183,7 +4073,7 @@
     {
       "name": "n4-vis-w1-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3203,7 +4093,7 @@
     {
       "name": "n4-vis-w2-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3223,7 +4113,7 @@
     {
       "name": "n4-vis-w2-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3243,7 +4133,7 @@
     {
       "name": "n4-vis-w2-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3263,7 +4153,7 @@
     {
       "name": "n4-vis-w2-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3283,7 +4173,7 @@
     {
       "name": "n4-vis-w3-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3303,7 +4193,7 @@
     {
       "name": "n4-vis-w3-s1",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3323,7 +4213,7 @@
     {
       "name": "n4-vis-w3-s2",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3343,7 +4233,7 @@
     {
       "name": "n4-vis-w3-s3",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3363,7 +4253,7 @@
     {
       "name": "n4-conf-b0b1-s1-025050",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3383,7 +4273,7 @@
     {
       "name": "n4-conf-b0b1-s2-025050",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3403,7 +4293,7 @@
     {
       "name": "n4-conf-b0b1-s3-025050",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3423,7 +4313,7 @@
     {
       "name": "n4-conf-b0b1-s1-050025",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3443,7 +4333,7 @@
     {
       "name": "n4-conf-b0b1-s2-050025",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3463,7 +4353,7 @@
     {
       "name": "n4-conf-b0b1-s3-050025",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
@@ -3483,367 +4373,207 @@
     {
       "name": "n4-two-reg-s2-r2lo-r3hi",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "MAD  r3.*h,  u4,  #1,  #0",
           "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
+          "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x7F000040"
     },
     {
       "name": "n4-two-reg-s2-r3hi-r2lo",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r3.*h,  u4,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "MAD  r2.l*,  u2,  #1,  #0",
           "@D1@": "NOP",
           "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
+          "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x7F000040"
     },
     {
-      "name": "n4-slot-r0-lo-s1",
+      "name": "n4-slot-r0-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r0.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r0, r1",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00000040"
     },
     {
-      "name": "n4-slot-r0-lo-s2",
+      "name": "n4-slot-r0-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "4",
-          "@B0@": "MAD  r0.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r0, r1",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n4-slot-r0-hi-s1",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r0.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r0, r1",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00004000"
     },
     {
-      "name": "n4-slot-r0-hi-s2",
+      "name": "n4-slot-r1-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "4",
-          "@B0@": "MAD  r0.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r0, r1",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n4-slot-r1-lo-s1",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r1.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r0, r1",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00400000"
     },
     {
-      "name": "n4-slot-r1-lo-s2",
+      "name": "n4-slot-r1-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "4",
-          "@B0@": "MAD  r1.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r0, r1",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n4-slot-r1-hi-s1",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r1.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r0, r1",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r0, r1",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x40000000"
     },
     {
-      "name": "n4-slot-r1-hi-s2",
+      "name": "n4-slot-r2-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "4",
-          "@B0@": "MAD  r1.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r0, r1",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n4-slot-r2-lo-s1",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00000040"
     },
     {
-      "name": "n4-slot-r2-lo-s2",
+      "name": "n4-slot-r2-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "4",
-          "@B0@": "MAD  r2.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n4-slot-r2-hi-s1",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r2.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00004000"
     },
     {
-      "name": "n4-slot-r2-hi-s2",
+      "name": "n4-slot-r3-lo-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "4",
-          "@B0@": "MAD  r2.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n4-slot-r3-lo-s1",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r3.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
+      "expected": "0x00400000"
     },
     {
-      "name": "n4-slot-r3-lo-s2",
+      "name": "n4-slot-r3-hi-s0",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "4",
-          "@B0@": "MAD  r3.l*,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n4-slot-r3-hi-s1",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {
           "@ABUF@": "4",
           "@B0@": "MAD  r3.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
+          "@D0@": "store rt1, r2, r3",
           "@B1@": "NOP",
-          "@D1@": "store rt1, r2, r3",
+          "@D1@": "NOP",
           "@B2@": "NOP",
           "@D2@": "NOP",
           "@B3@": "NOP",
           "@D3@": "NOP"
         }
       },
-      "expected": "0x00000000"
-    },
-    {
-      "name": "n4-slot-r3-hi-s2",
-      "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
-      },
-      "replace": {
-        "fs": {
-          "@ABUF@": "4",
-          "@B0@": "MAD  r3.*h,  u2,  #1,  #0",
-          "@D0@": "NOP",
-          "@B1@": "NOP",
-          "@D1@": "NOP",
-          "@B2@": "NOP",
-          "@D2@": "store rt1, r2, r3",
-          "@B3@": "NOP",
-          "@D3@": "NOP"
-        }
-      },
-      "expected": "0x00000000"
+      "expected": "0x40000000"
     },
     {
       "name": "n4-baseline-s1-again",
       "environment": {
-        "GRATE_POKE": "0x520=0x20006008"
+        "GRATE_POKE": "0x520=0x20006004"
       },
       "replace": {
         "fs": {

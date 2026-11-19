@@ -1,0 +1,862 @@
+{
+  "name": "alu-buffer-count-sweep",
+  "created_utc": "2026-11-19T18:52:04+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.alu_buffer_sweep.json",
+  "manifest_sha256": "64f6cc8effd935f5f0ef8ad2735661adb178b9770a6c54f91ebdf7e81528b455",
+  "assembler": "/home/freebuff/build/grate/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "10295478c79bf7ba54187b22b662468c30299130",
+  "git_status": "M tests/grate/asm_characterize.alu_buffer_rows.json\n M tests/grate/asm_characterize.experiments.md\n?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/alu_buf_blocks8.in\n?? tests/grate/asm/alu_buf_matrix.in\n?? tests/grate/asm/make_alu_buffer_matrix.py\n?? tests/grate/asm/store_cost_timing.sh\n?? tests/grate/asm_characterize.alu_buffer_blocks.json\n?? tests/grate/asm_characterize.alu_buffer_ladder.json\n?? tests/grate/asm_characterize.alu_buffer_matrix.json\n?? tests/grate/asm_characterize.alu_buffer_sweep.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 1,
+  "control_repeat": 1,
+  "timeout_seconds": 8.0,
+  "manifest_data": {
+    "name": "alu-buffer-count-sweep",
+    "repeat": 1,
+    "timeout": 8,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/alu_buf_blocks8.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "sweep-n1-c1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006001"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "1",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "store rt1, r2, r3",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "store rt1, r2, r3"
+          }
+        }
+      },
+      {
+        "name": "sweep-n1-c2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006002"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "1",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "store rt1, r2, r3",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "store rt1, r2, r3"
+          }
+        }
+      },
+      {
+        "name": "sweep-n1-c3",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "1",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "store rt1, r2, r3",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "store rt1, r2, r3"
+          }
+        }
+      },
+      {
+        "name": "sweep-n1-c4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "1",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "store rt1, r2, r3",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "store rt1, r2, r3"
+          }
+        }
+      },
+      {
+        "name": "sweep-n1-c5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "1",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "store rt1, r2, r3",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "store rt1, r2, r3"
+          }
+        }
+      },
+      {
+        "name": "sweep-n1-c6",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006006"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "1",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "store rt1, r2, r3",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "store rt1, r2, r3"
+          }
+        }
+      },
+      {
+        "name": "sweep-n1-c7",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006007"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "1",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "store rt1, r2, r3",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "store rt1, r2, r3"
+          }
+        }
+      },
+      {
+        "name": "sweep-n1-c8",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006008"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "1",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "store rt1, r2, r3",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "store rt1, r2, r3"
+          }
+        }
+      },
+      {
+        "name": "sweep-n1-c9",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006009"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "1",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "store rt1, r2, r3",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "store rt1, r2, r3"
+          }
+        }
+      },
+      {
+        "name": "sweep-n1-c10",
+        "environment": {
+          "GRATE_POKE": "0x520=0x2000600A"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "1",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "store rt1, r2, r3",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "store rt1, r2, r3",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "store rt1, r2, r3"
+          }
+        }
+      },
+      {
+        "name": "sweep-n2-c2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006002"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n2-c4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n2-c6",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006006"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n2-c8",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006008"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n2-c10",
+        "environment": {
+          "GRATE_POKE": "0x520=0x2000600A"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n2-c12",
+        "environment": {
+          "GRATE_POKE": "0x520=0x2000600C"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n2-c14",
+        "environment": {
+          "GRATE_POKE": "0x520=0x2000600E"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n2-c16",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006010"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "store rt1, r2, r3",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n3-c3",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006003"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "NOP",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n3-c6",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006006"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "NOP",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n3-c9",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006009"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "NOP",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n3-c12",
+        "environment": {
+          "GRATE_POKE": "0x520=0x2000600C"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "3",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "store rt1, r2, r3",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "NOP",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "store rt1, r2, r3",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n4-c4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "NOP",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n4-c8",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006008"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "NOP",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n4-c12",
+        "environment": {
+          "GRATE_POKE": "0x520=0x2000600C"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "NOP",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n4-c16",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006010"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "NOP",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n4-c20",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006014"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "NOP",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n4-c24",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006018"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "NOP",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n4-c28",
+        "environment": {
+          "GRATE_POKE": "0x520=0x2000601C"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "NOP",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      },
+      {
+        "name": "sweep-n4-c32",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006020"
+        },
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@D0@": "store rt1, r2, r3",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@D1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@D2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@D3@": "NOP",
+            "@B4@": "MAD  r2.l*,  u4,  #1,  #0",
+            "@D4@": "store rt1, r2, r3",
+            "@B5@": "MAD  r2.l*,  u5,  #1,  #0",
+            "@D5@": "NOP",
+            "@B6@": "MAD  r2.l*,  u6,  #1,  #0",
+            "@D6@": "NOP",
+            "@B7@": "MAD  r2.l*,  u7,  #1,  #0",
+            "@D7@": "NOP"
+          }
+        }
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 34,
+    "passed": 34,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
