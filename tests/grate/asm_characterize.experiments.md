@@ -764,7 +764,7 @@ ignores w" until the operand itself was checked.
 
 The source sweep read `0xFF00` for both selectors, which is the readback of a
 value at or above 2.0 - not a 0..1 weight - and it did so without fetching a
-varying, so it could not say what they are. `--set bary` (28 variants) reads them
+varying, so it could not say what they are. `--set bary` (43 variants) reads them
 with the vertex shader translating the quad, because the harness reads pixel
 (0, 0) of `tools/assembler.c`'s fixed quad. Both readings are taken at several
 positions, and the last four groups also export data back through the same
@@ -905,7 +905,7 @@ answered without re-running the probe.
 #### Recorded runs
 
 `tests/grate/asm/results/pin-barycentric` and `verify-barycentric` hold 133 rows
-each - 44 variants, three repeats, plus the controls - with the per-row source
+each - 43 variants, three repeats, plus the controls - with the per-row source
 hashes. Their metadata carries two manifest hashes because pinning rewrites the
 manifest with the measured expectations: `17fb3a60...` is the manifest that was
 run, `cbd45ac8...` the one with the pins added, and both are expected to differ.
