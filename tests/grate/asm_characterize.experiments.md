@@ -995,8 +995,6 @@ models differ by less than a step.
 
 #### Recorded runs
 
-#### Recorded runs
-
 `tests/grate/asm/results/pin-persp` and `verify-persp` hold 118 rows each - 38
 variants and three repeats plus the controls - and pin `ac5628fe...` from
 `a7eec1ce...`: the same two-hash arrangement, both runs passing 118/118.
