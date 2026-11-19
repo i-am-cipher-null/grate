@@ -426,14 +426,21 @@ Data write instruction controls write of values contained in the row registers R
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
-| 16..31 | ???                     |
+| 16..17 | render-target class     |
 |     15 | source registers select |
-| 11..14 | ???                     |
+| 11..14 | unknown / special path  |
 |     10 | stencil write           |
-|   6..9 | ???                     |
+|   6..9 | unknown                 |
 |   2..5 | render target index     |
-|      1 | ???                     |
-|      0 | enable                  |
+|   0..1 | write mode              |
+
+The low two bits select the operation: 0 is a no-op, 1 is an ordinary
+render-target write, and 2 or 3 select the single-register and multi-register
+spill paths. They are a mode field, not a simple enable bit. Bits 16..17 are a
+render-target class, separate from the target index. In the tested AR20 paths,
+class 1 is used for depth and class 2 for ordinary target stores. Class 0 also
+worked in some tested contexts; class 3 did not work in the tested path. The
+full meaning of the class field is not established.
 
 #### Source registers select:
 
@@ -448,14 +455,26 @@ Seems have no effect when the depth or stencil write enabled.
 
 Some of the render targets have an additional special purpose, like depth/stencil store. They are hardwired and their special purpose is active under certain conditions, like when depth/stencil test is enabled.
 
+#### Observed DW position dependence
+
+In AR20 tests, a DW instruction produced a visible store only when it occupied
+the first batch of its instruction group. For groups of sizes 2, 3 and 4, the
+first-batch probes produced distinct visible results; probes placing DW in
+later batches produced zero in the tested output. The first batch is relative
+to the group, not to the overall program. The tests establish this
+position-dependent behavior, but do not establish the underlying hardware
+mechanism or a general rule for every DW mode.
+
+
 | Render target | Usage             |
-|--------------:|:------------------|
+|--------------:|:-------------------------------------------------------------------------------------|
 |             0 | Depth buffer      |
 |             1 | Color buffer      |
 |             2 | Stencil buffer    |
-|             3 | Coverage buffer ? |
-|             4 | Spill buffer      |
-|         5..12 | MRT n+1           |
+|             3 | Auxiliary shader-accessible surface (not fixed-function coverage in tested AR20 path) |
+|             4 | Register-spill surface |
+|             5 | Additional color surface; AR20 write tested when explicitly bound (`GRATE_RT5=1`) |
+|         6..12 | MRT encodings emitted by the compiler; working AR20 writes not demonstrated |
 
 ## PSEQ instruction word encoding
 
