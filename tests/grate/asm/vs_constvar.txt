@@ -1,0 +1,33 @@
+/*
+ * Vertex shader that exports a constant as the varying.
+ *
+ * The colour attribute is ignored, so whatever the fragment shader reads back
+ * after interpolation either is the constant or is coming from somewhere other
+ * than the exported varying.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.constants
+	[100].x = 0.25;
+	[100].y = 0.5;
+	[100].z = 0.75;
+	[100].w = 1.0;
+
+.asm
+
+EXEC(export[0]=vector)
+	MOVv r63.xyzw, a[0].xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r63.xyzw, c[100].xyzw
+	NOPs
+;

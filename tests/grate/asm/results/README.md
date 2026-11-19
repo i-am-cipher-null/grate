@@ -306,16 +306,16 @@ invalidate another; generate such a manifest with
 
 ## pin-barycentric
 
-* manifest: `asm_characterize.barycentric.json` (sha256 cafbf09f5642)
+* manifest: `asm_characterize.barycentric.json` (sha256 defbea408899)
 * device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
-* commit: 8f8703c3d58b406d14944f6b26e7eb324be6b519 with a dirty tree
-* created: 2026-11-19T22:26:15+00:00; 55 rows, repeat 3, timeout 10.0 s
-* summary: 55 passed, 0 failed of 55 - passed
+* commit: be5547d2805f2209b1a26bf369a0afe0a60a78d8 with a dirty tree
+* created: 2026-11-19T22:41:47+00:00; 88 rows, repeat 3, timeout 10.0 s
+* summary: 88 passed, 0 failed of 88 - passed
 
 ## verify-barycentric
 
-* manifest: `asm_characterize.barycentric.json` (sha256 26f8a43843b2)
+* manifest: `asm_characterize.barycentric.json` (sha256 9351d0f78643)
 * device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
-* commit: 8f8703c3d58b406d14944f6b26e7eb324be6b519 with a dirty tree
-* created: 2026-11-19T22:27:03+00:00; 55 rows, repeat 3, timeout 10.0 s
-* summary: 55 passed, 0 failed of 55 - passed
+* commit: be5547d2805f2209b1a26bf369a0afe0a60a78d8 with a dirty tree
+* created: 2026-11-19T22:43:46+00:00; 88 rows, repeat 3, timeout 10.0 s
+* summary: 88 passed, 0 failed of 88 - passed

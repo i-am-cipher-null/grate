@@ -269,6 +269,7 @@ def fp20_variants():
 
 
 VS_OFFSET = "tests/grate/asm/vs_offset.txt"
+VS_POS = "tests/grate/asm/vs_pos.txt"
 PARTIAL_IPL = "ipl: t0.fp20, NOP, NOP, NOP"
 FULL_IPL = "ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20"
 
@@ -311,6 +312,14 @@ def bary_variants():
 
     The partial `ipl` writes only r0, so it cannot clobber the r2/r3 the
     multipliers write in the same word; `noipl` drops the fetch entirely.
+
+    Which vertex each coefficient belongs to is a separate question: the colour
+    varying ties channels to vertices only through the linker's component
+    swizzle, which is not pinned. The four `p1-mask-vN` variants sidestep it by
+    exporting 1 at one corner and 0 at the others, built from the position
+    attribute in the vertex shader, and replicating it across all four
+    components - so whatever the swizzle does, the interpolated value is that
+    corner's weight alone. The three non-zero weights must sum to 1.
     """
     raw = ("r2, src11, #1", "r3, src12, #1")
     coef = ("r2, src11, sfu", "r3, src12, sfu")
@@ -337,6 +346,48 @@ def bary_variants():
     out.append(offset("p1-swap-coef", -0.5, -0.4, word(swap_coef)))
     out.append(offset("p2-swap-raw", -0.25, -0.2, word(swap_raw)))
     out.append(offset("p2-swap-coef", -0.25, -0.2, word(swap_coef)))
+    # The interpolated position is the sample point itself: the shader exports
+    # the *untranslated* a[0] as the varying and translates only the drawn
+    # position, so the stored varying gives (x, y) in quad coordinates. With
+    # the weights summing to one (the alpha channel is a constant one varying,
+    # so it reads back as exactly 1.0) that fixes all three weights of whichever
+    # triangle covers the sample, independently of the coefficient selectors.
+    def pos(name, dx, dy, store):
+        entry = variant(name, word(interp, FULL_IPL), True, store)
+        entry["vs"] = VS_POS
+        entry["args"] = ["--vs_uniform", f'["offset"]=({dx},{dy},0.0,0.0)']
+        return entry
+
+    out.append(pos("p1-pos-rg", -0.5, -0.4, STORE_01))
+    out.append(pos("p1-pos-ba", -0.5, -0.4, STORE_23))
+
+    # p3 puts the sample on the other side of the quad's diagonal, where the
+    # red vertex 0 is inside the triangle and vertex 3 is not, so the red
+    # channel is w0 alone. Comparing it with the coefficient fixes which of the
+    # two red corners selector 11 follows, which p0 and p1 cannot: both sit near
+    # the corner the two triangles share.
+    out.append(offset("p3-coef", -0.2, -0.6, word(coef)))
+    out.append(offset("p3-interp-rg", -0.2, -0.6, word(interp, FULL_IPL), STORE_01))
+    out.append(pos("p3-pos-rg", -0.2, -0.6, STORE_01))
+
+    # p4 lands on the quad centre, where the barycentric weights are 0.25, 0.5,
+    # 0.25 in some order and the colour is a balanced mix of the three vertex
+    # colours. Unlike the corner samples it gives an unambiguous prediction
+    # from the harness's fixed vertex data.
+    out.append(offset("p4-coef", -0.95, -0.95, word(coef)))
+    out.append(offset("p4-interp-rg", -0.95, -0.95, word(interp, FULL_IPL), STORE_01))
+    out.append(offset("p4-interp-ba", -0.95, -0.95, word(interp, FULL_IPL), STORE_23))
+    out.append(pos("p4-pos-rg", -0.95, -0.95, STORE_01))
+
+    # Control: a constant varying. The interpolator must return it unchanged at
+    # every sample point, so this separates "the varying path is wrong" from
+    # "the colour attribute data is not what the harness appears to bind".
+    const = variant("constvar-rg", word(interp, FULL_IPL), True, STORE_01)
+    const["vs"] = "tests/grate/asm/vs_constvar.txt"
+    out.append(const)
+    const = variant("constvar-ba", word(interp, FULL_IPL), True, STORE_23)
+    const["vs"] = "tests/grate/asm/vs_constvar.txt"
+    out.append(const)
     out.append(offset("p1-coef-noipl", -0.5, -0.4, word(coef, None)))
     out.append(offset("p1-interp-rg", -0.5, -0.4, word(interp, FULL_IPL), STORE_01))
     out.append(offset("p1-interp-ba", -0.5, -0.4, word(interp, FULL_IPL), STORE_23))

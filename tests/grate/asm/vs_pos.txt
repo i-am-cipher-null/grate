@@ -1,0 +1,36 @@
+/*
+ * Vertex shader that draws a translated quad but exports the *untranslated*
+ * position as the varying, biased into 0..1.
+ *
+ * Translating only the drawn position moves the sample point inside the quad
+ * while leaving the varying tied to the corner coordinates, so the interpolated
+ * value is the sample's position in quad space. It is exported as (p + 1) / 2
+ * because the readback collapses negative values to a zero byte.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.uniforms
+	[102] = "offset";
+
+.constants
+	[100].x = 0.5;
+	[100].y = 0.5;
+
+.asm
+
+EXEC(export[0]=vector)
+	ADDv r63.xyzw, a[0].xyzw, c[102].xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MADv r63.xy**, a[0].xyzw, c[100].xxxx, c[100].yyyy
+	NOPs
+;

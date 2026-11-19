@@ -764,10 +764,11 @@ ignores w" until the operand itself was checked.
 
 The source sweep read `0xFF00` for both selectors, which is the readback of a
 value at or above 2.0 - not a 0..1 weight - and it did so without fetching a
-varying, so it could not say what they are. `--set bary` (17 variants) reads them
+varying, so it could not say what they are. `--set bary` (28 variants) reads them
 with the vertex shader translating the quad, because the harness reads pixel
-(0, 0), which in the untranslated quad sits on a vertex where two of the three
-weights are zero. Both readings are taken at three positions.
+(0, 0) of `tools/assembler.c`'s fixed quad. Both readings are taken at several
+positions, and the last four groups also export data back through the same
+`ipl` so the sample point itself can be measured.
 
 | variant | word | reading |
 |:--|--:|:--|
@@ -781,42 +782,91 @@ weights are zero. Both readings are taken at three positions.
 | `p1-coef-noipl` | `0xE300F200` | identical with no fetch in the word |
 | `p1-swap-coef`, `p2-swap-coef` | `0xF200E300`, `0xF400DC40` | the fields mirror, so the value follows the selector, not the multiplier |
 | `p1-interp-rg`, `p1-interp-ba` | `0xD300F200`, `0xF700E300` | a full `ipl` with `bar` weights, storing the interpolated varying |
+| `constvar-rg`, `constvar-ba` | `0xE700EF00`, `0xF700F300` | a *constant* varying `(0.25, 0.5, 0.75, 1.0)` reads back as `(0.5, 0.25, 0.75, 1.0)` |
+| `p1-pos-rg`, `p1-pos-ba` | `0xE740E300`, `0xF7000000` | the sample's quad-space position, exported as the varying |
+| `p3-pos-rg`, `p3-interp-rg`, `p3-coef` | `0xDC40E800`, `0xE300F2AB`, `0xF2ABE300` | the sample moved across the quad's diagonal |
+| `p4-pos-rg`, `p4-coef` | `0xEEFFEEFF`, `0xEEFFEFFF` | the sample at the quad centre |
+| `p4-interp-rg`, `p4-interp-ba` | `0x0000EFFF`, `0xF700EEFF` | the interpolated colour there |
 
 The readback is a log byte, so the difference to the `0x78` scale reference
 divided by 8 is log2 of the coefficient, and the scale in r4 cancels:
 
 | position | src11 | src12 |
 |:--|--:|--:|
-| corner (0, 0) | 0.84..0.92 | 0.0016..0.0018 |
+| corner (0, 0), near the bottom-left vertex | 0.84..0.92 | 0.0016..0.0018 |
 | p1 (-0.5, -0.4) | 0.60..0.65 | 0.165..0.18 |
 | p2 (-0.25, -0.2) | 0.71..0.77 | 0.088..0.096 |
+| p4, quad centre | 0.50..0.54 | 0.459..0.50 |
 
-So both selectors are per-pixel weights: they move with the sample position,
-they are near 1 at the vertex the pixel sits on, and they are delivered with the
-fragment rather than fetched - dropping the `ipl` leaves them byte-identical. On
-their own they read as saturated because they carry a 2^16 scale; multiplying by
-`rcp(r4)`, which is w/2^16, cancels it and gives the coefficient itself. That is
-the arithmetic of section 6.4's `weight = coef * 1.0 / w` at w = 1, measured
-with the same word that measures `rcp(r4)`.
-
-The two multipliers must also be shown not to be the thing that decides: with
-`src12` and `src11` exchanged the two fields exchange with them
+So both selectors are per-pixel weights: they move with the sample position, and
+they are delivered with the fragment rather than fetched - dropping the `ipl`
+leaves them byte-identical. On their own they read as saturated because they
+carry a 2^16 scale; multiplying by `rcp(r4)`, which is w/2^16, cancels it and
+gives the coefficient itself. That is the arithmetic of section 6.4's
+`weight = coef * 1.0 / w` at w = 1, measured with the same word that measures
+`rcp(r4)`. The two multipliers must also be shown not to be the thing that
+decides: with `src12` and `src11` exchanged the two fields exchange with them
 (`0xF200E300` against `0xE300F200`), so the numbers follow the selector.
 
-What this does not establish is which vertex each selector names. The
-interpolated colour at p1 reads 0.63 / 0.04 / 0.18, which matches the two
-measured weights, but the varying's TRAM row and component order are not pinned
-down (the caveat in section 6.2 of [[Fragment Shader ISA]] applies), so the
-channel-to-vertex mapping cannot be read off. The third weight is only implied as
-1 - w0 - w1, and the readback truncates its mantissa, so every coefficient above
-is quoted as a one-step range of about 9%.
+The zero-offset sample sits on the corner pixel, not on the vertex: the quad's
+lowest vertex is at the pixel's corner and the rasteriser covers the pixel with
+an interior fragment, so its coefficients are 0.84..0.92 and 0.0016..0.0018
+rather than 1 and 0. Read it as a near-corner sample, not as an exact vertex.
+
+#### What the sample point actually is
+
+Three things had to be measured before the weights could be compared with
+anything, and all three are in the table above.
+
+The *store order* is not the varying's component order. Exporting a constant
+`(0.25, 0.5, 0.75, 1.0)` and fetching it back gives `(0.5, 0.25, 0.75, 1.0)`:
+with `store rt1, r0, r1` the low half of the word carries the varying's `y` and
+the high half its `x`, while `z` and `w` keep their order. Every two-component
+readback in this section is decoded with that exchange applied.
+
+The *sample position* is the uniform offset, once the untranslated position is
+exported as the varying. At the centre offset `(-0.95, -0.95)` the two
+components are equal (`0xEEFF` = 0.46, so x = y = -0.08) - the sample is at the
+middle of the quad, and the harness's corner pixel plus the offset predict
+exactly that.
+
+The *vertex colours* are fixed by `tools/assembler.c`: v0 (top left) red, v1
+(bottom left) green, v2 (top right) blue, v3 (bottom right) red, drawn as
+triangles (0, 1, 2) and (1, 2, 3). At the centre the interpolated colour reads
+R 0, G 0.50, B 0.46, which is the bottom-left/bottom-right/blue mix the geometry
+predicts for the (1, 2, 3) triangle: w_BL 0.52, w_TR 0.48, w_BR 0 - red is the
+weight of the one vertex the sample is furthest from, and it reads zero.
+
+At that same point the two selectors read 0.50 and 0.46: src11 is the
+bottom-left weight and src12 the top-right one, matching the green and blue
+channels one for one. That is the cleanest identification this probe gives.
+
+#### What it does not settle
+
+Away from the centre the three readbacks stop agreeing. At `p3` the interpolated
+position puts the sample at (-0.80, -0.46), above the quad's diagonal, where
+triangle (0, 1, 2) predicts a colour of (0.73, 0.18, 0.10); the measured colour
+is (0.18, 0.65) for R and G, which is triangle (1, 2, 3)'s prediction. The two
+disagree by about 0.25 in weight - much more than the one-step 9% readback
+resolution - so the off-centre positions cannot name the selectors yet, and the
+`p1` colour, whose R and G are each about 13% away from the geometric weights,
+is not usable either. The centre sample is the only point where position, colour
+and both selectors agree, and one agreeing point is not a vertex mapping.
+
+The third weight is still only implied as 1 - w0 - w1, and its independence is
+what would test the normalization. At the centre w0 + w1 is 0.96 rather than 1,
+which is the same size as the truncation of two log bytes and therefore not a
+statement about the hardware.
 
 ### What is left
 
 The other SFU operations can now be driven with known inputs (`.lh` primes) and
-characterised one at a time; the varying's TRAM row and component mapping still
-needs a clean two-export probe before the weights can be named by vertex; and the
-two-row-register zero is still a description rather than a mechanism. The constant in r4 is resolved only to one readback step, so a probe
+characterised one at a time; the two-row-register zero is still a description
+rather than a mechanism; and the sample position, the interpolated colour and the
+two selectors agree at the quad centre but not at the three off-centre positions,
+which is the first thing to explain before the selectors can be named by vertex.
+Sampling inside a single triangle - drawing one triangle at a time rather than
+the quad's two - would remove the shared diagonal that `p3` straddles. The constant in r4 is resolved only to one readback step, so a probe
 that reads the operand at a coarser magnitude would be needed to do better than
 "about 2^16".
 
