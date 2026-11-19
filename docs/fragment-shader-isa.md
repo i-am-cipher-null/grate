@@ -386,7 +386,8 @@ The TEX instruction takes the texture coordinates and LOD bias from the first ro
 
 |   Bits | Meaning                               |
 |-------:|:--------------------------------------|
-| 13..31 | ???                                   |
+|     13 | explicit LOD                         |
+| 14..31 | ???                                   |
 |     12 | enable bias                           |
 |     11 | ???                                   |
 |     10 | enable                                |
@@ -398,12 +399,17 @@ The TEX instruction takes the texture coordinates and LOD bias from the first ro
 
 #### Texture coordinates and LOD registers select:
 
-The texture coordinate components (S, T, R) and level-of-detail bias are loaded from the row registers as fp20's.
+The texture coordinate components (S, T, R) and LOD value are loaded from the
+row registers as fp20's.
 
 |  Value | Meaning (S, T, R, LOD order) |
 |-------:|:-----------------------------|
 |      1 | R2, R3, R0, R1               |
 |      0 | R0, R1, R2, R3               |
+
+Bit 12 enables LOD bias (TXB); bit 13 selects explicit LOD (TXL) when bit 12 is
+clear. With both bits set, bias mode takes precedence in the tested hardware.
+With neither bit set, the sampler uses its derivative-based LOD estimate.
 
 #### Sampled data destination registers select:
 
