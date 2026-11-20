@@ -365,9 +365,9 @@ Let `lambda_i` be the screen-space barycentric weight of vertex `i`, and
 `lambda_i / W_i` for the first and second vertices. Define the perspective
 denominator
 
-\[
+$
 D = \sum_i \frac{\lambda_i}{W_i}.
-\]
+$
 
 Multiplying a selector by `rcp(r4)` gives the corresponding perspective-correct
 weight, `(lambda_i / W_i) / D`, within the precision of the hardware readback.
