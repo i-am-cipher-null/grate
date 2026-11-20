@@ -298,18 +298,29 @@ The varying id corresponds to the TRAM component: var0 is TRAM.x, var1 is TRAM.y
 
 | Value | Meaning            |
 |------:|:-------------------|
-|     0 | ???                |
-|     1 | barycentric weight |
-|  2..3 | ???                |
+|     0 | nothing observable: writes no row register and supplies no weight (measured) |
+|     1 | barycentric weight (measured) |
+|  2..3 | supplies the weight as well; from outside the unit indistinguishable from 1 (measured) |
 |     4 | row register 0     |
 |     5 | row register 1     |
 |     6 | row register 2     |
 |     7 | row register 3     |
 
-Hardware tests of the destination selector show that values 4, 5, 6 and 7 write row
-registers 0, 1, 2 and 3, respectively. Values 0..3 did not change any of the
-four row registers in the tested store probes; their other destination meanings
-are not established.
+Measured on a Toshiba AC100 (Tegra 2 / AR20) with the Grate assembly harness,
+three repeats per variant: values 4..7 write row registers 0..3 and leave the
+store pair that does not contain the register at its primed value, so the field
+is a plain row index there. Values 0..3 write no row register at all.
+
+Values 1, 2 and 3 supply the interpolation weight instead. Substituting each for
+the weight destination in a word that fetches a varying, and storing the
+interpolated colour, reproduces the control word byte for byte at two sample
+points with different colours, and the same three values reproduce it with either
+multiplier as the producer. Value 0 supplies none: its word differs and its
+low byte is not reproducible between runs. Whether 2 and 3 decode to the same
+register as 1 is not established - the hardware hardwires mul0 to w0 and mul1 to
+w1 and derives the third weight as 1.0 - w0 - w1 (see Interpolation), so a field
+that named the whole weight and one that named w0 would look identical from
+outside the unit.
 
 ##### mul0..1 source registers:
 
@@ -327,42 +338,72 @@ result independently of the selected destination register.
 
 |  Value | Meaning                                  |
 |-------:|:-----------------------------------------------|
-|   0..3 | row register 0..3                        |
-|   4..7 | ??? (global registers?)                  |
-|   8..9 | ???                                      |
+|   0..3 | row register 0..3 (measured)             |
+|   4..7 | internal state, not a row register: 4 reads 0x7F56, 5 reads 0x0089, 6 reads 0x00A9 and 7 reads zero, independent of the source field and of the sample position (measured, identity unknown) |
+|   8..9 | 8 reads zero; 9 reads zero until the program fetches an interpolated varying, and 0x4100 in any program whose interpolation fetch runs (measured, identity unknown) |
 |     10 | SFU result                               |
-|     11 | presumed barycentric coefficient 0 (unverified) |
-|     12 | presumed barycentric coefficient 1 (unverified) |
+|     11 | barycentric coefficient 0 (measured: the per-pixel weight) |
+|     12 | barycentric coefficient 1 (measured: the per-pixel weight) |
 |     13 | 1.0                                      |
-| 14..15 | ???                                      |
+| 14..15 | zero (measured, identity unknown)        |
 
-Hardware tests show that both multiplier source fields can select row
-registers 0..3 when the other source is selector 13 (1.0). The tested
-src13 × srcN and srcN × src13 cases produced the corresponding row-register
-values. This establishes row-register reads through both fields in that test;
-it does not explain the zero results observed when both sources select row
-registers.
+**Both source fields read row registers, and every pair of sources multiplies.**
+An earlier round of tests reported that two row-register operands return zero.
+Those variants primed the rows with `.l*` constants, which write the fx10 half,
+while the multiplier reads a row register as fp20: the same 16 bits are 0.0625
+in fx10 and 2^-31 in fp20, so two of them multiply to about 2^-60 and underflow.
+Primed as `.lh` (fp20), all sixteen source pairs return the product of the two
+row registers - 0.0625 x 0.125 reads 0xBF, 0.25 x 0.375 reads 0xDB - and moving
+the destination onto one of the operands changes nothing. The zero results are
+withdrawn.
 
-Selectors 11 and 12 produced the same observed value in a probe without
-varying data being fetched. That probe does not establish that they are
-barycentric coefficients; their meanings remain unverified.
+Measured with the same setup: a row register multiplies a row register, the SFU
+result, either barycentric coefficient and 1.0; the SFU result multiplies itself
+and a coefficient; the two coefficients multiply each other and saturate,
+because an unscaled coefficient is at least 2.0. The two multipliers are
+independent: `mul1` reads and writes the same register numbers as `mul0`, and
+with the two units writing different row registers both results arrive. When
+both units write the same row register, the value that survives is mul0's,
+measured through both store pairs.
+
+Selectors 11 and 12 are the per-pixel barycentric weights: they carry a 2^16
+scale, so read on their own they saturate, and multiplied by `rcp(r4)` they come
+back as coefficients in 0..1 that follow the interpolated colour and move with
+the per-vertex w. Exchanging the two multipliers exchanges the two values.
 
 #### Interpolation
 
-The current interpolation model assigns the MUL results written to the
-"barycentric weight" destination to the first two vertex weights, with the
-third derived as "1.0 - w0 - w1". The source-selector identities for the
-barycentric coefficients and the complete interpolation path have not yet
-been independently verified by the selector tests.
+The MUL results written to the "barycentric weight" destination are the first
+two vertex weights: mul0 supplies w0, mul1 supplies w1, and the third is derived
+as 1.0 - w0 - w1. Measured: writing one weight with each multiplier and fetching
+returns the interpolated varying, and with either weight left unwritten the fetch
+interpolates against state no instruction in the program defined, so a program
+has to write both. The third weight is derived rather than written, which is the
+compiler's model and not something these probes separate.
 
 The proposed calculation is:
 
 	barycentric weight = barycentric coef * 1.0 / w
 
-This requires a reciprocal of the fragment's W value, but the SFU input
-selection has not yet been established by the hardware tests. In particular,
-the register named in an SFU operation such as RCP or SQRT is its destination
-in the tested encodings; it must not be treated as evidence of the SFU input.
+Measured: the coefficients carry a 2^16 scale, and r4 holds the fragment's
+reciprocal w on the same scale, about 2^16 / w - `rcp r4` reads w / 2^16 for
+w = 0.25, 1 and 4. Multiplying a coefficient by the SFU result therefore
+cancels the scale, and at w = 1 the product is the coefficient itself. The SFU
+named register is both input and output: RCP and SQRT rewrite the register they
+name.
+
+**A weight does not have to be in the word that fetches.** The schedule runs up
+to three MFU sub-instructions in series inside a batch. Measured: both weights
+written two sub-instructions before the fetch interpolate exactly as the word
+that computes them and fetches in one does, and a pair written in an earlier
+batch is used as well - both weights written as 1.0 in the previous batch return
+the same word as writing them in the fetch word, as does 1.0 for w0 a batch
+earlier with w1 from the multiplier. What the batch does enforce is order: a
+fetch in the first word with the weights in the second reads something else, so
+the fetch uses what the batch has written before its slot and not after it. An
+earlier version of this document stated that the weight had to be computed in
+the word that fetches; both words behind that comparison had one of the two
+weights unwritten, and the claim is withdrawn.
 
 #### Fragment w component
 
