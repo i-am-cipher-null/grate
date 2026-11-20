@@ -1222,6 +1222,9 @@ on any shader that interpolates.
 `tests/grate/asm/results/pin-mfu-matrix` and `verify-mfu-matrix` hold 340 rows
 each: 112 variants, three repeats, plus the controls. The pin run's manifest is
 `10183803...`, the pinned one `9614da2f...`, and both runs passed 340/340.
+Re-running the pinned manifest from a clean checkout of `f1c82db` (`git clone`
+into /tmp, no working-tree changes) reproduced all 340 words with no
+mismatches.
 
 The first draft of this set also pinned `weight-dst0` and `weight-dst0-q2`, and
 the next run returned `0xF5FFAF40` for the second where the pin run had
