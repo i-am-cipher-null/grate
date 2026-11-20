@@ -1111,7 +1111,7 @@ coefficient. All with fp20 primes, so nothing underflows:
 
 | variant | word | reading |
 |:--|--:|:--|
-| `class-sfu-x-row0` | `0xF000D000` | sqrt(0.375) = `0xF0` (0.612) x 0.0625 = `0xD0` (0.038) |
+| `class-sfu-x-row0` | `0xF000D000` | sqrt(0.375) = `0xF0` (0.612) x 0.0625 = 0.038, read as `0xD0` (0.034) |
 | `fp20-row0-x-sfu` | `0xF000D000` | the same product with the fields exchanged |
 | `class-sfu-x-sfu` | `0xF000EB00` | 0.612 x 0.612 = 0.375, `0xEB` |
 | `fp20-const-x-sfu` | `0xF000F000` | 1.0 x 0.612 |
