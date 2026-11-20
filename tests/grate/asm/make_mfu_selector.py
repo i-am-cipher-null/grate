@@ -36,6 +36,7 @@ pinned from its own run:
     --set w       what row 4 carries, by scaling the vertex clip w
     --set bary    selectors 11 and 12 against interpolated data
     --set persp   the selectors and a scalar varying as clip w changes
+    --set matrix  both multipliers' complete source/destination matrix
 
     make_mfu_selector.py --set dst                # no expectations yet
     make_mfu_selector.py --set dst --results DIR  # pin to the words from DIR
@@ -523,6 +524,230 @@ def persp_variants():
     return out
 
 
+TEMPLATE_MATRIX = "tests/grate/asm/mfu_matrix.in"
+# The translating shader, not vs_mov.txt: the interpolation variants need
+# pixel (0, 0) inside the quad, where all three weights are non-zero.
+VS_INTERP = VS_OFFSET
+# fb_data[0] is the row at NDC y = -1, so a negative offset moves the quad
+# down-left until pixel (0, 0) is inside it and the weights are all non-zero.
+INSIDE = (-0.5, -0.4)
+
+
+def shift(dx, dy):
+    return ["--vs_uniform", f'["offset"]=({dx},{dy},0.0,0.0)']
+
+
+def matrix_variant(name, word1, word0=None, store=STORE_23, slots=None,
+                   vs=None, args=None):
+    """One variant of mfu_matrix.in.
+
+    `word1` is the MFU word of batch 1 (the one under test) and `word0` an
+    optional word in the prime batch; `slots` replaces the four ALU primes.
+    """
+    replace = {f"@P{index}@": slot
+               for index, slot in enumerate(slots or prime_slots())}
+    replace["@MFU0@"] = word0 or NOP
+    replace["@MFU1@"] = word1 or NOP
+    replace["@STORE@"] = store
+    entry = {
+        "name": name,
+        "environment": {"GRATE_POKE": f"0x520=0x{START_WORD | BATCHES:08X}"},
+        "replace": {"fs": replace},
+        "fs": TEMPLATE_MATRIX,
+    }
+    if vs is not None:
+        entry["vs"] = vs
+    if args is not None:
+        entry["args"] = args
+    return entry
+
+
+def matrix_variants():
+    """Every source pair, every destination position, and both units.
+
+    The source sweep read one number at a time with 1.0 on the other side, and
+    the destination sweep wrote one register with 1.0 on both sides. That leaves
+    the combination - a row register against another row register, and a
+    destination that is also an operand - described by five samples. This set
+    runs the whole 4 x 4 table and moves the destination onto each operand, so
+    "two row registers read zero" can be stated as a table rather than as an
+    example, and the destination can be ruled in or out as its cause.
+
+    The rest closes the numbers the earlier sets left as footnotes:
+
+      * `mul1` on its own, since every source/destination measurement so far
+        drove `mul0`, and the two units together writing different registers;
+      * 13 x row and row x `sfu` in the first field, the combinations the sweep
+        and the field set did not cross;
+      * selectors 4..9 and 14..15 in the second field and at a second pixel,
+        because the sweep only tested them in the first field at one sample and
+        they read internal state that may be per-pixel;
+      * destinations 0..3 written one batch before an interpolation, which is
+        the only observable those numbers can have: they do not write a row
+        register, so the question is whether they write the weights.
+    """
+    out = []
+
+    # 1. Every row-register pair, the destination on neither operand, in both
+    # prime formats. There are four destinations and only two operands, so one
+    # that is free always exists; the store pair is the one that contains it,
+    # which leaves the other register of the pair holding its prime as a marker.
+    #
+    # The format matters: the MFU reads a row as fp20, so a `.l*` prime is not
+    # 0.0625 but a value near the floor of the format, and two of those multiply
+    # to zero through underflow. The fx10 table is kept because that is what the
+    # earlier sets measured, and the fp20 table is the one that answers the
+    # source question.
+    def row_table(prefix, slots=None):
+        for first in PRIME:
+            for second in PRIME:
+                dst = min(d for d in (4, 5, 6, 7) if d - 4 not in (first, second))
+                out.append(matrix_variant(
+                    f"{prefix}-rows-{first}x{second}",
+                    f"mul0: dst{dst}, src{first}, src{second}",
+                    store=STORE_01 if dst < 6 else STORE_23, slots=slots))
+
+    row_table("fx10")
+    row_table("fp20", prime_slots("fp20"))
+
+    # 2. The same products with the destination moved onto each operand, which
+    # is the arrangement every earlier zero was measured in.
+    for prefix, slots in (("fx10", None), ("fp20", prime_slots("fp20"))):
+        for first, second in ((0, 1), (1, 2), (2, 3), (0, 3)):
+            for label, dst in (("first", 4 + first), ("second", 4 + second)):
+                out.append(matrix_variant(
+                    f"{prefix}-rows-{first}x{second}-ondst-{label}",
+                    f"mul0: dst{dst}, src{first}, src{second}",
+                    store=STORE_01 if dst < 6 else STORE_23, slots=slots))
+
+    # 3. The two units. `mul1` has only ever run next to a `mul0` that read the
+    # other barycentric selector, so its own source and destination numbering is
+    # untested; `both-*` then puts one result in each row pair and asks what two
+    # writes to one register do. These use the fp20 primes too, so a product is
+    # the product and not an underflow.
+    fp20 = prime_slots("fp20")
+    out.extend(matrix_variant(name, word, store=store, slots=fp20)
+               for name, word, store in (
+        ("mul1-row0", "mul1: r2, src0, #1", STORE_23),
+        ("mul1-13-x-row0", "mul1: r2, src13, src0", STORE_23),
+        ("mul1-rows0-x-1", "mul1: r2, src0, src1", STORE_23),
+        # src0, not src3: 0.375 is r3's own prime, so a write there would be
+        # indistinguishable from not writing at all.
+        ("mul1-dst6", "mul1: dst6, src0, #1", STORE_23),
+        # Every written value here differs from the destination's own prime and
+        # from the other unit's value, so the word says which unit wrote.
+        ("both-independent", "mul0: r0, src1, src13 mul1: r1, src2, src13",
+         STORE_01),
+        ("both-same-dest-01", "mul0: r0, src2, src13 mul1: r0, src3, src13",
+         STORE_01),
+        ("both-same-dest-23", "mul0: r2, src0, src13 mul1: r2, src3, src13",
+         STORE_23),
+        ("both-rows", "mul0: r0, src2, src13 mul1: r1, src2, src3", STORE_01),
+    ))
+
+    # 3b. The same products with the rows primed as fp20 (`rN.lh`), which is the
+    # format the multiplier reads. A `.l*` prime is fx10, and the 16 bits of
+    # 0.0625 in that format are 2^-31 as fp20, so two `.l*` primes multiply to
+    # about 2^-60 and underflow - which is all the `fx10-*` zeros above are. With
+    # fp20 primes the products land on bytes nothing can truncate: 0.0625 x 0.125
+    # is 0xBF, 0.25 x 0.375 is 0xDB, and 0.0625 x 1.0 is 0xD7.
+    out.extend(matrix_variant(name, word, slots=fp20) for name, word in (
+        ("fp20-row0-x-1", "mul0: r2, src0, src13"),
+        ("fp20-rows0-x-1", "mul0: r2, src0, src1"),
+        ("fp20-rows2-x-3", "mul0: r2, src2, src3"),
+        ("fp20-row0-x-sfu", "sfu: sqrt r3 mul0: r2, src0, sfu"),
+        ("fp20-const-x-sfu", "sfu: sqrt r3 mul0: r2, src13, sfu"),
+    ))
+
+    # 3c. Which pairs of source *classes* multiply at all. The sweep crossed a
+    # row register with 1.0 and the interpolation crosses a coefficient with the
+    # SFU result, so the unknown is every other combination; if the row x row
+    # zero is really "one operand may be a row register only when the other is
+    # the constant", these six say so. All of them use the fp20 primes, so a
+    # small product is still visible as a byte.
+    out.extend(matrix_variant(name, word, slots=fp20) for name, word in (
+        ("class-sfu-x-row0", "sfu: sqrt r3 mul0: r2, sfu, src0"),
+        ("class-sfu-x-sfu", "sfu: sqrt r3 mul0: r2, sfu, sfu"),
+        ("class-row0-x-bar0", "mul0: r2, src0, src11"),
+        ("class-bar0-x-row0", "mul0: r2, src11, src0"),
+        ("class-bar0-x-bar1", "mul0: r2, src11, src12"),
+        ("class-13-x-bar0", "mul0: r2, src13, src11"),
+        ("class-sfu-x-bar0", "sfu: rcp r4 mul0: r2, sfu, src11"),
+    ))
+
+    # 4. The numbers with no row register behind them. Field 1 was only ever
+    # tested with 13 and a row, and the sweep's one sample sat on the corner
+    # pixel, so both the field and the pixel position are new here.
+    for source in (4, 5, 6, 7, 8, 9, 14, 15):
+        out.append(matrix_variant(f"sel{source}-field1",
+                                  f"mul0: r2, src13, src{source}"))
+        out.append(matrix_variant(f"sel{source}-corner",
+                                  f"mul0: r2, src{source}, #1"))
+        out.append(matrix_variant(f"sel{source}-inside",
+                                  f"mul0: r2, src{source}, #1",
+                                  vs=VS_OFFSET, args=shift(*INSIDE)))
+    # And with a varying fetch in the word: the hand probe read 0x4100 for src9
+    # in a program with interpolation and zero without, which is the one hint
+    # that some of these numbers are interpolation state.
+    for source in (4, 5, 6, 9):
+        out.append(matrix_variant(f"sel{source}-ipl",
+                                  f"sfu: rcp r4 {PARTIAL_IPL} "
+                                  f"mul0: r2, src{source}, #1",
+                                  vs=VS_OFFSET, args=shift(*INSIDE)))
+    # src9 moved with the fetch in place, so a second fetch opcode tells whether
+    # the value belongs to the fetch or to the sample.
+    out.append(matrix_variant("sel9-ipl-fx10",
+                              "sfu: rcp r4 ipl: t0.fx10, NOP, NOP, NOP "
+                              "mul0: r2, src9, #1",
+                              vs=VS_OFFSET, args=shift(*INSIDE)))
+
+    # 5. Destinations 0..3 do not write a row register, so the interpolation is
+    # the only place they can show. The blob writes both weights to `bar`
+    # (destination 1) in the word that also fetches, and a word that fetches
+    # without computing one of them interpolates with a degenerate weight set,
+    # so "destination N instead of bar" is the direct question: whichever number
+    # reproduces the control is the weight register.
+    def weight(name, replace_dst=None, word0=None, word1=None, point=INSIDE):
+        word1 = word1 or (f"sfu: rcp r4 "
+                          f"mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 {FULL_IPL}")
+        if replace_dst is not None:
+            word1 = word1.replace("mul0: bar", f"mul0: dst{replace_dst}", 1)
+        out.append(matrix_variant(name, word1, word0=word0, store=STORE_01,
+                                  vs=VS_INTERP, args=shift(*point)))
+
+    weight("weight-bar")
+    for dst in (1, 2, 3):
+        weight(f"weight-dst{dst}", replace_dst=dst)
+
+    # The same table at a second sample point. 1, 2 and 3 agree at the first, so
+    # either they name one weight or they are three weights that happen to land
+    # on the same colour there; a point with different weights separates those.
+    # Destination 0 is deliberately absent: with no weight written the fetch
+    # returns state nobody in the program wrote, and the result word differs in
+    # its low byte between runs (0xF300AF00 at this point, and 0xF5FFAF00 then
+    # 0xF5FFAF40 at the second), so it cannot be pinned.
+    weight("weight-bar-q2", point=(-0.25, -0.2))
+    for dst in (1, 2, 3):
+        weight(f"weight-dst{dst}-q2", replace_dst=dst, point=(-0.25, -0.2))
+
+    # 5b. And does a weight written one batch earlier survive into the fetch?
+    # 1.0 is the widest corruption of a set that sums to one, and the fetch
+    # word recomputes only the two weights the multipliers name, so this is also
+    # a probe of which weight the hardware derives itself.
+    weight("keep-none")
+    for dst in range(4):
+        weight(f"keep-dst{dst}", word0=f"mul0: dst{dst}, src13, src13")
+
+    # Does a weight survive a batch boundary at all? Both variants fetch in a
+    # word that writes only w1; the first has w0 = 1.0 written a batch earlier,
+    # so if the earlier value were used the colour would be vertex 0's (1, 0).
+    # The control is the same program without that write.
+    weight("keep-w0-one", word0="mul0: dst1, src13, src13",
+           word1=f"sfu: rcp r4 mul1: bar, sfu, bar1 {FULL_IPL}")
+    weight("keep-w0-none", word1=f"sfu: rcp r4 mul1: bar, sfu, bar1 {FULL_IPL}")
+    return out
+
+
 SETS = {
     "src": ("mfu-selector-source", "tests/grate/asm_characterize.mfu_selector_src.json",
             src_variants),
@@ -539,6 +764,9 @@ SETS = {
               "tests/grate/asm_characterize.barycentric.json", bary_variants),
     "persp": ("perspective-selector",
               "tests/grate/asm_characterize.persp.json", persp_variants),
+    "matrix": ("mfu-selector-matrix",
+               "tests/grate/asm_characterize.mfu_selector_matrix.json",
+               matrix_variants),
 }
 
 CONTROLS = [

@@ -611,6 +611,12 @@ store and prime path work without any multiplier, and `noprime-src0` shows a
 src0 product of zero when nothing was written, so a non-zero `src-00` cannot be
 row state left over from somewhere else.
 
+Read the `0x0010`..`0x0060` half as the bits the prime wrote, not as the number
+the multiplier saw. The ALU writes `.l*` (fx10) and the multiplier reads the
+same 16 bits as fp20, where `0x0010` is 2^-31; every product of two of these
+primes in this section underflowed, which is the trap section 5 measures and
+corrects.
+
 Source 13 is the constant: `const13-times-src0` (`mul0: r2, src13, src0`)
 returns `0x00600010`, the src0 value unchanged, so 13 multiplies as one and the
 `#1` operand used in every other variant is a real 1.0. The product 1.0 x 1.0
@@ -618,15 +624,23 @@ itself (`src-13`) reads `0x0060F700`, i.e. `r2.lo` `0x00` and `r2.hi` `0xF7`,
 not the saturated `0xFF` byte a 1.0 payload gives on the store path; recorded,
 not explained.
 
-**Two row-register operands read zero.** `mul0: r2, src2, src2` (0.25 x 0.25),
-`mul0: r2, src3, src2` and `mul0: r2, src3, src3` all return `0x00600000`, with
-the destination on one of the operands. Moving the destination off both
-operands - `mul0: r3, src0, src1` and `mul0: r3, src2, src3` - leaves r3 at
-`0x00` where it was primed at 0.375, so the multiplier ran and wrote zero
-rather than not running. Row x `#1` multiplies correctly in both field
-positions (`src-00`..`src-03` put the row in the first field, `const13-times-src0`
-puts it in the second), so the zero is specific to two row-register sources,
-not to one field refusing a row register.
+**Two row-register operands read zero - superseded.** `mul0: r2, src2, src2`
+(0.25 x 0.25), `mul0: r2, src3, src2` and `mul0: r2, src3, src3` all return
+`0x00600000`, with the destination on one of the operands. Moving the
+destination off both operands - `mul0: r3, src0, src1` and
+`mul0: r3, src2, src3` - leaves r3 at `0x00` where it was primed at 0.375, so
+the multiplier ran and wrote zero rather than not running.
+
+That reading was wrong, and the reason is the prime format. These rows were
+primed with `.l*` (fx10), and the multiplier reads a row as fp20: the same
+16-bit word `0x0010` is 0.0625 as fx10 and 2^-31 as fp20. Two primes near the
+floor of the format multiply to about 2^-60, which underflows to zero, so the
+zero said nothing about the source fields. Primed `.lh` instead, the same
+products are correct - section 5 has the 4 x 4 table. The `#1` case only looked
+healthy in the same run because 1.0 x anything keeps the operand's own
+encoding. Every zero in this section came from that, and the two-field
+symmetry measurement above is unaffected: it compares a row against `#1`, i.e.
+values that no underflow touches.
 
 ### Where the destination writes
 
@@ -1014,12 +1028,208 @@ working tree that produced it.
 ### What is left
 
 The other SFU operations can now be driven with known inputs (`.lh` primes) and
-characterised one at a time; the two-row-register zero is still a description
-rather than a mechanism; and the readback's three mantissa bits bound everything
-here to one step, which is why an exact normalization constant is still not
-measured. The constant in r4 is resolved to the same one step; the `persp` set
-pins its *relative* behaviour against `D` instead, so a probe that reads the
-operand at a coarser magnitude would only be needed for the absolute value.
+characterised one at a time, and the two-row-register zero is resolved: it was
+an fx10 prime read as fp20 (section 5). What that leaves on the multiplier is
+identity, not behaviour - which internal state selectors 4, 5, 6 and 9 read, and
+whether destination 0 names a fourth weight the hardware does not use. The
+readback's three mantissa bits bound everything here to one step, which is why an
+exact normalization constant is still not measured. The constant in r4 is
+resolved to the same one step; the `persp` set pins its *relative* behaviour
+against `D` instead, so a probe that reads the operand at a coarser magnitude
+would only be needed for the absolute value.
+
+## 5. MFU multiplier source/destination matrix
+
+`--set matrix` (112 variants) from `tests/grate/asm/mfu_matrix.in`, manifest
+`asm_characterize.mfu_selector_matrix.json`. The four sets above each varied one
+field of one multiplication; this one runs the table - every pair of row
+registers with the destination on neither operand and then on each of them, both
+multipliers alone and together, both source fields for every number that has no
+row register behind it, and destinations 0..3 in the word that interpolates.
+
+The template is `mfu_sel.in` plus one thing: the prime batch carries an MFU word
+of its own (`@MFU0@`). The stage order inside a batch is MFU, TEX, ALU, DW, so
+that word runs *before* the ALU primes and the batch-1 word after them, which is
+what lets a variant write a piece of fragment state one batch before the word
+that reads it.
+
+### The prime format, not the source field, produced the zeros
+
+The multiplier reads a row register as fp20. `.l*` writes fx10, and the same 16
+bits are not the same number in the two formats: `0x0010` is 0.0625 as fx10 and
+2^-31 as fp20. So `src-00`..`src-03` above show that the row's *bits* come
+through a multiply by 1.0, not that 0.0625 did, and every product of two such
+primes in the earlier sets was a product of two values at the floor of the
+format.
+
+With the same programs primed `.lh` the whole 4 x 4 table multiplies. Each cell
+is the fp20 byte the destination holds after `mul0: dst, srcI, srcJ`; the primes
+are r0 = 0.0625 (`0xD7`), r1 = 0.125 (`0xDF`), r2 = 0.25 (`0xE7`), r3 = 0.375
+(`0xEB`):
+
+| first / second | r0 | r1 | r2 | r3 |
+|:--|:--|:--|:--|:--|
+| **r0** 0.0625 | `0xB7` | `0xBF` | `0xC7` | `0xCB` |
+| **r1** 0.125 | `0xBF` | `0xC7` | `0xCF` | `0xD3` |
+| **r2** 0.25 | `0xC7` | `0xCF` | `0xD7` | `0xDB` |
+| **r3** 0.375 | `0xCB` | `0xD3` | `0xDB` | `0xE0` |
+
+Every cell is the product to within the readback's three mantissa bits (one
+step is 12.5% in value): 0.0625 x 0.125 = 0.0078 = 2^-7 lands exactly on
+`0xBF`, 0.25 x 0.375 = 0.0938 reads `0xDB` (0.088) and 0.375 x 0.375 = 0.1406
+reads `0xE0` (0.136). The 16 words, in that reading order:
+
+| variants | words |
+|:--|:--|
+| `fp20-rows-0x0`..`0x3` | `0xB700D700`, `0xEB00BF00`, `0xC700D700`, `0xCB00D700` |
+| `fp20-rows-1x0`..`1x3` | `0xEB00BF00`, `0xDF00C700`, `0xDF00CF00`, `0xDF00D300` |
+| `fp20-rows-2x0`..`2x3` | `0xC700D700`, `0xDF00CF00`, `0xDF00D700`, `0xDF00DB00` |
+| `fp20-rows-3x0`..`3x3` | `0xCB00D700`, `0xDF00D300`, `0xDF00DB00`, `0xDF00E000` |
+
+Both halves are readable because the destination is never on an operand:
+whichever register of the store pair receives the result, the other one keeps
+its prime (`0xD7`, `0xDF`, `0xE7`, `0xEB`), so every word above carries a prime
+in one half and a product in the other.
+
+The `fx10-` twins of those 16 - the same programs primed `.l*`, exactly as the
+earlier sets were - return `0x0000` in the destination half in all 16 cases. The
+primes are 2^-31 there and the product of two of them is 2^-62, below the floor
+of the format. So the zeros are underflow, not a rejected source combination,
+and "two row-register sources read zero" is withdrawn.
+
+**The destination's position does not matter.** Eight variants repeat four of
+these products with the destination moved onto the first and onto the second
+operand - the arrangement every earlier zero was measured in - and all eight
+return the product: `0xDF00BF00`, `0xBF00D700`, `0xCF00D700`, `0xEB00CF00`,
+`0xEB00DB00`, `0xDB00E700`, `0xDF00CB00`, `0xCB00E700`.
+
+### Every source class multiplies every other
+
+What the sweep never crossed: a row against the SFU result, a row against a
+coefficient, the SFU result against itself, and a coefficient against the other
+coefficient. All with fp20 primes, so nothing underflows:
+
+| variant | word | reading |
+|:--|--:|:--|
+| `class-sfu-x-row0` | `0xF000D000` | sqrt(0.375) = `0xF0` (0.612) x 0.0625 = `0xD0` (0.038) |
+| `fp20-row0-x-sfu` | `0xF000D000` | the same product with the fields exchanged |
+| `class-sfu-x-sfu` | `0xF000EB00` | 0.612 x 0.612 = 0.375, `0xEB` |
+| `fp20-const-x-sfu` | `0xF000F000` | 1.0 x 0.612 |
+| `class-row0-x-bar0` | `0xEB00FF00` | 0.0625 x a coefficient: saturated, since a coefficient is >= 2.0 unscaled |
+| `class-bar0-x-row0` | `0xEB00FF00` | the same |
+| `class-bar0-x-bar1` | `0xEB00FF00` | two coefficients, saturated |
+| `class-13-x-bar0` | `0xEB00FF00` | 1.0 x a coefficient, saturated |
+| `class-sfu-x-bar0` | `0xEB00F600` | rcp(r4) x coefficient = 0.917, the coefficient at the corner pixel |
+
+So no pair of source classes reads zero on its own account; the only zeros in
+this set are the fx10 twins of the row table. The `class-sfu-x-bar0` reading is
+the interesting one for the interpolation: it is the same product as the
+established `mul0: ..., src11, sfu` with the operands exchanged, at the corner
+pixel where section 4 measured 0.84-0.92.
+
+### The two multipliers
+
+| variant | word | reading |
+|:--|--:|:--|
+| `mul1-row0` | `0xEB00D700` | `mul1` writes the register it names (r2 = 0.0625), from a row source |
+| `mul1-13-x-row0` | `0xEB00D700` | and with 13 in the first field |
+| `mul1-rows0-x-1` | `0xEB00BF00` | and two row registers multiply: 0.0625 x 0.125 = `0xBF` |
+| `mul1-dst6` | `0xEB00D700` | `mul1`'s destination field maps like `mul0`'s: 6 writes r2 |
+| `both-independent` | `0xE700DF00` | r0 = 0.125 from `mul0`, r1 = 0.25 from `mul1`, one word |
+| `both-same-dest-01` | `0xDF00E700` | both write r0: `mul0`'s 0.25 survives, `mul1`'s 0.375 does not |
+| `both-same-dest-23` | `0xEB00D700` | both write r2: `mul0`'s 0.0625 survives |
+| `both-rows` | `0xDB00E700` | `mul0` 0.25 in r0, `mul1`'s row product 0.0938 in r1 |
+
+So the two units are independent - separate source and destination numbering,
+two products in one word - and when both name the same register the first
+multiplier's value is the one left behind. That is a measurement, not a rule
+about what a compiler may emit.
+
+### The numbers with no row register behind them
+
+Selectors 4..9 and 14..15, each in the first field against `#1`, in the second
+field against 13, and at a pixel inside the triangle instead of on the corner
+(the source sweep's sample). Values are the stored register after the multiply
+by 1.0:
+
+| selector | first field | second field | inside | with a fetch |
+|:--|:--|:--|:--|:--|
+| 4 | `0x7F56` | `0x7F56` | `0x7F56` | `0x7F56` |
+| 5 | `0x0089` | `0x0089` | `0x0089` | `0x0089` |
+| 6 | `0x00A9` | `0x00A9` | `0x00A9` | `0x00A9` |
+| 7 | `0x0000` | `0x0000` | `0x0000` | - |
+| 8 | `0x0000` | `0x0000` | `0x0000` | - |
+| 9 | `0x0000` | `0x0000` | `0x0000` | `0x4100` |
+| 14, 15 | `0x0000` | `0x0000` | `0x0000` | - |
+
+Neither the field nor the pixel position moves them, so 4, 5 and 6 read state
+that is neither per-pixel nor field-specific, and 7, 8, 14 and 15 read nothing
+at all. Selector 9 is the exception: it is zero in every program without a
+varying fetch and `0x4100` in every program with one, including an `fx10` fetch
+(`sel9-ipl-fx10`), so what it reads is tied to the fetch happening rather than
+to the data the fetch brings.
+
+### Destinations 0..3 are the interpolated weight
+
+The blob writes both multipliers to `bar`, i.e. destination 1, in the same word
+as the fetch, and none of 0..3 writes a row register, so the interpolation is
+the only place they can show. Substitute each one for `bar` in that word and
+compare the interpolated colour. At the sample point `p1` the control is
+`0xD300F200`, which decodes - the store puts the varying's `y` in the low half
+and `x` in the high half - to the colour (0.044, 0.65) that section 4 attributes
+to that pixel:
+
+| variant | word | reading |
+|:--|--:|:--|
+| `weight-bar` | `0xD300F200` | control: `mul0: bar, sfu, bar0` |
+| `weight-dst1` | `0xD300F200` | destination 1 instead of `bar`: identical |
+| `weight-dst2` | `0xD300F200` | destination 2: identical |
+| `weight-dst3` | `0xD300F200` | destination 3: identical |
+| `weight-bar-q2` | `0xCB00F400` | control at a second sample point |
+| `weight-dst1-q2`..`dst3-q2` | `0xCB00F400` | all three identical again |
+
+So 1, 2 and 3 all supply the weight the interpolator uses - at two sample points
+with different weights, which is what rules out three distinct weights that
+happen to agree - and 0 supplies nothing: with `mul0` writing destination 0 the
+fetch returns `0xF300AF00` at the first point and `0xF5FFAF00` then `0xF5FFAF40`
+at the second, the last differing in its low byte between two runs of the same
+program. Undefined state is not pinnable, which is why those two variants are
+not in the manifest.
+
+**A weight written a batch earlier is not used.** `keep-dst0`..`keep-dst3`
+write 1.0 into one of the four destinations in the prime batch and then run the
+control's fetch word; all of them, and `keep-none`, return the control's
+`0xD300F200` byte for byte. On its own that says only that the fetch word's own
+write wins, since it recomputes both weights - so the pair below removes that
+write from the fetch word instead. In `keep-w0-none` the multiplying word writes
+only w1, and in `keep-w0-one` w0 = 1.0 was written one batch earlier:
+
+| variant | prime batch | fetch word | word |
+|:--|:--|:--|--:|
+| `keep-none` | nothing | `mul0: bar`, `mul1: bar` | `0xD300F200` |
+| `keep-dst1` | `mul0: dst1, 1.0` | `mul0: bar`, `mul1: bar` | `0xD300F200` |
+| `keep-w0-none` | nothing | `mul1: bar` only | `0xF300AF00` |
+| `keep-w0-one` | `mul0: dst1, 1.0` | `mul1: bar` only | `0xF300AF00` |
+
+The last two are identical, and equal to what `weight-dst0` returned when the
+fetch word wrote no w0 at all: a weight from an earlier batch is not carried
+into the interpolator, so the two multipliers that produce w0 and w1 have to be
+in the same word as the fetch. That is a scheduling restriction the ISA imposes
+on any shader that interpolates.
+
+#### Recorded runs
+
+`tests/grate/asm/results/pin-mfu-matrix` and `verify-mfu-matrix` hold 340 rows
+each: 112 variants, three repeats, plus the controls. The pin run's manifest is
+`10183803...`, the pinned one `9614da2f...`, and both runs passed 340/340.
+
+The first draft of this set also pinned `weight-dst0` and `weight-dst0-q2`, and
+the next run returned `0xF5FFAF40` for the second where the pin run had
+`0xF5FFAF00`, with three repeats agreeing within each run. One variant that is
+not reproducible across runs is enough to make a pinned manifest useless, so both
+destination-0 variants are described above instead of pinned: their program
+writes no weight, and what the fetch then returns comes from state nothing in
+the program defines.
 
 ## What the runner cost
 

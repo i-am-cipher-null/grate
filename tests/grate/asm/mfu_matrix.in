@@ -1,0 +1,39 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Source/destination matrix of the two MFU multipliers.
+ *
+ * Same three batches as mfu_sel.in, except that the prime batch also carries an
+ * MFU word of its own. The stage order inside a batch is MFU, TEX, ALU, DW, so a
+ * word in batch 0 runs before the ALU primes and one in batch 1 runs after
+ * them; the matrix sets use that to write a piece of per-fragment state one
+ * batch before the word that interpolates with it.
+ *
+ * Batch 0 also primes r0..r3 with four distinct constants, so a multiplier
+ * reading row register N returns byte N of the .constants table (0x10, 0x20,
+ * 0x40, 0x60) and no other number can. The store line is a placeholder:
+ * `store rt1, r2, r3` covers r2 and r3, `store rt1, r0, r1` covers r0 and r1.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	MFU:	@MFU0@
+	ALU:
+		ALU0:	@P0@
+		ALU1:	@P1@
+		ALU2:	@P2@
+		ALU3:	@P3@
+;
+EXEC
+	MFU:	@MFU1@
+;
+EXEC
+	DW:	@STORE@
+;

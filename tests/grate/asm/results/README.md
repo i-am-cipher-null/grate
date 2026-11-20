@@ -335,3 +335,19 @@ invalidate another; generate such a manifest with
 * commit: e37a0b39505915dabc7ebe9b180017172eb513f4 with a dirty tree
 * created: 2026-11-19T23:34:32+00:00; 118 rows, repeat 3, timeout 10.0 s
 * summary: 118 passed, 0 failed of 118 - passed
+
+## pin-mfu-matrix
+
+* manifest: `asm_characterize.mfu_selector_matrix.json` (sha256 101838034d2f)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 4da918dd1c9559500d7c6c97f63d165684e69aef with a dirty tree
+* created: 2026-11-20T09:13:35+00:00; 340 rows, repeat 3, timeout 10.0 s
+* summary: 340 passed, 0 failed of 340 - passed
+
+## verify-mfu-matrix
+
+* manifest: `asm_characterize.mfu_selector_matrix.json` (sha256 9614da2f6724)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 4da918dd1c9559500d7c6c97f63d165684e69aef with a dirty tree
+* created: 2026-11-20T09:14:28+00:00; 340 rows, repeat 3, timeout 10.0 s
+* summary: 340 passed, 0 failed of 340 - passed
