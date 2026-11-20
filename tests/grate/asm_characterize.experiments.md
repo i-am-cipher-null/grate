@@ -1196,13 +1196,13 @@ at the second, the last differing in its low byte between two runs of the same
 program. Undefined state is not pinnable, which is why those two variants are
 not in the manifest.
 
-**A weight written a batch earlier is not used.** `keep-dst0`..`keep-dst3`
+**A weight written a batch earlier - see section 6.** `keep-dst0`..`keep-dst3`
 write 1.0 into one of the four destinations in the prime batch and then run the
 control's fetch word; all of them, and `keep-none`, return the control's
-`0xD300F200` byte for byte. On its own that says only that the fetch word's own
-write wins, since it recomputes both weights - so the pair below removes that
-write from the fetch word instead. In `keep-w0-none` the multiplying word writes
-only w1, and in `keep-w0-one` w0 = 1.0 was written one batch earlier:
+`0xD300F200` byte for byte. That says only that the fetch word's own write
+wins, since it recomputes both weights, so the pair below removes that write
+from the fetch word instead. In `keep-w0-none` the multiplying word writes only
+w1, and in `keep-w0-one` w0 = 1.0 was written one batch earlier:
 
 | variant | prime batch | fetch word | word |
 |:--|:--|:--|--:|
@@ -1211,11 +1211,14 @@ only w1, and in `keep-w0-one` w0 = 1.0 was written one batch earlier:
 | `keep-w0-none` | nothing | `mul1: bar` only | `0xF300AF00` |
 | `keep-w0-one` | `mul0: dst1, 1.0` | `mul1: bar` only | `0xF300AF00` |
 
-The last two are identical, and equal to what `weight-dst0` returned when the
-fetch word wrote no w0 at all: a weight from an earlier batch is not carried
-into the interpolator, so the two multipliers that produce w0 and w1 have to be
-in the same word as the fetch. That is a scheduling restriction the ISA imposes
-on any shader that interpolates.
+The last two agreeing was read here as "the earlier weight is not carried into
+the interpolator, so both multipliers have to be in the word that fetches". That
+reading does not hold: `keep-w0-none` leaves w0 to whatever the fetch finds, and
+an unwritten weight does not give a defined word. Section 6 runs the same pair
+at two MFU slots and gets `0xF300AF00` and `0xBD00AF00`, and with a control that
+writes both weights the earlier write is read (`w0-one-prev` and `w0-one-same`
+both `0x0000F701`). The two rows stay as measured; the conclusion drawn from
+them, and the scheduling restriction it implied, are withdrawn.
 
 #### Recorded runs
 
