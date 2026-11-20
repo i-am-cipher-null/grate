@@ -569,22 +569,23 @@ def matrix_variants():
     the destination sweep wrote one register with 1.0 on both sides. That leaves
     the combination - a row register against another row register, and a
     destination that is also an operand - described by five samples. This set
-    runs the whole 4 x 4 table and moves the destination onto each operand, so
-    "two row registers read zero" can be stated as a table rather than as an
-    example, and the destination can be ruled in or out as its cause.
+    runs the whole 4 x 4 table, in both prime formats, with the destination on
+    neither operand and then on each of them: the row x row zeros turn out to be
+    the prime format (a `.l*` prime is fp20 for 2^-31, so two of them
+    underflow), and the destination's position changes nothing.
 
     The rest closes the numbers the earlier sets left as footnotes:
 
       * `mul1` on its own, since every source/destination measurement so far
         drove `mul0`, and the two units together writing different registers;
-      * 13 x row and row x `sfu` in the first field, the combinations the sweep
-        and the field set did not cross;
+      * row x `sfu`, `sfu` x `sfu` and the coefficient pairs, the source classes
+        the sweep and the field set did not cross;
       * selectors 4..9 and 14..15 in the second field and at a second pixel,
         because the sweep only tested them in the first field at one sample and
         they read internal state that may be per-pixel;
-      * destinations 0..3 written one batch before an interpolation, which is
-        the only observable those numbers can have: they do not write a row
-        register, so the question is whether they write the weights.
+      * destinations 0..3 in the word that interpolates, which is the only
+        observable those numbers can have: they do not write a row register, so
+        the question is whether they write the weight.
     """
     out = []
 
@@ -659,12 +660,12 @@ def matrix_variants():
         ("fp20-const-x-sfu", "sfu: sqrt r3 mul0: r2, src13, sfu"),
     ))
 
-    # 3c. Which pairs of source *classes* multiply at all. The sweep crossed a
-    # row register with 1.0 and the interpolation crosses a coefficient with the
-    # SFU result, so the unknown is every other combination; if the row x row
-    # zero is really "one operand may be a row register only when the other is
-    # the constant", these six say so. All of them use the fp20 primes, so a
-    # small product is still visible as a byte.
+    # 3c. Which pairs of source *classes* multiply. The sweep crossed a row
+    # register with 1.0 and the interpolation crosses a coefficient with the SFU
+    # result, so every other combination was untested. All of these use the fp20
+    # primes, so a small product is still visible as a byte; every pair
+    # multiplies, and the coefficient pairs saturate because an unscaled
+    # coefficient is at least 2.0.
     out.extend(matrix_variant(name, word, slots=fp20) for name, word in (
         ("class-sfu-x-row0", "sfu: sqrt r3 mul0: r2, sfu, src0"),
         ("class-sfu-x-sfu", "sfu: sqrt r3 mul0: r2, sfu, sfu"),
@@ -730,10 +731,9 @@ def matrix_variants():
     for dst in (1, 2, 3):
         weight(f"weight-dst{dst}-q2", replace_dst=dst, point=(-0.25, -0.2))
 
-    # 5b. And does a weight written one batch earlier survive into the fetch?
-    # 1.0 is the widest corruption of a set that sums to one, and the fetch
-    # word recomputes only the two weights the multipliers name, so this is also
-    # a probe of which weight the hardware derives itself.
+    # 5b. A weight written a batch earlier, with the fetch word still computing
+    # both of its own: 1.0 is the widest corruption of a set that sums to one,
+    # and the control is the same program without the earlier write.
     weight("keep-none")
     for dst in range(4):
         weight(f"keep-dst{dst}", word0=f"mul0: dst{dst}, src13, src13")
