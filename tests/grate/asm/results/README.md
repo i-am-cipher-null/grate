@@ -12,6 +12,11 @@ made against the commit that contains the manifest - the pinning run predates
 the pin, and the verification run predates the commit - so the manifest hash in
 `metadata.json`, not the commit id, is what identifies the program that ran.
 
+`clean-*` is the pinned manifest run from a clone that was checked out at the
+commit which contains it, with an empty `git_status`, so the claim that the
+pinned words reproduce from the committed inputs has a run of its own to point
+at. Its `repository_root` is the temporary clone, not the working checkout.
+
 The matrix manifests are also run per size so that a wedge in one size cannot
 invalidate another; generate such a manifest with
 `make_alu_buffer_matrix.py --sizes N --out /tmp/m_nN.json`.
@@ -351,3 +356,27 @@ invalidate another; generate such a manifest with
 * commit: 4da918dd1c9559500d7c6c97f63d165684e69aef with a dirty tree
 * created: 2026-11-20T09:14:28+00:00; 340 rows, repeat 3, timeout 10.0 s
 * summary: 340 passed, 0 failed of 340 - passed
+
+## clean-mfu-matrix
+
+* manifest: `asm_characterize.mfu_selector_matrix.json` (sha256 9614da2f6724)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f1c82db7be023940de95842826b87df3ef5bd3fd with a clean tree (clone in /tmp/clean)
+* created: 2026-11-20T09:17:48+00:00; 340 rows, repeat 3, timeout 10.0 s
+* summary: 340 passed, 0 failed of 340 - passed
+
+## pin-mfu-chain
+
+* manifest: `asm_characterize.mfu_chain.json` (sha256 dd766400f350)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 656556cc8397f3cac7f41885ad09eda320030b37 with a dirty tree
+* created: 2026-11-20T12:07:09+00:00; 70 rows, repeat 3, timeout 10.0 s
+* summary: 70 passed, 0 failed of 70 - passed
+
+## verify-mfu-chain
+
+* manifest: `asm_characterize.mfu_chain.json` (sha256 dd766400f350)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 656556cc8397f3cac7f41885ad09eda320030b37 with a dirty tree
+* created: 2026-11-20T12:07:27+00:00; 70 rows, repeat 3, timeout 10.0 s
+* summary: 70 passed, 0 failed of 70 - passed

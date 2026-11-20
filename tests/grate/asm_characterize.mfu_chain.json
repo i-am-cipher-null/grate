@@ -1,0 +1,592 @@
+{
+	"name": "mfu-weight-chain",
+	"repeat": 3,
+	"timeout": 10,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_sel.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "same-word",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "next-word",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1",
+					"@MFU2@": "sfu: rcp r4 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "next-word-nosfu",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1",
+					"@MFU2@": "ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "two-words-before",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1",
+					"@MFU2@": "mul0: r2, src0, src13",
+					"@MFU3@": "sfu: rcp r4 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "fetch-before-weight",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xF600B800"
+		},
+		{
+			"name": "one-one-same",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, src13, src13 mul1: bar, src13, src13 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0x0001F701"
+		},
+		{
+			"name": "one-one-prev",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "mul0: bar, src13, src13 mul1: bar, src13, src13",
+					"@MFU1@": "sfu: rcp r4 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0x0001F701"
+		},
+		{
+			"name": "w0-one-same",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, src13, src13 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0x0000F701"
+		},
+		{
+			"name": "w0-one-prev",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "mul0: bar, src13, src13",
+					"@MFU1@": "sfu: rcp r4 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0x0000F701"
+		},
+		{
+			"name": "rcp-twice",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "none-weights",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xB400BB00"
+		},
+		{
+			"name": "garbage-first",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xF300AF00"
+		},
+		{
+			"name": "garbage-second",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "NOP",
+					"@MFU2@": "sfu: rcp r4 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xBD00AF00"
+		},
+		{
+			"name": "both",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "one-slot-same",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, src13, src13 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_matrix.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0x0000F701"
+		},
+		{
+			"name": "one-slot-prev",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "mul0: bar, src13, src13",
+					"@MFU1@": "sfu: rcp r4 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_matrix.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0x0000F701"
+		},
+		{
+			"name": "mul0-dst1",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: dst1, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "mul1-dst1",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: dst1, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "mul0-dst2",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: dst2, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "mul1-dst2",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: dst2, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "mul0-dst3",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: dst3, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		},
+		{
+			"name": "mul1-dst3",
+			"environment": {
+				"GRATE_POKE": "0x520=0x20006003"
+			},
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+					"@P2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+					"@MFU0@": "NOP",
+					"@MFU1@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: dst3, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20",
+					"@MFU2@": "NOP",
+					"@MFU3@": "NOP",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"fs": "tests/grate/asm/mfu_chain.in",
+			"vs": "tests/grate/asm/vs_offset.txt",
+			"args": [
+				"--vs_uniform",
+				"[\"offset\"]=(-0.5,-0.4,0.0,0.0)"
+			],
+			"expected": "0xD300F200"
+		}
+	]
+}

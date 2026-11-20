@@ -1,0 +1,42 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Where a barycentric weight has to sit relative to the fetch that reads it.
+ *
+ * The same three batches as mfu_matrix.in, except that batch 1 carries three MFU
+ * sub-instructions instead of one. The schedule runs up to three MFU
+ * sub-instructions in series (assembler-syntax.md 2.5), so a weight can be put
+ * in the word before the fetch, two words before it, or in the fetch word
+ * itself, without moving PSEQ, TEX, ALU or DW. Batch 0 keeps an MFU word of its
+ * own for the previous-batch case.
+ *
+ * The primes are the fp20 ones for the same reason as in mfu_matrix.in: the
+ * multiplier and the SFU both read a row register as fp20, so a `.l*` prime is
+ * not the constant it looks like. A full fetch overwrites r0..r3 anyway; the
+ * primes only show in a variant whose fetch leaves a component alone.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	MFU:	@MFU0@
+	ALU:
+		ALU0:	@P0@
+		ALU1:	@P1@
+		ALU2:	@P2@
+		ALU3:	@P3@
+;
+EXEC
+	MFU:	@MFU1@
+	MFU:	@MFU2@
+	MFU:	@MFU3@
+;
+EXEC
+	DW:	@STORE@
+;

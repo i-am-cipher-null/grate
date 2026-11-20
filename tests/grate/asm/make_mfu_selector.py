@@ -37,6 +37,7 @@ pinned from its own run:
     --set bary    selectors 11 and 12 against interpolated data
     --set persp   the selectors and a scalar varying as clip w changes
     --set matrix  both multipliers' complete source/destination matrix
+    --set chain   where a weight has to sit relative to the fetch that reads it
 
     make_mfu_selector.py --set dst                # no expectations yet
     make_mfu_selector.py --set dst --results DIR  # pin to the words from DIR
@@ -748,6 +749,142 @@ def matrix_variants():
     return out
 
 
+TEMPLATE_CHAIN = "tests/grate/asm/mfu_chain.in"
+
+# The blob's interpolation pattern, split into its parts: the SFU's rcp of r4
+# puts 1/w where the coefficient scale cancels, and the two multipliers scale
+# the coefficients into w0 and w1.
+RCP = "sfu: rcp r4"
+WEIGHT0 = "mul0: bar, sfu, bar0"
+WEIGHT1 = "mul1: bar, sfu, bar1"
+
+
+def chain_variant(name, words, word0=None, store=STORE_01):
+    """One variant of mfu_chain.in: up to three MFU words in batch 1."""
+    replace = {f"@P{index}@": slot
+               for index, slot in enumerate(prime_slots("fp20"))}
+    replace["@MFU0@"] = word0 or NOP
+    for index in range(3):
+        word = words[index] if index < len(words) else NOP
+        replace[f"@MFU{index + 1}@"] = word or NOP
+    replace["@STORE@"] = store
+    entry = {
+        "name": name,
+        "environment": {"GRATE_POKE": f"0x520=0x{START_WORD | BATCHES:08X}"},
+        "replace": {"fs": replace},
+        "fs": TEMPLATE_CHAIN,
+        "vs": VS_INTERP,
+        "args": shift(*INSIDE),
+    }
+    return entry
+
+
+def chain_variants():
+    """Where in a batch a barycentric weight has to be written, and which
+    destination numbers `mul1` writes it with.
+
+    The matrix set wrote both weights in the word that fetches and showed that a
+    weight written a batch earlier is not used. Those are two ends of a range: an
+    MFU word is not one instruction, the schedule runs up to three of them in
+    series inside a batch, and the fetch is a slot of one of those words. The
+    same program with the weights one word earlier, two words earlier, or after
+    the fetch separates "the same word" from "the same batch" and from "the
+    fetch reads what was written before it".
+
+    Every one of those variants writes both weights, whatever slot it writes
+    them in. That is not cosmetic: `w0` and `w1` are read by the fetch whether or
+    not the program wrote them, so a variant that writes only one of them
+    interpolates with an uninitialised weight, and `garbage-*` below shows what
+    that looks like - two programs that differ only in which MFU slot holds the
+    same words return 0xF300AF00 and 0xBD00AF00. An earlier version of this set
+    compared `prev-batch` against `w1-only` and it did not reproduce itself
+    within one run for that reason, so "the earlier weight is not used" rested on
+    two uninitialised words happening to agree. The previous-batch question is
+    asked again here with both weights written in batch 0 (`prev-both`), where
+    the answer is a defined word rather than a coincidence.
+
+    The second half repeats the destination 1..3 measurement with `mul1` writing
+    the weight. The matrix set varied `mul0`'s destination while `mul1` wrote the
+    other weight, so it says what `mul0` does with the field and nothing about
+    `mul1`; both are given the same control here, and a variant that does not
+    write its weight shows up as a word that differs from it.
+
+    Destination 0 is absent: nothing writes a weight with it, so the fetch
+    returns the uninitialised state the `garbage-*` pair demonstrates and the word
+    cannot be pinned.
+    """
+    both = f"{RCP} {WEIGHT0} {WEIGHT1}"
+    ONE_ONE = "mul0: bar, src13, src13 mul1: bar, src13, src13"
+    # `next-word` repeats the rcp of r4 in both words. That is not a second
+    # perspective divide: `rcp r4` rewrites r4 in place, so the second rcp is the
+    # reciprocal of the reciprocal and the weights come out on the same scale as
+    # the single-word case. `next-word-nosfu` drops it entirely and returns the
+    # same word, so the fetch does not need an sfu in its own word either.
+    out = [
+        # A. where the fetch sits relative to the weights it reads
+        chain_variant("same-word", [f"{both} {FULL_IPL}"]),
+        chain_variant("next-word", [both, f"{RCP} {FULL_IPL}"]),
+        chain_variant("next-word-nosfu", [both, FULL_IPL]),
+        chain_variant("two-words-before",
+                      [both, "mul0: r2, src0, src13", f"{RCP} {FULL_IPL}"]),
+        # the fetch first and the weights after it: does the fetch read a weight
+        # written later in its own batch?
+        chain_variant("fetch-before-weight", [f"{RCP} {FULL_IPL}", both]),
+        # B. the previous batch, twice. `one-one-*` writes both weights as 1.0,
+        # which needs no sfu and so cannot disturb r4, and asks whether a weight
+        # pair from the batch before is read at all. `rcp-twice` puts the blob's
+        # weight word in batch 0 instead: it differs from `same-word`, which is
+        # `rcp r4` being destructive, so the earlier batch leaves batch 1 a
+        # different operand.
+        chain_variant("one-one-same", [f"{RCP} {ONE_ONE} {FULL_IPL}"]),
+        chain_variant("one-one-prev", [f"{RCP} {FULL_IPL}"], word0=ONE_ONE),
+        # the matrix set's own `keep-w0-one` pair, now with the control it lacked:
+        # w0 = 1.0 and w1 from the multiplier, written either both in the fetch
+        # word or with w0 a batch earlier. Equal words mean the earlier write was
+        # read, which is what the two garbage words it was compared against
+        # before could not show.
+        chain_variant("w0-one-same",
+                      [f"{RCP} mul0: bar, src13, src13 {WEIGHT1} {FULL_IPL}"]),
+        chain_variant("w0-one-prev", [f"{RCP} {WEIGHT1} {FULL_IPL}"],
+                      word0="mul0: bar, src13, src13"),
+        chain_variant("rcp-twice", [f"{both} {FULL_IPL}"], word0=both),
+        chain_variant("none-weights", [f"{RCP} {FULL_IPL}"]),
+        # C. what an unwritten weight looks like, at two MFU slots: not zero, and
+        # not the same word, so no variant below leaves one of them unwritten
+        chain_variant("garbage-first", [f"{RCP} {WEIGHT1} {FULL_IPL}"]),
+        chain_variant("garbage-second",
+                      [NOP, f"{RCP} {WEIGHT1} {FULL_IPL}"]),
+        # D. the control the destination twins are read against
+        chain_variant("both", [f"{both} {FULL_IPL}"]),
+    ]
+    # F. the same two programs with a single MFU slot in the batch, which is the
+    # shape the matrix template has. `keep-w0-one` there returned 0xF300AF00, the
+    # word this run gets when w0 is written nowhere (`garbage-first`), while the
+    # three-slot shape returns 0x0000F701 for both the fetch-word and the
+    # previous-batch write. Running both shapes in one manifest separates the
+    # batch length from the program's history.
+    one_slot = dict(store=STORE_01, slots=prime_slots("fp20"), vs=VS_INTERP,
+                    args=shift(*INSIDE))
+    out.append(matrix_variant(
+        "one-slot-same", f"{RCP} mul0: bar, src13, src13 {WEIGHT1} {FULL_IPL}",
+        **one_slot))
+    out.append(matrix_variant(
+        "one-slot-prev", f"{RCP} {WEIGHT1} {FULL_IPL}",
+        word0="mul0: bar, src13, src13", **one_slot))
+
+    # E. the destination field with each unit as the producer of its own weight.
+    # The unit not under test writes its weight to `bar` as usual, so a variant
+    # that reproduces `both` did supply its weight through the number under test.
+    for dst in (1, 2, 3):
+        out.append(chain_variant(
+            f"mul0-dst{dst}",
+            [f"{RCP} mul0: dst{dst}, sfu, bar0 {WEIGHT1} {FULL_IPL}"]))
+        out.append(chain_variant(
+            f"mul1-dst{dst}",
+            [f"{RCP} {WEIGHT0} mul1: dst{dst}, sfu, bar1 {FULL_IPL}"]))
+    return out
+
+
 SETS = {
     "src": ("mfu-selector-source", "tests/grate/asm_characterize.mfu_selector_src.json",
             src_variants),
@@ -767,6 +904,8 @@ SETS = {
     "matrix": ("mfu-selector-matrix",
                "tests/grate/asm_characterize.mfu_selector_matrix.json",
                matrix_variants),
+    "chain": ("mfu-weight-chain", "tests/grate/asm_characterize.mfu_chain.json",
+              chain_variants),
 }
 
 CONTROLS = [

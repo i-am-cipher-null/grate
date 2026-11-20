@@ -1234,6 +1234,75 @@ destination-0 variants are described above instead of pinned: their program
 writes no weight, and what the fetch then returns comes from state nothing in
 the program defines.
 
+## 6. Where a weight has to be written
+
+The matrix set closed by saying that a weight written in an earlier batch is not
+used by a later fetch. That was wrong, and the comparison it rested on had no
+defined weight on either side: `keep-w0-one` and `keep-w0-none` both wrote only
+`w1` and left `w0` to whatever the fetch found, and an unwritten weight is not
+zero. Both returned `0xF300AF00` in that manifest, which was read as "the
+earlier write changed nothing"; in the set below the same incomplete pair reads
+`0xF300AF00` at one MFU slot and `0xBD00AF00` at the next.
+
+This set (`--set chain`) gives batch 1 three MFU sub-instructions, so the
+weights and the fetch can be moved between words without touching PSEQ, TEX, ALU
+or DW. Every variant here writes both weights, so every word is a defined
+interpolation.
+
+| variant | weights written in | fetch in | word |
+|:--|:--|:--|:--|
+| `same-word` | batch 1 word 1 | word 1 | `0xD300F200` |
+| `next-word` | batch 1 word 1 | word 2 | `0xD300F200` |
+| `next-word-nosfu` | batch 1 word 1 | word 2, no sfu | `0xD300F200` |
+| `two-words-before` | batch 1 word 1 | word 3 | `0xD300F200` |
+| `fetch-before-weight` | batch 1 word 2 | word 1 | `0xF600B800` |
+| `one-one-same` | batch 1: both 1.0 | word 1 | `0x0001F701` |
+| `one-one-prev` | batch 0: both 1.0 | word 1 | `0x0001F701` |
+| `w0-one-same` | batch 1: `w0` = 1.0, `w1` from `mul1` | word 1 | `0x0000F701` |
+| `w0-one-prev` | batch 0: `w0` = 1.0 | word 1 | `0x0000F701` |
+| `none-weights` | - | word 1 | `0xB400BB00` |
+| `garbage-first` | `w1` only | word 1 | `0xF300AF00` |
+| `garbage-second` | `w1` only | word 2 | `0xBD00AF00` |
+
+**The fetch does not have to be in the weight's word, or in the next one.** Both
+weights written two MFU words before the fetch interpolate exactly as the
+same-word control does, and the word between them can be a multiply. What the
+batch does require is order: with the fetch in the first word and the weights in
+the second, the fetch reads something else (`0xF600B800`), so it uses what the
+batch has written *before* it and not what comes after.
+
+**A weight written a batch earlier is used.** `one-one-same` writes both weights
+as 1.0 in the fetch word and `one-one-prev` writes the same pair in batch 0:
+both return `0x0001F701`. `w0-one-same` (w0 = 1.0 and w1 from the multiplier,
+both in the fetch word) and `w0-one-prev` (w0 one batch earlier) both return
+`0x0000F701`, and `rcp-twice` - the blob's weight word in *both* batches - still
+returns the same-word `0xD300F200`. The same pair of programs in the matrix
+template's one-slot shape (`one-slot-same`, `one-slot-prev`) returns
+`0x0000F701` as well, so this is not the batch length; the matrix manifest's
+`0xF300AF00` was the unfinished pair, not a dropped write.
+
+**An unwritten weight is neither zero nor stable.** `garbage-first` and
+`garbage-second` hold the same `w1`-only words in different MFU slots and read
+`0xF300AF00` and `0xBD00AF00`; `none-weights`, which writes nothing, reads
+`0xB400BB00`. That is why every variant in this set writes both weights, why the
+matrix set's `keep-*` pair cannot be used as evidence, and why destination 0 is
+described rather than pinned in either set.
+
+**Destinations 1, 2 and 3 supply the weight from either unit.** With `mul0` as
+the producer and `mul1` writing its own weight to `bar`, `mul0-dst1`,
+`mul0-dst2` and `mul0-dst3` all return the `both` control's `0xD300F200`; with
+`mul1` as the producer, `mul1-dst1`, `mul1-dst2` and `mul1-dst3` return it too.
+That is the matrix paragraph's observation, now for both units. It does not show
+that the three numbers name one register: the hardware derives the third weight
+as `1 - w0 - w1` and hardwires `mul0` to `w0` and `mul1` to `w1` (the blob's
+semantics, 6.4 of the ISA document), so "the weight" and "w0" as destination
+names would look the same from outside. Destination 0 writes no weight either
+way.
+
+Runs: 22 variants, 70 rows including the two controls before and after, three
+repeats each; `pin-mfu-chain` and `verify-mfu-chain` are 70/70 each, the pin is
+idempotent, and pin and verify agree word for word.
+
 ## What the runner cost
 
 Five things that produced wrong results first:
