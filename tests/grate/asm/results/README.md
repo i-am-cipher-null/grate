@@ -380,3 +380,11 @@ invalidate another; generate such a manifest with
 * commit: 656556cc8397f3cac7f41885ad09eda320030b37 with a dirty tree
 * created: 2026-11-20T12:07:27+00:00; 70 rows, repeat 3, timeout 10.0 s
 * summary: 70 passed, 0 failed of 70 - passed
+
+## clean-mfu-chain
+
+* manifest: `asm_characterize.mfu_chain.json` (sha256 dd766400f350)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 75eea754ca4bbcea83cae28c9a133a3c9a8e0b75 with a clean tree (clone in /tmp/clean2)
+* created: 2026-11-20T12:11:06+00:00; 70 rows, repeat 3, timeout 10.0 s
+* summary: 70 passed, 0 failed of 70 - passed
