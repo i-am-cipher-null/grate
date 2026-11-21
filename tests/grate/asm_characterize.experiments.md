@@ -3530,6 +3530,208 @@ estimate itself.
 `61bfc59c30e6...`; re-pinning from the verify directory is byte-identical.
 `clean-tex-qual` repeats the same 169 rows from a clone of the commit.
 
+## 20. The derivative that sets the mip level
+
+`asm_characterize.tex_deriv.json` (40 variants), template `asm/tex_deriv.in`
+(varying coordinates, five batches: the varying setup, an explicit level into
+`r3`, the fetch, the store), the section 19 templates for the explicit-LOD
+references, and `asm/vs_texcoord_ramp.txt` for the coordinate ramp.
+`GRATE_TEX_STEPS` and `GRATE_TEX_GRID` are new opt-in surfaces in
+`tools/assembler.c`.
+
+### The question
+
+Section 19 showed that the level a fetch uses changes with the coordinate
+gradient, on two gradients, on a chain where only level 0 had its own word.
+Four things were left open: which axes enter the estimate, how the level follows
+the magnitude, whether the texture's dimensions matter, and how the two axes
+combine. Five explanations to separate:
+
+* **x only** - the level follows the horizontal rate and the vertical one is
+  ignored;
+* **max** - the level follows the larger of the two per-axis rates;
+* **norm** - it follows the vector magnitude, `sqrt(du^2 + dv^2)`, which is half
+  a level above max when the two axes have equal rates;
+* **sum** - it follows `|du| + |dv|`, a whole level above max;
+* **normalized** - the rate is measured in texture coordinates rather than
+  texels, so the texture's dimensions do not enter.
+
+### The readout, and what it can and cannot name
+
+`GRATE_TEX_STEPS` builds a one-texel checker split into four vertical bands of
+decreasing intensity (0xFF, 0xBF, 0x7F, 0x3F over black), so a fetch map should
+show the level as a band structure: a checker at level 0, four flat bands at
+level 1, two at level 2.
+
+The explicit-LOD references show the chain does not do that. At a texel in the
+first band and one in the third, through the section 19 path:
+
+| explicit level | band 0 | band 2 |
+|:--|:--|:--|
+| 0 | `0xFFFFFFFF` | `0xFF7F7F7F` |
+| 1 | `0xFF808080` | `0xFF404040` |
+| 2 | `0xFF808080` | `0xFF3E3E3E` |
+| 3 | `0xFF7E7E7E` | `0xFF383838` |
+
+Levels 1, 2 and 3 hold the same band grey to within a rounding drift, because a
+one-texel checker's 2x2 average is the same at every level: the surface
+distinguishes **level 0 from level 1 and above**, and cannot name the level past
+that. Every "level" below is therefore "left level 0" or "still level 0"; no
+statement is made about which of levels 1..3 was chosen. This is a limitation of
+the surface, not of the sampler, and it is why the ladder in `GRATE_TEX_COLUMNS`
+was not used for this set either: a pattern whose block average is constant per
+region is level-invariant.
+
+### The texel rate, measured
+
+`GRATE_TEX_GRID` fills a 4x4 block grid of 16-texel blocks on a 64x64 surface.
+Fetching it with no chain at five scales and counting block boundaries along a
+row and a column:
+
+| scale | x boundaries | y boundaries |
+|:--|:--|:--|
+| 1 | 0 | 0 |
+| 2 | 1 | 1 |
+| 4 | 3 | 3 |
+| 8 | 7 | 7 |
+| 16 | 15 | 15 |
+
+So the ramp spans `(2^k - 1) * 16` texels at scale `2^k`, i.e. **du/dx =
+dv/dy = 0.25 * scale texels per pixel** on a 64x64 target with a 64x64 texture,
+and the two axes behave identically here. The factor is a property of the
+harness's varying setup, not of the shader's `scale` uniform: the shader
+multiplies by 4 at scale 4 and the fetch sees a quarter of that.
+
+### What the level does
+
+With the x axis alone, seven magnitudes (`sweep-`), rate in texels per pixel in
+brackets:
+
+| rate | 0.5 | 0.71 | 1.0 | 1.41 | 2.0 | 2.83 | 4.0 |
+|:--|:--|:--|:--|:--|:--|:--|:--|
+| map | checker | checker | checker | checker | bands | bands | bands |
+| level | 0 | 0 | 0 | 0 | 1+ | 1+ | 1+ |
+
+The level leaves 0 between 1.41 and 2.0 texels per pixel. `ceil(LOD - 0.5)` with
+`LOD = log2(rate)` puts that boundary exactly at 1.41, which ties down to level
+0, and at 2.0 gives level 1 - so the x axis is consistent with the level being
+`floor`-like in `log2(du/dx)`, with the tie rounding section 19 measured.
+
+Both axes at the same rate as the last two single-axis cells:
+
+| scale | rate per axis | map | reading |
+|:--|:--|:--|:--|
+| 4.595 | 1.149 | checker, identical to x-only | level 0 |
+| 6.498 | 1.625 | four bands | level 1+ |
+
+Equal rates of 1.149 in both axes stay at level 0, where `norm` would give
+`log2(1.63) = 0.7` (level 1) and `sum` would give `log2(2.3) = 1.2` (level 1).
+So on this pair the second axis does **not** add to the first: `max` fits and
+`norm` and `sum` are excluded, subject to the vertical anomaly below.
+
+### The vertical axis does not behave like the horizontal one
+
+With the y axis alone the map does not show a band structure at all:
+
+* at rate 1.625 (`axis-y-6p498`) the whole map is one word, `0xFF808080`, with a
+  few `0xFF767676` at the right edge - no bands, no checker;
+* at rate 1.149 (`axis-y-4p595`) it is a checker, i.e. level 0, but with a
+  different phase from the x-only cell of the same rate.
+
+So the level question can be answered for x and not for y with this harness. The
+y measurements are recorded as an unexplained asymmetry: the same nominal rate
+produces a level change on one axis and a filtered-looking map on the other. The
+block-grid calibration says the *coordinate* ramps identically on both axes, so
+the asymmetry is in what the sampler does with the vertical derivative, not in
+the varying itself.
+
+### Texture dimensions
+
+The same scale on three square sizes, and on the non-square pair with one axis
+ramping at a time:
+
+| variant | size | scale | digest |
+|:--|:--|:--|:--|
+| `size-128-128-s16` | 128x128 | 16, 16 | `0x9140D8C5` |
+| `size-64-64-s16` | 64x64 | 16, 16 | `0x9140D8C5` |
+| `size-32-32-s16` | 32x32 | 16, 16 | `0x9140D8C5` |
+| `size-128x128-s4` | 128x128 | 4, 4 | `0x412EFDC5` |
+| `size-32x32-s4` | 32x32 | 4, 4 | `0x412EFDC5` |
+| `oblong-64x32-x16` | 64x32 | 16, 1 | `0x0587C1C5` |
+| `oblong-32x64-x16` | 32x64 | 16, 1 | `0x0587C1C5` |
+| `sweep-x-16` | 64x64 | 16, 1 | `0x0587C1C5` |
+| `oblong-64x32-y16` | 64x32 | 1, 16 | `0xF84DB9C5` |
+| `oblong-32x64-y16` | 32x64 | 1, 16 | `0xF84DB9C5` |
+
+At scale 16 all three square sizes give the *same digest*. That is what a
+texel-based estimate predicts: if the level rises by one per doubling of the
+texture and the sampled grid is `size / 2^level`, the product is invariant, so
+the map is identical. A normalized estimate would keep the level and widen the
+footprint in texture coordinates, and the maps would differ. The 32-wide and
+64-wide non-square surfaces give the x-gradient digest of the 64x64 surface
+exactly, so the width does not enter the x estimate either, and the same holds
+for the y gradients on 64x32 and 32x64.
+
+### The zero rows
+
+Section 19 left two rows that read `0x00000000` unexplained. They are
+reproducible (`zero-checker-s8` is `0xDA85F6DD`, bit-identical to section 19's
+`vary-mip-s8`), and which rows they are depends on the vertical ramp:
+
+| variant | vertical ramp | all-zero rows |
+|:--|:--|:--|
+| `sweep-x-8`, `zero-steps-s8-y1` | none | 0..7 |
+| `zero-checker-s8`, `zero-steps-s8` | 8 | 0, 32 |
+| `axis-y-6p498` | 6.498 | 20, 59 |
+
+On the steps surface no level above 0 holds a black texel, and the zero rows
+appear there too, so they are **missing samples, not a mip level**: on those
+rows the fetch returned nothing at all. Rows 0..7 with a flat vertical ramp and
+rows 0 and 32 with a steep one place them with the coordinate path rather than
+with the level.
+
+### What this settles
+
+On this device and setup:
+
+* the varying ramp gives du/dx = dv/dy = 0.25 * scale texels per pixel, measured
+  by counting block boundaries, symmetric in both axes;
+* with a horizontal gradient the level leaves 0 between 1.41 and 2.0 texels per
+  pixel, which is where `log2(du/dx)` with section 19's round-half-down lands;
+* equal gradients in both axes stay at the level the *larger* axis alone
+  produces, so the second axis does not add in quadrature or linearly;
+* the level does not change with the texture's dimensions: the same scale gives
+  the same map on 32, 64 and 128 square surfaces, and the same x-gradient map on
+  32, 64 and 64-wide non-square surfaces, which is what a texel-based estimate
+  with a compensated sampling grid predicts;
+* the section 19 zero rows are reproducible missing samples whose rows follow
+  the vertical ramp, not a mip level.
+
+### What this does not settle
+
+* **The level above 1.** The steps surface is level-invariant above level 1, so
+  no statement is made about levels 2, 3 or 4 in any variant, and the exact
+  LOD expression beyond "level 0 or above" is not measured.
+* **The vertical axis.** A vertical-only gradient produces a single blended word
+  instead of a band structure at the same rate. Whether the vertical derivative
+  enters the estimate, and how, is unresolved; the `max` reading above rests on
+  the horizontal cells.
+* **The two rows of the quad.** A screen-aligned quad has `du/dy = dv/dx = 0`,
+  so no measurement here separates "max over the two axes" from "max over the
+  two rows of the derivative pair".
+* **Minification beyond level 1.** The sweep stops at 4 texels per pixel; a
+  larger gradient on both axes (`sweep-both-16`) changes the map again but the
+  surface cannot say to which level.
+* **The absolute constant.** The 0.25 in the rate is the harness's varying path
+  (section 19's caveat), not the shader's factor, and the expression is only
+  established up to that constant.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-tex-deriv` and `verify-tex-deriv` hold 124 rows
+each (40 variants, three repeats, and the four control runs), pinned at
+`50c89582e601...`; re-pinning from the verify directory is byte-identical.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

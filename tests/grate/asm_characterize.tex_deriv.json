@@ -1,0 +1,1260 @@
+{
+	"name": "tex-deriv",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+		"fs": "tests/grate/asm/tex_deriv.in",
+		"lnk": "tests/grate/asm/linker_texcoord.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "rate-1p0",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(1.0,1.0,1.0,1.0)"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_GRID": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest",
+				"GRATE_TEX_MAG_FILTER": "nearest"
+			},
+			"expected_note": "a 4x4 block grid: count the block boundaries",
+			"expected": "0x5680DDC5"
+		},
+		{
+			"name": "rate-2p0",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(2.0,2.0,1.0,1.0)"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_GRID": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest",
+				"GRATE_TEX_MAG_FILTER": "nearest"
+			},
+			"expected_note": "a 4x4 block grid: count the block boundaries",
+			"expected": "0x88005DC5"
+		},
+		{
+			"name": "rate-4p0",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(4.0,4.0,1.0,1.0)"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_GRID": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest",
+				"GRATE_TEX_MAG_FILTER": "nearest"
+			},
+			"expected_note": "a 4x4 block grid: count the block boundaries",
+			"expected": "0x9918DDC5"
+		},
+		{
+			"name": "rate-8p0",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(8.0,8.0,1.0,1.0)"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_GRID": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest",
+				"GRATE_TEX_MAG_FILTER": "nearest"
+			},
+			"expected_note": "a 4x4 block grid: count the block boundaries",
+			"expected": "0xA485DDC5"
+		},
+		{
+			"name": "rate-16p0",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(16.0,16.0,1.0,1.0)"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_GRID": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest",
+				"GRATE_TEX_MAG_FILTER": "nearest"
+			},
+			"expected_note": "a 4x4 block grid: count the block boundaries",
+			"expected": "0xF8E3DDC5"
+		},
+		{
+			"name": "ref-band0-l0p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.0078125",
+					"T_CONST": "0.0078125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64"
+			},
+			"expected_note": "explicit level 0.0 in the first band",
+			"expected": "0x20B6CDC5"
+		},
+		{
+			"name": "ref-band2-l0p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.6328125",
+					"T_CONST": "0.6328125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64"
+			},
+			"expected_note": "explicit level 0.0 in the third band",
+			"expected": "0xFB27CDC5"
+		},
+		{
+			"name": "ref-band0-l1p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.0078125",
+					"T_CONST": "0.0078125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64"
+			},
+			"expected_note": "explicit level 1.0 in the first band",
+			"expected": "0x70ACDDC5"
+		},
+		{
+			"name": "ref-band2-l1p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.6328125",
+					"T_CONST": "0.6328125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64"
+			},
+			"expected_note": "explicit level 1.0 in the third band",
+			"expected": "0x4E67DDC5"
+		},
+		{
+			"name": "ref-band0-l2p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.0078125",
+					"T_CONST": "0.0078125",
+					"R_CONST": "0.0",
+					"L_CONST": "2.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64"
+			},
+			"expected_note": "explicit level 2.0 in the first band",
+			"expected": "0x70ACDDC5"
+		},
+		{
+			"name": "ref-band2-l2p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.6328125",
+					"T_CONST": "0.6328125",
+					"R_CONST": "0.0",
+					"L_CONST": "2.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64"
+			},
+			"expected_note": "explicit level 2.0 in the third band",
+			"expected": "0x03E0DDC5"
+		},
+		{
+			"name": "ref-band0-l3p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.0078125",
+					"T_CONST": "0.0078125",
+					"R_CONST": "0.0",
+					"L_CONST": "3.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64"
+			},
+			"expected_note": "explicit level 3.0 in the first band",
+			"expected": "0xF3D0DDC5"
+		},
+		{
+			"name": "ref-band2-l3p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.6328125",
+					"T_CONST": "0.6328125",
+					"R_CONST": "0.0",
+					"L_CONST": "3.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64"
+			},
+			"expected_note": "explicit level 3.0 in the third band",
+			"expected": "0xDB3BDDC5"
+		},
+		{
+			"name": "axis-both-4p595",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(4.595,4.595,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "equal gradients, both axes",
+			"expected": "0xAD14DFC5"
+		},
+		{
+			"name": "axis-x-4p595",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(4.595,1.0,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same gradient on x only",
+			"expected": "0x10C28D45"
+		},
+		{
+			"name": "axis-y-4p595",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(1.0,4.595,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same gradient on y only",
+			"expected": "0xE8AD55C5"
+		},
+		{
+			"name": "axis-both-6p498",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(6.498,6.498,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "equal gradients, both axes",
+			"expected": "0xDBDDA271"
+		},
+		{
+			"name": "axis-x-6p498",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(6.498,1.0,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same gradient on x only",
+			"expected": "0xBBFE2435"
+		},
+		{
+			"name": "axis-y-6p498",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(1.0,6.498,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same gradient on y only",
+			"expected": "0xE516C5C5"
+		},
+		{
+			"name": "sweep-x-2",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(2,1.0,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one gradient, x only: which level it selects",
+			"expected": "0x3A1CD5C5"
+		},
+		{
+			"name": "sweep-x-2p83",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(2.83,1.0,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one gradient, x only: which level it selects",
+			"expected": "0x6E262DC5"
+		},
+		{
+			"name": "sweep-x-4",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(4,1.0,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one gradient, x only: which level it selects",
+			"expected": "0xFC2E9DC5"
+		},
+		{
+			"name": "sweep-x-5p66",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(5.66,1.0,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one gradient, x only: which level it selects",
+			"expected": "0xA9619745"
+		},
+		{
+			"name": "sweep-x-8",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(8,1.0,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one gradient, x only: which level it selects",
+			"expected": "0x247F48A5"
+		},
+		{
+			"name": "sweep-x-11p31",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(11.31,1.0,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one gradient, x only: which level it selects",
+			"expected": "0xE5786F75"
+		},
+		{
+			"name": "sweep-x-16",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(16,1.0,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one gradient, x only: which level it selects",
+			"expected": "0x0587C1C5"
+		},
+		{
+			"name": "sweep-both-11p31",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(11.31,11.31,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same rate on both axes",
+			"expected": "0x69A8C3FD"
+		},
+		{
+			"name": "sweep-both-16",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(16,16,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the steepest gradient on both axes",
+			"expected": "0x9140D8C5"
+		},
+		{
+			"name": "size-128-128-s16",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(16,16,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same scale, the texture size changed",
+			"expected": "0x9140D8C5"
+		},
+		{
+			"name": "size-64-64-s16",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(16,16,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same scale, the texture size changed",
+			"expected": "0x9140D8C5"
+		},
+		{
+			"name": "size-32-32-s16",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(16,16,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same scale, the texture size changed",
+			"expected": "0x9140D8C5"
+		},
+		{
+			"name": "size-128x128-s4",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(4,4,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "a moderate scale on a 128-wide texture",
+			"expected": "0x412EFDC5"
+		},
+		{
+			"name": "size-32x32-s4",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(4,4,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same scale on a 32-wide texture",
+			"expected": "0x412EFDC5"
+		},
+		{
+			"name": "oblong-64x32-x16",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(16,1,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one axis ramps on a non-square texture",
+			"expected": "0x0587C1C5"
+		},
+		{
+			"name": "oblong-64x32-y16",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(1,16,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one axis ramps on a non-square texture",
+			"expected": "0xF84DB9C5"
+		},
+		{
+			"name": "oblong-32x64-x16",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(16,1,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one axis ramps on a non-square texture",
+			"expected": "0x0587C1C5"
+		},
+		{
+			"name": "oblong-32x64-y16",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(1,16,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "one axis ramps on a non-square texture",
+			"expected": "0xF84DB9C5"
+		},
+		{
+			"name": "zero-checker-s8",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(8,8,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_CHECKER": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "section 19's configuration, whose rows 0 and 32 read zero",
+			"expected": "0xDA85F6DD"
+		},
+		{
+			"name": "zero-steps-s8",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(8,8,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same scale on the self-labelling surface",
+			"expected": "0x5CB3FF8D"
+		},
+		{
+			"name": "zero-steps-s8-y1",
+			"fs": "tests/grate/asm/tex_deriv.in",
+			"vs": "tests/grate/asm/vs_texcoord_ramp.txt",
+			"lnk": "tests/grate/asm/linker_texcoord.txt",
+			"replace": {
+				"fs": {
+					"P0A_SLOT": "NOP",
+					"P0B_SLOT": "NOP",
+					"LEVEL": "0.0",
+					"TEXWORD": "0x00000420",
+					"STORE": "store rt4, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--vs_uniform",
+				"[\"scale\"]=(8,1,1.0,1.0)",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_SIZE": "64x64",
+				"GRATE_RT4": "1",
+				"GRATE_REGION": "0,0,64,64",
+				"GRATE_TEX_STEPS": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected_note": "the same x gradient with a flat y, to place the zero rows",
+			"expected": "0x247F48A5"
+		}
+	]
+}

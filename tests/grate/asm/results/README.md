@@ -724,3 +724,19 @@ invalidate another; generate such a manifest with
 * commit: 918122ae291524553d5a0083f6d9f8cf7ace30ec with a clean tree (clone in /tmp/clean-tex-qual)
 * created: 2026-11-21T21:38:36+00:00; 169 rows, repeat 3, timeout 20.0 s
 * summary: 169 passed, 0 failed of 169 - passed
+
+## pin-tex-deriv
+
+* manifest: `asm_characterize.tex_deriv.json` (sha256 a5aae09bce9e)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 2f904604a94187ad7c48c788a4d3cde3c0a7d155 with a dirty tree
+* created: 2026-11-21T22:02:46+00:00; 124 rows, repeat 3, timeout 20.0 s
+* summary: 124 passed, 0 failed of 124 - passed
+
+## verify-tex-deriv
+
+* manifest: `asm_characterize.tex_deriv.json` (sha256 50c89582e601)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 2f904604a94187ad7c48c788a4d3cde3c0a7d155 with a dirty tree
+* created: 2026-11-21T22:08:59+00:00; 124 rows, repeat 3, timeout 20.0 s
+* summary: 124 passed, 0 failed of 124 - passed

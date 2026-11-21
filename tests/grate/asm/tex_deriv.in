@@ -1,0 +1,64 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Derivative-LOD template: varying coordinates, an explicit LOD register, the
+ * fetch, and a store to the observation surface.
+ *
+ * batch 0  the varying setup
+ * batch 1  the explicit level, written into r3 on its own so it cannot be
+ *          reordered against the varying write in batch 0
+ * batch 2  the fetch, word selected per variant
+ * batch 3  the store to rt4
+ *
+ * Why batch 1 writes r3: the TEX word's LOD is read from r3 as an fp20 in the
+ * high half (asm/tex_probe.in writes the same register through u3). With the
+ * explicit-LOD opcode (0x00002420) the fetch uses that level; with the
+ * derivative opcode (0x00000420) the level comes from the coordinate
+ * derivatives and the write is inert. Both run on the same coordinate ramp, so
+ * the explicit-LOD variants are a reference table for what each level looks like
+ * under exactly the coordinates the derivative variants sample.
+ *
+ * The varying is the MFU setup the known-good varying control uses: an rcp, two
+ * barrier multiplies, and an interpolator instruction with four fp20 slots. Its
+ * x lands in r0 and its y in r1 (the linker has no swizzle), which is what TEX
+ * reads for s and t.
+ *
+ * No placeholder token may appear anywhere except the constants and the
+ * instruction slots.
+ */
+
+.constants
+	[1] = 0.0625;
+	[2] = 0.5;
+	[3] = 2.0;
+	[4] = LEVEL;
+
+.asm
+EXEC
+    MFU: sfu: rcp r4
+         mul0: bar, sfu, bar0
+         mul1: bar, sfu, bar1
+         ipl: t0.fp20, t0.fp20, t0.fp20, t0.fp20
+    ALU:
+        ALU0: P0A_SLOT
+        ALU1: P0B_SLOT
+        ALU2: NOP
+        ALU3: NOP
+    DW: NOP
+;
+EXEC
+    ALU:
+        ALU0: NOP
+        ALU1: NOP
+        ALU2: MAD  r3.lh,  u4,  #1,  #0
+        ALU3: NOP
+    DW: NOP
+;
+EXEC
+    TEX: TEXWORD
+    DW: NOP
+;
+EXEC
+    DW: STORE
+;
