@@ -428,3 +428,11 @@ invalidate another; generate such a manifest with
 * commit: 9ce6bbf15a82ea68c45ee4a292fc9aa59e430503 with a dirty tree
 * created: 2026-11-21T14:04:05+00:00; 154 rows, repeat 3, timeout 10.0 s
 * summary: 154 passed, 0 failed of 154 - passed
+
+## clean-sfu-pair
+
+* manifest: `asm_characterize.sfu_pair.json` (sha256 6721298cb630)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 40be0c8d88a30e2bd64db16994e3487382cd433d with a clean tree (clone in /tmp/clean-pair)
+* created: 2026-11-21T14:06:10+00:00; 154 rows, repeat 3, timeout 10.0 s
+* summary: 154 passed, 0 failed of 154 - passed
