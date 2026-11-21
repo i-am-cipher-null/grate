@@ -1,0 +1,444 @@
+{
+  "name": "pseq-instruction",
+  "created_utc": "2026-11-21T15:41:45+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.pseq.json",
+  "manifest_sha256": "2291ba0db017b61ab95315cb5546e931963ac9509692aa7de6ecdc23b3bc2517",
+  "assembler": "/home/freebuff/build/grate/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "efb6078e33cb60eeb4a96234a6b9497daad5e44b",
+  "git_status": "?? tests/grate/asm/make_pseq_probe.py\n?? tests/grate/asm/pseq_probe.in\n?? tests/grate/asm/results/pin-pseq/\n?? tests/grate/asm_characterize.pseq.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 15,
+  "manifest_data": {
+    "name": "pseq-instruction",
+    "repeat": 3,
+    "timeout": 15,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/pseq_probe.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "ctl-nofetch",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt1, r0, r1",
+            "PSEQ_SLOT": "NOP",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x703020BF"
+      },
+      {
+        "name": "ctl-fetch",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt1, r0, r1",
+            "PSEQ_SLOT": "0x00810008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x9F607F40"
+      },
+      {
+        "name": "ctl-mnemonic",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt1, r0, r1",
+            "PSEQ_SLOT": "load rt1, r0, r1",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x9F607F40"
+      },
+      {
+        "name": "pair-23",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt1, r0, r1",
+            "PSEQ_SLOT": "0x0081000A",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "store rt1, r2, r3"
+          }
+        },
+        "expected": "0x9F607F40"
+      },
+      {
+        "name": "pair-23-no23",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt1, r0, r1",
+            "PSEQ_SLOT": "0x0081000A",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x703020BF"
+      },
+      {
+        "name": "pair-01-store23",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt1, r0, r1",
+            "PSEQ_SLOT": "0x00810008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "store rt1, r2, r3"
+          }
+        },
+        "expected": "0xCF8F5010"
+      },
+      {
+        "name": "idx-3-coverage",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt3, r0, r1",
+            "PSEQ_SLOT": "0x00830008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_COVERAGE": "1"
+        },
+        "expected": "0x9F607F40"
+      },
+      {
+        "name": "idx-4-rt4",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt4, r0, r1",
+            "PSEQ_SLOT": "0x00840008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected": "0x9F607F40"
+      },
+      {
+        "name": "idx-5-rt5",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1"
+        },
+        "expected": "0x9F607F40"
+      },
+      {
+        "name": "fmt-rgba8888",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1"
+        },
+        "expected": "0x9F607F40"
+      },
+      {
+        "name": "fmt-a8",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "fmt-l8",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "l8"
+        },
+        "expected": "0xFF404040"
+      },
+      {
+        "name": "fmt-rgb565",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "rgb565"
+        },
+        "expected": "0xFF637E42"
+      },
+      {
+        "name": "en-b3-clear",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt1, r0, r1",
+            "PSEQ_SLOT": "0x00810000",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x703020BF"
+      },
+      {
+        "name": "en-b23-clear",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt1, r0, r1",
+            "PSEQ_SLOT": "0x00010008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x703020BF"
+      },
+      {
+        "name": "spill-b24",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt1, r0, r1",
+            "PSEQ_SLOT": "0x01810008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x003020BF"
+      },
+      {
+        "name": "a8-bit4",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850018",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "a8-bit5",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850028",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "a8-bit6",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850048",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "a8-bit7",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850088",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "a8-bit8",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850108",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "a8-bit11",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00850808",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "a8-bit15",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00858008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "a8-bit20",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00950008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "a8-bit22",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x00C50008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "a8-bit25",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x02850008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      },
+      {
+        "name": "a8-bit31",
+        "replace": {
+          "fs": {
+            "DW0_SLOT": "store rt5, r0, r1",
+            "PSEQ_SLOT": "0x80850008",
+            "DW2_SLOT": "store rt1, r0, r1",
+            "DW3_SLOT": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8"
+        },
+        "expected": "0x9F000000"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 85,
+    "passed": 85,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

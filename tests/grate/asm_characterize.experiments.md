@@ -2240,6 +2240,115 @@ size sweep, not a single guess.
 variants, three repeats, plus the controls), pinned from `a7651df17488...` to
 `f5f4bf270ec7...`. Re-pinning from the pin directory is byte-identical.
 
+## 12. The PSEQ fetch
+
+`asm_characterize.pseq.json` (27 variants), template `asm/pseq_probe.in`. Five
+batches:
+
+    batch 0  r0 = (0x40, 0x80), r1 = (0x60, 0xA0), store to the target   [A]
+    batch 1  overwrite r0/r1 with (0xC0, 0x20), (0x30, 0x70)              [B]
+    batch 2  r2 = (0x10, 0x50), r3 = (0x8F, 0xCF)                         [C]
+    batch 3  the PSEQ fetch
+    batch 4  an optional second store
+
+The DW converts each fx10 half to a byte, so the three answers are distinct:
+a working fetch into r0/r1 stores `0x9F607F40`, a suppressed one stores
+`0x703020BF`, and a fetch that returned zero would store `0x00000000`. The
+program writes pattern A to the target and to the same pixel it later reads, so
+the round trip is self-contained.
+
+### Enable bits and the destination pair
+
+| variant | word | reading |
+|:--|--:|:--|
+| `ctl-nofetch` | `0x703020BF` | pattern B, no fetch |
+| `ctl-fetch` | `0x9F607F40` | pattern A, rt1 fetched |
+| `ctl-mnemonic` | `0x9F607F40` | `load rt1, r0, r1` is the same word |
+| `en-b3-clear` | `0x703020BF` | bit 3 alone is required |
+| `en-b23-clear` | `0x703020BF` | bit 23 alone is required |
+| `pair-23` | `0x9F607F40` | bit 1 puts the fetch in r2/r3; the r2/r3 store reads A |
+| `pair-23-no23` | `0x703020BF` | with bit 1 set the r0/r1 store still reads B |
+| `pair-01-store23` | `0xCF8F5010` | without bit 1 the r2/r3 store reads C |
+
+So bits 3 and 23 are two required enables, not one flag with a spare bit, and
+bit 1 really moves the destination pair: nothing is written to the other pair.
+
+### Targets and the index field
+
+`idx-3-coverage` (with `GRATE_COVERAGE`), `idx-4-rt4` (`GRATE_RT4`) and
+`idx-5-rt5` (`GRATE_RT5`) all return `0x9F607F40`: the fetch reads the target
+named by bits 16..19, and a coverage, colour or extra surface all round-trip.
+`fmt-rgba8888` is the same word, so the index and not the class selects the
+surface.
+
+Indexes with nothing bound are not a defined value. Two runs of index 0 gave
+`0x7030FF00` and `0x703000FF`; index 2 gave `0x7030FFFF` and `0x7030047F`;
+index 15 gave `0xFFFFFFFF`. The partial words (only r0 written, r1 still B)
+suggest a narrower surface behind those descriptors, but the values are not
+stable across runs, so they are recorded as undefined and left out of the
+pinned set.
+
+### Render target formats
+
+The store/target pair is rt5 with `GRATE_RT5_FMT`:
+
+| format | word | reading |
+|:--|--:|:--|
+| `rgba8888` | `0x9F607F40` | pattern A, unchanged |
+| `a8` | `0x9F000000` | only the fourth component survives, in r1.hi |
+| `l8` | `0xFF404040` | first component (0x40) in RGB, alpha 1.0 |
+| `rgb565` | `0xFF637E42` | R 0x42, G 0x7E, B 0x63, A 0xFF |
+
+The pattern's four bytes are `0x40, 0x7F, 0x60, 0x9F` in r0.lo, r0.hi, r1.lo,
+r1.hi, so the formats name the channel order as **R, G, B, A**: A8 keeps byte 3
+(alpha) and zeroes the rest, L8 keeps byte 0 and replicates it as luminance with
+alpha 1.0, and RGB565 keeps bytes 0..2 quantised to 5/6/5 and replaces alpha
+with 1.0. The 5/6/5 expansion is exact for these inputs: `0x40 -> 0x42`,
+`0x7F -> 0x7E`, `0x60 -> 0x63`, which is `v >> 3`, `v >> 2`, `v >> 3` scaled
+back to 8 bits. A narrow surface therefore does not return the stored byte in
+the same component for A8/L8; the fetch maps it into the RGBA channels.
+
+### Bits and the spill form
+
+On the a8 surface, each of bits 4, 5, 6, 7, 8, 11, 15, 20, 22, 25 and 31 leaves
+`0x9F000000` unchanged. That is the configuration where a write mask, sub-word
+select or format field would be visible, so those bits carry no such meaning
+for the fetch; it agrees with the earlier sweep on rgba8888, now on a surface
+where a mask would matter.
+
+Bit 24 (with bit 23 set, the spill form) is **not** a plain suppression:
+`spill-b24` reads `0x003020BF`, pattern B with byte 3 (r1.hi) zeroed. The
+normal fetch does not happen, but one component is written, so the spill form
+has a write mask over the low word and is a different instruction rather than
+"fetch off".
+
+### What this set does not settle
+
+* **Addressing at all.** Every fragment stores the same word, so a fetch that
+  read a different pixel would return the same value. The round trip proves the
+  index, the enable bits and the pair, not that the fetch uses the fragment's
+  own position. The smallest follow-up is a program that stores a
+  position-dependent value (the pixel x or y from the MFU) and fetches it back
+  across a 64x64 window; a wrong address then shows as the wrong column.
+* What index 0 and 2 read: the values are unstable and the partial write
+  pattern is not explained.
+* The spill form's fields: bit 24 overlays the low word, and this set only
+  shows that one component is zeroed.
+* Alignment and offsets: rt5 is allocated at `width * bpp` and the fetch has no
+  pitch field of its own in this harness, so a pitched or tiled target is not
+  covered.
+* Whether the fetch samples the same *frame*: the program's own store is
+  visible to a later batch, which this set confirms, but a frame-to-frame
+  guarantee is not measured.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-pseq` and `verify-pseq` hold 85 rows each (27
+variants, three repeats, plus the controls), pinned from `b729908c2914...` to
+`2291ba0db017...`. Re-pinning from the pin directory is byte-identical. The
+three unbound-index variants were dropped after the first verify run: their
+words differed between runs, so they could not be pinned.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

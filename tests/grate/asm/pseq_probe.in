@@ -1,0 +1,73 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * PSEQ probe template: a round trip that cannot be mistaken for "the fetch did
+ * nothing".
+ *
+ * batch 0  r0 = (0x40, 0x80), r1 = (0x60, 0xA0), store to the target   [A]
+ * batch 1  overwrite r0/r1 with (0xC0, 0x20), (0x30, 0x70)              [B]
+ * batch 2  prime r2/r3 with C (0x10, 0x50, 0x8F, 0xCF)
+ * batch 3  the fetch
+ * batch 4  an optional second store
+ *
+ * The DW converts each fx10 half to a byte, so a working fetch into r0/r1
+ * stores 0x9F607F40, a suppressed one stores 0x703020BF, and a fetch that
+ * returned zero stores 0x00000000 - three distinct answers. With the
+ * destination pair bit set the fetch lands in r2/r3 instead, so a `store rt1,
+ * r2, r3` in the last batch reads 0x9F607F40 there while the r0/r1 store in
+ * batch 3 still reads B; without the bit that last store reads C
+ * (0xCF8F5010).
+ *
+ * The first DW picks the target, so the same template round-trips through
+ * rt1, rt3 (coverage), rt4 and rt5, including rt5's a8, l8 and rgb565
+ * formats. The fetch word names a render target in bits 16..19 and the
+ * destination pair in bit 1.
+ */
+
+.constants
+	[0] = 0.25;
+	[1] = 0.5;
+	[2] = 0.375;
+	[3] = 0.625;
+	[4] = 0.75;
+	[5] = 0.125;
+	[6] = 0.1875;
+	[7] = 0.4375;
+	[8] = 0.0625;
+	[9] = 0.3125;
+	[10] = 0.5625;
+	[11] = 0.8125;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.l*,  u0,  #1,  #0
+		ALU1:	MAD  r0.*h,  u1,  #1,  #0
+		ALU2:	MAD  r1.l*,  u2,  #1,  #0
+		ALU3:	MAD  r1.*h,  u3,  #1,  #0
+	DW:	DW0_SLOT
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r0.l*,  u4,  #1,  #0
+		ALU1:	MAD  r0.*h,  u5,  #1,  #0
+		ALU2:	MAD  r1.l*,  u6,  #1,  #0
+		ALU3:	MAD  r1.*h,  u7,  #1,  #0
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u8,  #1,  #0
+		ALU1:	MAD  r2.*h,  u9,  #1,  #0
+		ALU2:	MAD  r3.l*,  u10,  #1,  #0
+		ALU3:	MAD  r3.*h,  u11,  #1,  #0
+	DW:	NOP
+;
+EXEC
+	PSEQ:	PSEQ_SLOT
+	DW:	DW2_SLOT
+;
+EXEC
+	DW:	DW3_SLOT
+;

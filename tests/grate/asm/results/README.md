@@ -532,3 +532,19 @@ invalidate another; generate such a manifest with
 * commit: c6a678b87ab7ca4edf3e841e2b8f15763343f70b with a clean tree (clone in /tmp/clean-tex)
 * created: 2026-11-21T15:36:16+00:00; 184 rows, repeat 3, timeout 15.0 s
 * summary: 184 passed, 0 failed of 184 - passed
+
+## pin-pseq
+
+* manifest: `asm_characterize.pseq.json` (sha256 b729908c2914)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: efb6078e33cb60eeb4a96234a6b9497daad5e44b with a dirty tree
+* created: 2026-11-21T15:41:32+00:00; 85 rows, repeat 3, timeout 15.0 s
+* summary: 85 passed, 0 failed of 85 - passed
+
+## verify-pseq
+
+* manifest: `asm_characterize.pseq.json` (sha256 2291ba0db017)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: efb6078e33cb60eeb4a96234a6b9497daad5e44b with a dirty tree
+* created: 2026-11-21T15:41:45+00:00; 85 rows, repeat 3, timeout 15.0 s
+* summary: 85 passed, 0 failed of 85 - passed
