@@ -267,6 +267,54 @@ static uint16_t rgb565(unsigned colour)
 	return ((r * 31 / 255) << 11) | ((g * 63 / 255) << 5) | (b * 31 / 255);
 }
 
+/*
+ * GRATE_TEX_MIN_FILTER / GRATE_TEX_MAG_FILTER select the sampler's filters by
+ * name, so a probe can ask for a linear or blending state explicitly instead
+ * of relying on the --mipmap defaults.
+ */
+static int texture_filter_from_name(const char *name,
+				    enum grate_textute_filter *filter)
+{
+	if (!strcmp(name, "nearest"))
+		*filter = GRATE_TEXTURE_NEAREST;
+	else if (!strcmp(name, "linear"))
+		*filter = GRATE_TEXTURE_LINEAR;
+	else if (!strcmp(name, "nearest-mipmap-nearest"))
+		*filter = GRATE_TEXTURE_NEAREST_MIPMAP_NEAREST;
+	else if (!strcmp(name, "linear-mipmap-nearest"))
+		*filter = GRATE_TEXTURE_LINEAR_MIPMAP_NEAREST;
+	else if (!strcmp(name, "nearest-mipmap-linear"))
+		*filter = GRATE_TEXTURE_NEAREST_MIPMAP_LINEAR;
+	else if (!strcmp(name, "linear-mipmap-linear"))
+		*filter = GRATE_TEXTURE_LINEAR_MIPMAP_LINEAR;
+	else
+		return -1;
+
+	return 0;
+}
+
+/*
+ * GRATE_TEX_CHANNELS paints one channel per texel in the first row and a word
+ * with four distinct bytes in the second row, so the component order on the
+ * different destination paths can be named rather than inferred from a
+ * uniform colour.
+ */
+static void setup_channel_texture(struct grate *grate,
+				  struct grate_texture *tex,
+				  int tex_w, int tex_h)
+{
+	static const unsigned channel[4] = {
+		0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF,
+	};
+	int x;
+
+	for (x = 0; x < 4 && x < tex_w; x++)
+		grate_texture_clear_rect(grate, tex, channel[x], x, 0, 1, 1);
+
+	if (tex_h > 1)
+		grate_texture_clear_rect(grate, tex, 0x11223344, 0, 1, 1, 1);
+}
+
 static int setup_rgba_texture(struct grate *grate, struct grate_texture *tex,
 			      int tex_w, int tex_h, bool mipmap)
 {
@@ -294,6 +342,9 @@ static int setup_rgba_texture(struct grate *grate, struct grate_texture *tex,
 			grate_texture_clear_rect(grate, tex, 0,
 						 0, y, tex_w, 1);
 	}
+
+	if (getenv("GRATE_TEX_CHANNELS"))
+		setup_channel_texture(grate, tex, tex_w, tex_h);
 
 	if (mipmap) {
 		if (grate_texture_generate_mipmap(grate, tex))
@@ -635,6 +686,32 @@ int main(int argc, char *argv[])
 
 			if (upload_block_texture(grate, tex, tex_w, tex_h, fmt))
 				return 1;
+		}
+
+		{
+			enum grate_textute_filter filter;
+			const char *min = getenv("GRATE_TEX_MIN_FILTER");
+			const char *mag = getenv("GRATE_TEX_MAG_FILTER");
+
+			if (min) {
+				if (texture_filter_from_name(min, &filter)) {
+					fprintf(stderr,
+						"unknown GRATE_TEX_MIN_FILTER \"%s\"\n",
+						min);
+					return 1;
+				}
+				grate_texture_set_min_filter(tex, filter);
+			}
+
+			if (mag) {
+				if (texture_filter_from_name(mag, &filter)) {
+					fprintf(stderr,
+						"unknown GRATE_TEX_MAG_FILTER \"%s\"\n",
+						mag);
+					return 1;
+				}
+				grate_texture_set_mag_filter(tex, filter);
+			}
 		}
 
 		ctx->textures[0] = tex;

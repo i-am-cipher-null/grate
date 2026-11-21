@@ -2120,6 +2120,8 @@ Bit 5 moves the destination pair: `dest-r0r1` (bit 5 clear, `store rt1, r0,
 r1`) reads `0xFFFFFFFF` while the same white sample through `r2`/`r3` also
 reads `0xFFFFFFFF`, so the bit moves the data but this sample cannot name the
 channel order on that path. The order through `r2`/`r3` is the surface word's.
+Section 15 settles the order on both pairs with a surface that carries one
+channel per texel and a four-distinct-byte word: neither pair reorders.
 
 Bit 4 moves the coordinate registers: `sel-t` (bit 4 set, `s` from `r2`, `t`
 from `r3`) reads `0x000000FF` and `sel-t-control` (same constants, bit 4 clear,
@@ -2670,6 +2672,235 @@ each (18 variants, three repeats, plus the controls), pinned from
 directory is byte-identical. `GRATE_REGION` makes the reported result word the
 digest of the dumped rectangle, not `fb_data[0]`; the rectangle itself is in
 the (ignored) log of each run.
+
+## 15. TEX destinations and sampler state
+
+`asm_characterize.tex_sampling.json` (76 variants), template `asm/tex_probe.in`
+with constant coordinates, and three harness additions in `tools/assembler.c`:
+`GRATE_TEX_CHANNELS` (one channel per texel in row 0, `0x11223344` in row 1),
+`GRATE_TEX_MIN_FILTER` and `GRATE_TEX_MAG_FILTER` (filter names, applied after
+the `--mipmap` defaults). Every variant fetches with the same instruction word
+unless the text says otherwise, stores `r2/r3` or `r0/r1`, and the stored word
+is the fetched texel after the DW's byte conversion.
+
+### Component order through both destination pairs
+
+The channel surface paints `0xFF000000`, `0x00FF0000`, `0x0000FF00` and
+`0x000000FF` at texels (0..3, 0) and `0x11223344` at (0, 1), so a swap on
+either destination path would show up as a different word.
+
+| texel | dest r2/r3 (`0x0420`) | dest r0/r1 (`0x0400`) |
+| --- | --- | --- |
+| `0xFF000000` | `0xFF000000` | `0xFF000000` |
+| `0x00FF0000` | `0x00FF0000` | `0x00FF0000` |
+| `0x0000FF00` | `0x0000FF00` | `0x0000FF00` |
+| `0x000000FF` | `0x000000FF` | `0x000000FF` |
+| `0x11223344` | `0x11223344` | `0x11223344` |
+
+Measured: the destination pair does not reorder the sampled components. Both
+pairs carry the four components in the order the surface stores them, in
+(r2.lo, r2.hi, r3.lo, r3.hi) and (r0.lo, r0.hi, r1.lo, r1.hi) respectively, so
+the pair only selects which registers are written. With the r0/r1 pair the
+fetch reads s and t from those same registers and overwrites them; the
+operation reads before it writes, which is why the coordinate still took
+effect.
+
+### The filter's coordinate convention
+
+`magpoint-*` is the fetch with the default point magnification filter,
+`magline-*` the same coordinate with `GRATE_TEX_MAG_FILTER=linear`, both on the
+4x4 two-tone surface (texels 0 and 1 black, 2 and 3 white).
+
+| s | point | linear |
+| --- | --- | --- |
+| 0.0625 | `0x00000000` | `0x40404040` |
+| 0.125 | `0x00000000` | `0x00000000` |
+| 0.1875 | `0x00000000` | `0x00000000` |
+| 0.25 | `0x00000000` | `0x00000000` |
+| 0.375 | `0x00000000` | `0x00000000` |
+| 0.5 | `0xFFFFFFFF` | `0x80808080` |
+| 0.625 | `0xFFFFFFFF` | `0xFFFFFFFF` |
+| 0.875 | `0xFFFFFFFF` | `0xFFFFFFFF` |
+
+The linear row fits u = s * 4 - 0.5 with repeat wrap and texel centres at
+integer u: at s = 0.0625, u = -0.25 is a quarter of the way from the wrapped
+texel 3 (white) into texel 0, giving 0x40; at 0.5, u = 1.5 is the boundary
+between texel 1 and texel 2, giving 0x80; 0.625 (u = 2.0) and 0.875 (u = 3.0)
+land on texel centres. The alternative u = s * 4 would make 0.375 (u = 1.5) a
+half-and-half blend and 0.5 (u = 2.0) a solid white texel; neither is measured.
+
+The point row fits the same centres with edge clamping: at s = 0.0625 the
+coordinate sits at u = -0.25, which the point filter resolves to texel 0
+(black) rather than to the wrapped texel 3 (white) that the linear filter
+includes. Measured: at the same coordinate the point filter clamps outside the
+surface and the linear one repeats.
+
+### The same question along t
+
+`magrow-*` samples `GRATE_TEX_ROWCOLOR` (row k is `0x000000FF`, `0x0000FF00`,
+`0x00FF0000`, `0xFFFFFFFF`) at s = 0.125 with the linear filter.
+
+| t | word |
+| --- | --- |
+| 0.0625 | `0x404040FF` |
+| 0.125 | `0x000000FF` |
+| 0.1875 | `0x000040BF` |
+| 0.25 | `0x00008080` |
+| 0.375 | `0x0000FF00` |
+| 0.625 | `0x00FF0000` |
+
+The same convention holds vertically (v = t * 4 - 0.5): 0.25 is half way
+between rows 0 and 1, 0.375 is row 1, 0.625 is row 2. One detail is not
+explained: at t = 0.0625 the colour channels show the expected quarter step
+toward the wrapped row 3 (R and G `0x40`, B `0xFF`) but alpha is `0xFF` rather
+than the `0x40` the same interpolation gives. Every other sampled row has alpha
+0 in both sources, so the alpha channel's filtering is only observed at that
+wrap edge.
+
+### The mip chain contents
+
+`level-*` reads each level with `nearest-mipmap-nearest` at s = t = 0.125, a
+texel centre.
+
+| surface | level 0 | level 1 | level 2 |
+| --- | --- | --- | --- |
+| ROWCHECK | `0xFFFFFFFF` | `0xFF808080` | `0xFF808080` |
+| ROWCOLOR | `0x000000FF` | `0x00008080` | `0x00008080` |
+| two-tone, s < 0.5 | `0x00000000` | `0x00545454` | `0x00545454` |
+| two-tone, s > 0.5 | `0xFFFFFFFF` | `0xFFD5D5D5` | `0x00545454` |
+
+The opaque surfaces' chains are the 2x2 block averages (ROWCHECK 0.5, ROWCOLOR
+the average of two rows). The two-tone's is not: a 2x2 block of its black half
+has alpha 0 in all four texels, and the level reads `0x00545454` where the
+block average is `0x00000000`; the white half reads `0xFFD5D5D5` where the
+block average is `0xFFFFFFFF`. The column boundary is still in the right place.
+Measured: this surface's chain is not a plain box filter, and the blends below
+are read against these words rather than against the source colours.
+Interpretation of the odd value is left open; it does not affect the blend
+conclusions because those are stated as fractions of the measured level words.
+
+### Mip level selection and blending
+
+`mip-near-*` uses `nearest-mipmap-nearest`, `mip-lin-*` uses
+`nearest-mipmap-linear` (nearest inside a level, blending between levels), with
+an explicit LOD from the register (bit 13).
+
+| variant | LOD | surface | word |
+| --- | --- | --- | --- |
+| `mip-lin-00` | 0.0 | ROWCHECK | `0xFFFFFFFF` |
+| `mip-lin-10` | 1.0 | ROWCHECK | `0xFF808080` |
+| `mip-near-05` | 0.5 | ROWCHECK | `0xFFFFFFFF` |
+| `mip-lin-05` | 0.5 | ROWCHECK | `0xFFC0C0C0` |
+| `mip-near-15` | 1.5 | two-tone | `0x00545454` |
+| `mip-lin-15` | 1.5 | two-tone | `0x00545454` |
+| `mip-lin-20` | 2.0 | two-tone | `0x00545454` |
+
+Measured: the blending filter interpolates the two neighbouring levels
+linearly in value (a half of `0xFF` and `0x80` is `0xC0`), and the nearest
+filter selects a single level: 0.5 selects level 0, 1.5 selects level 2. Those
+two points fit a nearest rule whose ties go to the even level; 2.5 was not
+tested. On the two-tone the levels at and above 1 hold the same word, so those
+rows show the level content rather than the blend.
+
+### Fractional bias
+
+`bias-*` sends the register through bit 12 instead of bit 13, with the same
+blending filter, on ROWCHECK (level 0 `0xFF`, level 1 `0x80`) and on the
+two-tone (level 0 `0x00`, level 1 `0x54`).
+
+| register | ROWCHECK | fraction of level 1 |
+| --- | --- | --- |
+| 1.0 | `0xFFFFFFFF` | 0 |
+| 1.25 | `0xFFDFDFDF` | 0.25 |
+| 1.5 | `0xFFC0C0C0` | 0.5 |
+| 1.75 | `0xFFA0A0A0` | 0.75 |
+
+| register | two-tone | fraction of level 1 |
+| --- | --- | --- |
+| 1.0 | `0x00000000` | 0 |
+| 1.25 | `0x00151515` | 0.25 |
+| 1.5 | `0x002A2A2A` | 0.5 |
+| 1.75 | `0x003F3F3F` | 0.75 |
+
+Measured: the bias register is added to the estimate with its fractional part
+intact, and the levels are then blended linearly; the same register value gives
+the same fraction on two surfaces with different level contents. In this
+configuration the effective LOD is the register minus one on both surfaces
+(0.25 and 0.5 stay at level 0, 1.0 lands on level 1), so the estimate itself is
+-1 here. Interpretation: that -1 belongs to the estimate for a constant
+coordinate (zero derivatives) and to whatever floor the hardware applies, not
+to the bias field, whose effect is the difference between the curves.
+
+### Explicit LOD against the bias register
+
+The `txl-*` sweep on the two-tone with the same blending filter:
+
+| LOD | word | fraction of level 1 |
+| --- | --- | --- |
+| 0.25 | `0x00151515` | 0.25 |
+| 0.5 | `0x002A2A2A` | 0.5 |
+| 0.75 | `0x003F3F3F` | 0.75 |
+| 1.0 - 2.0 | `0x00545454` | 1 |
+
+Measured: the LOD register is an absolute level, not a bias - 0.25 blends
+levels 0 and 1 by a quarter - and the curve is the bias curve shifted by one:
+`txl-0p25` and `bias-125` produce the same word. Values at or above 1.0 select
+levels 1 and 2, which hold the same word on this surface, so the fraction is
+not visible above 1.0.
+
+### The varying path does not reach the fetch
+
+The sampling template first took s and t from an interpolated varying, with a
+vertex shader placing the quad and adding a per-variant offset. Every
+coordinate-dependent row read as if s = t = 0:
+
+* storing the linked r0/r1 to the surface (`store rt1, r0, r1`, fetch disabled)
+  returned `0x00000000` at two coordinates half a texture apart;
+* with the point filter, nine different s values from 0.0625 to 0.6875 all
+  returned the same texel;
+* `filter_quad_vs.txt` driven by an identity `--vs_mat4` also returned zero;
+* a fetch in the first exec, where the linked varying is visible to the ALU,
+  returned nothing at all, so that layout cannot sample;
+* the fetch has to be in a later exec for the sampler to return texels.
+
+Interpretation: in this harness the linked varying is visible to the first
+exec's ALU but not to a fetch in a later exec, and a fetch in the first exec
+does not sample. That combination, not a property of TEX, is what blocks the
+derivative tests below. The two templates were removed and the finding is
+recorded here so the next attempt starts from it.
+
+### What this settles
+
+* the destination pair does not reorder the sampled components;
+* the linear filter uses u = s * width - 0.5 with texel centres at integer u
+  and repeats outside the surface, while the point filter clamps there;
+* mip selection picks a single level and mip blending interpolates levels
+  linearly, both following the explicit LOD register;
+* the bias register is added to the estimate with its fractional part intact
+  and shifts the LOD by its value identically on two surfaces.
+
+### What this does not settle
+
+* **Derivative-based LOD.** With constant coordinates the derivatives are zero,
+  and the varying path does not reach the fetch, so nothing here separates a
+  hardware estimate computed from derivatives from a fixed level.
+* **Tie rounding above 1.5.** Only 0.5 and 1.5 were measured with the nearest
+  mip filter.
+* **The two-tone chain.** The level-1 words (`0x54`, `0xD5`) are not block
+  averages; whether that is the harness's mip generation or the surface's alpha
+  was not separated.
+* **Alpha at the wrap edge.** `magrow-0p0625` reads `0xFF` in alpha where the
+  colour channels show a quarter step.
+* **Minified sampling with a varying coordinate.** Only magnification was
+  sampled with a real coordinate; the minified case is measured with constant
+  coordinates and an explicit LOD.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-tex-sampling` and `verify-tex-sampling` hold 232
+rows each (76 variants, three repeats, plus the four control runs), pinned from
+`199a8ebea802...` to `fcbe778dc3b1...`. Re-pinning from the verify directory is
+byte-identical.
 
 ## What the runner cost
 

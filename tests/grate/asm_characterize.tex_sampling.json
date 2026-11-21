@@ -1,0 +1,2203 @@
+{
+	"name": "tex-sampling",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/tex_probe.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "chan-a-23",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_CHANNELS": "1"
+			},
+			"expected": "0xFF000000"
+		},
+		{
+			"name": "chan-a-01",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000400",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r0, r1"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_CHANNELS": "1"
+			},
+			"expected": "0xFF000000"
+		},
+		{
+			"name": "chan-b-23",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.375",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_CHANNELS": "1"
+			},
+			"expected": "0x00FF0000"
+		},
+		{
+			"name": "chan-b-01",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.375",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000400",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r0, r1"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_CHANNELS": "1"
+			},
+			"expected": "0x00FF0000"
+		},
+		{
+			"name": "chan-g-23",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.625",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_CHANNELS": "1"
+			},
+			"expected": "0x0000FF00"
+		},
+		{
+			"name": "chan-g-01",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.625",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000400",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r0, r1"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_CHANNELS": "1"
+			},
+			"expected": "0x0000FF00"
+		},
+		{
+			"name": "chan-r-23",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.875",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_CHANNELS": "1"
+			},
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "chan-r-01",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.875",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000400",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r0, r1"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_CHANNELS": "1"
+			},
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "chan-mix-23",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.375",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_CHANNELS": "1"
+			},
+			"expected": "0x11223344"
+		},
+		{
+			"name": "chan-mix-01",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.375",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000400",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r0, r1"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_CHANNELS": "1"
+			},
+			"expected": "0x11223344"
+		},
+		{
+			"name": "magpoint-0p0625",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.0625",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magline-0p0625",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.0625",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x40404040"
+		},
+		{
+			"name": "magpoint-0p125",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magline-0p125",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magpoint-0p1875",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.1875",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magline-0p1875",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.1875",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magpoint-0p25",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.25",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magline-0p25",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.25",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magpoint-0p3125",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.3125",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magline-0p3125",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.3125",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magpoint-0p375",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.375",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magline-0p375",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.375",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "magpoint-0p5",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.5",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "magline-0p5",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.5",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x80808080"
+		},
+		{
+			"name": "magpoint-0p625",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.625",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "magline-0p625",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.625",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "magpoint-0p875",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.875",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "magline-0p875",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.875",
+					"T_CONST": "0.5",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "magrow-0p0625",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.0625",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCOLOR": "1",
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x404040FF"
+		},
+		{
+			"name": "magrow-0p125",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCOLOR": "1",
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "magrow-0p1875",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.1875",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCOLOR": "1",
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x000040BF"
+		},
+		{
+			"name": "magrow-0p25",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.25",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCOLOR": "1",
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x00008080"
+		},
+		{
+			"name": "magrow-0p375",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.375",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCOLOR": "1",
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x0000FF00"
+		},
+		{
+			"name": "magrow-0p625",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.625",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00000420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCOLOR": "1",
+				"GRATE_TEX_MAG_FILTER": "linear"
+			},
+			"expected": "0x00FF0000"
+		},
+		{
+			"name": "level-check-0p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "level-check-1p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0xFF808080"
+		},
+		{
+			"name": "level-check-2p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "2.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0xFF808080"
+		},
+		{
+			"name": "level-color-0p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCOLOR": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "level-color-1p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCOLOR": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0x00008080"
+		},
+		{
+			"name": "level-color-2p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "2.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCOLOR": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0x00008080"
+		},
+		{
+			"name": "level-tone-0p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "level-tone-1p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "level-tone-2p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "2.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "mip-lin-00",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "mip-lin-10",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0xFF808080"
+		},
+		{
+			"name": "mip-near-05",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.5",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "mip-lin-05",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.5",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0xFFC0C0C0"
+		},
+		{
+			"name": "mip-near-15",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.5",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "mip-lin-15",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.5",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "mip-lin-20",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "2.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "bias-000",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.0",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "bias-025",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.25",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "bias-050",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.5",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "bias-100",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00000000"
+		},
+		{
+			"name": "bias-125",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.25",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00151515"
+		},
+		{
+			"name": "bias-150",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.5",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x002A2A2A"
+		},
+		{
+			"name": "bias-175",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.75",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x003F3F3F"
+		},
+		{
+			"name": "bias-check-100",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0xFFFFFFFF"
+		},
+		{
+			"name": "bias-check-125",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.25",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0xFFDFDFDF"
+		},
+		{
+			"name": "bias-check-150",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.5",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0xFFC0C0C0"
+		},
+		{
+			"name": "bias-check-175",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.75",
+					"TEX0_SLOT": "0x00001420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_ROWCHECK": "1",
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0xFFA0A0A0"
+		},
+		{
+			"name": "tone-1p0-0p125",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "tone-1p0-0p375",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.375",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "tone-1p0-0p625",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.625",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0xFFD5D5D5"
+		},
+		{
+			"name": "tone-1p0-0p875",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.875",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest"
+			},
+			"expected": "0xFFD5D5D5"
+		},
+		{
+			"name": "txl-0p25",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.25",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00151515"
+		},
+		{
+			"name": "txl-0p5",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.5",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x002A2A2A"
+		},
+		{
+			"name": "txl-0p75",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "0.75",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x003F3F3F"
+		},
+		{
+			"name": "txl-1p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "txl-1p125",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.125",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "txl-1p25",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.25",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "txl-1p375",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.375",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "txl-1p5",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.5",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "txl-1p625",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.625",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "txl-1p75",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "1.75",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00545454"
+		},
+		{
+			"name": "txl-2p0",
+			"fs": "tests/grate/asm/tex_probe.in",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"replace": {
+				"fs": {
+					"S_CONST": "0.125",
+					"T_CONST": "0.125",
+					"R_CONST": "0.0",
+					"L_CONST": "2.0",
+					"TEX0_SLOT": "0x00002420",
+					"TEX1_SLOT": "NOP",
+					"X0_SLOT": "NOP",
+					"X1_SLOT": "NOP",
+					"X2_SLOT": "NOP",
+					"X3_SLOT": "NOP",
+					"STORE_SLOT": "store rt1, r2, r3"
+				}
+			},
+			"args": [
+				"--texture",
+				"--mipmap"
+			],
+			"environment": {
+				"GRATE_TEX_MIN_FILTER": "nearest-mipmap-linear"
+			},
+			"expected": "0x00545454"
+		}
+	]
+}
