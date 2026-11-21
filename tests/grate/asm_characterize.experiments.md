@@ -2902,6 +2902,134 @@ rows each (76 variants, three repeats, plus the four control runs), pinned from
 `199a8ebea802...` to `fcbe778dc3b1...`. Re-pinning from the verify directory is
 byte-identical.
 
+## 16. ALU send ordering and the destination field
+
+`asm_characterize.alu_send.json` (35 variants), template `asm/alu_control.in`.
+Packet 0 primes r2 with 0.25 (`0x40`) and r3 with 0.75 (`0xBF`); packet 2 holds
+the arrangement under test and stores `rt1, r2, r3`, so the word reads
+`[r3.hi][r3.lo][r2.hi][r2.lo]`.
+
+Every arrangement uses the same two instructions and the same destinations:
+
+    MAD  r2.l*,  u2,  #1,  #0 (other)     sends 0.25, writes r2
+    MAD  r3.l*,  u0,  #1,  #0 (this)      receives, 0.0625 + accumulator
+
+Only the slots they occupy change. A plain twin without the `(other)` and
+`(this)` markers runs at every arrangement too, so the markers are the only
+variable between the two halves of the set.
+
+Baselines:
+
+| variant | word | reading |
+| --- | --- | --- |
+| `primes-only` | `0x00BF0040` | r2 = 0.25, r3 = 0.75, nothing else runs |
+| `recv-only` | `0x00100040` | receiver alone: r3 = 0.0625, no accumulator |
+| `plain-recv-only` | `0x00100040` | same word without the marker |
+| `send-only-s0..s3` | `0x00BF0040` | sender alone in any slot writes r2 = 0.25 and leaves r3 |
+| `plain-only-s0..s3` | `0x00BF0040` | identical to `send-only-*` |
+| `plain-s0r1` .. `plain-s3r2` | `0x00100040` | every unmarked pair: no transfer |
+
+### Which pairs transfer
+
+`s<i>r<j>` is the sender in slot i and the receiver in slot j; the word is
+`0x00500040` (r3 = 0.3125 = 0.0625 + 0.25, sender transferred) or
+`0x00100040` (no transfer).
+
+| sender i | j = 0 | j = 1 | j = 2 | j = 3 |
+| --- | --- | --- | --- | --- |
+| 0 | - | transfer | no | no |
+| 1 | transfer | - | transfer | no |
+| 2 | transfer | no | - | transfer |
+| 3 | transfer | no | transfer | - |
+
+Measured: the transfer set is exactly
+
+    (0,1) (1,0) (1,2) (2,0) (2,3) (3,0) (3,2)
+
+and the non-transfer set is
+
+    (0,2) (0,3) (1,3) (2,1) (3,1)
+
+Every transfer delivers 0.25 - the sender's value - and nothing else changes:
+the sender's own destination holds 0.25 in all twelve arrangements, the same as
+`send-only-*`, and r3 holds 0.0625 whenever no transfer occurs, the same as
+`recv-only`. So in this configuration the send marker changes only the
+receiver's accumulator; it does not change what the sender writes.
+
+### What the matrix says and does not say
+
+Three regularities fit every row:
+
+* neighbours inside a pair: (0,1), (1,0), (2,3), (3,2) all transfer;
+* the pair boundary forwards: (1,2) transfers, and its reverse (2,1) does not;
+* slot 0 receives from every sender: (1,0), (2,0), (3,0).
+
+What does not fit a single lane/pair model is that slot 2 receives from slot 3
+and not from slot 1's mirror: (2,1) fails while (3,2) works, and the two extra
+receptions into slot 0 have no partner in slot 3 - (0,3) and (1,3) both fail.
+Interpretation: the slots behave like two pairs with a forward-only boundary,
+and slot 0 has an additional input that any sender can drive. The mechanism is
+not established, and no test here separates "slot 0 has a broadcast input" from
+"slot 0 is the packet's accumulator sink". The transfer matrix is the measured
+part.
+
+### The destination field
+
+The same expression with four destinations produces four instruction words:
+
+| destination | instruction word |
+| --- | --- |
+| `r0.l*` | `0x00002880` |
+| `r1.l*` | `0x0000A880` |
+| `r2.l*` | `0x00012880` |
+| `r3.l*` | `0x0001A880` |
+
+The register index sits in bits 15 and 16, and the word does not depend on the
+slot: `MAD r2.l*, u4, #1, #0` emitted from slot 2 and from slot 3 is the same
+`0x00012900` (0.5, u4), and both write r2 (`0x00BF007F`: r2 = 0.5, r3 keeps its
+prime). So the mnemonic's destination operand, not the slot position, selects
+the register, and any of the four slots can write any of r0..r3. The earlier
+`fw-two`/`fw-three` rows already showed two slots writing one register; this
+names the field.
+
+The raw-word attempt: an ALU slot accepts a literal. A 64-bit literal is
+emitted as two words, and those two words are the slot's instruction word and
+the *next* word in the packet (the following slot's control word), not a
+standalone instruction. `0x0001290000000000` in slot 2 or slot 3 therefore
+runs an instruction assembled from a mix of the literal and the following
+control word and stores `0x00BF0000` (r2 cleared), and a zero literal stores
+`0x00BF0040` (a no-op, the prime survives). The literal path is a valid way to
+*observe* words but not a clean way to inject a chosen instruction; the
+destination question is answered from the word dumps above instead.
+
+### What this settles
+
+* the transfer set for one sender and one receiver across all twelve slot
+  arrangements, with unmarked controls at every arrangement;
+* the sender's own destination is unchanged by the send bit in this
+  configuration;
+* the destination register is encoded in instruction bits 15-16 and is
+  independent of the slot.
+
+### What this does not settle
+
+* **The mechanism** behind the asymmetric transfer set, in particular the extra
+  receptions into slot 0 and the (2,1)/(3,2) asymmetry.
+* **Two senders into one receiver**: this set has one sender per packet, and
+  the §13 multi-sender rows also wrote one destination from several slots, so
+  the two effects are not separated.
+* **Chaining**: whether a transfer can pass through an intermediate slot was
+  not tested with a second receiver.
+* **The literal injection path**: a way to place a chosen instruction word
+  without disturbing the neighbouring slot was not found.
+* **The mixed fp20/fx10 writers and CSEL edge cases** stay where §13 left them.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-send` and `verify-alu-send` hold 109 rows each
+(35 variants, three repeats, plus the four control runs), pinned at
+`8996a2094b52...`; re-pinning from the verify directory is byte-identical.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

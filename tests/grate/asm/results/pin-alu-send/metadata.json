@@ -1,0 +1,896 @@
+{
+  "name": "alu-send",
+  "created_utc": "2026-11-21T20:49:44+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.alu_send.json",
+  "manifest_sha256": "becbc6389b99da71242e8f250b40e1c10f358a6e8ddaa6fb1487feb1c1d632b7",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "1d3ecd68ca5e28768eae685ad76d8e17c559fd13",
+  "git_status": "?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/make_alu_send.py\n?? tests/grate/asm/raw_alu_mad.in\n?? tests/grate/asm/raw_alu_word.in\n?? tests/grate/asm_characterize.alu_send.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 15,
+  "manifest_data": {
+    "name": "alu-send",
+    "repeat": 3,
+    "timeout": 15,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/alu_control.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "send-s0r1",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B1_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "plain-s0r1",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B1_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "send-s0r2",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "plain-s0r2",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "send-s0r3",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)"
+          }
+        }
+      },
+      {
+        "name": "plain-s0r3",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "MAD  r3.l*,  u0,  #1,  #0"
+          }
+        }
+      },
+      {
+        "name": "send-s1r0",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "B1_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "plain-s1r0",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "B1_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "send-s1r2",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B2_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "plain-s1r2",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B2_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "send-s1r3",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)"
+          }
+        }
+      },
+      {
+        "name": "plain-s1r3",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "MAD  r3.l*,  u0,  #1,  #0"
+          }
+        }
+      },
+      {
+        "name": "send-s2r0",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "plain-s2r0",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "send-s2r1",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "B2_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "plain-s2r1",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "B2_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "send-s2r3",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B3_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)"
+          }
+        }
+      },
+      {
+        "name": "plain-s2r3",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B3_SLOT": "MAD  r3.l*,  u0,  #1,  #0"
+          }
+        }
+      },
+      {
+        "name": "send-s3r0",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)"
+          }
+        }
+      },
+      {
+        "name": "plain-s3r0",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "MAD  r2.l*,  u2,  #1,  #0"
+          }
+        }
+      },
+      {
+        "name": "send-s3r1",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)"
+          }
+        }
+      },
+      {
+        "name": "plain-s3r1",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "MAD  r2.l*,  u2,  #1,  #0"
+          }
+        }
+      },
+      {
+        "name": "send-s3r2",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "B3_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)"
+          }
+        }
+      },
+      {
+        "name": "plain-s3r2",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "B3_SLOT": "MAD  r2.l*,  u2,  #1,  #0"
+          }
+        }
+      },
+      {
+        "name": "recv-only",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "plain-recv-only",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "send-only-s0",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "plain-only-s0",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "send-only-s1",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "plain-only-s1",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "send-only-s2",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "plain-only-s2",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "B3_SLOT": "NOP"
+          }
+        }
+      },
+      {
+        "name": "send-only-s3",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)"
+          }
+        }
+      },
+      {
+        "name": "plain-only-s3",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "MAD  r2.l*,  u2,  #1,  #0"
+          }
+        }
+      },
+      {
+        "name": "primes-only",
+        "replace": {
+          "fs": {
+            "STORE_SLOT": "store rt1, r2, r3",
+            "M1_SLOT": "NOP",
+            "T1_SLOT": "NOP",
+            "M2_SLOT": "NOP",
+            "T2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP",
+            "B0_SLOT": "NOP",
+            "B1_SLOT": "NOP",
+            "B2_SLOT": "NOP",
+            "B3_SLOT": "NOP"
+          }
+        }
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 109,
+    "passed": 109,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
