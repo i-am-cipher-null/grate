@@ -1,0 +1,54 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * ALU marker template: four packets, four scalar slots, two store packets.
+ *
+ * packet 0  P0..P3  primes (r2 = 0.25, r3 = 0.75) and any older producer
+ * packet 1  A0..A3  the instructions under test
+ * packet 2  store 1
+ * packet 3  store 2
+ *
+ * Two store packets exist because one fragment can only observe one pair: a
+ * variant stores `rt1, r2, r3` to read the sender's own destination together
+ * with the receiver's, or `rt1, r0, r1` to read two other destinations, and the
+ * second store cannot be observed in the same run.
+ *
+ * The word layout of `store rt1, r2, r3` is
+ *
+ *     [r3.hi] [r3.lo] [r2.hi] [r2.lo]
+ *
+ * so the low byte is r2 and the second byte is r3. fx10 values of interest:
+ * 0.0625 = 0x10, 0.25 = 0x40, 0.3125 = 0x50, 0.5 = 0x7F, 0.5625 = 0x90,
+ * 0.75 = 0xBF, 0.8125 = 0xD0.
+ */
+
+.constants
+	[0] = 0.0625;
+	[2] = 0.25;
+	[4] = 0.5;
+	[6] = 0.75;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	P0_SLOT
+		ALU1:	P1_SLOT
+		ALU2:	P2_SLOT
+		ALU3:	P3_SLOT
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	A0_SLOT
+		ALU1:	A1_SLOT
+		ALU2:	A2_SLOT
+		ALU3:	A3_SLOT
+	DW:	NOP
+;
+EXEC
+	DW:	STORE1_SLOT
+;
+EXEC
+	DW:	STORE2_SLOT
+;

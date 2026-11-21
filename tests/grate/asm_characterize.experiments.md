@@ -3016,12 +3016,15 @@ destination question is answered from the word dumps above instead.
 ### What this does not settle
 
 * **The mechanism** behind the asymmetric transfer set, in particular the extra
-  receptions into slot 0 and the (2,1)/(3,2) asymmetry.
+  receptions into slot 0 and the (2,1)/(3,2) asymmetry. Section 18 splits the
+  set into the sender's and the receiver's contributions.
 * **Two senders into one receiver**: this set has one sender per packet, and
   the §13 multi-sender rows also wrote one destination from several slots, so
-  the two effects are not separated.
+  the two effects are not separated. Section 18 runs two senders with distinct
+  values.
 * **Chaining**: whether a transfer can pass through an intermediate slot was
-  not tested with a second receiver.
+  not tested with a second receiver. Section 18 chains a sender, a middle slot
+  and a receiver.
 * **The literal injection path**: a way to place a chosen instruction word
   without disturbing the neighbouring slot was not found.
 * **The mixed fp20/fx10 writers and CSEL edge cases** stay where §13 left them.
@@ -3167,6 +3170,157 @@ On this device and setup:
 each (12 variants, three repeats, and the four control runs), pinned at
 `bb4b6b872647...`; re-pinning from the verify directory is byte-identical.
 `clean-pseq-split` repeats the same 40 rows from a clone of the commit.
+
+## 18. Which ALU marker does what
+
+`asm_characterize.alu_marks.json` (76 variants), template `asm/alu_marks.in`
+(four packets: primes, the instructions under test, and two store packets).
+Packet 0 primes r2 with 0.25 (`0x40`) and r3 with 0.75 (`0xBF`), so an unwritten
+destination is still readable.
+
+Two instructions, identical in every variant:
+
+    MAD  r2.l*,  u2,  #1,  #0     sends 0.25, writes r2
+    MAD  r3.l*,  u0,  #1,  #0     receives 0.0625 + accumulator, writes r3
+
+`store rt1, r2, r3` reads both destinations in one word,
+`[r3.hi][r3.lo][r2.hi][r2.lo]`: `0x00100040` is "nothing happened" (r2 = 0.25,
+r3 = 0.0625), `0x00500040` is "the receiver got 0.25" (r3 = 0.3125), and the
+sender's own destination is `0x40` unless the marker changed it.
+
+### The matrix
+
+All twelve ordered slot pairs, each with all four marker combinations
+(`nn` neither, `sn` sender only, `nr` receiver only, `sr` both). The transfer
+sets:
+
+| combination | pairs that transfer |
+|:--|:--|
+| `nn` | none |
+| `sn` | (1,0) (2,0) (3,2) |
+| `nr` | (0,1) (1,2) (2,3) (3,0) |
+| `sr` | (0,1) (1,0) (1,2) (2,0) (2,3) (3,0) (3,2) |
+
+`sr` is exactly the set section 16 measured with both markers, and it is the
+union of `sn` and `nr`: the two markers do not need each other and each has its
+own routing. The sender's own destination stayed `0x40` in all 48 cells, so in
+a single-pair packet the sender's result is unaffected by either marker.
+
+### What each marker does
+
+**`(this)` on slot j** adds the *previous slot's own result* to slot j's MAD
+result, wrapping at the packet start (slot 0 takes slot 3). It works with the
+sender unmarked: `nr-s0r1` transfers although the sender carries no marker. The
+set is exactly `j <- j-1 (mod 4)`.
+
+**`(other)` on slot i** delivers slot i's own result into the accumulator of
+slot `(i-1) & ~1`: slot 0 from slots 1 and 2, slot 2 from slot 3, and nowhere
+from slot 0. That target instruction adds the value **whether or not it is
+marked `(this)`**: `sn-s2r0` transfers with an unmarked receiver. The rule fits
+all twelve `sn` cells; the "low slot of the previous pair" reading is an
+inference from those cells, not an established mechanism.
+
+Both markers on one instruction therefore do two different things: receive from
+the previous slot and send to the previous pair's low slot.
+
+### Two senders into one receiver
+
+Senders A (`0.25` into r0) and B (`0.5` into r1) both marked `(other)`, receiver
+in r3 marked `(this)`; the `-acc` variant stores r2/r3 and the `-dest` variant
+stores r0/r1:
+
+| arrangement (A, B, receiver) | `-acc` | `-dest` | reading |
+|:--|:--|:--|:--|
+| 0, 1, 2 | `0x008F0040` | `0x007F00BF` | receiver got B (0.5) only; r0 = 0.75 |
+| 0, 1, 3 | `0x00100040` | `0x007F00BF` | receiver got nothing; r0 = 0.75 |
+| 0, 2, 3 | `0x008F0040` | `0x007F00BF` | receiver got B (0.5); r0 = 0.75 |
+| 1, 2, 3 | `0x008F0040` | `0x007F0040` | receiver got B (0.5); r0 = 0.25 |
+
+The receiver never receives both values: with two senders the only value it
+takes is its previous slot's (`nr` rule), so `(0,1,2)` and `(0,2,3)` deliver B
+and `(0,1,3)` delivers the NOP in slot 2. `(other)` at slot 1 or slot 2 puts
+B's value into slot 0, whose *sender* instruction then writes `0.25 + 0.5 =
+0.75` into r0, which is why the `-dest` word is `0xBF` and not `0x40`. When the
+sender sits in slot 1 and the second sender in slot 2 (`1,2,3`), the send lands
+on slot 0, which holds a NOP, and r0 keeps its plain `0.25`.
+
+### Chaining
+
+Sender S (`0.25` into r2), middle M (`0.5` into r1, both markers) and receiver R
+(`0.0625` into r3, marked `(this)`):
+
+| arrangement (S, M, R) | `-acc` | `-mid` | reading |
+|:--|:--|:--|:--|
+| 0, 1, 2 | `0x008F00BF` | `0x00BF0000` | r2 = 0.75, r1 = 0.75, r3 = 0.5625 |
+| 0, 1, 3 | `0x001000BF` | `0x00BF0000` | r2 = 0.75, r1 = 0.75, r3 = 0.0625 |
+| 0, 2, 3 | `0x008F00BF` | `0x007F0000` | r2 = 0.75, r1 = 0.5, r3 = 0.5625 |
+| 1, 2, 3 | `0x008F0040` | `0x00BF0000` | r2 = 0.25, r1 = 0.75, r3 = 0.5625 |
+
+Two separate facts come out of this:
+
+* the middle slot does receive its previous slot's result when it sits directly
+  after the sender (`0,1,x` and `1,2,3`: r1 = 0.75), and does not when a NOP
+  sits between them (`0,2,3`: r1 = 0.5), which agrees with the `(this)` rule;
+* what the middle slot *forwards* is its own bare MAD result, not the value it
+  accumulated: in `0,1,2` the receiver gets `0.0625 + 0.5`, while r1 itself
+  holds `0.5 + 0.25`. A sender's accumulated destination and the value it
+  sends are therefore different numbers.
+
+`chain-plain-acc` (`0x00100040`) and `chain-plain-mid` (`0x007F0000`) run the
+same three instructions without markers: nothing is received and the middle
+writes its bare result.
+
+### The destination field and r0/r1
+
+A single `MAD rN.l*, u2, #1, #0` (0.25) in each slot, stored as `rt1, r0, r1`:
+
+| variant | word | reading |
+|:--|:--|:--|
+| `dst-none` | `0x00000000` | no write: r0 and r1 stay zero |
+| `dst-none-23` | `0x00BF0040` | the primes only |
+| `dst-r0-s0` .. `s3` | `0x00000040` | r0 = 0.25 from every slot |
+| `dst-r1-s0` .. `s3` | `0x00400000` | r1 = 0.25 from every slot |
+
+With the matrix writing r2 and r3 from all twelve slot pairs, all four
+registers `r0..r3` are written by hardware from any of the four slots. This is a
+write-back result, not an assembler word: the values land in the registers the
+mnemonic names.
+
+### What this settles
+
+* `(this)` and `(other)` are independent: the receiver's marker pulls the
+  previous slot's result, the sender's marker delivers to slot 0 or 2, and the
+  two sets union to section 16's matrix;
+* an unmarked instruction accumulates a value sent to its slot, so "the
+  receiver's accumulator" is a property of the slot, not only of the marker;
+* a slot's accumulated destination and the value it forwards differ;
+* r0 and r1 are written by hardware from every slot, completing the r0..r3
+  range alongside the matrix's r2/r3.
+
+### What this does not settle
+
+* **Why `(other)` targets `(i-1) & ~1`.** The rule fits every cell, but the
+  slot pairing behind it is inferred from the transfer set, not decoded from
+  the control words.
+* **`(other)` from slot 0.** Nothing in the packet receives it; whether it
+  targets a previous packet's slot, the other ALU lane, or nothing at all is
+  untested.
+* **Three senders, or two receivers.** Only two senders and one receiver, and
+  one middle slot, were run.
+* **Cross-packet delivery.** Every arrangement here is inside one packet.
+* **The value format.** The summed destination shows the fx10 add and the
+  section 14 byte conversion (`0x40 + 0x80 = 0xC0 -> 0xBF` stored); the
+  accumulator's precision for other operands is not swept.
+* **Double accumulation.** `sr` transfers once, not twice, but the case of a
+  slot that both receives from its previous slot and is sent to by `(other)` at
+  the same time was not built.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-marks` and `verify-alu-marks` hold 232 rows
+each (76 variants, three repeats, and the four control runs), pinned at
+`f38df6a66d8e...`; re-pinning from the verify directory is byte-identical.
+`clean-alu-marks` repeats the same 232 rows from a clone of the commit.
 
 ## What the runner cost
 
