@@ -495,109 +495,94 @@ A proposed linker dependency is the LINK `(z)` modifier, previously described as
 
 ## TEX instruction word encoding
 
-The TEX instruction takes the texture coordinates and LOD bias from the first row of the pixel packet (i.e. R0-R3 registers) and writes the sampled data to that first row as well. 
+TEX reads S, T, R and LOD from the first row of the pixel packet, using the
+register group selected by bit 4, and writes the sampled RGBA result to the
+register pair selected by bit 5. The tested fetch writes the four components as
+FX10 halves.
 
-|   Bits | Meaning                               |
-|-------:|:--------------------------------------|
-|     13 | explicit LOD                         |
-| 14..31 | ???                                   |
-|     12 | enable bias                           |
-|     11 | ???                                   |
-|     10 | enable                                |
-|   6..9 | ???                                   |
-|      5 | sampled data destination regs select  |
-|      4 | texcoords / lod regs select           |
-|   0..3 | sampler index                         |
-
-
-#### Texture coordinates and LOD registers select:
-
-The texture coordinate components (S, T, R) and LOD value are loaded from the
-row registers as fp20's.
-
-|  Value | Meaning (S, T, R, LOD order) |
-|-------:|:-----------------------------|
-|      1 | R2, R3, R0, R1               |
-|      0 | R0, R1, R2, R3               |
-
-Bit 12 enables LOD bias (TXB); bit 13 selects explicit LOD (TXL) when bit 12 is
-clear. With both bits set, bias mode takes precedence in the tested hardware.
-With neither bit set, the sampler uses its derivative-based LOD estimate.
-
-#### Sampled data destination registers select:
-
-The sampled RGBA data is stored in the two registers as four fx10's.
-
-|  Value | Meaning |
+|   Bits | Meaning |
 |-------:|:--------|
-|      1 | R2-R3   |
-|      0 | R0-R1   |
+|     13 | explicit LOD select |
+| 14..31 | unknown |
+|     12 | LOD bias select |
+|     11 | no effect in tested fetches |
+|     10 | fetch enable |
+|   6..9 | no effect in tested fetches |
+|      5 | destination register pair select |
+|      4 | coordinate/LOD register group select |
+|   0..3 | sampler index |
 
-## DW instruction word encoding
+### Sampler and enable
 
-Data write instruction controls write of values contained in the row registers R0-R1 / R2-R3 to the destination render target.
+Bits 0..3 select the sampler. Sampler 0 and sampler 1 were both tested with
+bound textures and selected the corresponding surfaces. Readbacks from
+unbound sampler indexes were unstable and are not a defined fallback value.
 
-|   Bits | Meaning                 |
-|-------:|:------------------------|
-| 16..17 | render-target class     |
-|     15 | source registers select |
-| 11..14 | unknown / special path  |
-|     10 | stencil write           |
-|   6..9 | unknown                 |
-|   2..5 | render target index     |
-|   0..1 | write mode              |
+Clearing bit 10 suppresses the fetch and leaves the destination registers
+unchanged. A control with bit 10 set overwrites the same registers, confirming
+that the disabled case is not a fetch that writes zero.
 
-The low two bits select the operation: 0 is a no-op, 1 is an ordinary
-render-target write, and 2 or 3 select the single-register and multi-register
-spill paths. They are a mode field, not a simple enable bit. Bits 16..17 are a
-render-target class, separate from the target index. In the tested AR20 paths,
-class 1 is used for depth and class 2 for ordinary target stores. Class 0 also
-worked in some tested contexts; class 3 did not work in the tested path. The
-full meaning of the class field is not established.
+### Coordinate and destination registers
 
-#### Source registers select:
+The coordinate components S, T, R and the LOD value are read as FP20 from the
+row registers:
 
-Seems have no effect when the depth or stencil write enabled.
+| Value | Meaning (S, T, R, LOD order) |
+|------:|:-----------------------------|
+| 0 | r0, r1, r2, r3 |
+| 1 | r2, r3, r0, r1 |
 
-|  Value | Meaning |
-|-------:|:--------|
-|      1 | R2-R3   |
-|      0 | R0-R1   |
+Bit 5 selects the destination pair:
 
-#### Render targets usage
+| Value | Destination |
+|------:|:------------|
+| 0 | r0-r1 |
+| 1 | r2-r3 |
 
-Some of the render targets have an additional special purpose, like depth/stencil store. They are hardwired and their special purpose is active under certain conditions, like when depth/stencil test is enabled.
+The RGBA channel order was confirmed through the r2-r3 destination pair.
+The tested texture did not distinguish the channel order through r0-r1, so
+that path remains uncharacterized.
 
-#### Observed DW execution with `alu_buffer_size`
+The default wrapping observed for both S and T is repeat: coordinates such as
+1.25 and -0.25 wrap to 0.25 and 0.75, respectively. The sampler follows the
+texture's dimensions rather than a fixed 4x4 size.
 
-Tests with `alu_buffer_size` 2, 3 and 4 show that batches form groups of N.
-A visible DW store occurs only when a group contains exactly one DW and that
-DW is in the group's first batch. The store is deferred until the end of the
-group, so it sees row-register writes made by later batches in that group.
-A DW in any later batch, or a second DW anywhere in the same group, produced
-no observable store in the tested arrangements. The same rule applies
-independently to later groups.
+### LOD selection
 
-The pattern was unchanged when `pseq_to_dw_exec_nb` was set to 1, 2, 3, 4, 6,
-8, 16 or 31. The hardware mechanism is unknown, and other group sizes and DW
-arrangements have not been exhaustively tested.
+Bit 12 selects LOD bias. When bit 12 is clear, bit 13 selects explicit LOD.
+With both bits clear, the LOD register is ignored and the sampler uses a
+derivative-based estimate. When both bits are set, bias takes precedence in
+the tested hardware.
 
-The low count field in the fragment start word at `0x520` counts batches,
-not execution slots. Use a count equal to the program's batch count; for
-`alu_buffer_size` greater than one, keep that count a multiple of the buffer
-size. Incomplete final groups were not reliably executable: tested programs
-sometimes returned zero and sometimes hung.
+Explicit LOD values below zero and above the available mip range clamp to the
+end levels. Fractional LOD selected the nearest mip level in the tested
+configuration. Bias and explicit LOD produced different results on a 16x16
+mip chain; the exact derivative-based LOD calculation and the behavior of
+fractional bias were not established.
 
+The experiments used nearest magnification filtering and
+NEAREST_MIPMAP_NEAREST minification filtering. They therefore do not establish
+linear texel filtering or mip-level blending.
 
-| Render target | Usage             |
-|--------------:|:-------------------------------------------------------------------------------------|
-|             0 | Depth buffer      |
-|             1 | Color buffer      |
-|             2 | Stencil buffer    |
-|             3 | Auxiliary shader-accessible surface (not fixed-function coverage in tested AR20 path) |
-|             4 | Register-spill surface |
-|             5 | Additional color surface; AR20 write tested when explicitly bound (`GRATE_RT5=1`) |
-|         6..12 | MRT encodings emitted by the compiler; working AR20 writes not demonstrated |
+### Formats and addressing
+
+RGBA8888 fetches preserved the sampled channel bytes through the tested
+r2-r3 readback path. DXT1 and ETC1 block-compressed surfaces also produced
+readable block rows in the tested cases. DXT1's one-bit alpha decoded as
+opaque in the probes; the ETC1 readback differed slightly from the DXT1
+control and that decoder difference is not explained here.
+
+The sampler stepped through rows at width times four bytes in the tested
+RGBA surface. When the allocation used a larger row pitch, the sampled row
+was instead displaced into padding. The observed TEX path therefore did not
+honor the tested non-default surface pitch.
+
+Bits 6..9 and bit 11 were toggled individually on a bound-sampler fetch and
+on explicit-LOD fetches at three mip levels. They did not change the result in
+those configurations. This does not establish that the fields are reserved
+or inert in every texture mode. Bits 14..31 remain undocumented here; the
+older unknown-bit sweep is not reproduced by the current committed experiment
+set.
 
 ## PSEQ instruction word encoding
 
