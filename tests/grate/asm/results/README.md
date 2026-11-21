@@ -788,3 +788,35 @@ invalidate another; generate such a manifest with
 * commit: 25108dbe25c86924107452abea8e7ec322299dac with a dirty tree
 * created: 2026-11-21T22:27:24+00:00; 37 rows, repeat 3, timeout 20.0 s
 * summary: 37 passed, 0 failed of 37 - passed
+
+## clean-tex-deriv
+
+* manifest: `asm_characterize.tex_deriv.json` (sha256 50c89582e601)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 8fb98d24b6a8190fa36d0e3548142ac9cd818d8f with a clean tree (clone in /tmp/clean-isa4)
+* created: 2026-11-21T22:29:34+00:00; 124 rows, repeat 3, timeout 20.0 s
+* summary: 124 passed, 0 failed of 124 - passed
+
+## clean-tex-state
+
+* manifest: `asm_characterize.tex_state.json` (sha256 01cfc0ed992c)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a89b568d8dfe659c7e111330618f8c9698e24b81 with a clean tree (clone in /tmp/clean-isa4)
+* created: 2026-11-21T22:30:56+00:00; 181 rows, repeat 3, timeout 20.0 s
+* summary: 181 passed, 0 failed of 181 - passed
+
+## clean-alu-marks-edge
+
+* manifest: `asm_characterize.alu_marks_edge.json` (sha256 5b67e52edf59)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 25108dbe25c86924107452abea8e7ec322299dac with a clean tree (clone in /tmp/clean-isa4)
+* created: 2026-11-21T22:31:19+00:00; 85 rows, repeat 3, timeout 20.0 s
+* summary: 85 passed, 0 failed of 85 - passed
+
+## clean-pseq-vis
+
+* manifest: `asm_characterize.pseq_vis.json` (sha256 6c17fce4b848)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 1bece9527f2e2b3142dbd66f7fb656d3397cea69 with a clean tree (clone in /tmp/clean-isa4)
+* created: 2026-11-21T22:31:29+00:00; 37 rows, repeat 3, timeout 20.0 s
+* summary: 37 passed, 0 failed of 37 - passed
