@@ -404,3 +404,11 @@ invalidate another; generate such a manifest with
 * commit: 1592d9412c5294e5b1517fdb2d2db80936364725 with a dirty tree
 * created: 2026-11-21T13:53:31+00:00; 367 rows, repeat 3, timeout 10.0 s
 * summary: 367 passed, 0 failed of 367 - passed
+
+## clean-sfu-ops
+
+* manifest: `asm_characterize.sfu_ops.json` (sha256 82f33210143a)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 7eab753623c0eb8bfdd979a10e953a82939c6866 with a clean tree (clone in /tmp/clean-sfu)
+* created: 2026-11-21T13:58:13+00:00; 367 rows, repeat 3, timeout 10.0 s
+* summary: 367 passed, 0 failed of 367 - passed
