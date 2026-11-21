@@ -500,3 +500,11 @@ invalidate another; generate such a manifest with
 * commit: 04a96f4a42fd41a68ef933a25cb6430434422728 with a dirty tree
 * created: 2026-11-21T14:56:15+00:00; 124 rows, repeat 3, timeout 10.0 s
 * summary: 124 passed, 0 failed of 124 - passed
+
+## clean-tram
+
+* manifest: `asm_characterize.tram.json` (sha256 afd7d3f85936)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 7cc75c67d763cbb1b824b15fa10fe4e1d3df3884 with a clean tree (clone in /tmp/clean-tram)
+* created: 2026-11-21T14:59:13+00:00; 124 rows, repeat 3, timeout 10.0 s
+* summary: 124 passed, 0 failed of 124 - passed
