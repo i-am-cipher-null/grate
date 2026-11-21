@@ -468,3 +468,19 @@ invalidate another; generate such a manifest with
 * commit: 423bb090947e88712a3d769179c8a4a5fcc30934 with a dirty tree
 * created: 2026-11-21T14:26:57+00:00; 43 rows, repeat 3, timeout 10.0 s
 * summary: 43 passed, 0 failed of 43 - passed
+
+## clean-alu-fwd
+
+* manifest: `asm_characterize.alu_fwd.json` (sha256 d133fa98801e)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a66118f53b5f85e84e3ba8b5c2b1ac1d7853166f with a clean tree (clone in /tmp/clean-alu)
+* created: 2026-11-21T14:33:14+00:00; 169 rows, repeat 3, timeout 10.0 s
+* summary: 169 passed, 0 failed of 169 - passed
+
+## clean-alu-result
+
+* manifest: `asm_characterize.alu_result_regs.json` (sha256 eb0c20007a35)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a66118f53b5f85e84e3ba8b5c2b1ac1d7853166f with a clean tree (clone in /tmp/clean-alu)
+* created: 2026-11-21T14:33:42+00:00; 43 rows, repeat 3, timeout 10.0 s
+* summary: 43 passed, 0 failed of 43 - passed
