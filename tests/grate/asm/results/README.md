@@ -716,3 +716,11 @@ invalidate another; generate such a manifest with
 * commit: 0e82b9e9a764bda7dcbeed146c18708750f73ade with a dirty tree
 * created: 2026-11-21T21:36:18+00:00; 169 rows, repeat 3, timeout 20.0 s
 * summary: 169 passed, 0 failed of 169 - passed
+
+## clean-tex-qual
+
+* manifest: `asm_characterize.tex_qual.json` (sha256 61bfc59c30e6)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 918122ae291524553d5a0083f6d9f8cf7ace30ec with a clean tree (clone in /tmp/clean-tex-qual)
+* created: 2026-11-21T21:38:36+00:00; 169 rows, repeat 3, timeout 20.0 s
+* summary: 169 passed, 0 failed of 169 - passed
