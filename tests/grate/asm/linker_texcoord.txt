@@ -1,0 +1,8 @@
+/*
+ * Shader linker for the varying probes: the exported varying reaches the
+ * fragment registers in source order, so r0 = x, r1 = y, r2 = z, r3 = w.
+ *
+ * The tests' own linker (linker_vs_tests.txt) swizzles yxzw, which is fine for
+ * a colour but would put the t coordinate in r0 and the s coordinate in r1.
+ */
+LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1

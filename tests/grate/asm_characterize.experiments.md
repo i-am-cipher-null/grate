@@ -2864,11 +2864,16 @@ coordinate-dependent row read as if s = t = 0:
   returned nothing at all, so that layout cannot sample;
 * the fetch has to be in a later exec for the sampler to return texels.
 
-Interpretation: in this harness the linked varying is visible to the first
-exec's ALU but not to a fetch in a later exec, and a fetch in the first exec
-does not sample. That combination, not a property of TEX, is what blocks the
-derivative tests below. The two templates were removed and the finding is
-recorded here so the next attempt starts from it.
+Interpretation at the time: in this harness the linked varying is visible to
+the first exec's ALU but not to a fetch in a later exec, and a fetch in the
+first exec does not sample.
+
+Section 19 withdraws that interpretation. A fetch of a black texel also
+returns `0x00000000`, and only `fb_data[0]` was read, so "returns zero" did not
+mean "does not sample". With the fetch's whole 64x64 output digested and a
+checker surface, a varying coordinate does reach the fetch and does select a
+level. The two templates are still removed; the corrected measurement is in
+section 19.
 
 ### What this settles
 
@@ -2883,10 +2888,13 @@ recorded here so the next attempt starts from it.
 ### What this does not settle
 
 * **Derivative-based LOD.** With constant coordinates the derivatives are zero,
-  and the varying path does not reach the fetch, so nothing here separates a
-  hardware estimate computed from derivatives from a fixed level.
+  so nothing here separates a hardware estimate computed from derivatives from
+  a fixed level. Section 19 reaches the fetch with a varying and sees the level
+  change with the coordinate gradient.
 * **Tie rounding above 1.5.** Only 0.5 and 1.5 were measured with the nearest
-  mip filter.
+  mip filter, and the levels those fractions chose held the same word, so the
+  rounding could not be seen. Section 19 measures every tie on a chain whose
+  levels all differ.
 * **The two-tone chain.** The level-1 words (`0x54`, `0xD5`) are not block
   averages; whether that is the harness's mip generation or the surface's alpha
   was not separated.
@@ -3321,6 +3329,206 @@ mnemonic names.
 each (76 variants, three repeats, and the four control runs), pinned at
 `f38df6a66d8e...`; re-pinning from the verify directory is byte-identical.
 `clean-alu-marks` repeats the same 232 rows from a clone of the commit.
+
+## 19. TEX qualifications: mip ties, wrap state and varyings
+
+`asm_characterize.tex_qual.json` (55 variants), templates `asm/tex_probe.in`
+(constant coordinates) and `asm/tex_vary.in` (varying coordinates), with
+`asm/vs_texcoord_ramp.txt` and `asm/linker_texcoord.txt` for the varying group.
+Three test-tooling additions in `tools/assembler.c`:
+
+* `GRATE_TEX_PIXEL=x,y,0xRRGGBBAA` paints one texel on a zeroed level 0 before
+  the mip chain is generated, so every level has a different value at that
+  texel;
+* `GRATE_TEX_WRAP=clamp|repeat|mirror` sets the s and t wrap state explicitly;
+* `GRATE_TEX_CHECKER` fills level 0 with alternating columns of black and white,
+  whose 2x2 average is `0x7F`, so any level above 0 is flat.
+
+Sampler state is part of each variant's environment and never part of the TEX
+word: the word selects the sampler index, the destination pair and the
+LOD/bias register (sections 11, 12 and 15), while the surface size, format,
+min/mag filters, wrap state and mip chain come from the texture's own state.
+
+### Nearest mip level at a tie
+
+16x16 surface, one white texel at (0,0), `--mipmap`, min filter
+`nearest-mipmap-nearest`, mag filter nearest, wrap repeat, s = t = 0.03125
+(texel (0,0) centre). The level words first, so the fractions below name real
+levels:
+
+| LOD | word | level |
+|:--|:--|:--|
+| 0.0 | `0xFFFFFFFF` | 0 |
+| 1.0 | `0xFF404040` | 1 |
+| 2.0 | `0xFF121212` | 2 |
+| 3.0 | `0xFF050505` | 3 |
+| 4.0 | `0xFF050505` | 3 or 4 |
+
+Level 4 reads the same word as level 3: a 16x16 chain's last level is 1x1, whose
+value should be `0x01`, so either the chain stops at 2x2 or the sampler clamps
+there. That is not separated here.
+
+The fractions:
+
+| LOD | word | level | LOD | word | level |
+|:--|:--|:--|:--|:--|:--|
+| 0.25 | `0xFFFFFFFF` | 0 | 1.25 | `0xFF404040` | 1 |
+| 0.4375 | `0xFFFFFFFF` | 0 | 1.4375 | `0xFF404040` | 1 |
+| 0.5 | `0xFFFFFFFF` | 0 | 1.5 | `0xFF404040` | 1 |
+| 0.5625 | `0xFF404040` | 1 | 1.5625 | `0xFF121212` | 2 |
+| 0.75 | `0xFF404040` | 1 | 1.75 | `0xFF121212` | 2 |
+| 2.4375 | `0xFF121212` | 2 | 2.5 | `0xFF121212` | 2 |
+| 2.5625 | `0xFF050505` | 3 | | | |
+
+Every tie goes to the **lower** level: 0.5 -> 0, 1.5 -> 1, 2.5 -> 2, and each
+threshold sits between the tie and the next quarter step. The rule that fits all
+thirteen fractions is `level = ceil(LOD - 0.5)`, i.e. round half down. Section
+15's "ties-to-even fit" is withdrawn: it was fitted to a chain whose levels 1
+and 2 held the same word, so 1.5 could not be seen to choose level 1.
+
+The blending mip filter has no tie to round and interpolates linearly between
+the two neighbouring levels by the fraction:
+
+| LOD | word | reading |
+|:--|:--|:--|
+| 0.0 | `0xFFFFFFFF` | level 0 |
+| 0.5 | `0xFFA0A0A0` | halfway between `0xFF` and `0x40` |
+| 1.0 | `0xFF404040` | level 1 |
+| 1.5 | `0xFF292929` | halfway between `0x40` and `0x12` |
+| 2.5 | `0xFF0C0C0C` | halfway between `0x12` and `0x05` |
+
+### Coordinates outside [0,1] with an explicit wrap state
+
+16x16 two-tone surface (left half black, right half white), mag filter nearest
+unless stated, t = 0.5, s as tabulated. Point sampling picks one texel; the
+index it computes is `u = s * 16 - 0.5` rounded to a texel, and what happens
+outside the surface is the wrap state's decision:
+
+| s | repeat (default) | clamp | mirror |
+|:--|:--|:--|:--|
+| -0.5 | `0xFFFFFFFF` | `0x00000000` | `0x00000000` |
+| 1.0 | `0x00000000` | `0xFFFFFFFF` | `0xFFFFFFFF` |
+| 1.25 | `0x00000000` | `0xFFFFFFFF` | `0xFFFFFFFF` |
+| 2.0 | `0x00000000` | `0xFFFFFFFF` | `0x00000000` |
+
+The three columns are three different answers for the same coordinate, so the
+sampler honours an explicitly set wrap state and the default state is repeat
+(section 11's reading, now measured against two other states rather than
+inferred from one). Mirroring agrees with `31 - (n mod 32)` on these four
+points: -8 -> 7 (black), 16 -> 15 (white), 20 -> 11 (white), 32 -> 0 (black).
+
+The same question on t, on a row-colour surface (rows `0x000000FF`,
+`0x0000FF00`, `0x00FF0000`, `0xFFFFFFFF`), at t = 1.125 and s = 0.875:
+
+| wrap | word | row read |
+|:--|:--|:--|
+| repeat | `0x00FF0000` | row 18 -> row 2 |
+| clamp | `0xFFFFFFFF` | row 15 |
+| mirror | `0x0000FF00` | row 13 |
+
+The linear filter's footprint uses the same wrap state, which is what separates
+the two effects at the edge:
+
+| s | repeat | clamp |
+|:--|:--|:--|
+| 0.0 | `0x80808080` | `0x00000000` |
+| 0.0625 | `0x00000000` | `0x00000000` |
+| 0.9375 | `0xFFFFFFFF` | `0xFFFFFFFF` |
+| 1.0 | `0x80808080` | `0xFFFFFFFF` |
+| 1.25 | `0x00000000` | `0xFFFFFFFF` |
+
+At s = 1.0 the two taps are texels 15 and 16. Under repeat texel 16 is texel 0,
+so the word is a 50/50 blend (`0x80`); under clamp both taps are texel 15, so
+the word is white. The filter always blends two taps - that is its footprint -
+and the wrap state decides which texels those are.
+
+### The varying reaches the fetch
+
+Section 15 recorded that a varying coordinate "does not reach the fetch", from
+a fetch that returned `0x00000000` and from nine s values returning the same
+texel. That conclusion does not hold: the surface's left half is black, so
+`0x00000000` is a valid sample, and only `fb_data[0]` was read. This set stores
+to rt4 and digests the whole 64x64 region instead.
+
+`asm/vs_texcoord_ramp.txt` exports the quad's `texcoord` attribute scaled by a
+"scale" uniform, and `asm/linker_texcoord.txt` links it without the yxzw
+swizzle, so r0 is the varying's x and r1 its y. The fetch reads r0/r1, and the
+packet after the fetch stores them, which records the coordinates the fetch
+used. At scale 4, row 32 of that dump starts
+
+    FF00BF00 FF00CB00 FF00D100 FF00D500 FF00D800 FF00DA00 ...
+
+i.e. r1 = `0xFF00` (fp20, about 1.47, constant in a row and so wrapping in t)
+while the `s` byte rises 0xBF, 0xCB, 0xD1, ... to 0xF6 at the right edge: s
+spans about 0 to 1.35 across the row. `vary-nofetch-s4` stores the same
+registers with the fetch replaced by NOP and produces the same digest
+(`0x45E4E1C5`), so the map difference below cannot come from the store alone.
+
+Fetch maps on a 64x64 checker, `--mipmap`, min filter
+`nearest-mipmap-nearest`, mag filter nearest, wrap repeat, whole rt4 digested:
+
+| variant | scale | digest | reading |
+|:--|:--|:--|:--|
+| `vary-level0-s4` | 4 | `0xF11D7DC5` | no chain: the checker pattern |
+| `vary-mip-s4` | 4 | `0xF11D7DC5` | chain present, still the pattern |
+| `vary-mip-s1` | 1 | `0x238515C5` | a quarter the gradient, a wider pattern |
+| `vary-mip-s8` | 8 | `0xDA85F6DD` | level 1: flat `0x80` over most rows |
+| `vary-const-mip` | - | `0x20B6CDC5` | constant coordinates, one texel everywhere |
+
+At scale 4 the checker's 32/32 column pattern is unchanged by the mip chain
+(one texel per pixel, LOD 0), and at scale 8 most rows read `0xFF808080`, the
+level-1 word, with two-column blends at the band edges. So the level the fetch
+uses changes with the coordinate gradient: the sampler does estimate an LOD
+from the derivative of a varying. Rows 0 and 32 of `vary-mip-s8` are the
+exception: all 64 columns read `0x00000000`, which is neither the pattern nor
+the flat level-1 word. That is unexplained and is left as a measurement, not
+interpreted.
+
+A consistency check, not a derivation: at scale 4 the measured ramp gives about
+1.35 texels per pixel, and log2(1.35) = 0.43, below the 0.5 threshold, so level
+0; at scale 8 it is about 2.7 texels per pixel and log2(2.7) = 1.43, so level
+1. The two levels seen agree with an LOD of log2(du/dx), but the formula is not
+established by two points and no attempt is made here to fit the derivative
+estimate itself.
+
+### What this settles
+
+* a nearest mip filter rounds every tie **down**: 0.5, 1.5 and 2.5 choose levels
+  0, 1 and 2 on a chain whose levels all differ, and `ceil(LOD - 0.5)` fits all
+  thirteen fractions measured;
+* the blending mip filter interpolates the neighbouring levels by the fraction,
+  with no tie;
+* the sampler honours an explicitly set wrap state, and the default is repeat;
+* point sampling wraps, clamps or mirrors the texel index according to that
+  state, and the linear filter's two taps follow the same state, so an
+  out-of-range coordinate is attributed to the wrap state rather than to the
+  filter's footprint;
+* an interpolated varying does reach a TEX fetch in a later exec, and the level
+  the fetch uses changes with the coordinate gradient.
+
+### What this does not settle
+
+* **The derivative formula.** Only two gradients produced different levels, and
+  the two all-zero rows at scale 8 are unexplained; nothing here fixes the
+  constant in `LOD = log2(du/dx)` or the way the estimate combines the two axes.
+* **The level-4 word.** Level 3 and 4 read the same `0x05`; whether the chain
+  stops at 2x2 or the sampler clamps is not separated.
+* **Ties between non-quarter fractions.** The ladder is quarter steps; a tie at
+  a fraction that is not exactly representable is untested.
+* **Wrap state per axis.** `GRATE_TEX_WRAP` sets s and t together, so s-repeated
+  with t-clamped is not measured.
+* **Minification with a varying.** The checker test is at LOD 0 to 1; the
+  minification range where the derivative dominates was not swept.
+* **The coordinate mapping.** The varying's absolute scale (s spanning 1.35 at
+  scale 4 rather than 4) follows the attribute and perspective path, which this
+  set does not model; only the gradient, which is what the LOD needs, is used.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-tex-qual` and `verify-tex-qual` hold 169 rows each
+(55 variants, three repeats, and the four control runs), pinned at
+`61bfc59c30e6...`; re-pinning from the verify directory is byte-identical.
+`clean-tex-qual` repeats the same 169 rows from a clone of the commit.
 
 ## What the runner cost
 

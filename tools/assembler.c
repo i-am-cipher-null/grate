@@ -347,6 +347,41 @@ static int setup_rgba_texture(struct grate *grate, struct grate_texture *tex,
 	if (getenv("GRATE_TEX_CHANNELS"))
 		setup_channel_texture(grate, tex, tex_w, tex_h);
 
+	/*
+	 * GRATE_TEX_PIXEL=x,y,0xRRGGBBAA clears level 0 to zero and paints one
+	 * texel. Run before the mip chain is generated, it gives each level a
+	 * distinct value: a single white texel of a 16x16 surface averages down to
+	 * 0x40 at level 1, 0x10 at level 2, 0x04 at level 3 and 0x01 at level 4.
+	 */
+	/*
+	 * GRATE_TEX_CHECKER alternates texels between black and white. Every 2x2
+	 * block of the surface averages to 0x7F, so level 0 is a checker and every
+	 * generated level above it is flat: a fetch that selects a level by a
+	 * coordinate derivative changes from a pattern to one word.
+	 */
+	if (getenv("GRATE_TEX_CHECKER")) {
+		int x;
+
+		grate_texture_clear(grate, tex, 0x00000000);
+		for (x = 0; x < tex_w; x += 2)
+			grate_texture_clear_rect(grate, tex, 0xFFFFFFFF,
+						 x, 0, 1, tex_h);
+	}
+
+	if (getenv("GRATE_TEX_PIXEL")) {
+		unsigned px, py, color;
+
+		if (sscanf(getenv("GRATE_TEX_PIXEL"), "%u,%u,0x%x",
+			   &px, &py, &color) != 3 ||
+		    px >= (unsigned)tex_w || py >= (unsigned)tex_h) {
+			fprintf(stderr, "GRATE_TEX_PIXEL needs x,y,0xRRGGBBAA "
+				"inside the texture\n");
+			return -1;
+		}
+		grate_texture_clear(grate, tex, 0x00000000);
+		grate_texture_clear_rect(grate, tex, color, px, py, 1, 1);
+	}
+
 	if (mipmap) {
 		if (grate_texture_generate_mipmap(grate, tex))
 			return -1;
@@ -729,6 +764,34 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				grate_texture_set_mag_filter(tex, filter);
+			}
+
+			/*
+			 * GRATE_TEX_WRAP=clamp|repeat|mirror sets the s and t wrap state
+			 * explicitly, so an out-of-range coordinate can be attributed to the
+			 * sampler's wrap mode rather than to the filter's footprint. The
+			 * allocation leaves both flags clear, which is the repeat mode.
+			 */
+			{
+				const char *wrap = getenv("GRATE_TEX_WRAP");
+				enum grate_textute_wrap_mode mode;
+
+				if (wrap) {
+					if (!strcmp(wrap, "clamp"))
+						mode = GRATE_TEXTURE_CLAMP_TO_EDGE;
+					else if (!strcmp(wrap, "repeat"))
+						mode = GRATE_TEXTURE_REPEAT;
+					else if (!strcmp(wrap, "mirror"))
+						mode = GRATE_TEXTURE_MIRRORED_REPEAT;
+					else {
+						fprintf(stderr,
+							"unknown GRATE_TEX_WRAP \"%s\"\n",
+							wrap);
+						return 1;
+					}
+					grate_texture_set_wrap_s(tex, mode);
+					grate_texture_set_wrap_t(tex, mode);
+				}
 			}
 		}
 

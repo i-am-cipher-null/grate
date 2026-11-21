@@ -1,0 +1,33 @@
+/*
+ * Vertex shader that exports the "texcoord" attribute as the varying, scaled by
+ * the "scale" uniform.
+ *
+ * The harness sets the attribute to (0,0), (0,1), (1,0), (1,1) over the quad,
+ * so with scale = (1,1) the varying spans 0..1 across the target and with
+ * scale = (8,8) it spans 0..8. The second case gives a fetch a coordinate
+ * gradient of 8 * texture_width / target_width texels per pixel, which is what
+ * a derivative-based LOD estimate has to see.
+ */
+
+.attributes
+	[0] = "position";
+	[2] = "texcoord";
+
+.exports
+	[0] = "position";
+	[7] = "texcoord";
+
+.uniforms
+	[101] = "scale";
+
+.asm
+
+EXEC(export[0]=vector)
+	MOVv r31.xyzw, a[0].xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MULv r31.xyzw, a[2].xyzw, c[101].xyzw
+	NOPs
+;

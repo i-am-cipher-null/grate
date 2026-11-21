@@ -700,3 +700,19 @@ invalidate another; generate such a manifest with
 * commit: e7db8d1c8143a09ec3eeed0b3d559fca5332bc1a with a clean tree (clone in /tmp/clean-alu-marks)
 * created: 2026-11-21T21:23:37+00:00; 232 rows, repeat 3, timeout 15.0 s
 * summary: 232 passed, 0 failed of 232 - passed
+
+## pin-tex-qual
+
+* manifest: `asm_characterize.tex_qual.json` (sha256 a9767e9d0cce)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 0e82b9e9a764bda7dcbeed146c18708750f73ade with a dirty tree
+* created: 2026-11-21T21:35:35+00:00; 169 rows, repeat 3, timeout 20.0 s
+* summary: 169 passed, 0 failed of 169 - passed
+
+## verify-tex-qual
+
+* manifest: `asm_characterize.tex_qual.json` (sha256 61bfc59c30e6)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 0e82b9e9a764bda7dcbeed146c18708750f73ade with a dirty tree
+* created: 2026-11-21T21:36:18+00:00; 169 rows, repeat 3, timeout 20.0 s
+* summary: 169 passed, 0 failed of 169 - passed
