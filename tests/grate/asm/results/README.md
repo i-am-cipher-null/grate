@@ -548,3 +548,11 @@ invalidate another; generate such a manifest with
 * commit: efb6078e33cb60eeb4a96234a6b9497daad5e44b with a dirty tree
 * created: 2026-11-21T15:41:45+00:00; 85 rows, repeat 3, timeout 15.0 s
 * summary: 85 passed, 0 failed of 85 - passed
+
+## clean-pseq
+
+* manifest: `asm_characterize.pseq.json` (sha256 2291ba0db017)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 6b84375a5202f97ed681387f066ef4b0c809b93a with a clean tree (clone in /tmp/clean-pseq)
+* created: 2026-11-21T15:42:57+00:00; 85 rows, repeat 3, timeout 15.0 s
+* summary: 85 passed, 0 failed of 85 - passed
