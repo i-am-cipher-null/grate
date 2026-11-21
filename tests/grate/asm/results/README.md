@@ -572,3 +572,11 @@ invalidate another; generate such a manifest with
 * commit: 342e03f7689cd1a35cd7403675c1e69749364db8 with a dirty tree
 * created: 2026-11-21T15:48:16+00:00; 94 rows, repeat 3, timeout 15.0 s
 * summary: 94 passed, 0 failed of 94 - passed
+
+## clean-alu-control
+
+* manifest: `asm_characterize.alu_control.json` (sha256 45cc01a536b2)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 7bc67636fa124dd01cf49e0a049b8929856c6ba6 with a clean tree (clone in /tmp/clean-ac)
+* created: 2026-11-21T15:50:20+00:00; 94 rows, repeat 3, timeout 15.0 s
+* summary: 94 passed, 0 failed of 94 - passed
