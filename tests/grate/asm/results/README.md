@@ -652,3 +652,19 @@ invalidate another; generate such a manifest with
 * commit: 9e561d77f63c6314ebe25dba9166b786d7237b58 with a clean tree (clone in /tmp/clean-alu-send)
 * created: 2026-11-21T20:55:20+00:00; 109 rows, repeat 3, timeout 15.0 s
 * summary: 109 passed, 0 failed of 109 - passed
+
+## pin-pseq-split
+
+* manifest: `asm_characterize.pseq_split.json` (sha256 456d65f91cba)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 5c582d36b2d3b6d542d08621e1885ae1970ef263 with a dirty tree
+* created: 2026-11-21T21:13:15+00:00; 40 rows, repeat 3, timeout 20.0 s
+* summary: 40 passed, 0 failed of 40 - passed
+
+## verify-pseq-split
+
+* manifest: `asm_characterize.pseq_split.json` (sha256 bb4b6b872647)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 5c582d36b2d3b6d542d08621e1885ae1970ef263 with a dirty tree
+* created: 2026-11-21T21:14:17+00:00; 40 rows, repeat 3, timeout 20.0 s
+* summary: 40 passed, 0 failed of 40 - passed

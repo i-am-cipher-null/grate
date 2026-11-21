@@ -1,0 +1,43 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * PSEQ separate-draw probe, draw A: write the position tag, no fetch.
+ *
+ * The tag is the same one the same-draw set uses:
+ *
+ *   R = frag.x + 1    G = frag.y + 1    B = 0x9F    A = 0xBF
+ *
+ * which stores as 0xBF9F<y+1><x+1>, so a fetched tag names the pixel it came
+ * from. Batch 0 brings the position registers (offset by 8192) back to a small
+ * fp20 value; batch 1 scales and biases each coordinate into fx10 and stores
+ * the four words to the variant's source target.
+ *
+ * Nothing else is stored and no fetch happens here, so run as draw A this
+ * program only fills the source surface.
+ */
+
+.constants
+	[3] = 0.625;
+	[13] = -8192.0;
+	[19] = 0.00390625;
+	[21] = 0.75;
+	[22] = 0.06640625;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r2.lh,  posx,  #1,  u13
+		ALU1:	MAD  r3.lh,  posy,  #1,  u13
+		ALU2:	NOP
+		ALU3:	NOP
+	DW:	NOP
+;
+EXEC
+	ALU:
+ENC0_SLOT
+ENC1_SLOT
+ENC2_SLOT
+ENC3_SLOT
+	DW:	STORE_A_SLOT
+;

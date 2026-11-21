@@ -2653,12 +2653,13 @@ section 12's result. A store from the previous packet is visible to the fetch.
 
 * **Mechanism.** Every test stores to the fragment's own pixel before fetching,
   so "address from the position registers" and "address from the fragment's
-  write target" produce the same map. A fragment that fetches without storing
-  first - for instance on a second draw over the previous frame's surface - is
-  not covered.
-* **A 64x64 target.** The harness allocates 256x256, so the height term in
+  write target" produce the same map. Section 17 separates the store from the
+  fetch across a draw boundary and still cannot separate the two, because the
+  observing store is to the same pixel.
+* **A 64x64 target.** The harness allocates 256x256 here, so the height term in
   `posy` and a 256-byte pitch with 4-byte pixels were not exercised. Pitches
-  were varied only through the pixel size (1024, 512, 256 bytes).
+  were varied only through the pixel size (1024, 512, 256 bytes). Section 17
+  allocates a genuine 64x64 target and a source 16 texels wider than it.
 * **Coordinates past 95.** The tag encoding covers x and y up to 95; larger
   coordinates and the target edges are untested.
 * **Layer and alignment fields.** The fetch word's remaining bits were only
@@ -3031,6 +3032,141 @@ destination question is answered from the word dumps above instead.
 (35 variants, three repeats, plus the four control runs), pinned at
 `8996a2094b52...`; re-pinning from the verify directory is byte-identical, and
 `clean-alu-send` repeats the same 109 rows from a clone with a clean tree.
+
+## 17. PSEQ fetch across draw boundaries
+
+`asm_characterize.pseq_split.json` (12 variants), templates `asm/pseq_split_a.in`
+(tag writer), `asm/pseq_split_b.in` (fetch and observe only) and
+`asm/pseq_split_c.in` (second picture), plus the section 14 template as the
+same-draw reference.
+
+### The question
+
+Section 14 tagged every pixel with its own window position, but the same
+fragment stored the tag and fetched it back in the same draw. A fetch that
+returned the store it had just made, or the register values it still held,
+would have produced the same identity map. The question here is whether a fetch
+performed by a *later* draw, which writes nothing to the source surface, reads
+the surface at the fetching fragment's own pixel.
+
+Four explanations to separate:
+
+* **position** - the address is the fetching fragment's window position, so the
+  map is the identity whatever happened before;
+* **dw state** - the address is the one the DW last used, in draw A, so the map
+  is one repeated word or a picture anchored at draw A's last pixel;
+* **surface** - memory is addressed with the wrong pitch or tile, so the map is
+  shifted or scrambled rather than identity;
+* **nothing** - a fetch after a draw boundary returns nothing, so the
+  observation surface shows only what draw B's registers held.
+
+### Design
+
+Draw A writes `tag(x, y) = 0xBF9F <y+1> <x+1>` to the source surface and
+fetches nothing. Draw B fetches the same surface word and stores the result to
+the linear rt4 surface, and stores nothing to the source. Both draws are the
+same full-screen quad, so every pixel of a genuine 64x64 target is written by A
+and every pixel of the observed rectangle is written by B. rt4's whole 64x64
+rectangle is dumped by `GRATE_REGION` and its digest is the reported result.
+
+Draw B preloads pattern B (`0x9F607F40`) into r0/r1 before the fetch, so a
+fetch that does not happen shows B, an unwritten source shows zero, a fetched
+tag shows the tag, and the changed-source control shows C (`0x10703020`).
+
+Three test-tooling additions in `tools/assembler.c`, opt-in like section 15's:
+
+* `GRATE_SIZE=64` allocates every surface (framebuffer, rt3, rt4, rt5) as a
+  genuine 64x64 target instead of drawing a 64x64 window of a 256x256 one;
+* `GRATE_PITCH_PAD=16` allocates the rt5 source 16 texels wider than the target;
+* `GRATE_EXTRA_FS=a.in:b.in` draws the same quad again with each fragment
+  program in turn, after the first draw is flushed, keeping the render targets
+  and the vertex setup.
+
+With `GRATE_SIZE=64` the vertex shader is `asm/vs_mov.txt`, the identity
+transform, because `vs_scale_offset.txt` bakes a 0.25 scale that only fills a
+quarter of the target at this size.
+
+### Measured
+
+| variant | digest | reading |
+|:--|:--|:--|
+| `same-draw` | `0xFDFE7DC5` | section 14's reference picture at 64x64 |
+| `two-draw` | `0xFDFE7DC5` | draw A writes, draw B fetches: the same picture |
+| `two-draw-nofetch` | `0x8086DDC5` | pattern B everywhere: the fetch did not happen |
+| `drawb-only` | `0x76EFDDC5` | `nz=0`, the unwritten source reads zero |
+| `changed` | `0x54FFDDC5` | pattern C everywhere |
+| `shift-a` | `0x80261DC5` | `tag(x+16, y)` at pixel `(x, y)` |
+| `pair-23` | `0xFDFE7DC5` | the same map through the r2/r3 destination pair |
+| `src-rt1` | `0xFDFE7DC5` | identity through the tiled framebuffer |
+| `src-rt3-linear` | `0xFDFE7DC5` | identity through linear rt3 |
+| `src-rt3-tiled` | `0xFDFE7DC5` | identity through tiled rt3 |
+| `src-rt5-rgb565` | `0xAB4CFDC5` | 16-bit source: the map completes, one coordinate byte is lost |
+| `pitch-pad-16` | `0xFDFE7DC5` | identity through a source 16 texels wider than the target |
+
+Every pixel of the identity variants was also checked against the formula
+`0xBF9F0000 | ((y+1) << 8) | (x+1)`, not only against a digest:
+
+| variant | pixels checked | mismatches |
+|:--|:--|:--|
+| `two-draw` | 4096 | 0 |
+| `shift-a` (formula `x+17` in the low byte) | 4096 | 0 |
+| `pitch-pad-16` | 4096 | 0 |
+| `src-rt1` | 4096 | 0 |
+| `src-rt3-tiled` | 4096 | 0 |
+
+`changed`'s digest is the same `0x54FFDDC5` that section 14's `last-store`
+variant produced for a surface holding C everywhere, which ties the two sets'
+picture digests together. `src-rt5-rgb565`'s first row is `FF9C0000` for every
+column, row 8 starts `FF9C0800` and row 63 `FF9C4100`: the byte carrying `y+1`
+survives quantised to 5 bits (`64 -> 0x41`, `8 -> 0x08`), the byte carrying
+`x+1` is dropped, and the columns are identical. That is the format, not the
+addressing, and it agrees with section 15's rgb565 channel finding.
+
+### What this settles
+
+On this device and setup:
+
+* a PSEQ fetch performed by a later draw reads the source surface where draw A
+  left it, at the fetching fragment's own window position, with the program's
+  destination pair;
+* the map does not depend on the address the preceding DW used: `shift-a` shows
+  the picture moved by exactly the 16 columns draw A was shifted by, while a
+  carried-over address would have produced a constant word or a picture
+  anchored at draw A's last pixel;
+* an unwritten source reads zero, and a fetch that does not execute leaves the
+  preloaded pattern B, so the three pictures - tag, C, B, zero - are distinct;
+* the same identity map comes back through a tiled framebuffer, linear and
+  tiled rt3, and an rt5 surface allocated 16 texels wider than the target, so
+  the fetch uses the target's tile layout and pitch rather than assuming the
+  target width times bytes per pixel.
+
+### What this does not settle
+
+* **The mechanism.** As in section 14, the address may come from the position
+  registers or from the fragment's own target coordinate; draw B stores only to
+  rt4, which separates it from the *source* surface's DW address, but rt4's
+  address is still the same pixel. A fetch from a fragment covering a different
+  pixel of the source than the one it stores to is untested.
+* **Two draws without a flush between them.** The harness flushes after each
+  draw; a fetch issued before the first draw's writes are flushed is untested,
+  so nothing is said here about cache or flush semantics.
+* **A later draw that also writes the source.** Draw B writes nothing to it, so
+  the read-after-write hazard of section 14 is not combined with the draw
+  boundary here.
+* **Padded tiled pitch.** `GRATE_PITCH_PAD` was only applied to the linear rt5
+  source; a tiled surface with a padded allocation is untested.
+* **Targets larger than 64x64 and coordinates past 63.** The genuine target is
+  64x64; section 14 covered a 64x64 window at (32,16) of a 256x256 target at
+  the same time the set was run, but not with this tag range.
+* **The 16-bit source.** Only one coordinate byte survives in rgb565, so that
+  variant is a completion and format control, not a readable address map.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-pseq-split` and `verify-pseq-split` hold 40 rows
+each (12 variants, three repeats, and the four control runs), pinned at
+`bb4b6b872647...`; re-pinning from the verify directory is byte-identical.
+`clean-pseq-split` repeats the same 40 rows from a clone of the commit.
 
 ## What the runner cost
 

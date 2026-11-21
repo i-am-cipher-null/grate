@@ -1,0 +1,37 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * PSEQ separate-draw probe, draw B: fetch, then store the fetched word to the
+ * observation surface, writing nothing to the fetch source.
+ *
+ * Batch 0 loads pattern B (0x9F607F40) into r0/r1, so a fetch that never
+ * happened shows up as B rather than as whatever the registers held. Batch 1
+ * is the fetch, batch 2 stores r0/r1 to the linear rt4 surface that
+ * GRATE_REGION reads back. A fetched tag (0xBF9F<y+1><x+1>) is therefore
+ * distinguishable from a dead fetch (B), from a zero source (0), and from the
+ * pattern C surface (0x10703020).
+ */
+
+.constants
+	[0] = 0.25;
+	[1] = 0.5;
+	[2] = 0.375;
+	[3] = 0.625;
+
+.asm
+EXEC
+	ALU:
+B0_SLOT
+B1_SLOT
+B2_SLOT
+B3_SLOT
+	DW:	NOP
+;
+EXEC
+	PSEQ:	FETCH_WORD
+	DW:	NOP
+;
+EXEC
+	DW:	STORE_B_SLOT
+;

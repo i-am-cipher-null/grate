@@ -51,6 +51,7 @@ struct vs_mat4 {
 
 /* GRATE_RT5_FMT decides the pixel size of the rt5 readback */
 static unsigned rt5_bpp = 4;
+static unsigned rt5_pitch;
 
 struct vs_asm_test {
 	char *vs_path;
@@ -575,6 +576,23 @@ int main(int argc, char *argv[])
 	options.width = 256;
 	options.height = 256;
 
+	/*
+	 * GRATE_SIZE=64 makes every surface, including the render targets that
+	 * hold the fetch source, a genuine 64x64 allocation instead of a 64x64
+	 * window of a 256x256 one, so the source pitch and the target size can
+	 * be tested independently.
+	 */
+	if (getenv("GRATE_SIZE")) {
+		int size = atoi(getenv("GRATE_SIZE"));
+
+		if (size < 16 || size > 256) {
+			fprintf(stderr, "GRATE_SIZE must be 16..256\n");
+			return 1;
+		}
+		options.width = size;
+		options.height = size;
+	}
+
 	fb = grate_framebuffer_create(grate, options.width, options.height,
 				      PIX_BUF_FMT_RGBA8888,
 				      PIX_BUF_LAYOUT_TILED_16x16,
@@ -800,9 +818,20 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
+		/*
+		 * GRATE_PITCH_PAD=16 allocates the source 16 texels wider than the
+		 * target, so a fetch that assumes an unpadded pitch walks sideways
+		 * through the surface.
+		 */
+		if (getenv("GRATE_PITCH_PAD"))
+			rt5_pitch = (options.width +
+				     (unsigned)atoi(getenv("GRATE_PITCH_PAD"))) * rt5_bpp;
+		else
+			rt5_pitch = options.width * rt5_bpp;
+
 		rt5 = host1x_pixelbuffer_create(grate->host1x,
 						options.width, options.height,
-						options.width * rt5_bpp,
+						rt5_pitch,
 						fmt,
 						PIX_BUF_LAYOUT_LINEAR);
 		if (!rt5) {
@@ -918,6 +947,69 @@ int main(int argc, char *argv[])
 					       bo, TGR3D_INDEX_MODE_UINT16,
 					       ARRAY_SIZE(indices));
 		grate_flush(grate);
+
+		/*
+		 * GRATE_EXTRA_FS=a.in:b.in draws the same quad again with each fragment
+		 * program in turn, after the first draw has been flushed. The render
+		 * targets, the vertex setup and the vertex uniforms are kept, so a
+		 * program that only fetches can be run in a later draw and still see
+		 * what the first draw stored, which separates the fetch from the store
+		 * the same fragment would otherwise do in the same draw.
+		 */
+		if (getenv("GRATE_EXTRA_FS")) {
+			char *list = strdup(getenv("GRATE_EXTRA_FS"));
+			char *save = NULL;
+			char *path;
+
+			for (path = strtok_r(list, ":", &save); path;
+			     path = strtok_r(NULL, ":", &save)) {
+				struct grate_shader *vs2, *fs2, *lnk2;
+				struct grate_program *program2;
+				unsigned j;
+
+				vs2 = grate_shader_parse_vertex_asm_from_file(test.vs_path);
+				fs2 = grate_shader_parse_fragment_asm_from_file(path);
+				lnk2 = grate_shader_parse_linker_asm_from_file(test.linker_path);
+				if (!vs2 || !fs2 || !lnk2) {
+					fprintf(stderr, "%s assembler parse failed\n", path);
+					return 1;
+				}
+
+				program2 = grate_program_new(grate, vs2, fs2, lnk2);
+				if (!program2) {
+					fprintf(stderr, "extra program alloc failed\n");
+					return 1;
+				}
+				grate_program_link(program2);
+				grate_3d_ctx_bind_program(ctx, program2);
+
+				for (j = 0; j < test.vs_uniforms_nb; j++) {
+					int loc2 = grate_get_vertex_uniform_location(
+						program2, test.vs_uniforms[j].name);
+
+					if (loc2 >= 0)
+						grate_3d_ctx_set_vertex_uniform(ctx, loc2, 4,
+								test.vs_uniforms[j].values);
+				}
+
+				for (j = 0; j < test.fs_uniforms_nb; j++) {
+					int loc2 = grate_get_fragment_uniform_location(
+						program2, test.fs_uniforms[j].name);
+
+					if (loc2 >= 0)
+						grate_3d_ctx_set_fragment_uniform(ctx, loc2, 1,
+								&test.fs_uniforms[j].value);
+				}
+
+				grate_3d_draw_elements(ctx, TGR3D_PRIMITIVE_TYPE_TRIANGLES,
+						       bo, TGR3D_INDEX_MODE_UINT16,
+						       ARRAY_SIZE(indices));
+				grate_flush(grate);
+				fprintf(stdout, "extra-draw=%s\n", path);
+			}
+
+			free(list);
+		}
 
 		fb_data = grate_framebuffer_data(fb, true);
 		clock_gettime(CLOCK_MONOTONIC, &t1);
