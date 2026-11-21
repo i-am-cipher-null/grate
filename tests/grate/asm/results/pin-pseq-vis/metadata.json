@@ -1,0 +1,296 @@
+{
+  "name": "pseq-vis",
+  "created_utc": "2026-11-21T22:27:03+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.pseq_vis.json",
+  "manifest_sha256": "2f182195a4237f2391b6aa73c69961d1b1a0486f7a66fb6d4298a61d2c1c0b0c",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "25108dbe25c86924107452abea8e7ec322299dac",
+  "git_status": "?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/make_pseq_vis.py\n?? tests/grate/asm/pseq_split_bw.in\n?? tests/grate/asm/vis/\n?? tests/grate/asm_characterize.pseq_vis.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "pseq-vis",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/pseq_split_a.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "flush-two-draw",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/b-rt5.in"
+        },
+        "expected_note": "draw A flushed before draw B: the identity map"
+      },
+      {
+        "name": "flush-nofetch",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/b-rt5-nofetch.in"
+        },
+        "expected_note": "its control: pattern B everywhere"
+      },
+      {
+        "name": "noflush-two-draw",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_BEFORE_FLUSH": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/b-rt5.in"
+        },
+        "expected_note": "no flush between the draws, one submission"
+      },
+      {
+        "name": "noflush-nofetch",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_BEFORE_FLUSH": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/b-rt5-nofetch.in"
+        },
+        "expected_note": "its control"
+      },
+      {
+        "name": "flush-changed",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/c-rt5.in:tests/grate/asm/vis/b-rt5.in"
+        },
+        "expected_note": "A, then C, then B, each flushed"
+      },
+      {
+        "name": "noflush-changed",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_BEFORE_FLUSH": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/c-rt5.in:tests/grate/asm/vis/b-rt5.in"
+        },
+        "expected_note": "A, then C, then B, one submission"
+      },
+      {
+        "name": "prewrite",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/bw-pre-rt5.in"
+        },
+        "expected_note": "draw B stores B to the source, then fetches"
+      },
+      {
+        "name": "postwrite",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/bw-post-rt5.in"
+        },
+        "expected_note": "draw B fetches, then stores B to the source"
+      },
+      {
+        "name": "tiled-pad",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt3, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_COVERAGE": "1",
+          "GRATE_COVERAGE_TILED": "1",
+          "GRATE_PITCH_PAD": "16",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/b-rt3.in"
+        },
+        "expected_note": "tiled source allocated 16 texels wider"
+      },
+      {
+        "name": "tiled-pad-shift",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u22",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt3, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_COVERAGE": "1",
+          "GRATE_COVERAGE_TILED": "1",
+          "GRATE_PITCH_PAD": "16",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/b-rt3.in"
+        },
+        "expected_note": "the same, draw A shifted 16 columns"
+      },
+      {
+        "name": "tiled-pad-nofetch",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt3, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_COVERAGE": "1",
+          "GRATE_COVERAGE_TILED": "1",
+          "GRATE_PITCH_PAD": "16",
+          "GRATE_EXTRA_FS": "tests/grate/asm/vis/b-rt3-nofetch.in"
+        },
+        "expected_note": "its control"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 37,
+    "passed": 37,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

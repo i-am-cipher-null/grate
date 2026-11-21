@@ -1,0 +1,47 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * PSEQ fetch probe with a write to the source, in either order.
+ *
+ * batch 0  load pattern B (0x9F607F40) into r0/r1
+ * batch 1  PRE_STORE: an optional store to the fetch source
+ * batch 2  the fetch
+ * batch 3  POST_STORE: an optional store to the fetch source
+ * batch 4  store r0/r1 to the observation surface
+ *
+ * A fetch that never happened leaves pattern B in r0/r1, so the observation
+ * surface shows B; a fetch that ran shows the tag the earlier draw wrote, or B
+ * if the pre-store reached the source before the fetch did. The two stores let
+ * one fragment write the source on either side of its own fetch, which is the
+ * ordering question the separate-draw set could not ask.
+ */
+
+.constants
+	[0] = 0.25;
+	[1] = 0.5;
+	[2] = 0.375;
+	[3] = 0.625;
+
+.asm
+EXEC
+	ALU:
+B0_SLOT
+B1_SLOT
+B2_SLOT
+B3_SLOT
+	DW: NOP
+;
+EXEC
+	DW: PRE_STORE_SLOT
+;
+EXEC
+	PSEQ: FETCH_WORD
+	DW: NOP
+;
+EXEC
+	DW: POST_STORE_SLOT
+;
+EXEC
+	DW: STORE_B_SLOT
+;

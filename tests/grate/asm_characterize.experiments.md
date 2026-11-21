@@ -3159,13 +3159,16 @@ On this device and setup:
   address is still the same pixel. A fetch from a fragment covering a different
   pixel of the source than the one it stores to is untested.
 * **Two draws without a flush between them.** The harness flushes after each
-  draw; a fetch issued before the first draw's writes are flushed is untested,
-  so nothing is said here about cache or flush semantics.
+  draw. Section 23 issues both draws in one submission and finds the same map,
+  so the explicit flush is not what makes the earlier draw visible on this
+  setup.
 * **A later draw that also writes the source.** Draw B writes nothing to it, so
   the read-after-write hazard of section 14 is not combined with the draw
   boundary here.
 * **Padded tiled pitch.** `GRATE_PITCH_PAD` was only applied to the linear rt5
-  source; a tiled surface with a padded allocation is untested.
+  source here. Section 23 pads a tiled rt3 and gets the identity map and the
+  same shifted picture, so the tile layout, not the allocation width, sets the
+  row stride.
 * **Targets larger than 64x64 and coordinates past 63.** The genuine target is
   64x64; section 14 covered a 64x64 window at (32,16) of a 256x256 target at
   the same time the set was run, but not with this tag range.
@@ -4044,6 +4047,117 @@ On this device and setup:
 `tests/grate/asm/results/pin-alu-marks-edge` and `verify-alu-marks-edge` hold 85
 rows each (27 variants, three repeats, and the four control runs), pinned at
 `5b67e52edf59...`; re-pinning from the verify directory is byte-identical.
+
+## 23. PSEQ visibility: the flush boundary, write ordering and a padded tiled source
+
+`asm_characterize.pseq_vis.json` (11 variants), the section 17 templates
+(`asm/pseq_split_a.in` writes the tag, `asm/pseq_split_b.in` fetches and observes
+through rt4) and a new `asm/pseq_split_bw.in`, which can store to the fetch
+source on either side of its own fetch. Extra draws are generated into
+`asm/vis/` by `make_pseq_vis.py --write-extras`.
+
+The staging is section 17's: a genuine 64x64 target (`GRATE_SIZE=64`), draw A
+writes `tag(x, y) = 0xBF9F <y+1> <x+1>` to the source and fetches nothing, draw B
+preloads pattern B (`0x9F607F40`), fetches the source with the program's
+destination pair, and stores the result to rt4, whose whole 64x64 region the
+runner digests. The source and the observation surface are different surfaces in
+every variant, so a word in rt4 is a fetched word.
+
+### The questions
+
+Section 17 flushed between the draws, because that is what the harness did. Three
+things followed from that, and one new surface case:
+
+* does a fetch in a later draw see the earlier draw's writes **before** any
+  explicit flush, or only after one?
+* what happens when the fetching draw also writes the source, on either side of
+  its own fetch?
+* does the identity map survive a **tiled** source allocated wider than the
+  target, which section 17 could only do for a linear one?
+
+### Measured
+
+| variant | digest | reading |
+|:--|:--|:--|
+| `flush-two-draw` | `0xFDFE7DC5` | flushed: the identity map (section 17's picture) |
+| `flush-nofetch` | `0x8086DDC5` | control: pattern B everywhere |
+| `noflush-two-draw` | `0xFDFE7DC5` | **one submission, no flush: the same identity map** |
+| `noflush-nofetch` | `0x8086DDC5` | its control |
+| `flush-changed` | `0x54FFDDC5` | A, then C, then B, each flushed: C's picture |
+| `noflush-changed` | `0x54FFDDC5` | the three draws in one submission: still C |
+| `prewrite` | `0x8086DDC5` | draw B writes B to the source, then fetches: reads B |
+| `postwrite` | `0xFDFE7DC5` | draw B fetches, then writes B: reads A's tag |
+| `tiled-pad` | `0xFDFE7DC5` | tiled source allocated 16 texels wider: identity |
+| `tiled-pad-shift` | `0x80261DC5` | the same with draw A shifted 16 columns |
+| `tiled-pad-nofetch` | `0x8086DDC5` | its control |
+
+Three pairs carry the answers:
+
+* `noflush-two-draw` equals `flush-two-draw` byte for byte, and
+  `noflush-nofetch` equals `flush-nofetch`, so the fetch that shares the earlier
+  draw's submission reads exactly what it reads after a flush. On this setup an
+  explicit flush between the draws is **not** what makes the earlier draw
+  visible: submission order within one job is enough. The control is what makes
+  that statement safe - if the fetch had simply not run, the pair would still
+  match, but `noflush-nofetch` shows a different word, so the fetch did run and
+  found the tags;
+* `noflush-changed` equals `flush-changed`, so the order of three draws in one
+  submission is respected and the last write before the fetch is what the fetch
+  reads, not the first;
+* `prewrite` reads B and `postwrite` reads the tag. A store from the same
+  fragment reaches a later fetch in that fragment (which is section 14's
+  read-after-write, here with the earlier draw's tags underneath), and a store
+  after the fetch does not disturb it. So a draw that also writes the source is
+  ordered with its own fetch, not resolved at the end of the draw.
+
+`tiled-pad` reproduces the identity map through a *tiled* rt3 allocated 16
+texels wider than the target, and `tiled-pad-shift` reproduces the shifted
+picture digit for digit (`0x80261DC5`, the same digest the linear padded source
+gave in section 17). A tile layout's row stride is the tile row, so the extra
+allocation width does not shear the map: the fetch follows the target's tile
+layout, and the pad beside it is simply not addressed.
+
+### What this settles
+
+On this device and setup:
+
+* a fetch in a later draw reads the earlier draw's writes with **no explicit
+  flush between the draws**: the map is identical to the flushed case, and the
+  no-fetch controls separate "found the data" from "the fetch did not run";
+* with three draws in one submission the order is respected, so the fetch reads
+  the write issued closest before it, not the first one;
+* a store to the source from the fetching fragment is visible to a fetch that
+  follows it and does not disturb a fetch that precedes it, so the ordering is
+  per instruction rather than per draw;
+* a tiled source allocated wider than the target still gives the identity map,
+  so the row stride comes from the surface's tile layout and not from the
+  allocation width.
+
+### What this does not settle
+
+* **The address source.** Nothing here separates "the position registers" from
+  "the fragment's own target coordinate": both are the same pixel for every
+  fragment this harness can draw, and the fetch word has no offset field, so the
+  two cannot be made to disagree. What varies here - the base surface (index
+  field), its pitch, its tile layout and its allocation - all leave the map the
+  identity, which is a statement about the *composition* of the address, not
+  about which register supplies the pixel;
+* **Cross-job visibility.** Both draws share one submission in the no-flush
+  cells. A fetch submitted in a *later job* while the first is still in flight,
+  or a fetch after a partial flush, is untested;
+* **A source that is also the observation target.** rt4 never doubles as the
+  fetch source here;
+* **Write-after-read hazards in general.** Only one store on each side of the
+  fetch was built, with pattern B as the value;
+* **The tiled pad's limits.** Only +16 texels on a 64x64 tiled surface was
+  measured, and the region read back is 64x64, so a fetch past the surface's
+  logical size is not covered.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-pseq-vis` and `verify-pseq-vis` hold 37 rows each
+(11 variants, three repeats, and the four control runs), pinned at
+`6c17fce4b848...`; re-pinning from the verify directory is byte-identical.
 
 ## What the runner cost
 
