@@ -1,0 +1,328 @@
+{
+  "name": "pseq-split",
+  "created_utc": "2026-11-21T21:16:33+00:00",
+  "manifest": "/tmp/clean-pseq-split/tests/grate/asm_characterize.pseq_split.json",
+  "manifest_sha256": "bb4b6b87264746f1a6f37c5f31e9bb73ccad99a5f85025dba4f0c3b93dc20b6e",
+  "assembler": "/tmp/clean-pseq-split-build/tools/assembler",
+  "repository_root": "/tmp/clean-pseq-split",
+  "git_commit": "6fc90076bf3207efbe79831ac559638072f1144d",
+  "git_status": "",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/tmp/clean-pseq-split-build/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "pseq-split",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/pseq_split_a.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "same-draw",
+        "fs": "tests/grate/asm/pseq_addr.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_RT5": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "identity map, the same picture as two-draw",
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "two-draw",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/split/b-rt5.in"
+        },
+        "expected_note": "identity map: draw B fetches the tags draw A wrote",
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "two-draw-nofetch",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/split/b-rt5-nofetch.in"
+        },
+        "expected_note": "pattern B everywhere, the fetch did not happen",
+        "expected": "0x8086DDC5"
+      },
+      {
+        "name": "drawb-only",
+        "fs": "tests/grate/asm/pseq_split_b.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x00850008",
+            "STORE_B_SLOT": "store rt4, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1"
+        },
+        "expected_note": "zero map: the source was never written",
+        "expected": "0x76EFDDC5"
+      },
+      {
+        "name": "changed",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/split/c-rt5.in:tests/grate/asm/split/b-rt5.in"
+        },
+        "expected_note": "pattern C everywhere: the fetch read the current surface",
+        "expected": "0x54FFDDC5"
+      },
+      {
+        "name": "shift-a",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u22",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/split/b-rt5.in"
+        },
+        "expected_note": "tag(x+16, y) at pixel (x, y): the fetch is position based",
+        "expected": "0x80261DC5"
+      },
+      {
+        "name": "pair-23",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/split/b-rt5-pair23.in"
+        },
+        "expected_note": "the same map through the r2/r3 destination pair",
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "src-rt1",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_EXTRA_FS": "tests/grate/asm/split/b-rt1.in"
+        },
+        "expected_note": "identity map through the tiled framebuffer",
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "src-rt3-linear",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt3, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_COVERAGE": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/split/b-rt3.in"
+        },
+        "expected_note": "identity map through linear rt3",
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "src-rt3-tiled",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt3, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_COVERAGE": "1",
+          "GRATE_COVERAGE_TILED": "1",
+          "GRATE_EXTRA_FS": "tests/grate/asm/split/b-rt3.in"
+        },
+        "expected_note": "identity map through tiled rt3",
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "src-rt5-rgb565",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "rgb565",
+          "GRATE_EXTRA_FS": "tests/grate/asm/split/b-rt5.in"
+        },
+        "expected_note": "16-bit source: the tag's coordinate bytes are truncated",
+        "expected": "0xAB4CFDC5"
+      },
+      {
+        "name": "pitch-pad-16",
+        "fs": "tests/grate/asm/pseq_split_a.in",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE_A_SLOT": "store rt5, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_SIZE": "64",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_RT5": "1",
+          "GRATE_PITCH_PAD": "16",
+          "GRATE_EXTRA_FS": "tests/grate/asm/split/b-rt5.in"
+        },
+        "expected_note": "identity map through a source 16 texels wider than the target",
+        "expected": "0xFDFE7DC5"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 40,
+    "passed": 40,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
