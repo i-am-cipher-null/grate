@@ -306,20 +306,27 @@ The varying id corresponds to the TRAM component: var0 is TRAM.x, var1 is TRAM.y
 
 ##### mul0..1 destination registers:
 
-| Value | Meaning            |
-|------:|:-------------------|
-|     0 | ???                |
-|     1 | barycentric weight |
-|  2..3 | ???                |
-|     4 | row register 0     |
-|     5 | row register 1     |
-|     6 | row register 2     |
-|     7 | row register 3     |
+| Value | Meaning |
+|------:|:--------|
+| 0 | No defined destination behavior established |
+| 1..3 | Interpolation-weight destination codes; see below |
+| 4 | Row register 0 |
+| 5 | Row register 1 |
+| 6 | Row register 2 |
+| 7 | Row register 3 |
 
-Hardware tests of the destination selector show that values 4, 5, 6 and 7 write row
-registers 0, 1, 2 and 3, respectively. Values 0..3 did not change any of the
-four row registers in the tested store probes; their other destination meanings
-are not established.
+Hardware tests show that destination values 4, 5, 6 and 7 write row
+registers 0, 1, 2 and 3, respectively. The row-destination mapping was
+tested with `mul0`; `mul1` was also checked at destination 6.
+
+Destination values 1, 2 and 3 all reproduced the reference interpolation
+result when used by either multiplier in the tested arrangements. This
+establishes their observed effect on interpolation, but does not establish
+that the three encodings are aliases or identify separate internal weight
+registers. Destination 0 did not produce a defined interpolation weight in
+the tested arrangements. Fetches that depended on an unwritten weight
+returned state-dependent values, so destination 0 should not be treated as
+a zero-valued weight.
 
 ##### mul0..1 source registers:
 
@@ -333,23 +340,25 @@ The SFU result is evaluated before the multiplier result and is available to
 MUL through source selector 10. Tests with RCP and SQRT show that selector 10
 exposes the SFU result independently of the selected operand register.
 
-|  Value | Meaning                                  |
-|-------:|:-----------------------------------------------|
-|   0..3 | row register 0..3                        |
-|   4..7 | ??? (global registers?)                  |
-|   8..9 | ???                                      |
-|     10 | SFU result                               |
-|     11 | first vertex's barycentric coefficient          |
-|     12 | second vertex's barycentric coefficient         |
-|     13 | 1.0                                      |
-| 14..15 | ???                                      |
+| Value | Meaning |
+|------:|:--------|
+| 0..3 | Row registers 0..3, read as FP20 |
+| 4..6 | Unidentified internal values; nonzero and stable in tested probes |
+| 7..8 | Unidentified; read back as zero in tested probes |
+| 9 | Fetch-associated value; identity unknown |
+| 10 | SFU result |
+| 11 | First vertex's barycentric coefficient |
+| 12 | Second vertex's barycentric coefficient |
+| 13 | Constant 1.0 |
+| 14..15 | Unidentified; read back as zero in tested probes |
 
-Hardware tests show that both multiplier source fields can select row
-registers 0..3 when the other source is selector 13 (1.0). The tested
-src13 × srcN and srcN × src13 cases produced the corresponding row-register
-values. This establishes row-register reads through both fields in that test;
-it does not explain the zero results observed when both sources select row
-registers.
+Selectors 4, 5 and 6 returned nonzero values that were unchanged when the
+source field or sample position changed. Their identities are not known.
+Selector 9 returned zero without an interpolation fetch and changed when a
+fetch was present, including with an FX10 fetch; its internal meaning is also
+unknown. The zero readbacks for selectors 7, 8, 14 and 15 do not establish
+whether those encodings are reserved, unsupported or connected to state that
+was not set up by the probes.
 
 Selectors 11 and 12 are fragment-provided barycentric coefficients: source 11
 selects the weight of the covering triangle's first vertex and source 12 the
@@ -357,6 +366,35 @@ second, in the triangle's index/draw order. Tests compared them with
 interpolated unit-vertex colours on both the (0, 1, 2) and (1, 2, 3) triangles
 at several sample positions. They do not require a varying fetch; omitting the
 interpolation operation leaves the selector readback unchanged.
+
+##### Multiplier execution and interpolation-weight state:
+
+Both multiplier source fields read row registers 0..3 as FP20. A complete
+4-by-4 matrix of row-register products, using FP20 primes, matched the
+expected products within the precision of the hardware readback. The earlier
+zero products came from priming rows with FX10-only writes (`.l*`) and then
+reading those bit patterns as FP20: the resulting values were near the FP20
+format floor, so their products underflowed. Use FP20 writes (`.lh`) when
+priming multiplier row-register inputs.
+
+Additional tests show multiplication with row-register values, the SFU result,
+barycentric selectors and constant selector 13 in the tested source-field
+combinations. `mul0` and `mul1` can produce independent results in one MFU
+word. When both units wrote the same row register in the tested collision
+cases, the value observed was the one written by `mul0`.
+
+The interpolation fetch consumes the most recently written barycentric-weight
+state. The weights need not be calculated in the same MFU word as the fetch:
+tests produced the same interpolation result when both weights were written
+one or two MFU words earlier in the batch. A fetch also consumed weights
+written in the preceding batch. Conversely, a fetch placed before the weight
+writes in the same batch observed different, previously available state; later
+writes do not affect an earlier fetch.
+
+These tests establish persistence across the tested MFU-word and batch
+boundaries, but do not establish the maximum lifetime of the weight state or
+its behavior across all pipeline recirculation conditions. An unwritten weight
+is not a defined zero and can produce state-dependent readbacks.
 
 #### Interpolation
 
