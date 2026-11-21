@@ -961,6 +961,53 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	/*
+	 * GRATE_REGION=x,y,w,h reports a rectangle of the linear rt4 surface: one
+	 * row of words, then a count of nonzero words and a digest of the whole
+	 * rectangle. The digest becomes the result word, so a program whose output
+	 * depends on the fragment position can be pinned as a whole instead of
+	 * through fb_data[0] alone. The rectangle is reported in target memory
+	 * order, which for a linear surface is row-major from the target origin.
+	 */
+	if (getenv("GRATE_REGION")) {
+		const char *region_env = getenv("GRATE_REGION");
+		unsigned x0, y0, rw, rh, yy, xx, nz = 0;
+		uint32_t hash = 2166136261u;
+		void *rmap = NULL;
+		uint32_t *r32;
+
+		if (!rt4 || sscanf(region_env, "%u,%u,%u,%u",
+				   &x0, &y0, &rw, &rh) != 4 ||
+		    !rw || !rh || x0 + rw > options.width ||
+		    y0 + rh > options.height) {
+			fprintf(stderr, "GRATE_REGION needs rt4 and x,y,w,h inside the target\n");
+			return 1;
+		}
+
+		if (host1x_bo_mmap(rt4->bo, &rmap) != 0 || !rmap) {
+			fprintf(stderr, "region mmap failed\n");
+			return 1;
+		}
+
+		r32 = rmap;
+		for (yy = 0; yy < rh; yy++) {
+			fprintf(stdout, "region4 %u:", yy);
+			for (xx = 0; xx < rw; xx++) {
+				uint32_t w = r32[(y0 + yy) * options.width +
+						 x0 + xx];
+
+				fprintf(stdout, " %08X", w);
+				hash = (hash ^ w) * 16777619u;
+				nz += !!w;
+			}
+			fprintf(stdout, "\n");
+		}
+
+		fprintf(stdout, "region4 %ux%u+%u+%u nz=%u digest=0x%08X\n",
+			rw, rh, x0, y0, nz, hash);
+		result = hash;
+	}
+
 	if (test.print_result)
 		fprintf(stdout, "result 0x%08X\n", result);
 
