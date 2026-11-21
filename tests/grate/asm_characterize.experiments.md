@@ -3509,8 +3509,10 @@ estimate itself.
 ### What this does not settle
 
 * **The derivative formula.** Only two gradients produced different levels, and
-  the two all-zero rows at scale 8 are unexplained; nothing here fixes the
-  constant in `LOD = log2(du/dx)` or the way the estimate combines the two axes.
+  the two all-zero rows at scale 8 are unexplained. Section 20 measures the texel
+  rate behind the ramp, locates the level-0 boundary, shows that the texture's
+  dimensions do not enter the level, and identifies those rows as missing
+  samples whose position follows the vertical ramp.
 * **The level-4 word.** Level 3 and 4 read the same `0x05`; whether the chain
   stops at 2x2 or the sampler clamps is not separated.
 * **Ties between non-quarter fractions.** The ladder is quarter steps; a tie at
@@ -3731,6 +3733,162 @@ On this device and setup:
 `tests/grate/asm/results/pin-tex-deriv` and `verify-tex-deriv` hold 124 rows
 each (40 variants, three repeats, and the four control runs), pinned at
 `50c89582e601...`; re-pinning from the verify directory is byte-identical.
+
+## 21. Mip ties across levels, and the two wrap axes separately
+
+`asm_characterize.tex_state.json` (59 variants), template `asm/tex_probe.in`
+(constant coordinates, the fetch word, an explicit level in `r3`), the grid and
+step surfaces in `tools/assembler.c`.
+
+### The questions
+
+Section 19 measured the nearest-mip tie at 0.5, 1.5 and 2.5 on a 16x16 chain in
+quarter steps, and set the wrap state on both axes at once. Three things were
+left: whether the rule holds on a chain whose levels all differ, how close to the
+tie a value can sit before the level changes, and whether the two axes' wrap
+states are independent. Two explanations to separate for the last one:
+
+* **one state** - the sampler keeps a single wrap state and setting one axis
+  changes both, so a mixed test reads one axis twice;
+* **per axis** - each axis is wrapped by its own state, so a mixed test names
+  each axis separately.
+
+TEX instruction-word semantics are untouched: every variant uses the same fetch
+word, `0x00002420`, and only the sampler state and the level register vary.
+
+### The level words
+
+32x32 surface with one white texel (`GRATE_TEX_PIXEL=0,0,0xFFFFFFFF`), point
+sampling at texel (0,0), nearest mip filter, explicit level:
+
+| level | 0 | 1 | 2 | 3 | 4 |
+|:--|:--|:--|:--|:--|:--|
+| word | `0xFFFFFFFF` | `0xFF404040` | `0xFF121212` | `0xFF050505` | `0xFF020202` |
+
+Five distinct words, so every tie below names a level unambiguously. On the
+16x16 chain of section 19 levels 3 and 4 held the same `0x05`, which is why the
+tie at 3.5 could not be read there; here level 4 is `0x02`, so a 3.5 tie would
+be readable. It was not run.
+
+### The ties
+
+| LOD | level | word |
+|:--|:--|:--|
+| 0.4375 | 0 | `0xFFFFFFFF` |
+| 0.5 | 0 | `0xFFFFFFFF` |
+| 0.5625 | 1 | `0xFF404040` |
+| 1.4375 | 1 | `0xFF404040` |
+| 1.5 | 1 | `0xFF404040` |
+| 1.5625 | 2 | `0xFF121212` |
+| 2.4375 | 2 | `0xFF121212` |
+| 2.5 | 2 | `0xFF121212` |
+| 2.5625 | 3 | `0xFF050505` |
+
+The tie goes to the lower level at all three boundaries, which is section 19's
+result on a chain where the levels are all different rather than on one where
+levels 1 to 4 looked alike. The 64x64 chain reproduces the 1.5 case exactly
+(`tie64-near-1p5` = `0x4E67DDC5` = `tie32-near-1p5`), so the rule does not
+depend on the chain's length or on the level's texel count.
+
+### How close to the tie the level changes
+
+Section 19's quarter steps could not say whether the boundary is exactly at the
+half-integer. Binary fractions around each tie:
+
+| LOD | level | LOD | level |
+|:--|:--|:--|:--|
+| 0.5 | 0 | 0.5078125 | 0 |
+| 0.515625 | 1 | 0.53125 | 1 |
+| 1.4921875 | 1 | 1.49609375 | 1 |
+| 1.5 | 1 | 1.501953125 | 1 |
+| 1.50390625 | 1 | 1.5078125 | 1 |
+| 1.515625 | 2 | 1.53125 | 2 |
+| 2.5 | 2 | 2.5078125 | 2 |
+| 2.515625 | 3 | 2.53125 | 3 |
+
+So the level changes **1/64 above the half-integer**, at every tie, and not at
+the tie itself. Two descriptions fit every cell: round to nearest with the
+boundary at `k + 0.515625` (that is `floor(LOD + 31/64)`), or round to nearest
+after quantising the level to 1/32 with a half-up carry. The set does not
+separate those - a value at 1.515625 is the same either way - so the measured
+statement is the bracket, not the mechanism.
+
+### The two wrap axes
+
+`GRATE_TEX_GRID` gives a 16x16 surface of 4x4 blocks whose words are
+`0xFF<r><g>00`, the red byte naming the block column and the green byte the block
+row (block 0 is `0x30`, block 3 `0xC0`). Point sampling at s = t = 1.25 puts the
+texel index at 20 in both axes, which repeat reads as block 1, clamp as block 3
+and mirrored repeat as `31 - 20 = 11`, block 2. All nine combinations:
+
+| wrap s | wrap t | word | block (s, t) |
+|:--|:--|:--|:--|
+| repeat | repeat | `0xFF606000` | 1, 1 |
+| repeat | clamp | `0xFF60C000` | 1, 3 |
+| repeat | mirror | `0xFF609000` | 1, 2 |
+| clamp | repeat | `0xFFC06000` | 3, 1 |
+| clamp | clamp | `0xFFC0C000` | 3, 3 |
+| clamp | mirror | `0xFFC09000` | 3, 2 |
+| mirror | repeat | `0xFF906000` | 2, 1 |
+| mirror | clamp | `0xFF90C000` | 2, 3 |
+| mirror | mirror | `0xFF909000` | 2, 2 |
+
+Each axis takes its own state, and the two axes' answers on one word are
+independent: the value is exactly what the index arithmetic of that axis's state
+predicts, in all nine cells. A single shared wrap state would have produced
+three words, not nine.
+
+The linear footprint at the edge is wrapped per axis too. At s = t = 1.0 the two
+taps are texels 15 and 16, and the stored word is the average of the two
+blocks' colours:
+
+| wrap s | wrap t | word | reading |
+|:--|:--|:--|:--|
+| repeat | repeat | `0xFF787800` | 0x78 is the average of block 3 (`0xC0`) and block 0 (`0x30`) |
+| repeat | clamp | `0xFF78C000` | x averaged with the wrapped block 0, y clamped to block 3 |
+| clamp | clamp | `0xFFC0C000` | both taps block 3 |
+| clamp | mirror | `0xFFC0C000` | mirrored texel 16 is 15, also block 3 |
+| mirror | mirror | `0xFFC0C000` | same |
+
+At the low corner (s = t = 0.0, taps at -1 and 0) with t clamped: repeat reads
+`0xFF783000` (the -1 tap wraps to block 3, the 0 tap is block 0) while clamp and
+mirror both read `0xFF303000` (both taps block 0). So the edge and the corner
+agree with the interior: the state decides which texel the out-of-range tap
+becomes, per axis, and clamp and mirror differ only where the wrapped index
+reaches a different texel than the clamped one.
+
+### What this settles
+
+On this device and setup:
+
+* the nearest mip filter rounds a tie down at 0.5, 1.5 and 2.5 on a chain whose
+  levels all differ, and does so identically on a 32x32 and a 64x64 chain;
+* the level changes 1/64 above the half-integer, not at it: values up to
+  `k + 0.5078125` keep level k and `k + 0.515625` takes level k+1;
+* the two wrap axes are independent: all nine combinations of repeat, clamp and
+  mirrored repeat give the word the per-axis arithmetic predicts;
+* the linear filter's out-of-range tap follows its own axis's state, at the high
+  edge and at the low corner, so clamp and mirrored repeat differ exactly where
+  the wrapped index differs from the clamped one.
+
+### What this does not settle
+
+* **The 1/64 offset's cause.** Quantising the level to 1/32 with a half-up carry
+  and rounding with the boundary moved 1/64 lower fit the same cells; nothing
+  here separates them, and no value between the two descriptions' predictions
+  was measured.
+* **The tie at 3.5 and 4.5.** Level 4 is `0x02` on this chain, so 3.5 is
+  readable, but it was not run; 4.5 would need a 64x64 chain and a sixth word.
+* **The blending mip filter's wrap.** `nearest-mipmap-linear` blending across
+  the wrap seam was not measured; section 19 covered its fraction only.
+* **Wrap state for the mip chain's own levels.** Whether the wrap state applies
+  when the level itself is a single texel (level 5 and above) is untested.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-tex-state` and `verify-tex-state` hold 181 rows each
+(59 variants, three repeats, and the four control runs), pinned at
+`01cfc0ed992c...`; re-pinning from the verify directory is byte-identical.
 
 ## What the runner cost
 

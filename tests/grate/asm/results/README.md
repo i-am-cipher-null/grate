@@ -740,3 +740,19 @@ invalidate another; generate such a manifest with
 * commit: 2f904604a94187ad7c48c788a4d3cde3c0a7d155 with a dirty tree
 * created: 2026-11-21T22:08:59+00:00; 124 rows, repeat 3, timeout 20.0 s
 * summary: 124 passed, 0 failed of 124 - passed
+
+## pin-tex-state
+
+* manifest: `asm_characterize.tex_state.json` (sha256 1d8b5f1a8a18)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 8fb98d24b6a8190fa36d0e3548142ac9cd818d8f with a dirty tree
+* created: 2026-11-21T22:16:03+00:00; 181 rows, repeat 3, timeout 20.0 s
+* summary: 181 passed, 0 failed of 181 - passed
+
+## verify-tex-state
+
+* manifest: `asm_characterize.tex_state.json` (sha256 01cfc0ed992c)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 8fb98d24b6a8190fa36d0e3548142ac9cd818d8f with a dirty tree
+* created: 2026-11-21T22:16:55+00:00; 181 rows, repeat 3, timeout 20.0 s
+* summary: 181 passed, 0 failed of 181 - passed

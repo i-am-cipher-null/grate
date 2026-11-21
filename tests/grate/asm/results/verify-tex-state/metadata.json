@@ -1,0 +1,2095 @@
+{
+  "name": "tex-state",
+  "created_utc": "2026-11-21T22:16:55+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.tex_state.json",
+  "manifest_sha256": "01cfc0ed992c1b94c8492bad5a90f7d4dd49a4ee74163f1a1ebb3510f1067d2a",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "8fb98d24b6a8190fa36d0e3548142ac9cd818d8f",
+  "git_status": "?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/make_tex_state.py\n?? tests/grate/asm_characterize.tex_state.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "tex-state",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/tex_probe.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "tie32-level-0p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, explicit level 0.0",
+        "expected": "0x20B6CDC5"
+      },
+      {
+        "name": "tie32-level-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, explicit level 1.0",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-level-2p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "2.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, explicit level 2.0",
+        "expected": "0xD1739DC5"
+      },
+      {
+        "name": "tie32-level-3p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "3.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, explicit level 3.0",
+        "expected": "0x73E5EDC5"
+      },
+      {
+        "name": "tie32-level-4p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "4.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, explicit level 4.0",
+        "expected": "0xA6EC9DC5"
+      },
+      {
+        "name": "tie32-near-0p4375",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "0.4375",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0x20B6CDC5"
+      },
+      {
+        "name": "tie32-near-0p5",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "0.5",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0x20B6CDC5"
+      },
+      {
+        "name": "tie32-near-0p5625",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "0.5625",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-near-1p4375",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.4375",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-near-1p5",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.5",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-near-1p5625",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.5625",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0xD1739DC5"
+      },
+      {
+        "name": "tie32-near-2p4375",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "2.4375",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0xD1739DC5"
+      },
+      {
+        "name": "tie32-near-2p5",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "2.5",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0xD1739DC5"
+      },
+      {
+        "name": "tie32-near-2p5625",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "2.5625",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0x73E5EDC5"
+      },
+      {
+        "name": "tie32-near-1p4950",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.4950",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-near-1p5000",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.5000",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-near-1p5050",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.5050",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "32x32 chain, nearest mip level",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-fine-1p49609375",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.49609375",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "how far from the tie the level changes",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-fine-1p4921875",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.4921875",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "how far from the tie the level changes",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-fine-1p501953125",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.501953125",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "how far from the tie the level changes",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-fine-1p50390625",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.50390625",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "how far from the tie the level changes",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-fine-1p5078125",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.5078125",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "how far from the tie the level changes",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-fine-1p515625",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.515625",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "how far from the tie the level changes",
+        "expected": "0xD1739DC5"
+      },
+      {
+        "name": "tie32-fine-1p53125",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "1.53125",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "how far from the tie the level changes",
+        "expected": "0xD1739DC5"
+      },
+      {
+        "name": "tie32-fine-0p5078125",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "0.5078125",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "the same bracket at another tie",
+        "expected": "0x20B6CDC5"
+      },
+      {
+        "name": "tie32-fine-0p515625",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "0.515625",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "the same bracket at another tie",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-fine-0p53125",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "0.53125",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "the same bracket at another tie",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-fine-0p5625",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "0.5625",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "the same bracket at another tie",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie32-fine-2p5078125",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "2.5078125",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "the same bracket at another tie",
+        "expected": "0xD1739DC5"
+      },
+      {
+        "name": "tie32-fine-2p515625",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "2.515625",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "the same bracket at another tie",
+        "expected": "0x73E5EDC5"
+      },
+      {
+        "name": "tie32-fine-2p53125",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "2.53125",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "the same bracket at another tie",
+        "expected": "0x73E5EDC5"
+      },
+      {
+        "name": "tie32-fine-2p5625",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.015625",
+            "T_CONST": "0.015625",
+            "R_CONST": "0.0",
+            "L_CONST": "2.5625",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "32x32",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "the same bracket at another tie",
+        "expected": "0x73E5EDC5"
+      },
+      {
+        "name": "tie64-level-0p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.0078125",
+            "T_CONST": "0.0078125",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "64x64",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "64x64 chain, explicit level 0.0",
+        "expected": "0x20B6CDC5"
+      },
+      {
+        "name": "tie64-level-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.0078125",
+            "T_CONST": "0.0078125",
+            "R_CONST": "0.0",
+            "L_CONST": "1.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "64x64",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "64x64 chain, explicit level 1.0",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie64-level-2p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.0078125",
+            "T_CONST": "0.0078125",
+            "R_CONST": "0.0",
+            "L_CONST": "2.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "64x64",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "64x64 chain, explicit level 2.0",
+        "expected": "0xD1739DC5"
+      },
+      {
+        "name": "tie64-near-1p4375",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.0078125",
+            "T_CONST": "0.0078125",
+            "R_CONST": "0.0",
+            "L_CONST": "1.4375",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "64x64",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "64x64 chain, nearest mip level",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie64-near-1p5",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.0078125",
+            "T_CONST": "0.0078125",
+            "R_CONST": "0.0",
+            "L_CONST": "1.5",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "64x64",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "64x64 chain, nearest mip level",
+        "expected": "0x4E67DDC5"
+      },
+      {
+        "name": "tie64-near-1p5625",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.0078125",
+            "T_CONST": "0.0078125",
+            "R_CONST": "0.0",
+            "L_CONST": "1.5625",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "64x64",
+          "GRATE_TEX_PIXEL": "0,0,0xFFFFFFFF",
+          "GRATE_TEX_MIN_FILTER": "nearest-mipmap-nearest",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected_note": "64x64 chain, nearest mip level",
+        "expected": "0xD1739DC5"
+      },
+      {
+        "name": "wrap-mix-rep-rep-1p25",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.25",
+            "T_CONST": "1.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_WRAP_S": "repeat",
+          "GRATE_TEX_WRAP_T": "repeat"
+        },
+        "expected_note": "both coordinates out of range, one state per axis",
+        "expected": "0xE380DDC5"
+      },
+      {
+        "name": "wrap-mix-rep-cla-1p25",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.25",
+            "T_CONST": "1.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_WRAP_S": "repeat",
+          "GRATE_TEX_WRAP_T": "clamp"
+        },
+        "expected_note": "both coordinates out of range, one state per axis",
+        "expected": "0x93C0DDC5"
+      },
+      {
+        "name": "wrap-mix-rep-mir-1p25",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.25",
+            "T_CONST": "1.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_WRAP_S": "repeat",
+          "GRATE_TEX_WRAP_T": "mirror"
+        },
+        "expected_note": "both coordinates out of range, one state per axis",
+        "expected": "0x5C3EDDC5"
+      },
+      {
+        "name": "wrap-mix-cla-rep-1p25",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.25",
+            "T_CONST": "1.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_WRAP_S": "clamp",
+          "GRATE_TEX_WRAP_T": "repeat"
+        },
+        "expected_note": "both coordinates out of range, one state per axis",
+        "expected": "0x4380DDC5"
+      },
+      {
+        "name": "wrap-mix-cla-cla-1p25",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.25",
+            "T_CONST": "1.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_WRAP_S": "clamp",
+          "GRATE_TEX_WRAP_T": "clamp"
+        },
+        "expected_note": "both coordinates out of range, one state per axis",
+        "expected": "0x4F40DDC5"
+      },
+      {
+        "name": "wrap-mix-cla-mir-1p25",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.25",
+            "T_CONST": "1.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_WRAP_S": "clamp",
+          "GRATE_TEX_WRAP_T": "mirror"
+        },
+        "expected_note": "both coordinates out of range, one state per axis",
+        "expected": "0x1BFEDDC5"
+      },
+      {
+        "name": "wrap-mix-mir-rep-1p25",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.25",
+            "T_CONST": "1.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_WRAP_S": "mirror",
+          "GRATE_TEX_WRAP_T": "repeat"
+        },
+        "expected_note": "both coordinates out of range, one state per axis",
+        "expected": "0x4F60DDC5"
+      },
+      {
+        "name": "wrap-mix-mir-cla-1p25",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.25",
+            "T_CONST": "1.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_WRAP_S": "mirror",
+          "GRATE_TEX_WRAP_T": "clamp"
+        },
+        "expected_note": "both coordinates out of range, one state per axis",
+        "expected": "0x4380DDC5"
+      },
+      {
+        "name": "wrap-mix-mir-mir-1p25",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.25",
+            "T_CONST": "1.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_WRAP_S": "mirror",
+          "GRATE_TEX_WRAP_T": "mirror"
+        },
+        "expected_note": "both coordinates out of range, one state per axis",
+        "expected": "0xC77EDDC5"
+      },
+      {
+        "name": "wrap-edge-rep-rep-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.0",
+            "T_CONST": "1.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "repeat",
+          "GRATE_TEX_WRAP_T": "repeat"
+        },
+        "expected_note": "linear footprint at the edge, one state per axis",
+        "expected": "0xE5F8DDC5"
+      },
+      {
+        "name": "wrap-edge-rep-cla-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.0",
+            "T_CONST": "1.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "repeat",
+          "GRATE_TEX_WRAP_T": "clamp"
+        },
+        "expected_note": "linear footprint at the edge, one state per axis",
+        "expected": "0x76A0DDC5"
+      },
+      {
+        "name": "wrap-edge-rep-mir-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.0",
+            "T_CONST": "1.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "repeat",
+          "GRATE_TEX_WRAP_T": "mirror"
+        },
+        "expected_note": "linear footprint at the edge, one state per axis",
+        "expected": "0x76A0DDC5"
+      },
+      {
+        "name": "wrap-edge-cla-rep-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.0",
+            "T_CONST": "1.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "clamp",
+          "GRATE_TEX_WRAP_T": "repeat"
+        },
+        "expected_note": "linear footprint at the edge, one state per axis",
+        "expected": "0xCBD8DDC5"
+      },
+      {
+        "name": "wrap-edge-cla-cla-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.0",
+            "T_CONST": "1.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "clamp",
+          "GRATE_TEX_WRAP_T": "clamp"
+        },
+        "expected_note": "linear footprint at the edge, one state per axis",
+        "expected": "0x4F40DDC5"
+      },
+      {
+        "name": "wrap-edge-cla-mir-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.0",
+            "T_CONST": "1.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "clamp",
+          "GRATE_TEX_WRAP_T": "mirror"
+        },
+        "expected_note": "linear footprint at the edge, one state per axis",
+        "expected": "0x4F40DDC5"
+      },
+      {
+        "name": "wrap-edge-mir-rep-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.0",
+            "T_CONST": "1.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "mirror",
+          "GRATE_TEX_WRAP_T": "repeat"
+        },
+        "expected_note": "linear footprint at the edge, one state per axis",
+        "expected": "0xCBD8DDC5"
+      },
+      {
+        "name": "wrap-edge-mir-cla-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.0",
+            "T_CONST": "1.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "mirror",
+          "GRATE_TEX_WRAP_T": "clamp"
+        },
+        "expected_note": "linear footprint at the edge, one state per axis",
+        "expected": "0x4F40DDC5"
+      },
+      {
+        "name": "wrap-edge-mir-mir-1p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.0",
+            "T_CONST": "1.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "mirror",
+          "GRATE_TEX_WRAP_T": "mirror"
+        },
+        "expected_note": "linear footprint at the edge, one state per axis",
+        "expected": "0x4F40DDC5"
+      },
+      {
+        "name": "wrap-corner-rep-0p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.0",
+            "T_CONST": "0.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "repeat",
+          "GRATE_TEX_WRAP_T": "clamp"
+        },
+        "expected_note": "linear footprint at the low corner",
+        "expected": "0xBFBFDDC5"
+      },
+      {
+        "name": "wrap-corner-cla-0p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.0",
+            "T_CONST": "0.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "clamp",
+          "GRATE_TEX_WRAP_T": "clamp"
+        },
+        "expected_note": "linear footprint at the low corner",
+        "expected": "0x05AFDDC5"
+      },
+      {
+        "name": "wrap-corner-mir-0p0",
+        "fs": "tests/grate/asm/tex_probe.in",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.0",
+            "T_CONST": "0.0",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP",
+            "STORE_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16",
+          "GRATE_TEX_GRID": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64",
+          "GRATE_TEX_MAG_FILTER": "linear",
+          "GRATE_TEX_WRAP_S": "mirror",
+          "GRATE_TEX_WRAP_T": "clamp"
+        },
+        "expected_note": "linear footprint at the low corner",
+        "expected": "0x05AFDDC5"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 181,
+    "passed": 181,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
