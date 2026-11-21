@@ -556,3 +556,19 @@ invalidate another; generate such a manifest with
 * commit: 6b84375a5202f97ed681387f066ef4b0c809b93a with a clean tree (clone in /tmp/clean-pseq)
 * created: 2026-11-21T15:42:57+00:00; 85 rows, repeat 3, timeout 15.0 s
 * summary: 85 passed, 0 failed of 85 - passed
+
+## pin-alu-control
+
+* manifest: `asm_characterize.alu_control.json` (sha256 32226d2a8542)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 342e03f7689cd1a35cd7403675c1e69749364db8 with a dirty tree
+* created: 2026-11-21T15:48:02+00:00; 94 rows, repeat 3, timeout 15.0 s
+* summary: 94 passed, 0 failed of 94 - passed
+
+## verify-alu-control
+
+* manifest: `asm_characterize.alu_control.json` (sha256 45cc01a536b2)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 342e03f7689cd1a35cd7403675c1e69749364db8 with a dirty tree
+* created: 2026-11-21T15:48:16+00:00; 94 rows, repeat 3, timeout 15.0 s
+* summary: 94 passed, 0 failed of 94 - passed

@@ -2349,6 +2349,145 @@ variants, three repeats, plus the controls), pinned from `b729908c2914...` to
 three unbound-index variants were dropped after the first verify run: their
 words differed between runs, so they could not be pinned.
 
+## 13. ALU control: CSEL, condition codes and send
+
+`asm_characterize.alu_control.json` (30 variants), template
+`asm/alu_control.in`. Three packets, four scalar slots each, with an MFU and a
+TEX slot before the ALU in the last two packets. The primes put 0.25 in `r2.lo`
+and 0.75 in `r3.lo`; a consumer writes `r3.l*` so the stored word is
+`r3 << 16 | r2` after the DW conversion, and an unwritten register still reads
+its prime.
+
+### CSEL
+
+`CSEL` is `(rA*rB < 0) ? rB : (rC*rD)` on this hardware, with three
+refinements the earlier three-row table did not fix:
+
+| variant | operands | word | reading |
+|:--|:--|--:|:--|
+| `csel-base` | 0.25*1 vs 0.75*1 | `0x00BF0000` | 0.75 - positive product takes rC*rD |
+| `csel-pos` | 0.5*1 vs 0.25*1 | `0x00400000` | 0.25 - the positive branch |
+| `csel-neg-rb` | -0.25*0.5 vs 0.75*1 | `0x007F0000` | 0.5 = **rB**, not rA*rB (-0.125 -> 0) |
+| `csel-neg-a` | -0.25*1 vs 0.75*1 | `0x00FF0000` | 1.0 = rB again |
+| `csel-zero` | 0*0.5 vs 0.75*1 | `0x00BF0000` | 0.75 - a **zero product takes the false branch** |
+| `csel-rd-off` | rD omitted | `0x00BF0000` | same as rD = 1.0: rC is used as-is |
+| `csel-rd-one` | rD = #1 | `0x00BF0000` | rC*1 |
+| `csel-cc-eq` | positive result, `(eq)` | `0x00000000` | the condition post-processes CSEL like any ALU result: 0.75 != 0 -> 0 |
+| `csel-cc-gt` | positive result, `(gt)` | `0x00FF0000` | 0.75 > 0 -> 1.0 |
+
+Two grammar facts fall out of this: the fourth operand can only be the constant
+`#1` (a uniform or register there is "Invalid src register"), and `#0` in that
+position is the same error - disabling rD means omitting it. So a backend can
+only choose between `rC` and `rC*1`, which are the same value; the only useful
+fourth operand is none.
+
+### Condition codes and registers
+
+| variant | arrangement | word | reading |
+|:--|:--|--:|:--|
+| `cr-next` | write cr0, read in the next packet | `0x00FF0000` | 1.0 - `result != 0` |
+| `cr-same` | write and read in one packet | `0x00000000` | 0.0 - needs a packet boundary |
+| `cr-pair-low` | write cr0, read cr1 | `0x00000000` | cr0 and cr1 are independent |
+| `cr-pair-high` | write cr1, read cr1 | `0x00FF0000` | the high sub-register is addressable |
+| `cr-two-slots` | slot 0 writes cr2, slot 1 writes cr4, next packet reads cr2 | `0x00FF0000` | two slots write two registers without interference |
+| `cr-cond-write` | `(eq)` on a non-zero result, then read | `0x00000000` | the condition is stored as 0, not the value |
+
+The condition modifier on a CSEL or a CR write behaves exactly as on a
+row-register destination: it replaces the result with the 0/1 predicate, and
+the same-packet read still returns 0.
+
+### Send and receive
+
+The receiver's accumulator is the **immediately preceding slot's** result, and
+nothing crosses a packet boundary:
+
+| variant | arrangement | word | reading |
+|:--|:--|--:|:--|
+| `send-two` | slot 0 sends 0.25, slot 1 sends 0.5, slot 2 receives | `0x008F00BF` | receiver 0.5625 = 0.0625 + 0.5; r2 = 0.75 = the two writes ORed |
+| `send-min` | slot 0 `MIN(0.25, 0.75)` sends, slot 1 receives | `0x00500040` | receiver 0.3125 = 0.0625 + 0.25; r2 = the MIN result |
+| `send-last-then-recv` | slot 3 sends, next packet's slot 0 receives | `0x001000FF` | receiver 0.0625 - no accumulator across the packet |
+
+Those three are the parts that reduce to a rule. The rest are recorded raw
+because the value a sender writes to its own destination is not its plain
+operand once either bit is set:
+
+| variant | word |
+|:--|--:|
+| `send-three` (three senders, receiver in slot 3) | `0x00CF00FF` |
+| `send-before` (receiver in slot 0, sender in slot 1) | `0x00CF00BF` |
+| `send-mul` (`MUL(0.25, 1, 0.5)` sends, then a receiver) | `0x00507F40` |
+
+`send-three` reads receiver 0.8125 = 0.0625 + 0.75 (the last sender's result)
+while its r2 is 1.0, which is not the OR of 0.25, 0.5 and 0.75; the send bits
+evidently also change what a producer writes to its own destination. `send-mul`
+sends 0.25 (the product) but its destination holds 0.5. Fitting either would
+need a variant per slot with one bit at a time, which this set does not have.
+
+**`send-before` does not reproduce the existing note that reversing the order
+transfers nothing.** With the receiver in slot 0 and the sender in slot 1 of
+the same packet, the receiver reads 0.8125 = 0.0625 + 0.75, i.e. it did get the
+sender's value. The older measurement used a different rC and destination, so
+the two arrangements are not directly comparable - this is a review point, not
+a settled contradiction.
+
+### Several writers to an fp20 destination
+
+The fx10 OR is not specific to the fx10 format: **fp20 destinations OR too**.
+
+| variant | word | reading |
+|:--|--:|:--|
+| `fw-two` (0.25 then 0.75, both `.lh`) | `0x0000FB00` | 0xEB00 OR 0xF300 = 0xFB00 |
+| `fw-three` (0.0625, 0.25, 0.75, all `.lh`) | `0x0000FB00` | the same OR, the low value already contained |
+| `fw-fx10-two` (0.25 then 0.75, `.l*`) | `0x000000BF` | the known fx10 OR, 0x40 OR 0xC0 = 0xC0 -> 0.75 |
+| `fw-lh-then-fx10` | `0x0000E7BF` | a mixed write; neither format alone explains 0xE7 |
+| `fw-lh-then-high` | `0x0000E700` | `.lh` then `.*h`: the high byte is 0xE7, not the fp20 0xF3 |
+
+So the OR is a property of the destination half, not of the fx10 format, and
+the two-format combinations are recorded but not explained.
+
+### Intervening stages
+
+| variant | arrangement | word | reading |
+|:--|:--|--:|:--|
+| `mfu-between` | producer 0.5, then `sfu: rcp r5` in the next packet, then the consumer | `0x007F007F` | 0.5 survives; an SFU write to another register does not disturb it |
+| `tex-between` | producer 0.5, then a TEX into r0/r1, then the consumer of r2 | `0x007F007F` | 0.5 survives; the fetch does not clobber r2 |
+| `tex-clobber` | producer 0.5, then a TEX into r2/r3, then the consumer of r2 | `0x00000000` | the fetch is the new writer; the consumer sees the texel |
+| `mfu-clobber` | producer 0.5, then `sfu: rcp r2`, then the consumer | `0x0000FF00` | the consumer's result is 0.0 while r2 reads 0xFF00; the SFU write changes the consumer's answer, and the exact value it leaves is not fitted |
+
+TEX results are already known to be visible to the ALU in the same batch; this
+set only adds that a *later* TEX and a later MFU do not break a row-register
+dependency unless they write the same register.
+
+### `aluN` writes
+
+The earlier forwarding set measured `alu0..3` as sources in 13 arrangements:
+every one read 0.0, including in the producer's own packet. This set adds
+nothing there, because **the assembler grammar has no `aluN` destination**:
+`ALU_DST_REG` accepts row registers 0..15, globals, the 0/1 constant and
+uniforms, and the result registers exist only in the source rule. A raw word
+with `dst_reg` = 24..27 could still be tested - that is the smallest useful
+follow-up, and it needs a dumped word bit-patched rather than a new mnemonic.
+
+### What this set does not settle
+
+* the send bits' effect on the sender's own destination: `send-three`,
+  `send-before` and `send-mul` are raw, and `send-before` conflicts with the
+  older "reverse order transfers nothing" note;
+* the mixed fp20/fx10 writers (`fw-lh-then-*`), whose high byte is neither
+  format's value;
+* what value an SFU op leaves in a row register (`mfu-clobber`: consumer 0.0
+  while the word shows 0xFF00);
+* whether `aluN` accepts a destination at all;
+* CSEL with a negative `rC*rD` or a negative zero: the false branch was only
+  exercised with positive operands.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-control` and `verify-alu-control` hold 94 rows
+each (30 variants, three repeats, plus the controls), pinned from
+`32226d2a8542...` to `45cc01a536b2...`. Re-pinning from the pin directory is
+byte-identical.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

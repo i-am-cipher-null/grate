@@ -1,0 +1,59 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * ALU control template: three packets, four scalar slots each, with optional
+ * MFU and TEX stages in the two later packets.
+ *
+ * packet 0  P0..P3  primes and any producer that must be a packet older
+ * packet 1  M1, T1, A0..A3  optional MFU/TEX, then the first ALU packet
+ * packet 2  M2, T2, B0..B3  optional MFU/TEX, then the consumer and the store
+ *
+ * Stage order is fixed (MFU, TEX, ALU, DW), so the MFU and TEX slots sit before
+ * the ALU in their packets. NOP in every slot is a no-op for that stage.
+ *
+ * The consumer always writes r3.l*, the store is `store rt1, r2, r3`, and the
+ * primes put 0.25 (0x40) in r2.lo and 0.75 (0xBF) in r3.lo, so an unwritten
+ * register is still readable. A `.lh` write stores the fp20 word itself
+ * (0xF300 for 0.75), which is how the fp20 multi-writer cases are read.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+	[4] = 0.5;
+	[5] = 0.625;
+	[6] = 0.75;
+	[7] = 0.875;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	P0_SLOT
+		ALU1:	P1_SLOT
+		ALU2:	P2_SLOT
+		ALU3:	P3_SLOT
+	DW:	NOP
+;
+EXEC
+	MFU:	M1_SLOT
+	TEX:	T1_SLOT
+	ALU:
+		ALU0:	A0_SLOT
+		ALU1:	A1_SLOT
+		ALU2:	A2_SLOT
+		ALU3:	A3_SLOT
+	DW:	NOP
+;
+EXEC
+	MFU:	M2_SLOT
+	TEX:	T2_SLOT
+	ALU:
+		ALU0:	B0_SLOT
+		ALU1:	B1_SLOT
+		ALU2:	B2_SLOT
+		ALU3:	B3_SLOT
+	DW:	STORE_SLOT
+;
