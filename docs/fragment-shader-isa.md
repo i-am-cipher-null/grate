@@ -148,12 +148,13 @@ or 1.0 result. No additional condition-enable bit is required.
 
 #### Condition registers:
 
-Condition-register destinations are selected from registers 64..71. Hardware
-tests show that a write stores a Boolean 0.0 or 1.0 derived from the ALU
-result; applying a condition modifier first replaces that result with the
+Condition-register destinations are selected from registers 64..71. Each
+condition register has low and high FX10 sub-registers holding Boolean values
+0.0 or 1.0. Hardware tests show that a write stores a Boolean derived from the
+ALU result; applying a condition modifier first replaces that result with the
 condition's Boolean value. The low and high sub-registers were independently
 addressable in the tested cases, and writes to different condition registers
-did not interfere.
+did not interfere. The high sub-register is selected with the write-high bit.
 
 A read in the same ALU packet as the write returned the old value (zero in the
 test), while a read in the next packet observed the updated value. Thus the
@@ -626,9 +627,8 @@ honor the tested non-default surface pitch.
 Bits 6..9 and bit 11 were toggled individually on a bound-sampler fetch and
 on explicit-LOD fetches at three mip levels. They did not change the result in
 those configurations. This does not establish that the fields are reserved
-or inert in every texture mode. Bits 14..31 remain undocumented here; the
-older unknown-bit sweep is not reproduced by the current committed experiment
-set.
+or inert in every texture mode. Bits 14..31 remain undocumented; their
+behavior has not been established by the current reproducible measurements.
 
 ## PSEQ instruction word encoding
 
