@@ -295,6 +295,25 @@ static int texture_filter_from_name(const char *name,
 }
 
 /*
+ * GRATE_TEX_WRAP / GRATE_TEX_WRAP_S / GRATE_TEX_WRAP_T name the sampler's wrap
+ * state, so an out-of-range coordinate can be attributed to it.
+ */
+static int wrap_mode_from_name(const char *name,
+			       enum grate_textute_wrap_mode *mode)
+{
+	if (!strcmp(name, "clamp"))
+		*mode = GRATE_TEXTURE_CLAMP_TO_EDGE;
+	else if (!strcmp(name, "repeat"))
+		*mode = GRATE_TEXTURE_REPEAT;
+	else if (!strcmp(name, "mirror"))
+		*mode = GRATE_TEXTURE_MIRRORED_REPEAT;
+	else
+		return -1;
+
+	return 0;
+}
+
+/*
  * GRATE_TEX_CHANNELS paints one channel per texel in the first row and a word
  * with four distinct bytes in the second row, so the component order on the
  * different destination paths can be named rather than inferred from a
@@ -368,6 +387,50 @@ static int setup_rgba_texture(struct grate *grate, struct grate_texture *tex,
 						 x, 0, 1, tex_h);
 	}
 
+	/*
+	 * GRATE_TEX_STEPS=1 gives the mip chain a readout whose shape names the
+	 * level. The surface is a one-texel checker split into four vertical bands
+	 * of decreasing intensity (0xFF, 0xBF, 0x7F, 0x3F over black), so level 1
+	 * is four flat bands at 0x80, 0x60, 0x40, 0x20, level 2 two bands at 0x70 and
+	 * 0x30, and level 3 and above the single flat 0x50. Level 0 is the checker
+	 * itself. Four states - checker, four bands, two bands, one word - can be
+	 * read from the map without assuming any word in advance, and the band
+	 * count does not depend on the sampling phase.
+	 */
+	if (getenv("GRATE_TEX_STEPS")) {
+		static const unsigned band[4] = {
+			0xFFFFFFFF, 0xFFBFBFBF, 0xFF7F7F7F, 0xFF3F3F3F,
+		};
+		int x, y;
+
+		grate_texture_clear(grate, tex, 0x00000000);
+		for (y = 0; y < tex_h; y++)
+			for (x = y & 1; x < tex_w; x += 2)
+				grate_texture_clear_rect(grate, tex,
+						 band[x * 4 / tex_w], x, y, 1, 1);
+	}
+
+	/*
+	 * GRATE_TEX_COLUMNS=n paints white columns every n texels. Every level of
+	 * the generated chain then has its own value: with n = 4, level 0 is a
+	 * 1-in-4 column pattern, level 1 is 1-in-2 at 0x80, and levels 2..4 are
+	 * the flat words 0x40, 0x20 and 0x10. A fetch whose level changes is
+	 * therefore distinguishable from the whole band, not just from level 0.
+	 */
+	if (getenv("GRATE_TEX_COLUMNS")) {
+		int spacing = atoi(getenv("GRATE_TEX_COLUMNS"));
+		int x;
+
+		if (spacing < 2) {
+			fprintf(stderr, "GRATE_TEX_COLUMNS needs a spacing >= 2\n");
+			return -1;
+		}
+		grate_texture_clear(grate, tex, 0x00000000);
+		for (x = 0; x < tex_w; x += spacing)
+			grate_texture_clear_rect(grate, tex, 0xFFFFFFFF,
+						 x, 0, 1, tex_h);
+	}
+
 	if (getenv("GRATE_TEX_PIXEL")) {
 		unsigned px, py, color;
 
@@ -380,6 +443,29 @@ static int setup_rgba_texture(struct grate *grate, struct grate_texture *tex,
 		}
 		grate_texture_clear(grate, tex, 0x00000000);
 		grate_texture_clear_rect(grate, tex, color, px, py, 1, 1);
+	}
+
+	/*
+	 * GRATE_TEX_GRID=1 fills a 4x4 grid of blocks with 16 distinct words, the
+	 * red byte naming the block column and the green byte the block row. A
+	 * coordinate outside [0,1] that wraps in s moves the red byte only and one
+	 * that wraps in t moves the green byte only, so the two axes' wrap states
+	 * are readable from a single fetched word and can be mixed independently.
+	 * It is applied last, so it wins over the surfaces above.
+	 */
+	if (getenv("GRATE_TEX_GRID")) {
+		int bw = tex_w / 4 ? tex_w / 4 : 1;
+		int bh = tex_h / 4 ? tex_h / 4 : 1;
+		int bx, by;
+
+		grate_texture_clear(grate, tex, 0xFF000000);
+		for (by = 0; by < 4; by++)
+			for (bx = 0; bx < 4; bx++)
+				grate_texture_clear_rect(grate, tex,
+						 0xFF000000 |
+						 ((unsigned)((bx + 1) * 0x30) << 16) |
+						 ((unsigned)((by + 1) * 0x30) << 8),
+						 bx * bw, by * bh, bw, bh);
 	}
 
 	if (mipmap) {
@@ -571,6 +657,77 @@ static enum grate_3d_ctx_stencil_operation stencil_zpass_op(void)
 
 	fprintf(stderr, "unknown GRATE_STENCIL_OP \"%s\"\n", op);
 	return GRATE_3D_CTX_STENCIL_OP_REPLACE;
+}
+
+/*
+ * Draw the quad once per fragment program named in GRATE_EXTRA_FS, keeping the
+ * bound render targets and the vertex setup. With flush_each the job is flushed
+ * and waited for after every program; without it the draws stay in one
+ * submission and the caller flushes at the end.
+ */
+static int run_extra_programs(struct grate *grate, struct grate_3d_ctx *ctx,
+			      struct vs_asm_test *test, struct host1x_bo *bo,
+			      bool flush_each)
+{
+	char *list = strdup(getenv("GRATE_EXTRA_FS"));
+	char *save = NULL;
+	char *path;
+
+	if (!list)
+		return 1;
+
+	for (path = strtok_r(list, ":", &save); path;
+	     path = strtok_r(NULL, ":", &save)) {
+		struct grate_shader *vs2, *fs2, *lnk2;
+		struct grate_program *program2;
+		unsigned j;
+
+		vs2 = grate_shader_parse_vertex_asm_from_file(test->vs_path);
+		fs2 = grate_shader_parse_fragment_asm_from_file(path);
+		lnk2 = grate_shader_parse_linker_asm_from_file(test->linker_path);
+		if (!vs2 || !fs2 || !lnk2) {
+			fprintf(stderr, "%s assembler parse failed\n", path);
+			free(list);
+			return 1;
+		}
+
+		program2 = grate_program_new(grate, vs2, fs2, lnk2);
+		if (!program2) {
+			fprintf(stderr, "extra program alloc failed\n");
+			free(list);
+			return 1;
+		}
+		grate_program_link(program2);
+		grate_3d_ctx_bind_program(ctx, program2);
+
+		for (j = 0; j < test->vs_uniforms_nb; j++) {
+			int loc2 = grate_get_vertex_uniform_location(
+					program2, test->vs_uniforms[j].name);
+
+			if (loc2 >= 0)
+				grate_3d_ctx_set_vertex_uniform(ctx, loc2, 4,
+						test->vs_uniforms[j].values);
+		}
+
+		for (j = 0; j < test->fs_uniforms_nb; j++) {
+			int loc2 = grate_get_fragment_uniform_location(
+					program2, test->fs_uniforms[j].name);
+
+			if (loc2 >= 0)
+				grate_3d_ctx_set_fragment_uniform(ctx, loc2, 1,
+						&test->fs_uniforms[j].value);
+		}
+
+		grate_3d_draw_elements(ctx, TGR3D_PRIMITIVE_TYPE_TRIANGLES,
+				       bo, TGR3D_INDEX_MODE_UINT16,
+				       ARRAY_SIZE(indices));
+		if (flush_each)
+			grate_flush(grate);
+		fprintf(stdout, "extra-draw=%s\n", path);
+	}
+
+	free(list);
+	return 0;
 }
 
 int main(int argc, char *argv[])
@@ -777,19 +934,43 @@ int main(int argc, char *argv[])
 				enum grate_textute_wrap_mode mode;
 
 				if (wrap) {
-					if (!strcmp(wrap, "clamp"))
-						mode = GRATE_TEXTURE_CLAMP_TO_EDGE;
-					else if (!strcmp(wrap, "repeat"))
-						mode = GRATE_TEXTURE_REPEAT;
-					else if (!strcmp(wrap, "mirror"))
-						mode = GRATE_TEXTURE_MIRRORED_REPEAT;
-					else {
+					if (wrap_mode_from_name(wrap, &mode)) {
 						fprintf(stderr,
 							"unknown GRATE_TEX_WRAP \"%s\"\n",
 							wrap);
 						return 1;
 					}
 					grate_texture_set_wrap_s(tex, mode);
+					grate_texture_set_wrap_t(tex, mode);
+				}
+				/*
+				 * GRATE_TEX_WRAP_S / GRATE_TEX_WRAP_T override one axis, so a
+				 * coordinate outside [0,1] in both axes can be told apart per
+				 * axis and the two states can be mixed (GRATE_TEX_WRAP still
+				 * sets both as the base).
+				 */
+				wrap = getenv("GRATE_TEX_WRAP_S");
+				if (wrap) {
+					enum grate_textute_wrap_mode mode;
+
+					if (wrap_mode_from_name(wrap, &mode)) {
+						fprintf(stderr,
+							"unknown GRATE_TEX_WRAP_S \"%s\"\n",
+							wrap);
+						return 1;
+					}
+					grate_texture_set_wrap_s(tex, mode);
+				}
+				wrap = getenv("GRATE_TEX_WRAP_T");
+				if (wrap) {
+					enum grate_textute_wrap_mode mode;
+
+					if (wrap_mode_from_name(wrap, &mode)) {
+						fprintf(stderr,
+							"unknown GRATE_TEX_WRAP_T \"%s\"\n",
+							wrap);
+						return 1;
+					}
 					grate_texture_set_wrap_t(tex, mode);
 				}
 			}
@@ -825,9 +1006,20 @@ int main(int argc, char *argv[])
 	}
 
 	if (getenv("GRATE_COVERAGE")) {
+		/*
+		 * GRATE_PITCH_PAD also applies to rt3, so a padded *tiled* source can
+		 * be a fetch target: the pad only changes the allocation, the logical
+		 * width stays options.width.
+		 */
+		unsigned rt3_pitch = options.width * 4;
+
+		if (getenv("GRATE_PITCH_PAD"))
+			rt3_pitch = (options.width +
+				     (unsigned)atoi(getenv("GRATE_PITCH_PAD"))) * 4;
+
 		rt3 = host1x_pixelbuffer_create(grate->host1x,
 					       options.width, options.height,
-					       options.width * 4,
+					       rt3_pitch,
 					       PIX_BUF_FMT_RGBA8888,
 					       getenv("GRATE_COVERAGE_TILED") ?
 					       PIX_BUF_LAYOUT_TILED_16x16 :
@@ -1009,69 +1201,32 @@ int main(int argc, char *argv[])
 			grate_3d_draw_elements(ctx, TGR3D_PRIMITIVE_TYPE_TRIANGLES,
 					       bo, TGR3D_INDEX_MODE_UINT16,
 					       ARRAY_SIZE(indices));
-		grate_flush(grate);
 
 		/*
 		 * GRATE_EXTRA_FS=a.in:b.in draws the same quad again with each fragment
-		 * program in turn, after the first draw has been flushed. The render
-		 * targets, the vertex setup and the vertex uniforms are kept, so a
-		 * program that only fetches can be run in a later draw and still see
-		 * what the first draw stored, which separates the fetch from the store
-		 * the same fragment would otherwise do in the same draw.
+		 * program in turn. The render targets, the vertex setup and the vertex
+		 * uniforms are kept, so a program that only fetches can be run in a later
+		 * draw and still see what the first draw stored, which separates the
+		 * fetch from the store the same fragment would otherwise do in the same
+		 * draw.
+		 *
+		 * By default the first draw is flushed before the extra programs run.
+		 * GRATE_EXTRA_BEFORE_FLUSH=1 issues the extra draws before that flush
+		 * instead, so the two draws share one submission and no explicit flush
+		 * separates them - the question is then whether a fetch still sees the
+		 * earlier draw's writes.
 		 */
-		if (getenv("GRATE_EXTRA_FS")) {
-			char *list = strdup(getenv("GRATE_EXTRA_FS"));
-			char *save = NULL;
-			char *path;
+		if (getenv("GRATE_EXTRA_FS") && getenv("GRATE_EXTRA_BEFORE_FLUSH")) {
+			if (run_extra_programs(grate, ctx, &test, bo, false))
+				return 1;
+			grate_flush(grate);
+		} else {
+			grate_flush(grate);
 
-			for (path = strtok_r(list, ":", &save); path;
-			     path = strtok_r(NULL, ":", &save)) {
-				struct grate_shader *vs2, *fs2, *lnk2;
-				struct grate_program *program2;
-				unsigned j;
-
-				vs2 = grate_shader_parse_vertex_asm_from_file(test.vs_path);
-				fs2 = grate_shader_parse_fragment_asm_from_file(path);
-				lnk2 = grate_shader_parse_linker_asm_from_file(test.linker_path);
-				if (!vs2 || !fs2 || !lnk2) {
-					fprintf(stderr, "%s assembler parse failed\n", path);
+			if (getenv("GRATE_EXTRA_FS")) {
+				if (run_extra_programs(grate, ctx, &test, bo, true))
 					return 1;
-				}
-
-				program2 = grate_program_new(grate, vs2, fs2, lnk2);
-				if (!program2) {
-					fprintf(stderr, "extra program alloc failed\n");
-					return 1;
-				}
-				grate_program_link(program2);
-				grate_3d_ctx_bind_program(ctx, program2);
-
-				for (j = 0; j < test.vs_uniforms_nb; j++) {
-					int loc2 = grate_get_vertex_uniform_location(
-						program2, test.vs_uniforms[j].name);
-
-					if (loc2 >= 0)
-						grate_3d_ctx_set_vertex_uniform(ctx, loc2, 4,
-								test.vs_uniforms[j].values);
-				}
-
-				for (j = 0; j < test.fs_uniforms_nb; j++) {
-					int loc2 = grate_get_fragment_uniform_location(
-						program2, test.fs_uniforms[j].name);
-
-					if (loc2 >= 0)
-						grate_3d_ctx_set_fragment_uniform(ctx, loc2, 1,
-								&test.fs_uniforms[j].value);
-				}
-
-				grate_3d_draw_elements(ctx, TGR3D_PRIMITIVE_TYPE_TRIANGLES,
-						       bo, TGR3D_INDEX_MODE_UINT16,
-						       ARRAY_SIZE(indices));
-				grate_flush(grate);
-				fprintf(stdout, "extra-draw=%s\n", path);
 			}
-
-			free(list);
 		}
 
 		fb_data = grate_framebuffer_data(fb, true);
