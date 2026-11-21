@@ -620,3 +620,11 @@ invalidate another; generate such a manifest with
 * commit: 8812fe0b17b863fb53058d144ebd6db86d1d871a with a dirty tree
 * created: 2026-11-21T20:34:07+00:00; 232 rows, repeat 3, timeout 20.0 s
 * summary: 232 passed, 0 failed of 232 - passed
+
+## clean-tex-sampling
+
+* manifest: `asm_characterize.tex_sampling.json` (sha256 fcbe778dc3b1)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 3ffcd6b3595c7cd09077c4e5ab9382ee30a29d03 with a clean tree (clone in /tmp/clean-tex-sampling)
+* created: 2026-11-21T20:40:34+00:00; 232 rows, repeat 3, timeout 20.0 s
+* summary: 232 passed, 0 failed of 232 - passed
