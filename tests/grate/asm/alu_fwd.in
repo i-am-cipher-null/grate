@@ -1,0 +1,65 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * ALU forwarding template: four scalar slots per packet, three batches.
+ *
+ * batch 0  primes the row registers (per variant)
+ * batch 1  A0..A3  the producer packet and/or the first consumer packet
+ * batch 2  B0..B3  a second consumer packet, then the store
+ *
+ * At alu_buffer_size 1 the row is the same in every batch, so a write in batch
+ * 1 is in the register file for a batch 2 read (measured in the ALU buffer
+ * matrix). That makes batch 2 the read-back control: the same consumer that
+ * runs in batch 1 can be run in batch 2, and only the batch-1 form can be
+ * reading a value the packet has not finished writing.
+ *
+ * The primes use .l* (fx10 low) so the low byte of each stored half is a linear
+ * value: 0.25 is 0x40 and 0.5 is 0x7F. Variants that read fp20 replace both
+ * primes with .lh writes and read the result through the fp20 source format.
+ *
+ * `store rt1, r2, r3` puts r3.hi, r3.lo, r2.hi, r2.lo from the MSB, so the
+ * consumer is always asked to land in r3 and the producer in r2.
+ *
+ * A NOP has no intended write (ALU NOP writes 0.0 to r31), so an unwritten slot
+ * cannot change r2 or r3 between the prime and the consumer.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+	[4] = 0.5;
+	[5] = 0.625;
+	[6] = 0.75;
+	[7] = 0.875;
+	[8] = 0.25;
+	[9] = 0.5;
+	[10] = 0.125;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@P0@
+		ALU1:	@P1@
+		ALU2:	@P2@
+		ALU3:	@P3@
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	DW:	@STORE@
+;

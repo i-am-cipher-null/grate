@@ -1723,6 +1723,194 @@ with both results in one word and a capture for each.
 `040a8ac6b32e...` to `6721298cb630...`. The pin is idempotent from the pin
 directory.
 
+## 9. Scalar-slot forwarding inside an ALU packet
+
+`--set fwd` (55 variants) from `tests/grate/asm/alu_fwd.in`, manifest
+`asm_characterize.alu_fwd.json`. Three batches at `alu_buffer_size` 1:
+
+    batch 0   prime r2 = 0.25 in both fx10 halves, r3 = 0.75
+    batch 1   the producer and consumer slots
+    batch 2   store r2, r3
+
+The producer writes 0.5 to `r2.l*`; the consumer copies `r2.l` to `r3.l*`. A
+stored word is `r3 << 16 | r2`, so the low byte of the high half is the
+consumer's linear value: `0x7F` means it saw 0.5, `0x40` means it read the 0.25
+prime. r2 is primed in both halves and r3 in its low half before any read, and
+the same consumer in batch 2 is the register-file control.
+
+### The row register does not forward, in either slot order
+
+| producer slot → consumer slot | word |
+|:--|--:|
+| p0→c1, p0→c2, p0→c3, p1→c2, p1→c3, p2→c3 | `0x0040407F` |
+| p1→c0, p2→c0, p2→c1, p3→c0, p3→c1, p3→c2 | `0x0040407F` |
+
+All twelve return the same word: `r2.lo = 0x7F` shows the producer's write did
+land in the register by the end of the packet, and `r3.lo = 0x40` says the
+consumer read the 0.25 prime. A consumer after the producer does not see the
+produced value any more than a consumer before it. Moving the same consumer one
+batch later gives `0x007F407F` (`r3.lo = 0x7F`), so the difference is the packet
+boundary, not the instruction pair.
+
+A plain reading of the ISA note that "each instruction in a package can use
+partial results from the previous instruction" therefore does not hold for a
+row register destination. The partial-result path that does work is the recv
+accumulator below.
+
+### Producers and consumers across opcodes
+
+Producer in slot 0, consumer in slot 1. `MUL` is the addition-disable form, so
+it writes two products; `MIN`/`MAX` compare the two products `rA*rB` and
+`rC*rD`, which is why their operands are chosen to make both products 0.5
+rather than 0.
+
+| variant | producer | consumer | word |
+|:--|:--|:--|--:|
+| `op-prod-mad` | `MAD r2.l*, u4, #1, #0` | `MAD r3.l*, r2.l, #1, #0` | `0x0040407F` |
+| `op-prod-mul` | `MUL r2.l*, u4, #1, u4` | same | `0x00407F7F` |
+| `op-prod-mul-diff` | `MUL r2.l*, u4, #1, u2` | same | `0x0040407F` |
+| `op-prod-min` | `MIN r2.l*, u4, #1, u4` | same | `0x0040407F` |
+| `op-prod-max` | `MAX r2.l*, u4, #1, u2` | same | `0x0040407F` |
+| `op-cons-mad` | `MAD r2.l*, u4, #1, #0` | `MAD r3.l*, r2.l, #1, #0` | `0x0040407F` |
+| `op-cons-mul` | same | `MUL r3.l*, r2.l, #1, #1` | `0xFF40407F` |
+| `op-cons-min` | same | `MIN r3.l*, r2.l, #1, #1` | `0x0040407F` |
+| `op-cons-max` | same | `MAX r3.l*, r2.l, #1, #0` | `0x0040407F` |
+
+In every row the producer's value (0.5, or 0.5 in both halves for `MUL`) is in
+r2 by the end (`r2.lo = 0x7F`; high byte `0x40` where the other half was not
+written), and every consumer returns `r3.lo = 0x40` - the prime. `op-cons-mul`
+also writes its second product (1.0, `0xFF`) to r3's other half. Neither the
+producer nor the consumer opcode changes the result.
+
+### Destination masks and source formats
+
+| variant | producer | consumer reads | word |
+|:--|:--|:--|--:|
+| `part-lo-read-hi` | `MAD r2.l*, u4` (0.5 low) | `r2.h` | `0x0040407F` |
+| `part-hi-read-lo` | `MAD r2.*h, u4` (0.5 high) | `r2.l` | `0x00407F40` |
+| `part-hi-read-hi` | `MAD r2.*h, u4` (0.5 high) | `r2.h` | `0x00407F40` |
+| `part-lh-read-fp20` | `MAD r2.lh, u4` (fp20 0.5 = `0xEF00`) | `r2` (fp20) | `0x0040EF00` |
+| `part-lh-read-h` | same | `r2.h` | `0x0000EF00` |
+
+A one-half write leaves the other half at its prime (`0x40`), and a consumer
+reading the written half still gets the prime, not the producer's 0.5, in both
+the fx10 and fp20 source formats. `part-lh-read-h` reads the fp20 word's high
+byte (`0xEF`), which as an fx10 half is `0x00` - `.lh` does not write a usable
+fx10 half.
+
+### The recv accumulator is the partial-result path
+
+`(this)` is the recv bit and `(other)` the send bit. A consumer with `(this)`
+has rC overridden by the previous slot's result and added in. Word layout again
+`r3 << 16 | r2`; the `r2.lo` column is the producer's own write.
+
+| variant | instruction pair | word | r2.lo | r3.lo |
+|:--|:--|--:|--:|--:|
+| `acc-none` | 0.25; 0.5, no modifiers | `0x0040407F` | 0.5 | 0.25 |
+| `acc-this-01` | 0.25 `(this)`; 0.5 `(this)` | `0x00BF4040` | 0.25 | 0.75 |
+| `acc-this-12` | same in slots 1 and 2 | `0x00BF4040` | 0.25 | 0.75 |
+| `acc-this-012` | 0.125, 0.25, 0.5 all `(this)` | `0x00BF4060` | 0.375 | 0.75 |
+| `acc-this-only-0` | 0.25 `(this)`; 0.5 plain | `0x00404040` | 0.25 | 0.25 |
+| `acc-this-only-1` | 0.25 plain; 0.5 `(this)` | `0x00FF407F` | 0.5 | 1.0 |
+| `acc-other-01` | 0.25 `(other)`; 0.5 `(this)` | `0x00BF4040` | 0.25 | 0.75 |
+| `acc-both-01` | 0.25 `(this)(other)`; 0.5 `(this)` | `0x00BF4040` | 0.25 | 0.75 |
+| `acc-send-12` | 0.25 `(other)` in slot 1; 0.5 `(this)` in slot 2 | `0x00BF4040` | 0.25 | 0.75 |
+| `acc-xpacket` | 0.25 `(this)` batch 1; 0.5 `(this)` batch 2 | `0x007F4040` | 0.25 | 0.5 |
+| `acc-xpacket3` | 0.25 `(this)` in batch 1 slot 3; 0.5 `(this)` batch 2 slot 0 | `0x007F4040` | 0.25 | 0.5 |
+
+What the words show:
+
+* a consumer with `(this)` returns 0.5 + the **previous slot's raw result**:
+  0.75 from 0.5 and 0.25. The producer does not need `(this)` for that -
+  `acc-this-only-1` returns 1.0 from a plain 0.5 writer;
+* the forwarded value is the previous slot's own result, not its accumulated
+  one: in `acc-this-012` the middle slot writes 0.375 (0.25 + 0.125) to r2, but
+  the third slot adds 0.25 and returns 0.75;
+* `(this)` on a producer with no predecessor adds nothing (0.25 + 0 = 0.25);
+* `(other)`/send changed nothing in these three layouts - all still return the
+  0.75 that `(this)` alone gives;
+* the accumulation does not cross a packet boundary in either test. Batch 2's
+  ALU0 recv returns 0.5, not 0.75, even when batch 1's ALU3 was the 0.25
+  producer.
+
+### Several slots writing one half OR their results
+
+The four-packet result-register set turned this up: two slots writing `r2.lo`
+with 0.25 and 0.5 left 0.75, not 0.5. The fwd template has one packet with one
+constant per slot:
+
+| variant | values written to r2.lo | word |
+|:--|:--|--:|
+| `w-one` | 0.0625 | `0x00BF4010` |
+| `w-two` | 0.0625, 0.125 | `0x00BF4030` |
+| `w-three` | 0.0625, 0.125, 0.25 | `0x00BF4070` |
+| `w-rev` | 0.0625, 0.125 in slots 2, 3 | `0x00BF4030` |
+| `w-same` | 0.25, 0.25 (same uniform) | `0x00BF4040` |
+| `w-same-value` | 0.25, 0.25 (different uniforms) | `0x00BF4040` |
+| `w-same-half` | 0.5, 0.5 | `0x00BF407F` |
+| `w-same-half-const` | 0.5, 0.5 (same uniform) | `0x00BF407F` |
+| `w-three-same` | 0.25, 0.25, 0.25 | `0x00BF4040` |
+| `w-shape` | 0.25, 0.25 in different operand positions | `0x00BF4040` |
+| `w-or-25-75` | 0.25, 0.75 | `0x00BF40BF` |
+| `w-or-50-75` | 0.5, 0.75 | `0x00BF40BF` |
+| `w-halves` | 0.25 to `.l*`, 0.5 to `.*h` | `0x00BF7F40` |
+| `w-mul` | `MAD` 0.25 low; `MUL` 0.5 low and 0.25 high | `0x00BF40BF` |
+
+The stored bytes are consistent with each slot **ORing its fx10 code** into the
+destination half, not adding: the codes are `value*256` (0.0625 = `0x10`,
+0.125 = `0x20`, 0.25 = `0x40`, 0.5 = `0x80`, 0.75 = `0xC0`) and the store
+scales the code to a byte (`0x80` reads `0x7F`, `0xC0` reads `0xBF`). Then
+`0x40 | 0x80 = 0xC0` reads 0.75, while adding would read 1.0; two 0.25 writes
+OR to `0x40` and read 0.25, while adding would read 0.5. `w-one` shows the
+packet's write replaces the 0.25 prime rather than ORing with it (`0x10`, not
+`0x50`), so the OR is only among the slots of the current packet. `w-rev` shows
+the order does not matter. This is inferred from the byte; the direct
+measurement is the word, and the fp20 (`.lh`) destination is not covered.
+
+### ALUN result registers read zero
+
+`--set result-regs` (13 variants) from `tests/grate/asm/alu_result_regs.in`,
+manifest `asm_characterize.alu_result_regs.json`. Four packets, so a reader can
+sit in the producer's packet, one packet later, or two packets later. Packets
+0, 1 and 2 write 0.0625, 0.125 and 0.5 through slot 1 (and 0.25 in packet 2's
+slot 0), so a readback would name the packet it came from. The reader is
+`MAD r3.l*, alu1, #1, #0` and writes r3; `r-none` has no producer at all.
+
+| variants | r3.lo (the read) | word |
+|:--|--:|--:|
+| `r-same-s2`, `r-before-s0`, `r-alu0-same`, `r-alu3-same`, `r-next-s0`, `r-next-s2`, `r-alu0-next`, `r-none`, `r-send-next`, `r-recv-next` | 0.0 | `0x000000xx` (r2 carries the packet's write) |
+| `r-fp20`, `r-fp20-h`, `r-fp20-l` | 0.0 | `0x0000EF00` |
+
+Examples: `r-same-s2` = `0x00000060` (r2.lo is the OR of 0.125 and 0.25),
+`r-next-s0` = `0x0000007F`, `r-next-s2` = `0x000000BF` (0.25 | 0.5), and
+`r-none` = `0x00000000`. Every reader returns 0.0 whether the producer wrote a
+row register in the same packet, the packet before, or two packets before, and
+whether the producer used a plain write or `(other)`/`(this)`. `aluN` is not a
+legal destination, so no test here writes the result register directly; what is
+measured is that a row-register write is never relayed through `alu0..3` at
+these separations.
+
+### What this set does not settle
+
+* why the row register does not forward while the recv accumulator does. The
+  measurements fix the behaviour, not the pipeline stage that causes it;
+* whether the several-writes OR is a property of the row register file or of
+  the ALU result merge, and what an `.lh` (fp20) destination does with two
+  writers;
+* what writes `alu0..3`, if anything in the fragment ISA does;
+* `CSEL` as a consumer (its destination is a condition register, not a row
+  register) and condition-code producers;
+* TEX or MFU words interleaved with the ALU slots, and more than four writers
+  or overlapping operand modifiers.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-fwd` and `verify-alu-fwd` hold 169 rows each
+(55 variants, three repeats, plus the four control rows), pinned from
+`c27830fc843f...` to `d133fa98801e...`; re-pinning from the pin directory is
+byte-identical. `pin-alu-result` and `verify-alu-result` hold 43 rows each (13
+variants), pinned from `44b84ef3e4e6...` to `eb0c20007a35...`.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

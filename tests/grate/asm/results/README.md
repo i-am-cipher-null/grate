@@ -436,3 +436,35 @@ invalidate another; generate such a manifest with
 * commit: 40be0c8d88a30e2bd64db16994e3487382cd433d with a clean tree (clone in /tmp/clean-pair)
 * created: 2026-11-21T14:06:10+00:00; 154 rows, repeat 3, timeout 10.0 s
 * summary: 154 passed, 0 failed of 154 - passed
+
+## pin-alu-fwd
+
+* manifest: `asm_characterize.alu_fwd.json` (sha256 c27830fc843f)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 423bb090947e88712a3d769179c8a4a5fcc30934 with a dirty tree
+* created: 2026-11-21T14:27:37+00:00; 169 rows, repeat 3, timeout 10.0 s
+* summary: 169 passed, 0 failed of 169 - passed
+
+## verify-alu-fwd
+
+* manifest: `asm_characterize.alu_fwd.json` (sha256 d133fa98801e)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 423bb090947e88712a3d769179c8a4a5fcc30934 with a dirty tree
+* created: 2026-11-21T14:28:10+00:00; 169 rows, repeat 3, timeout 10.0 s
+* summary: 169 passed, 0 failed of 169 - passed
+
+## pin-alu-result
+
+* manifest: `asm_characterize.alu_result_regs.json` (sha256 44b84ef3e4e6)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 423bb090947e88712a3d769179c8a4a5fcc30934 with a dirty tree
+* created: 2026-11-21T14:25:53+00:00; 43 rows, repeat 3, timeout 10.0 s
+* summary: 43 passed, 0 failed of 43 - passed
+
+## verify-alu-result
+
+* manifest: `asm_characterize.alu_result_regs.json` (sha256 eb0c20007a35)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 423bb090947e88712a3d769179c8a4a5fcc30934 with a dirty tree
+* created: 2026-11-21T14:26:57+00:00; 43 rows, repeat 3, timeout 10.0 s
+* summary: 43 passed, 0 failed of 43 - passed
