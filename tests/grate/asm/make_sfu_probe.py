@@ -242,9 +242,184 @@ def ops_variants():
     return out
 
 
+PAIR_TEMPLATE = "tests/grate/asm/sfu_pair.in"
+PAIR_BATCHES = 9
+
+
+def main_word(op, reg="r3", out="r2"):
+    """The main op with the multiplier that captures its result."""
+    return f"sfu: {op} {reg} mul0: {out}, sfu, #1"
+
+
+def pair_variant(name, words, input=1.0, clobber=None, store="r2, r3",
+                 primes=None, readout=("r2", "r3")):
+    """One pairing program: up to 18 MFU words and one ALU clobber word."""
+    primes = primes or (0.75, 0.5, 1.0, input)
+    slots = {f"@W{index}@": (words[index] if index < len(words) else NOP)
+             for index in range(18)}
+    for index in range(4):
+        slots[f"@C{index}@"] = (clobber if index == 0 and clobber else NOP)
+    slots["@A0@"] = f"MAD  {readout[0]}.l*,  {readout[0]},  #1,  #0"
+    slots["@A1@"] = f"MAD  {readout[1]}.l*,  {readout[1]},  #1,  #0"
+    slots["@A2@"] = NOP
+    slots["@A3@"] = NOP
+    replace = {
+        "@P0@": prime(0, primes[0]), "@P1@": prime(1, primes[1]),
+        "@P2@": prime(2, primes[2]), "@P3@": prime(3, primes[3]),
+        "@STORE@": f"store rt1, {store}",
+    }
+    replace.update(slots)
+    return {
+        "name": name,
+        "environment": {"GRATE_POKE": f"0x520=0x{START_WORD | PAIR_BATCHES:08X}"},
+        "replace": {"fs": replace},
+        "fs": PAIR_TEMPLATE,
+    }
+
+
+def pair_variants():
+    """What preserves, replaces or destroys a pending PRE intermediate.
+
+    PRESIN of 1.0 is the base pair: with it, SIN reads 0.839 (0xD6); without it
+    SIN returns its operand 1.0 (0xFF). A lost pair is therefore one readout
+    byte away from the control, not a subtle value.
+
+    `gap-N` moves the main word N MFU words after the PRE, through the two
+    three-word batches and across their boundaries. The clobber rows put a
+    write to the operand between the words: a same-value multiplier, a
+    different-value multiplier, an ALU write, and an SFU op. The other-register
+    rows are the controls that separate "the pending pair was destroyed" from
+    "the intervening word disturbed the SFU pipeline".
+    """
+    out = []
+
+    # A. controls, with and without the first step
+    out.append(pair_variant("pair-sin", ["sfu: presin r3", main_word("sin")]))
+    out.append(pair_variant("pair-ex2", ["sfu: preex2 r3", main_word("ex2")],
+                            input=-1.0))
+    out.append(pair_variant("pair-cos", ["sfu: precos r3", main_word("cos")],
+                            input=0.0))
+    out.append(pair_variant("alone-sin", [main_word("sin")]))
+    out.append(pair_variant("alone-ex2", [main_word("ex2")], input=-1.0))
+    out.append(pair_variant("alone-cos", [main_word("cos")], input=0.0))
+
+    # B. separation: main at W1..W17, so through five batch boundaries
+    for gap in (1, 2, 3, 4, 5, 6, 9, 12, 15, 17):
+        words = [NOP] * (gap + 1)
+        words[0] = "sfu: presin r3"
+        words[gap] = main_word("sin")
+        out.append(pair_variant(f"gap-{gap}", words))
+    words = [NOP] * 13
+    words[0] = "sfu: preex2 r3"
+    words[12] = main_word("ex2")
+    out.append(pair_variant("gap-ex2-12", words, input=-1.0))
+    words = [NOP] * 18
+    words[0] = "sfu: precos r3"
+    words[17] = main_word("cos")
+    out.append(pair_variant("gap-cos-17", words, input=0.0))
+
+    # C. the main has to name the register the PRE named
+    out.append(pair_variant(
+        "reg-pre0-main0", ["sfu: presin r0", main_word("sin", "r0")],
+        primes=(1.0, 0.5, 1.0, 0.5)))
+    out.append(pair_variant(
+        "reg-pre0-main3", ["sfu: presin r0", main_word("sin", "r3")],
+        primes=(1.0, 0.5, 1.0, 1.0)))
+    out.append(pair_variant(
+        "reg-pre3-main1", ["sfu: presin r3", main_word("sin", "r1")],
+        store="r0, r1", readout=("r0", "r1")))
+    out.append(pair_variant(
+        "reg-pre3-main1-then3",
+        ["sfu: presin r3", main_word("sin", "r1"), main_word("sin", "r3")]))
+
+    # D. a write to the operand between the two words
+    base = ["sfu: presin r3", NOP, NOP, main_word("sin")]
+    out.append(pair_variant("clobber-none", base))
+    out.append(pair_variant(
+        "clobber-mul-same",
+        ["sfu: presin r3", "mul0: r3, src13, src13", NOP, main_word("sin")]))
+    out.append(pair_variant(
+        "clobber-mul-other",
+        ["sfu: presin r3", "mul0: r1, src13, src13", NOP, main_word("sin")]))
+    out.append(pair_variant(
+        "clobber-mul-different",
+        ["sfu: presin r3", "mul0: r3, r0, src13", NOP, main_word("sin")],
+        primes=(0.75, 0.5, 1.0, 1.0)))
+    out.append(pair_variant("clobber-alu-same", base,
+                            clobber="MAD  r3.lh,  u8,  #1,  #0"))
+    out.append(pair_variant("clobber-alu-other", base,
+                            clobber="MAD  r1.lh,  u8,  #1,  #0"))
+    out.append(pair_variant("clobber-alu-different", base,
+                            clobber="MAD  r3.lh,  u7,  #1,  #0"))
+
+    # E. every other SFU op between the two words, on the same register
+    for op in ("rcp", "rsq", "lg2", "ex2", "sqrt", "cos", "frc",
+               "preex2", "presin", "precos"):
+        out.append(pair_variant(
+            f"intervene-{op}",
+            ["sfu: presin r3", f"sfu: {op} r3", NOP, main_word("sin")]))
+    # COS and SIN with a multiplier, so they cannot be skipped as an
+    # uncaptured second step. The capture goes to r1, away from the operand.
+    out.append(pair_variant(
+        "intervene-sin",
+        ["sfu: presin r3", "sfu: sin r3", NOP, main_word("sin")]))
+    out.append(pair_variant(
+        "intervene-sin-cap",
+        ["sfu: presin r3", "sfu: sin r3 mul0: r1, sfu, #1", NOP,
+         main_word("sin")]))
+    out.append(pair_variant(
+        "intervene-cos-cap",
+        ["sfu: presin r3", "sfu: cos r3 mul0: r1, sfu, #1", NOP,
+         main_word("sin")]))
+
+    # F. does the main consume the intermediate, and does a new PRE re-arm it?
+    out.append(pair_variant(
+        "main-twice",
+        ["sfu: presin r3", main_word("sin"), main_word("sin")]))
+    out.append(pair_variant(
+        "main-thrice",
+        ["sfu: presin r3", main_word("sin"), main_word("sin"),
+         main_word("sin")]))
+    out.append(pair_variant(
+        "rearm", ["sfu: presin r3", main_word("sin"), "sfu: presin r3",
+                  main_word("sin")]))
+    out.append(pair_variant(
+        "rearm-other", ["sfu: presin r3", main_word("sin"),
+                        "sfu: preex2 r0", main_word("sin")],
+        primes=(0.75, 0.5, 1.0, 1.0)))
+
+    # G. two chains in flight, results in r1 and r2
+    # 
+    # Two chains in flight: r0 and r1 hold the operands, the results go to r2
+    # and r3, and the store already covers that pair.
+    out.append(pair_variant(
+        "interleave-sin-ex2",
+        ["sfu: presin r0", "sfu: preex2 r1", main_word("sin", "r0", "r2"),
+         main_word("ex2", "r1", "r3")],
+        primes=(1.0, -1.0, 1.0, 0.5)))
+    out.append(pair_variant(
+        "interleave-ex2-sin",
+        ["sfu: preex2 r1", "sfu: presin r0", main_word("ex2", "r1", "r2"),
+         main_word("sin", "r0", "r3")],
+        primes=(1.0, -1.0, 0.75, 0.5)))
+    out.append(pair_variant(
+        "interleave-two-sin",
+        ["sfu: presin r0", "sfu: presin r1", main_word("sin", "r0", "r2"),
+         main_word("sin", "r1", "r3")],
+        primes=(1.0, 1.0, 0.75, 0.5)))
+    out.append(pair_variant(
+        "interleave-gap",
+        ["sfu: presin r0", "sfu: preex2 r1", NOP, NOP, NOP,
+         main_word("sin", "r0", "r2"), main_word("ex2", "r1", "r3")],
+        primes=(1.0, -1.0, 1.0, 0.5)))
+    return out
+
+
 SETS = {
     "ops": ("sfu-opcode-matrix", "tests/grate/asm_characterize.sfu_ops.json",
-            ops_variants),
+            TEMPLATE, ops_variants),
+    "pair": ("sfu-pre-pairing", "tests/grate/asm_characterize.sfu_pair.json",
+             PAIR_TEMPLATE, pair_variants),
 }
 
 CONTROLS = [
@@ -261,14 +436,14 @@ CONTROLS = [
 ]
 
 
-def build_manifest(name, variants):
+def build_manifest(name, variants, fs):
     return {
         "name": name,
         "repeat": 3,
         "timeout": 10,
         "program": {
             "vs": "tests/grate/asm/vs_mov.txt",
-            "fs": TEMPLATE,
+            "fs": fs,
             "lnk": "tests/grate/asm/linker_vs_tests.txt",
         },
         "controls": CONTROLS,
@@ -314,8 +489,8 @@ def main():
     parser.add_argument("--out", help="manifest to write (default: the checked-in one)")
     args = parser.parse_args()
 
-    name, default_out, build = SETS[args.set]
-    manifest = build_manifest(name, build())
+    name, default_out, fs, build = SETS[args.set]
+    manifest = build_manifest(name, build(), fs)
     out = args.out or default_out
     if args.results:
         unpinned = pin(manifest, args.results)

@@ -1566,6 +1566,163 @@ the pin run reproduces it byte for byte. The run used the Toshiba AC100 with
 the immediate-operand and varying-pipeline controls passing before and after
 the sweep.
 
+## 8. The PRE step and its main op
+
+`--set pair` (50 variants) from `tests/grate/asm/sfu_pair.in`, manifest
+`asm_characterize.sfu_pair.json`. The template primes the rows, then carries six
+batches of three MFU words (W0..W17), so the first and second words of a pair
+can sit one to seventeen words apart and cross up to five batch boundaries.
+Batch 1 also has an ALU stage after its MFU words, which is where the ALU
+clobber writes the operand between the two words. The last two batches convert
+r2 and r3 to fx10 and store them.
+
+The base pair is `PRESIN r3` of 1.0 followed by `SIN r3` with
+`mul0: r2, sfu, #1`. The readout is the same linear byte as section 7: the
+working pair reads `0xD6` (0.839), and `SIN` without its first step returns the
+operand 1.0 and reads `0xFF`. `PAIR-ex2` of -1.0 reads `0x7F` (0.5) and its
+alone control `0xFF` (1.0); `PAIR-cos` of 0 reads `0xFF` (1.0) and its alone
+control `0x00` (0). A destroyed pair is therefore a different byte from the
+control in every family, not a matter of decoding a value.
+
+### Separation
+
+The main word is placed at W1, W2, W3, W4, W5, W6, W9, W12, W15 or W17; W3 is
+already the next batch, and W17 is five batch boundaries away:
+
+| main at | word |
+|:--|--:|
+| W1, W2, W3, W4, W5, W6, W9, W12, W15, W17 | `0xF4D6F4D6` |
+
+Every one returns the pair result, so the tested working separation is
+**17 MFU words and five batch boundaries**. `gap-ex2-12` (`0xEF7FEF7F`) and
+`gap-cos-17` (`0xF7FFF7FF`) repeat the same result for the other two main ops,
+so the survival is not specific to SIN. This is a lower bound: nothing here
+says the limit is 17.
+
+### The main has to name the PRE's register
+
+| variant | word | reading |
+|:--|--:|:--|
+| `reg-pre0-main0` | `0xEF7FF4D6` | both name r0: r2 = 0.839, pair works |
+| `reg-pre0-main3` | `0xF7FFF7FF` | main names r3 instead: r2 = 1.0, no result |
+| `reg-pre3-main1` | `0xEF7FF3BF` | main names r1: r1 stays its 0.5 prime (the `7F` half); r0's converted prime is `BF` |
+| `reg-pre3-main1-then3` | `0xF4D6F4D6` | the r1 word is a no-op; the later r3 main still works |
+
+So the register field selects the pending intermediate as well as the operand:
+a main word naming another register writes nothing there and does not disturb
+the pair. This is the same "no write" the `presin-r3-sin-r2` row in the SFU
+matrix showed.
+
+### A write to the operand destroys the pair
+
+The pair is `PRESIN r3` at W0 and the main at W3; W1 or the batch-1 ALU writes
+between them:
+
+| variant | write between the words | word | main returns |
+|:--|:--|--:|--:|
+| `clobber-none` | none | `0xF4D6F4D6` | 0.839 |
+| `clobber-mul-same` | `mul0: r3, src13, src13` (the same 1.0) | `0xF7FFF7FF` | 1.0, the operand |
+| `clobber-mul-different` | `mul0: r3, r0, src13` (0.75) | `0xF3BFF3BF` | 0.75, the operand |
+| `clobber-alu-same` | ALU `MAD r3.lh, u8, #1, #0` (1.0) | `0xF7FFF7FF` | 1.0 |
+| `clobber-alu-different` | ALU `MAD r3.lh, u7, #1, #0` (0.75) | `0xF3BFF3BF` | 0.75 |
+| `clobber-mul-other` | `mul0: r1, src13, src13` | `0xF4D6F4D6` | 0.839 |
+| `clobber-alu-other` | ALU write to r1 | `0xF4D6F4D6` | 0.839 |
+
+Both the multiplier and the ALU can destroy the pair, and writing the same
+value back is no better than writing a different one. A write to another
+register is harmless. The main then behaves exactly like its alone control
+(0.839 pair vs 1.0 or 0.75 operand), so this class of clobber clears the
+intermediate rather than poisoning it.
+
+### Which SFU operations disturb a pending pair
+
+An SFU word on r3 sits at W1 between the PRE and the main at W3. `-cap` uses a
+multiplier to capture the intervening result, so the op cannot be skipped as an
+uncaptured second step:
+
+| intervening op | word | pair result |
+|:--|--:|:--|
+| `cos` | `0xF4D6F4D6` | survives |
+| `cos` with a capture | `0xF4D6F4D6` | survives |
+| `sin` | `0xF4D6F4D6` | survives |
+| `sin` with a capture | `0xF4D6F4D6` | survives |
+| `rcp` | `0x00000000` | 0 |
+| `rsq` | `0x78007800` | 0 |
+| `lg2` | `0xCD07CD07` | 0.027 |
+| `ex2` | `0xF3C3F3C3` | 0.765 |
+| `sqrt` | `0xF6F4F6F4` | 0.957 |
+| `frc` | `0x00000000` | 0 |
+| `preex2` | `0x00000000` | 0 |
+| `presin` | `0x00000000` | 0 |
+| `precos` | `0xF7FFF7FF` | 1.0 |
+
+Nine of the eleven change the pair, but not to the alone-control value: RCP or
+SQRT of 1.0 is still 1.0, yet the following SIN returns 0 or 0.957 rather than
+the 1.0 it would return with no PRE at all. So these ops poison the pending
+intermediate instead of clearing it, and the resulting value is not a function
+of the new operand alone. SIN is harmless because the main does not consume the
+intermediate (below); COS is harmless even when its own result is captured, so
+with a PRESIN pending it appears not to execute at all. That last point is
+observed, not explained.
+
+The repeat-PRE rows are the same shape: a second `PRESIN` of the same 1.0 while
+the first is still pending gives 0 as an intervening op, and re-arming after a
+main gives `0xF2BEF2BE` (0.745) rather than the 0.839 of a fresh pair. So a
+repeated PRE on the same register does not simply replace the old intermediate.
+A PRE on a *different* register does not disturb the pair: placing `PREEX2 r1`
+between `PRESIN r0` and its main returns both results correctly (below).
+
+### The main does not consume the intermediate
+
+| variant | words | word | reading |
+|:--|:--|--:|:--|
+| `main-twice` | PRESIN, SIN, SIN | `0xF4D6F4D6` | second SIN also reads 0.839 |
+| `main-thrice` | PRESIN, SIN, SIN, SIN | `0xF4D6F4D6` | third SIN too |
+| `rearm` | PRESIN, SIN, PRESIN, SIN | `0xF2BEF2BE` | a second PRE corrupts the result |
+| `rearm-other` | PRESIN r3, SIN, PREEX2 r0, SIN r3 | `0xF4D6F4D6` | a PRE elsewhere is harmless |
+
+So the intermediate outlives its own main and can drive the same main again;
+what it does not survive is another PRE on the same register. A compiler can
+therefore reuse a pending pair, but must not re-emit the first step for the
+same operand while it is still live.
+
+### Two chains in flight
+
+The operands are in r0 and r1 and the two results go to r2 and r3, so one word
+shows both:
+
+| variant | words | word | reading |
+|:--|:--|--:|:--|
+| `interleave-sin-ex2` | PRESIN r0, PREEX2 r1, SIN r0, EX2 r1 | `0xEF7FF4D6` | r2 = 0.839 (sin), r3 = 0.5 (ex2) |
+| `interleave-ex2-sin` | PREEX2 r1, PRESIN r0, EX2 r1, SIN r0 | `0xF4D6EF7F` | r2 = 0.5, r3 = 0.839 |
+| `interleave-two-sin` | PRESIN r0, PRESIN r1, SIN r0, SIN r1 | `0xF4D6F4D6` | both 0.839 |
+| `interleave-gap` | PRESIN r0, PREEX2 r1, 3 NOPs, SIN r0, EX2 r1 | `0xEF7FF4D6` | both still correct |
+
+Two PRE/main pairs can be in flight at once, on different registers, in either
+order and with a gap. This is the same conclusion as the earlier probe, now
+with both results in one word and a capture for each.
+
+### What this set does not settle
+
+* Why COS with a PRESIN pending is harmless; the set only observes that it
+  leaves the pair word unchanged, with and without a capture multiplier.
+* What the poisoned values from RCP/SQRT/LG2/... mean. They are recorded as
+  words, not decoded; the point is only that they are neither the correct pair
+  result nor the alone-control value.
+* Whether the 17-word separation is a limit or just the largest tested. There
+  is no failing case here.
+* TEX writes and multi-slot (four-ALU) writes between the two words, and more
+  than two interleaved chains, are not covered.
+* The ALU clobber is applied in the same batch as the PRE, after the MFU stage;
+  an ALU write in a later batch between the words is not tested.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-sfu-pair` and `verify-sfu-pair` hold 154 rows each
+- 50 variants and three repeats plus the controls - pinned from
+`040a8ac6b32e...` to `6721298cb630...`. The pin is idempotent from the pin
+directory.
+
 ## What the runner cost
 
 Five things that produced wrong results first:
