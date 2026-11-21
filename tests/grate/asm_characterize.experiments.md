@@ -2329,7 +2329,8 @@ has a write mask over the low word and is a different instruction rather than
   index, the enable bits and the pair, not that the fetch uses the fragment's
   own position. The smallest follow-up is a program that stores a
   position-dependent value (the pixel x or y from the MFU) and fetches it back
-  across a 64x64 window; a wrong address then shows as the wrong column.
+  across a 64x64 window; a wrong address then shows as the wrong column. Section 14 answers this: the
+  map is the identity.
 * What index 0 and 2 read: the values are unstable and the partial write
   pattern is not explained.
 * The spill form's fields: bit 24 overlays the low word, and this set only
@@ -2487,6 +2488,188 @@ follow-up, and it needs a dumped word bit-patched rather than a new mnemonic.
 each (30 variants, three repeats, plus the controls), pinned from
 `32226d2a8542...` to `45cc01a536b2...`. Re-pinning from the pin directory is
 byte-identical.
+
+## 14. PSEQ addressing: which pixel the fetch reads
+
+`asm_characterize.pseq_addr.json` (18 variants), template `asm/pseq_addr.in`,
+vertex shader `asm/vs_scale_offset.txt`. Section 12 could not see the address
+because every pixel stored the same word. Here each fragment tags its own
+pixel with its position:
+
+    R = frag.x + 1    G = frag.y + 1    B = 0x9F    A = 0xBF
+
+The tag is unique for coordinates below 96 and differs from pattern B
+(`0x9F607F40`), pattern C (`0x10703020`) and zero. Batch 1 stores the tag to
+the fetch target, batch 2 overwrites r0/r1 with B, batch 3 sets C and can
+optionally store it, batch 4 fetches, batch 5 stores the fetched word to the
+linear rt4 surface. The new opt-in readback `GRATE_REGION=x,y,w,h` (commit
+`2566b55`) prints that rectangle row by row and reports a 32-bit digest of it
+as the result word, so the whole map is pinned instead of `fb_data[0]`.
+
+The quad is 64x64 pixels, placed with the "offset" uniform of
+`vs_scale_offset.txt`; the target itself is still the harness's 256x256
+surface, so this exercises a 64x64 *area*, not a 64x64 allocation.
+
+### The position registers
+
+`diag-pos` stores `posx - 8192` in R and `posy - 8192` in G (A and B keep the
+markers):
+
+| target row | first word | last word |
+|--:|:--|:--|
+| 0 | `BF9F0000` | `BF9F003F` |
+| 63 | `BF9F3F00` | `BF9F3F3F` |
+
+So `posx - 8192` is the window column and `posy - 8192` is the window row, with
+the row counted from the bottom of the viewport: the quad spans NDC y -1..-0.5
+and filled target rows 0..63. That is consistent with the documented
+`8192 + (height - 1) - y` form read with y counted down from the top; it does
+not fit a bottom-up y in that formula.
+
+Batch 0 of the template splits the position read into its own packet because
+an ALU write to one half is carried out in that half's fx10 format, and
+`8192 + x` does not fit fx10. The first attempt computed the tag directly from
+`posx` and every coordinate saturated to `0xFF`.
+
+### The fetch map
+
+| variant | picture | digest |
+|:--|:--|--:|
+| `diag-pos` | posx-8192, posy-8192 | `0xE2AECDC5` |
+| `tag-nofetch` | the tags (reference) | `0xFDFE7DC5` |
+| `ctl-nofetch` | B everywhere, fetch NOP | `0x8086DDC5` |
+| `ctl-zeros` | the tag store writes zeros | `0x76EFDDC5` |
+| `tag-fetch` | the fetch map | `0xFDFE7DC5` |
+| `last-store` | C stored over the tag before the fetch | `0x54FFDDC5` |
+| `pair-23` | fetch into r2/r3, stored from r2/r3 | `0xFDFE7DC5` |
+| `src-rt1` | framebuffer, tiled 16x16 | `0xFDFE7DC5` |
+| `src-rt3-linear` | coverage target, linear | `0xFDFE7DC5` |
+| `src-rt3-tiled` | coverage target, tiled 16x16 | `0xFDFE7DC5` |
+| `src-rt3-tiled-off` | as above, quad at x=8,y=8 | `0x97279DC5` |
+| `src-rt5-rgb565` | rt5, rgb565 | `0xAB4CFDC5` |
+| `src-rt5-a8-x` | rt5, a8, tag in the A byte | `0x4CEFDDC5` |
+| `src-rt5-a8-y` | as above, y in the A byte | `0x00EFDDC5` |
+| `src-rt5-l8-x` | rt5, l8, tag in the R byte | `0xDF583DC5` |
+| `src-rt5-l8-y` | as above, y in the R byte | `0x338C9BC5` |
+| `off-32-16` | quad at x=32,y=16 | `0x88E83DC5` |
+| `off-1-0` | quad at x=1,y=0 | `0x0E494C85` |
+
+`tag-fetch` and `tag-nofetch` have the same digest: the fetch returned, at every
+pixel, exactly the tag that pixel had stored.
+
+| target row | words (first, second, ... last) |
+|--:|:--|
+| 0 | `BF9F0101` `BF9F0102` ... `BF9F0140` |
+| 1 | `BF9F0201` `BF9F0202` ... `BF9F0240` |
+| 63 | `BF9F4001` `BF9F4002` ... `BF9F4040` |
+
+The two dead-fetch pictures say the same thing from the other side:
+`ctl-nofetch` is `9F607F40` in every word and `ctl-zeros` is `00000000`
+everywhere (`nz=0`). A fetch that did not happen therefore cannot be mistaken
+for a fetch that returned the tag, and the fetched bytes come from the surface,
+not from the registers.
+
+`last-store` puts pattern C on the surface in the packet before the fetch; the
+whole map is `10703020`. The fetch reads the surface at the fragment's position
+and sees a store issued one packet earlier - it is not returning the fragment's
+own earlier store or the current r0/r1 (B).
+
+`pair-23` has the `tag-fetch` digest: setting bit 1 moves the fetched word to
+r2/r3 (stored from there) without changing the address.
+
+### Surfaces, layouts and pitches
+
+The same tags, written and fetched through five different surfaces, all return
+the tag the fragment stored:
+
+| variant | row 0 | reading |
+|:--|:--|:--|
+| `src-rt1` | `BF9F0101` ... `BF9F0140` | tiled framebuffer, identity |
+| `src-rt3-linear` | `BF9F0101` ... `BF9F0140` | linear target, identity |
+| `src-rt3-tiled` | `BF9F0101` ... `BF9F0140` | tiled target, identity |
+| `src-rt3-tiled-off` | `BF9F0909` ... `BF9F0948` | quad at 8,8: R=9 (x=8), G=9 (y=8), last `BF9F4848` = x=71,y=71 |
+
+So the fetch's byte address is the same address the DW store used, including
+the 16x16 tiling, and an unaligned quad shows the absolute coordinates rather
+than tile-local ones. There is no fixed row stride or origin assumption: the
+framebuffer and rt3 use a 1024-byte pitch, and the identity holds for both
+linear and tiled layouts.
+
+The narrow formats only carry part of the tag, so those variants put one
+coordinate in the byte that survives:
+
+| variant | row 0 | reading |
+|:--|:--|:--|
+| `src-rt5-a8-x` | `01000000` `02000000` ... `40000000` | x+1 in the A byte, all rows identical |
+| `src-rt5-a8-y` | row 1 `02000000`, row 63 `40000000` | y+1 in the A byte |
+| `src-rt5-l8-x` | `FF010101` `FF020202` ... `FF404040` | x+1 replicated as luminance, alpha 1.0 |
+| `src-rt5-l8-y` | row 63 `FF404040` | y+1 |
+
+`src-rt5-rgb565` keeps bytes 0..2 and quantises them: row 0's first four words
+are all `FF9C0000`, the last column is `FF9C0042`, and row 63 starts
+`FF9C4100`. The 5-bit red loses the low bits of the small coordinates and the
+6-bit green rounds up, but the ramp is monotonic in both axes and the digest is
+unique. All four formats agree with section 12's channel mapping: a8 keeps the
+A byte, l8 keeps R and replicates it, rgb565 keeps R, G, B and replaces alpha.
+
+### Absolute position
+
+The quad was moved with the "offset" uniform and the readback window followed
+it, so a quad-relative or window-relative address would show up as a shifted
+map instead of an empty one:
+
+| variant | region | row 0 | reading |
+|:--|:--|:--|:--|
+| `off-32-16` | 32,16,64,64 | `BF9F1121` ... `BF9F1160` | R=0x21 (x=32), G=0x11 (y=16), last column x=95 |
+| `off-1-0` | 1,0,63,64 | `BF9F0102` ... `BF9F0140` | starts at x=1, 63 columns, `nz=4032` |
+
+`off-32-16`'s last row is `BF9F5021` ... `BF9F5060`: G=0x50 is y=79, R keeps
+the same x range. The tags are absolute window positions and the fetch follows
+them.
+
+### The DW's byte conversion
+
+The tag keeps both coordinates below `0x60` because the conversion to a byte is
+not a plain `v * 256`. Measured fx10 pattern to stored byte: `0x40 -> 0x40`,
+`0x60 -> 0x60`, `0x7F -> 0x7F`, but `0x80 -> 0x7F`, `0x81 -> 0x80`,
+`0x83 -> 0x82`, `0xA0 -> 0x9F`, `0xC0 -> 0xBF`. Patterns at or above `0x80`
+come back one lower. This was found by the first tag encoding, `2x + 1`, whose
+ramp read `... 127, 128, 130, ...` past x=63; it is also why the markers are
+`0x9F` and `0xBF`. The rule is only checked for patterns below `0x100`.
+
+### What this settles
+
+On this device and setup, the PSEQ fetch reads the render target named by bits
+16..19 at the fragment's own window position, with absolute coordinates, and
+the address it uses is the one the DW store used for that surface: tiled or
+linear, 4, 2 or 1 byte per pixel, and at an offset quad. The three target
+indices tested here (rt1, rt3, rt5) behave the same and the destination pair
+bit does not change the address; the enable and index bits themselves are
+section 12's result. A store from the previous packet is visible to the fetch.
+
+### What this does not settle
+
+* **Mechanism.** Every test stores to the fragment's own pixel before fetching,
+  so "address from the position registers" and "address from the fragment's
+  write target" produce the same map. A fragment that fetches without storing
+  first - for instance on a second draw over the previous frame's surface - is
+  not covered.
+* **A 64x64 target.** The harness allocates 256x256, so the height term in
+  `posy` and a 256-byte pitch with 4-byte pixels were not exercised. Pitches
+  were varied only through the pixel size (1024, 512, 256 bytes).
+* **Coordinates past 95.** The tag encoding covers x and y up to 95; larger
+  coordinates and the target edges are untested.
+* **Layer and alignment fields.** The fetch word's remaining bits were only
+  swept in section 12, and not on a position-dependent surface.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-pseq-addr` and `verify-pseq-addr` hold 58 rows
+each (18 variants, three repeats, plus the controls), pinned from
+`098102b69aaf...` to `a6eebb68f66d...`, and re-pinning from the verify
+directory is byte-identical. `GRATE_REGION` makes the reported result word the
+digest of the dumped rectangle, not `fb_data[0]`; the rectangle itself is in
+the (ignored) log of each run.
 
 ## What the runner cost
 

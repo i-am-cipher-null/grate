@@ -1,0 +1,103 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * PSEQ addressing probe template.
+ *
+ * Every fragment tags its own pixel with its window position, fetches the tag
+ * back through PSEQ, and stores the fetched word to the linear rt4 surface,
+ * which GRATE_REGION dumps. Batch by batch:
+ *
+ *   batch 0  r2 = frag.x and r3 = frag.y, in fp20
+ *   batch 1  r0/r1 = tag(frag.x, frag.y), store to the fetch target
+ *   batch 2  r0/r1 = a fixed pattern B, so a fetch that never happened shows
+ *            up as B instead of as the tag
+ *   batch 3  r2/r3 = a fixed pattern C, and optionally store C to the fetch
+ *            target, so a fetch into the other destination pair is visible and
+ *            so a fetch that returned the tag while the surface held C would
+ *            be caught
+ *   batch 4  the PSEQ fetch
+ *   batch 5  store the fetched r0/r1 to rt4, the surface that is read back
+ *
+ * The tag keeps both coordinates below 97 and marks the word with two bytes
+ * that no coordinate can reach:
+ *
+ *   R = frag.x + 1    G = frag.y + 1    B = 0x9F    A = 0xBF
+ *
+ * so every tag inside a 96-wide quad is unique and no tag can equal B
+ * (0x9F607F40), C (0x10703020) or zero. Keeping the coordinates below 0x60
+ * avoids the DW's byte conversion losing one from values at or above 0.5
+ * (see the notes). The position registers are offset by 8192:
+ *
+ *   posx - 8192      = frag.x
+ *   posy - 8192      = frag.y
+ *   (frag + 1) / 256  is the fx10 tag value
+ *
+ * Batch 0 exists because an ALU write to one half is carried out in the fx10
+ * format of that half, and 8192 + frag does not fit fx10; the position has to
+ * be brought back to a small value in an fp20 register first. Batch 1 then
+ * scales and biases it into fx10 with one multiply-add per coordinate.
+ *
+ * The fetch target is the variant's choice (rt1, rt3 or rt5) so that the same
+ * tags can be read through a tiled surface, a narrow format or a different
+ * pitch; the observation surface is always rt4. `tag-nofetch` leaves batch 2
+ * and the fetch as NOPs, so it is the reference picture of the tags
+ * themselves. `diag-pos` instead stores posx - 8192 in R and posy - 8192 in G,
+ * so the position registers can be read directly.
+ */
+
+.constants
+	[0] = 0.25;
+	[1] = 0.5;
+	[2] = 0.375;
+	[3] = 0.625;
+	[4] = 0.125;
+	[5] = 0.1875;
+	[6] = 0.4375;
+	[7] = 0.0625;
+	[13] = -8192.0;
+	[17] = 0.0;
+	[19] = 0.00390625;
+	[20] = -32.0;
+	[21] = 0.75;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r2.lh,  posx,  #1,  u13
+		ALU1:	MAD  r3.lh,  posy,  #1,  u13
+		ALU2:	NOP
+		ALU3:	NOP
+	DW:	NOP
+;
+EXEC
+	ALU:
+ENC0_SLOT
+ENC1_SLOT
+ENC2_SLOT
+ENC3_SLOT
+	DW:	STORE0_SLOT
+;
+EXEC
+	ALU:
+B0_SLOT
+B1_SLOT
+B2_SLOT
+B3_SLOT
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u4,  #1,  #0
+		ALU1:	MAD  r2.*h,  u5,  #1,  #0
+		ALU2:	MAD  r3.l*,  u6,  #1,  #0
+		ALU3:	MAD  r3.*h,  u7,  #1,  #0
+	DW:	STORE_C_SLOT
+;
+EXEC
+	PSEQ:	PSEQ_SLOT
+	DW:	NOP
+;
+EXEC
+	DW:	STORE3_SLOT
+;

@@ -580,3 +580,19 @@ invalidate another; generate such a manifest with
 * commit: 7bc67636fa124dd01cf49e0a049b8929856c6ba6 with a clean tree (clone in /tmp/clean-ac)
 * created: 2026-11-21T15:50:20+00:00; 94 rows, repeat 3, timeout 15.0 s
 * summary: 94 passed, 0 failed of 94 - passed
+
+## pin-pseq-addr
+
+* manifest: `asm_characterize.pseq_addr.json` (sha256 098102b69aaf)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 2566b5560e2cc9a0010f46d29b9aa3b7d496c0be with a dirty tree
+* created: 2026-11-21T19:51:06+00:00; 58 rows, repeat 3, timeout 20.0 s
+* summary: 58 passed, 0 failed of 58 - passed
+
+## verify-pseq-addr
+
+* manifest: `asm_characterize.pseq_addr.json` (sha256 a6eebb68f66d)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 2566b5560e2cc9a0010f46d29b9aa3b7d496c0be with a dirty tree
+* created: 2026-11-21T19:51:30+00:00; 58 rows, repeat 3, timeout 20.0 s
+* summary: 58 passed, 0 failed of 58 - passed

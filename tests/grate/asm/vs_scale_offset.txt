@@ -1,0 +1,45 @@
+/*
+ * Vertex shader that scales the full-screen quad and translates it by one
+ * uniform.
+ *
+ * The clip-space x and y are multiplied by 0.25 and then shifted by the
+ * "offset" uniform, so x = -1..1 becomes a 64-pixel-wide quad whose lower-left
+ * corner is at (offset.x + 0.75) * 128, (offset.y + 0.75) * 128 window pixels,
+ * and an offset of (-0.75, -0.75) puts it at the target origin. The two steps
+ * are separate instructions because an instruction can only fetch one
+ * constant index, and the scale is baked while the offset is a uniform.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.uniforms
+	[101] = "offset";
+
+.constants
+	[100].x = 0.25;
+	[100].y = 0.25;
+	[100].z = 1.0;
+	[100].w = 1.0;
+
+.asm
+
+EXEC(export[0]=vector)
+	MULv r31.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;
+
+EXEC(export[0]=vector)
+	ADDv r31.xyzw, r31.xyzw, c[101].xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r31.xyzw, a[1].xyzw
+	NOPs
+;

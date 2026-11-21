@@ -1,0 +1,582 @@
+{
+  "name": "pseq-addressing",
+  "created_utc": "2026-11-21T19:51:30+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.pseq_addr.json",
+  "manifest_sha256": "a6eebb68f66dd88b5e22e979acf365cf52d3490356b1ba2bceb383c574032c00",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "2566b5560e2cc9a0010f46d29b9aa3b7d496c0be",
+  "git_status": "?? tests/grate/asm/make_pseq_addr.py\n?? tests/grate/asm/pseq_addr.in\n?? tests/grate/asm/results/pin-pseq-addr/\n?? tests/grate/asm/vs_scale_offset.txt\n?? tests/grate/asm_characterize.pseq_addr.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "pseq-addressing",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_scale_offset.txt",
+      "fs": "tests/grate/asm/pseq_addr.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "diag-pos",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  posx,  u19,  u20",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  posy,  u19,  u20",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tNOP",
+            "B1_SLOT": "\t\tALU1:\tNOP",
+            "B2_SLOT": "\t\tALU2:\tNOP",
+            "B3_SLOT": "\t\tALU3:\tNOP",
+            "PSEQ_SLOT": "NOP",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0xE2AECDC5"
+      },
+      {
+        "name": "tag-nofetch",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tNOP",
+            "B1_SLOT": "\t\tALU1:\tNOP",
+            "B2_SLOT": "\t\tALU2:\tNOP",
+            "B3_SLOT": "\t\tALU3:\tNOP",
+            "PSEQ_SLOT": "NOP",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "ctl-nofetch",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "NOP",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0x8086DDC5"
+      },
+      {
+        "name": "ctl-zeros",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u17,  #1,  #0",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u17,  #1,  #0",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u17,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u17,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0x76EFDDC5"
+      },
+      {
+        "name": "tag-fetch",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "last-store",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "store rt5, r2, r3",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0x54FFDDC5"
+      },
+      {
+        "name": "pair-23",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x0085000A",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r2, r3"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "src-rt1",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt1, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00810008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "src-rt3-linear",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt3, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00830008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_COVERAGE": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "src-rt3-tiled",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt3, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00830008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_COVERAGE": "1",
+          "GRATE_COVERAGE_TILED": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0xFDFE7DC5"
+      },
+      {
+        "name": "src-rt3-tiled-off",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt3, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00830008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.6875,-0.6875,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_COVERAGE": "1",
+          "GRATE_COVERAGE_TILED": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "8,8,64,64"
+        },
+        "expected": "0x97279DC5"
+      },
+      {
+        "name": "src-rt5-rgb565",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "rgb565",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0xAB4CFDC5"
+      },
+      {
+        "name": "src-rt5-a8-x",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u3,  #1,  #0",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u21,  #1,  #0",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  r2,  u19,  u19",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0x4CEFDDC5"
+      },
+      {
+        "name": "src-rt5-a8-y",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u3,  #1,  #0",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u21,  #1,  #0",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  r3,  u19,  u19",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "a8",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0x00EFDDC5"
+      },
+      {
+        "name": "src-rt5-l8-x",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u21,  #1,  #0",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "l8",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0xDF583DC5"
+      },
+      {
+        "name": "src-rt5-l8-y",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r3,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u21,  #1,  #0",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.75,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT5_FMT": "l8",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "0,0,64,64"
+        },
+        "expected": "0x338C9BC5"
+      },
+      {
+        "name": "off-32-16",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.5,-0.625,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "32,16,64,64"
+        },
+        "expected": "0x88E83DC5"
+      },
+      {
+        "name": "off-1-0",
+        "replace": {
+          "fs": {
+            "ENC0_SLOT": "\t\tALU0:\tMAD  r0.l*,  r2,  u19,  u19",
+            "ENC1_SLOT": "\t\tALU1:\tMAD  r0.*h,  r3,  u19,  u19",
+            "ENC2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u3,  #1,  #0",
+            "ENC3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u21,  #1,  #0",
+            "STORE0_SLOT": "store rt5, r0, r1",
+            "B0_SLOT": "\t\tALU0:\tMAD  r0.l*,  u0,  #1,  #0",
+            "B1_SLOT": "\t\tALU1:\tMAD  r0.*h,  u1,  #1,  #0",
+            "B2_SLOT": "\t\tALU2:\tMAD  r1.l*,  u2,  #1,  #0",
+            "B3_SLOT": "\t\tALU3:\tMAD  r1.*h,  u3,  #1,  #0",
+            "PSEQ_SLOT": "0x00850008",
+            "STORE_C_SLOT": "NOP",
+            "STORE3_SLOT": "store rt4, r0, r1"
+          }
+        },
+        "args": [
+          "--vs_uniform",
+          "[\"offset\"]=(-0.7421875,-0.75,0.0,0.0)"
+        ],
+        "environment": {
+          "GRATE_RT5": "1",
+          "GRATE_RT4": "1",
+          "GRATE_REGION": "1,0,63,64"
+        },
+        "expected": "0x0E494C85"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 58,
+    "passed": 58,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
