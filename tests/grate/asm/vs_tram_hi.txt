@@ -1,0 +1,31 @@
+/*
+ * Same as vs_tram.txt, but the blue component is 1.5 so the fetch's saturate
+ * modifier has something to clamp. The other three stay in 0..1 and act as the
+ * in-range control.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.constants
+	[100].x = 0.25;
+	[100].y = 0.5;
+	[100].z = 1.5;
+	[100].w = 0.75;
+
+.asm
+
+EXEC(export[0]=vector)
+	MOVv r63.xyzw, a[0].xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r63.xyzw, c[100].xyzw
+	NOPs
+;

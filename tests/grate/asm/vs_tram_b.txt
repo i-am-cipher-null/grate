@@ -1,0 +1,31 @@
+/*
+ * The same export as vs_tram.txt with the vector reversed, so a follow-up draw
+ * that writes only one TRAM column can be told apart from a full write: the
+ * other columns must still hold the previous shader's values.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.constants
+	[100].x = 0.875;
+	[100].y = 0.75;
+	[100].z = 0.5;
+	[100].w = 0.25;
+
+.asm
+
+EXEC(export[0]=vector)
+	MOVv r63.xyzw, a[0].xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r63.xyzw, c[100].xyzw
+	NOPs
+;

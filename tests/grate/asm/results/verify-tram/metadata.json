@@ -1,0 +1,942 @@
+{
+  "name": "tram-varying",
+  "created_utc": "2026-11-21T14:56:15+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.tram.json",
+  "manifest_sha256": "afd7d3f85936889ada52d818ad906bdfbc61ea870e6bb6cfa2658734292e514c",
+  "assembler": "/home/freebuff/build/grate/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "04a96f4a42fd41a68ef933a25cb6430434422728",
+  "git_status": "?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/make_tram_probe.py\n?? tests/grate/asm/results/pin-tram/\n?? tests/grate/asm/tram_fs.in\n?? tests/grate/asm/tram_linker.in\n?? tests/grate/asm/vs_tram.txt\n?? tests/grate/asm/vs_tram_b.txt\n?? tests/grate/asm/vs_tram_hi.txt\n?? tests/grate/asm_characterize.tram.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 10,
+  "manifest_data": {
+    "name": "tram-varying",
+    "repeat": 3,
+    "timeout": 10,
+    "program": {
+      "vs": "tests/grate/asm/vs_tram.txt",
+      "fs": "tests/grate/asm/tram_fs.in",
+      "lnk": "tests/grate/asm/tram_linker.in"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "map-xyzw-xy",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0xF17FEB40"
+      },
+      {
+        "name": "map-xyzw-zw",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0xF5DFF3BF"
+      },
+      {
+        "name": "map-yxzw-xy",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.yxzw, export1"
+          }
+        },
+        "expected": "0xF140EB7F"
+      },
+      {
+        "name": "map-yxzw-zw",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.yxzw, export1"
+          }
+        },
+        "expected": "0xF5DFF3BF"
+      },
+      {
+        "name": "map-wzyx-xy",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.wzyx, export1"
+          }
+        },
+        "expected": "0xF1BFEBDF"
+      },
+      {
+        "name": "map-wzyx-zw",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.wzyx, export1"
+          }
+        },
+        "expected": "0xE740EF7F"
+      },
+      {
+        "name": "map-dup-xy",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyxx, export1"
+          }
+        },
+        "expected": "0xF17FEBDF"
+      },
+      {
+        "name": "map-dup-zw",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xxzw, export1"
+          }
+        },
+        "expected": "0xF5DFF3BF"
+      },
+      {
+        "name": "map-row1-xy",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t1.fp20, t1.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram1.xyzw, export1"
+          }
+        },
+        "expected": "0xF17FEB40"
+      },
+      {
+        "name": "map-row1-zw",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t1.fp20, t1.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram1.xyzw, export1"
+          }
+        },
+        "expected": "0xF5DFF3BF"
+      },
+      {
+        "name": "map-export0-xy",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        },
+        "expected": "0xF100EB00"
+      },
+      {
+        "name": "map-export0-zw",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        },
+        "expected": "0xF7FF0000"
+      },
+      {
+        "name": "fetch-nop-x",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0xF17FEB10"
+      },
+      {
+        "name": "fetch-nop-w",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, NOP",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0xF19FF3BF"
+      },
+      {
+        "name": "fetch-sat-nop-w",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, t0.fp20, sat(NOP)",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0x0000F3BF"
+      },
+      {
+        "name": "sat-z",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, sat(t0.fp20), t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "vs": "tests/grate/asm/vs_tram_hi.txt",
+        "expected": "0xF3BFF7FF"
+      },
+      {
+        "name": "unsat-z",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "vs": "tests/grate/asm/vs_tram_hi.txt",
+        "expected": "0xF3BFFBFF"
+      },
+      {
+        "name": "sat-x",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: sat(t0.fp20), t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "vs": "tests/grate/asm/vs_tram_hi.txt",
+        "expected": "0xF17FEB40"
+      },
+      {
+        "name": "fmt-low-fx10",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+            "@P2@": "MAD  r1.l*,  u3,  #1,  #0",
+            "@P3@": "MAD  r1.*h,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fx10, t0.fx10, NOP, NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r0, r1"
+          },
+          "lnk": {
+            "@LINK@": "LINK fx10.l, fx10.l, fx10.l, fx10.l, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0x007F0040"
+      },
+      {
+        "name": "fmt-high-fx10",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+            "@P2@": "MAD  r1.l*,  u3,  #1,  #0",
+            "@P3@": "MAD  r1.*h,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fx10, t0.fx10, NOP, NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r0, r1"
+          },
+          "lnk": {
+            "@LINK@": "LINK fx10.h, fx10.h, fx10.h, fx10.h, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0x7F7F4040"
+      },
+      {
+        "name": "fmt-low-fx10-zw",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r2.*h,  u1,  #1,  #0",
+            "@P2@": "MAD  r3.l*,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.*h,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fx10, t0.fx10",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fx10.l, fx10.l, fx10.l, fx10.l, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0xDFDFBFBF"
+      },
+      {
+        "name": "fmt-low-fp20",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fx10.l, fx10.l, fx10.l, fx10.l, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0xF100EB00"
+      },
+      {
+        "name": "fmt-fp20-fx10",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+            "@P2@": "MAD  r1.l*,  u3,  #1,  #0",
+            "@P3@": "MAD  r1.*h,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fx10, t0.fx10, NOP, NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r0, r1"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0x00000000"
+      },
+      {
+        "name": "dis-const",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20 (dis), fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0xF17FEB40"
+      },
+      {
+        "name": "nodis-color",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "expected": "0xF7FFAF01"
+      },
+      {
+        "name": "dis-color",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20 (dis), fp20, tram0.xyzw, export1"
+          }
+        },
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "expected": "0xF7FF0000"
+      },
+      {
+        "name": "z-base",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1 (z)"
+          }
+        },
+        "expected": "0x00000000"
+      },
+      {
+        "name": "z-base-xy",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1 (z)"
+          }
+        },
+        "expected": "0xF100EB00"
+      },
+      {
+        "name": "z-alive",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  u6,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1 (z)"
+          }
+        },
+        "expected": "0xF1BFEB40"
+      },
+      {
+        "name": "z-two-step",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1\nLINK NOP, NOP, NOP, NOP, tram0.xyzw, export1 (z)"
+          }
+        },
+        "expected": "0xF5DFF3BF"
+      },
+      {
+        "name": "z-two-step-rev",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK NOP, NOP, NOP, NOP, tram0.xyzw, export1 (z)\nLINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0xF5DFF3BF"
+      },
+      {
+        "name": "z-nop-w",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, NOP, tram0.xyzw, export1 (z)"
+          }
+        },
+        "expected": "0xF5DF0000"
+      },
+      {
+        "name": "z-nop-w-base",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, NOP, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0xF5DFF3BF"
+      },
+      {
+        "name": "z-row1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t1.fp20, t1.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram1.xyzw, export1 (z)"
+          }
+        },
+        "expected": "0x00000000"
+      },
+      {
+        "name": "z-row1-base",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t1.fp20, t1.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram1.xyzw, export1"
+          }
+        },
+        "expected": "0xF5DFF3BF"
+      },
+      {
+        "name": "z-swizzle",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.wzyx, export1 (z)"
+          }
+        },
+        "expected": "0x00000000"
+      },
+      {
+        "name": "z-export0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0 (z)"
+          }
+        },
+        "expected": "0x00000000"
+      },
+      {
+        "name": "z-export0-base",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: NOP, NOP, t0.fp20, t0.fp20",
+            "@C0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        },
+        "expected": "0xF7FF0000"
+      },
+      {
+        "name": "persist-first",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1"
+          }
+        },
+        "expected": "0xF17FEB40"
+      },
+      {
+        "name": "persist-keep",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006004"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u0,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u1,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u3,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@MFU@": "sfu: rcp r4 mul0: bar, sfu, bar0 mul1: bar, sfu, bar1 ipl: t0.fp20, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.l*,  r0,  #1,  #0",
+            "@C1@": "MAD  r3.l*,  r1,  #1,  #0",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK NOP, fp20, NOP, NOP, tram0.xyzw, export1"
+          }
+        },
+        "vs": "tests/grate/asm/vs_tram_b.txt",
+        "expected": "0xF1BFEB40"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 124,
+    "passed": 124,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

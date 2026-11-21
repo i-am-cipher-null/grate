@@ -1,0 +1,11 @@
+/*
+ * One LINK instruction per variant. The whole instruction is replaced so the
+ * four destination formats, the four-letter destination-component swizzle, the
+ * export register and the optional (z) modifier all come from the manifest.
+ *
+ * The grammar assigns column k's format and the k-th swizzle letter to export
+ * component k, so `LINK fp20, NOP, fp20, fx10.h, tram0.ywzx, export1` reads as
+ * export.x -> tram.y as fp20, export.y skipped, export.z -> tram.z, export.w ->
+ * tram.x's high fx10 half.
+ */
+@LINK@

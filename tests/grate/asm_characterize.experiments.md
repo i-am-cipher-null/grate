@@ -1911,6 +1911,160 @@ these separations.
 byte-identical. `pin-alu-result` and `verify-alu-result` hold 43 rows each (13
 variants), pinned from `44b84ef3e4e6...` to `eb0c20007a35...`.
 
+## 10. The linker, TRAM and the varying fetch
+
+`asm_characterize.tram.json` (40 variants), templates `asm/tram_linker.in` and
+`asm/tram_fs.in`, vertex shaders `asm/vs_tram.txt` (exports
+`(0.25, 0.5, 0.75, 0.875)`), `vs_tram_hi.txt` (blue 1.5) and `vs_tram_b.txt`
+(the reversed vector). The vertex shader exports register 7, the second enabled
+export, and the linker names it `export1`. Each variant replaces the whole LINK
+instruction and the fetch/readout fields; the fragment is four batches:
+
+    batch 0   prime r0..r3 with fp20 constants 0.0625, 0.125, 0.375, 0.625
+    batch 1   one MFU word: sfu rcp r4, the two barycentric multipliers, ipl
+    batch 2   convert the two fetched registers to fx10 with `.l*`
+    batch 3   store r2, r3
+
+Every vertex exports the same vector, so interpolation is the identity and the
+sample point cannot change the result. The stored word is `r3 << 16 | r2` and
+the low byte of each half is the linear value. The upper bits of a half are not
+written by the `.l*` conversion: they carry whatever the destination held
+before (the fp20 source's high bits or the prime), so only the low byte is a
+value. For example `0xEB40` is 0.25 with `0xEB` left over.
+
+### The four letters are per-column destinations
+
+The k-th letter of `tramN.swizzle` is the TRAM component that export component
+k is copied to, and the k-th format is how it is converted. The constant vector
+is `(40, 7F, BF, DF)` in the linear byte, so a readback names the mapping:
+
+| LINK swizzle | TRAM readback (x, y, z, w) | words (xy, zw) |
+|:--|:--|:--|
+| `xyzw` | (0.25, 0.5, 0.75, 0.875) | `0xF17FEB40`, `0xF5DFF3BF` |
+| `yxzw` | (0.5, 0.25, 0.75, 0.875) | `0xF140EB7F`, `0xF5DFF3BF` |
+| `wzyx` | (0.875, 0.75, 0.5, 0.25) | `0xF1BFEBDF`, `0xE740EF7F` |
+| `xyxx` | (0.875, 0.5, --, --) | `0xF17FEBDF` |
+| `xxzw` | (--, --, 0.75, 0.875) | `0xF5DFF3BF` |
+
+`xyxx` writes tram.x three times (export.x, then export.z, then export.w) and
+the last column wins; tram.y is export.y. `xxzw` writes x twice and leaves y
+out. Both are fully written in the components they read, so neither depends on
+state from an earlier draw. `tram1.xyzw` with `ipl: t1...` gives the same words
+as row 0, so the row index is the fetch's `tN` prefix.
+
+### `exportM` is the enabled-export slot, not the register number
+
+The vertex shader enables exports 0 (`gl_Position`) and 7 (`vcolor`) and writes
+the constant to register 7. `LINK ..., export1` copies the constant, while
+`export0` copies the position: xy reads `0xF100EB00` (x and y both 0 after the
+conversion) and zw reads `0xF7FF0000` (z = 0, w = 1.0). The 1.0 alpha identifies
+the position and rules out the constant (0.875). So the linker's export index
+counts the enabled exports, 0 and 1, rather than the register numbers 0 and 7.
+
+### Fetch controls, NOP and persistence
+
+| variant | word | reading |
+|:--|--:|:--|
+| `fetch-nop-x` | `0xF17FEB10` | x is the 0.0625 prime (`0x10`), y is 0.5 |
+| `fetch-nop-w` | `0xF19FF3BF` | z is 0.75, w is the 0.625 prime (`0x9F`) |
+| `fetch-sat-nop-w` | `0x0000F3BF` | z is 0.75, w is 0.0, not the prime |
+
+An `ipl` operand of `NOP` leaves that row register alone, as the syntax says.
+`sat(NOP)` does not: it writes 0.0 to the register, so it is a real write of a
+zero with the saturate flag set, not "no fetch" with a modifier.
+
+A *linker* NOP column is different again: it does not write the TRAM component,
+and the component then keeps the previous draw's value. The persistence pair
+runs in this order: `persist-first` fills the whole row from
+`(0.25, 0.5, 0.75, 0.875)` and reads xy as `0xF17FEB40`; `persist-keep` then
+uses the reversed export `(0.875, 0.75, 0.5, 0.25)` but its LINK writes only
+tram.y. The readback is `0xF1BFEB40`: x is still 0.25 from the first draw and y
+is the new 0.75. The TRAM row is not cleared between draws on this setup; it
+even survives between assembler invocations, because the second program sees
+the first's row. That is why the `map-dup` variants above were chosen to read
+only components their own LINK writes.
+
+### Saturate on the fetch
+
+`vs_tram_hi.txt` writes blue 1.5. `unsat-z` reads back `0xF3BFFBFF` and
+`sat-z` `0xF3BFF7FF`: the low byte is `0xFF` in both, because the fx10
+conversion of anything above 1.0 reads as 1.0 at the byte level, but the
+unconverted field keeps the fetched fp20, whose high byte is `0xFB` for 1.5
+and `0xF7` for 1.0. So the saturate modifier clamps the value in the row
+register to 1.0; the 0..1 byte readout alone cannot show it. `sat-x` (0.25,
+in range) equals the no-sat word `0xF17FEB40`.
+
+### Interpolation disable
+
+On the constant varying, `fp20 (dis)` on x changes nothing (`dis-const` =
+`0xF17FEB40`). On the coloured quad, the interpolated blue at the first pixel
+is `0x01`; with `fp20 (dis)` on the blue column the same read is `0x00`
+(`nodis-color` `0xF7FFAF01` against `dis-color` `0xF7FF0000`), and alpha is
+unchanged. So the modifier replaces that component's interpolated value with a
+vertex value. Which vertex is not determined by this single sample.
+
+### fx10 linker formats and the fx10 fetch
+
+| variant | word | reading |
+|:--|--:|:--|
+| `fmt-low-fx10` | `0x007F0040` | r0 = `0040` (0.25 low, 0 high), r1 = `007F` (0.5 low, 0 high) |
+| `fmt-high-fx10` | `0x7F7F4040` | r0 = `4040`, r1 = `7F7F` (both halves hold the value) |
+| `fmt-low-fx10-zw` | `0xDFDFBFBF` | r2 = `BFBF`, r3 = `DFDF` |
+| `fmt-low-fp20` | `0xF100EB00` | reading an `fx10.l` component as fp20 converts to 0.0 |
+| `fmt-fp20-fx10` | `0x00000000` | an `.fx10` fetch of fp20 components reads 0 in both halves |
+
+The `.fx10` fetch does not produce the documented "two fixed10 values in one
+row register" in a way these words settle: `fx10.l` gives (value, 0) while
+`fx10.h` gives (value, value), and reading a component written by the other
+format gives zero. The half layout is left unresolved rather than fitted.
+
+### The `(z)` magic write
+
+The modifier sets bit 0 of the linker instruction's first word: `z-base` is
+`0x00000009` where the same LINK without `(z)` is `0x00000008`, and the
+disassembler reads the bit back. The documented effect - a write of VEC4.z to
+TRAM0.w - is not what the hardware does here:
+
+| variant | word | reading |
+|:--|--:|:--|
+| `z-base` (`xyzw`, all fp20, `(z)`) | `0x00000000` | all four components read 0 |
+| `z-base-xy` | `0xF100EB00` | x and y also read 0 |
+| `z-swizzle` (`wzyx`, `(z)`) | `0x00000000` | swizzle does not change it |
+| `z-export0` (`export0`, `(z)`) | `0x00000000` | the export does not change it |
+| `z-row1` (`tram1`, `(z)`) | `0x00000000` | the row does not change it |
+| `z-alive` (no fetch, stores 0.25/0.75) | `0xF1BFEB40` | the draw ran; the zeros are reads |
+| `z-two-step` (normal, then NOP-column `(z)`) | `0xF5DFF3BF` | the z word changes nothing |
+| `z-two-step-rev` (`(z)` first, then normal) | `0xF5DFF3BF` | the normal word wins |
+| `z-nop-w` (w column NOP, `(z)`) | `0xF5DF0000` | z is 0, w keeps the previous 0.875 |
+
+`z-alive` rules out a dropped draw: the same `(z)` linker with a fragment that
+does not fetch stores `0xF1BFEB40`. `z-nop-w` shows the three fp20 columns each
+wrote 0.0 while the NOP column still skipped. The consistent reading is that
+`(z)` switches the link's source from the named export to a VEC4.z input, and
+that input is zero in these programs - nothing here populates it. What exactly
+that input is, and how a program is supposed to fill it so the fragment z path
+works, is unresolved. A second LINK instruction with `(z)` and all-NOP columns
+does not perform the write either.
+
+### What this set does not settle
+
+* how VEC4.z is supplied, or which vertex program state the `(z)` bit selects;
+* why an `fx10.l` fetch gives a zero high half while `fx10.h` duplicates the
+  value into both halves;
+* what happens with more than one TRAM row in use, or with TEX between the
+  fetch and the read;
+* persistence across a real application's frames: here it is observed between
+  consecutive assembler invocations on the same board, which is enough to
+  confound a test but is not the same as a frame-to-frame guarantee;
+* the vertex the `(dis)` modifier picks, which one colour sample cannot name.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-tram` and `verify-tram` hold 124 rows each (40
+variants, three repeats, plus the four control rows), pinned from
+`6db31af89570...` to `afd7d3f85936...`. Re-pinning from the pin directory is
+byte-identical.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

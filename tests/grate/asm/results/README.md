@@ -484,3 +484,19 @@ invalidate another; generate such a manifest with
 * commit: a66118f53b5f85e84e3ba8b5c2b1ac1d7853166f with a clean tree (clone in /tmp/clean-alu)
 * created: 2026-11-21T14:33:42+00:00; 43 rows, repeat 3, timeout 10.0 s
 * summary: 43 passed, 0 failed of 43 - passed
+
+## pin-tram
+
+* manifest: `asm_characterize.tram.json` (sha256 6db31af89570)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 04a96f4a42fd41a68ef933a25cb6430434422728 with a dirty tree
+* created: 2026-11-21T14:55:44+00:00; 124 rows, repeat 3, timeout 10.0 s
+* summary: 124 passed, 0 failed of 124 - passed
+
+## verify-tram
+
+* manifest: `asm_characterize.tram.json` (sha256 afd7d3f85936)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 04a96f4a42fd41a68ef933a25cb6430434422728 with a dirty tree
+* created: 2026-11-21T14:56:15+00:00; 124 rows, repeat 3, timeout 10.0 s
+* summary: 124 passed, 0 failed of 124 - passed
