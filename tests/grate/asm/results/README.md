@@ -756,3 +756,19 @@ invalidate another; generate such a manifest with
 * commit: 8fb98d24b6a8190fa36d0e3548142ac9cd818d8f with a dirty tree
 * created: 2026-11-21T22:16:55+00:00; 181 rows, repeat 3, timeout 20.0 s
 * summary: 181 passed, 0 failed of 181 - passed
+
+## pin-alu-marks-edge
+
+* manifest: `asm_characterize.alu_marks_edge.json` (sha256 a0de1e1e447a)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a89b568d8dfe659c7e111330618f8c9698e24b81 with a dirty tree
+* created: 2026-11-21T22:22:23+00:00; 85 rows, repeat 3, timeout 20.0 s
+* summary: 85 passed, 0 failed of 85 - passed
+
+## verify-alu-marks-edge
+
+* manifest: `asm_characterize.alu_marks_edge.json` (sha256 5b67e52edf59)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a89b568d8dfe659c7e111330618f8c9698e24b81 with a dirty tree
+* created: 2026-11-21T22:23:33+00:00; 85 rows, repeat 3, timeout 20.0 s
+* summary: 85 passed, 0 failed of 85 - passed

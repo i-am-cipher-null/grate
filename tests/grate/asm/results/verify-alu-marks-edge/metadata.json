@@ -1,0 +1,542 @@
+{
+  "name": "alu-marks-edge",
+  "created_utc": "2026-11-21T22:23:33+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.alu_marks_edge.json",
+  "manifest_sha256": "5b67e52edf594e949d413aae515b4371f72b7d883b13593a898d8327e3e6ef87",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "a89b568d8dfe659c7e111330618f8c9698e24b81",
+  "git_status": "?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/make_alu_marks_edge.py\n?? tests/grate/asm_characterize.alu_marks_edge.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "alu-marks-edge",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/alu_marks.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "s0o-recv1-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A1_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00100040"
+      },
+      {
+        "name": "s0o-recv2-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00100040"
+      },
+      {
+        "name": "s0o-recv2this-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00100040"
+      },
+      {
+        "name": "s0o-recv3-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "MAD  r3.l*,  u0,  #1,  #0"
+          }
+        },
+        "expected": "0x00100040"
+      },
+      {
+        "name": "s0o-alone-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00BF0040"
+      },
+      {
+        "name": "xp-slot3-to-2-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "MAD  r3.l*,  u2,  #1,  #0 (other)",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00100040"
+      },
+      {
+        "name": "xp-slot3-to-2-this-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "MAD  r3.l*,  u2,  #1,  #0 (other)",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00100040"
+      },
+      {
+        "name": "xp-slot1-to-0-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r1.l*,  u2,  #1,  #0 (other)",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x0010007F"
+      },
+      {
+        "name": "xp-slot1-to-0-this-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r1.l*,  u2,  #1,  #0 (other)",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x0010007F"
+      },
+      {
+        "name": "xp-nomark-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "MAD  r3.l*,  u2,  #1,  #0",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00100040"
+      },
+      {
+        "name": "xp-both-packets-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "MAD  r3.l*,  u2,  #1,  #0 (other)",
+            "A0_SLOT": "MAD  r0.l*,  u4,  #1,  #0 (other)",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "MAD  r3.l*,  u0,  #1,  #0",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00100040"
+      },
+      {
+        "name": "three-none-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00BF0040"
+      },
+      {
+        "name": "three-none-dest",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r0, r1",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "NOP",
+            "A1_SLOT": "NOP",
+            "A2_SLOT": "NOP",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00000000"
+      },
+      {
+        "name": "three-012-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u4,  #1,  #0 (other)",
+            "A1_SLOT": "MAD  r1.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r2.l*,  u0,  #1,  #0 (other)",
+            "A3_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)"
+          }
+        },
+        "expected": "0x00200010"
+      },
+      {
+        "name": "three-012-dest",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r0, r1",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u4,  #1,  #0 (other)",
+            "A1_SLOT": "MAD  r1.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r2.l*,  u0,  #1,  #0 (other)",
+            "A3_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)"
+          }
+        },
+        "expected": "0x004000CF"
+      },
+      {
+        "name": "three-012-this0-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u4,  #1,  #0 (this)",
+            "A1_SLOT": "MAD  r1.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r2.l*,  u0,  #1,  #0 (other)",
+            "A3_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)"
+          }
+        },
+        "expected": "0x00200010"
+      },
+      {
+        "name": "three-012-this0-dest",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r0, r1",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u4,  #1,  #0 (this)",
+            "A1_SLOT": "MAD  r1.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r2.l*,  u0,  #1,  #0 (other)",
+            "A3_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (this)"
+          }
+        },
+        "expected": "0x004000DF"
+      },
+      {
+        "name": "three-123-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u0,  #1,  #0",
+            "A1_SLOT": "MAD  r1.l*,  u4,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "A3_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (other)"
+          }
+        },
+        "expected": "0x00100050"
+      },
+      {
+        "name": "three-123-dest",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r0, r1",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u0,  #1,  #0",
+            "A1_SLOT": "MAD  r1.l*,  u4,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r2.l*,  u2,  #1,  #0 (other)",
+            "A3_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (other)"
+          }
+        },
+        "expected": "0x007F00CF"
+      },
+      {
+        "name": "three-all-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r0.l*,  u0,  #1,  #0 (other)",
+            "A1_SLOT": "MAD  r1.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r2.l*,  u4,  #1,  #0 (other)",
+            "A3_SLOT": "MAD  r3.l*,  u6,  #1,  #0 (other)"
+          }
+        },
+        "expected": "0x00BF00FF"
+      },
+      {
+        "name": "comp-none-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r2.l*,  u0,  #1,  #0",
+            "A1_SLOT": "MAD  r0.l*,  u2,  #1,  #0",
+            "A2_SLOT": "MAD  r1.l*,  u4,  #1,  #0",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00BF0010"
+      },
+      {
+        "name": "comp-12-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r2.l*,  u0,  #1,  #0",
+            "A1_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r1.l*,  u4,  #1,  #0 (other)",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00BF00CF"
+      },
+      {
+        "name": "comp-12-dest",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r0, r1",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r2.l*,  u0,  #1,  #0",
+            "A1_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r1.l*,  u4,  #1,  #0 (other)",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x007F0040"
+      },
+      {
+        "name": "comp-12-this0-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r2.l*,  u0,  #1,  #0 (this)",
+            "A1_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r1.l*,  u4,  #1,  #0 (other)",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00BF00CF"
+      },
+      {
+        "name": "comp-123-this0-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r2.l*,  u0,  #1,  #0 (this)",
+            "A1_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r1.l*,  u4,  #1,  #0 (other)",
+            "A3_SLOT": "MAD  r3.l*,  u0,  #1,  #0 (other)"
+          }
+        },
+        "expected": "0x001000DF"
+      },
+      {
+        "name": "comp-12-0send-acc",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r2, r3",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r2.l*,  u6,  #1,  #0 (this)",
+            "A1_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r1.l*,  u4,  #1,  #0 (other)",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x00BF00FF"
+      },
+      {
+        "name": "comp-12-0send-dest",
+        "replace": {
+          "fs": {
+            "STORE1_SLOT": "store rt1, r0, r1",
+            "STORE2_SLOT": "NOP",
+            "P0_SLOT": "MAD  r2.l*,  u2,  #1,  #0",
+            "P1_SLOT": "MAD  r3.l*,  u6,  #1,  #0",
+            "P2_SLOT": "NOP",
+            "P3_SLOT": "NOP",
+            "A0_SLOT": "MAD  r2.l*,  u6,  #1,  #0 (this)",
+            "A1_SLOT": "MAD  r0.l*,  u2,  #1,  #0 (other)",
+            "A2_SLOT": "MAD  r1.l*,  u4,  #1,  #0 (other)",
+            "A3_SLOT": "NOP"
+          }
+        },
+        "expected": "0x007F0040"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 85,
+    "passed": 85,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

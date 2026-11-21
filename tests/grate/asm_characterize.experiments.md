@@ -3890,6 +3890,161 @@ On this device and setup:
 (59 variants, three repeats, and the four control runs), pinned at
 `01cfc0ed992c...`; re-pinning from the verify directory is byte-identical.
 
+## 22. ALU marker edge cases: slot 0, packet boundaries, three senders
+
+`asm_characterize.alu_marks_edge.json` (27 variants), template `asm/alu_marks.in`
+(packet 0 primes r2 = 0.25 and r3 = 0.75, packet 1 the instructions under test,
+packet 2 the single store). The store is `rt1`, so the observed word is the
+framebuffer pixel, and the layout is `[r3.hi][r3.lo][r2.hi][r2.lo]` for
+`store rt1, r2, r3` and `[r1.hi][r1.lo][r0.hi][r0.lo]` for `store rt1, r0, r1`.
+Values: 0.0625 = `0x10`, 0.25 = `0x40`, 0.3125 = `0x50`, 0.5 = `0x7F`,
+0.8125 = `0xCF` (the store's one-lsb deficit on 0.8125), 0.875 = `0xDF`,
+1.0 = `0xFF`.
+
+Packet 0 doubles as the previous-packet sender for the cross-packet group, since
+its slots are free apart from the two primes.
+
+### The questions
+
+Section 18 left five things open: where slot 0's `(other)` goes, whether a send
+crosses a packet boundary, what three senders do, what several senders aimed at
+one slot do, and whether a receiver's own result and the incoming values
+interact any differently from the single-sender case.
+
+### Slot 0 with `(other)`
+
+Slot 0 writes 0.25 and carries the marker; the other slots write
+`r3 = 0.0625 + accumulator`:
+
+| variant | receiver | word | r3 |
+|:--|:--|:--|:--|
+| `s0o-recv1-acc` | slot 1, unmarked | `0x00100040` | 0.0625 |
+| `s0o-recv2-acc` | slot 2, unmarked | `0x00100040` | 0.0625 |
+| `s0o-recv2this-acc` | slot 2, `(this)` | `0x00100040` | 0.0625 |
+| `s0o-recv3-acc` | slot 3, unmarked | `0x00100040` | 0.0625 |
+| `s0o-alone-acc` | none | `0x00BF0040` | 0.75 (prime) |
+
+No slot receives it, including slot 2, which is what the `(i-1) & ~1` rule would
+name for i = 0. Marking slot 2 `(this)` does not change its word either: it takes
+slot 1's result, which is a NOP, so the send is still absent. The sender's own
+destination keeps its bare 0.25 (`0x40`), and r3 keeps its prime, so the packet
+ran with the marker set and nothing moved.
+
+### Across a packet boundary
+
+Sender in packet 0, receiver in packet 1:
+
+| variant | send | receiver | word | reading |
+|:--|:--|:--|:--|:--|
+| `xp-slot3-to-2-acc` | slot 3, 0.25 | slot 2, unmarked | `0x00100040` | receiver 0.0625 only |
+| `xp-slot3-to-2-this-acc` | slot 3, 0.25 | slot 2, `(this)` | `0x00100040` | takes packet 1's slot 1 (a NOP) |
+| `xp-slot1-to-0-acc` | slot 1, 0.25 | slot 0, unmarked | `0x0010007F` | receiver 0.0625 only; **r2 = 0.5** |
+| `xp-slot1-to-0-this-acc` | slot 1, 0.25 | slot 0, `(this)` | `0x0010007F` | same |
+| `xp-nomark-acc` | slot 3, unmarked | slot 2, unmarked | `0x00100040` | control |
+| `xp-both-packets-acc` | slots 3 then 0 | slot 2, unmarked | `0x00100040` | no delivery |
+
+The sends do **not** cross the boundary. The `xp-slot1-to-0` cells are worth
+naming for a second reason: r2 rises from its 0.25 prime to 0.5, because in
+packet 0 the send from slot 1 lands on slot 0, whose instruction writes r2 - the
+in-packet rule acting within the sending packet, which is exactly what would be
+missing if the value had been carried forward instead. The receiver in packet 1
+stays at its bare 0.0625 in every cell.
+
+### Three senders
+
+Senders in slots 0, 1 and 2 (0.5, 0.25 and 0.0625 into r0, r1 and r2) and a
+receiver in slot 3 marked `(this)`:
+
+| variant | `-acc` | `-dest` | reading |
+|:--|:--|:--|:--|
+| `three-none` | `0x00BF0040` | `0x00000000` | the primes only |
+| `three-012` | `0x00200010` | `0x004000CF` | r3 = 0.125, r0 = 0.8125, r1 = 0.25 |
+| `three-012-this0` | `0x00200010` | `0x004000DF` | r0 = 0.875 |
+
+The receiver in slot 3 reads 0.125 = 0.0625 + 0.0625: it picks up slot 2's own
+0.0625 either as its previous slot under `(this)` or as a send, and the two
+cannot be separated in this cell. Slot 0's destination is the informative one: it
+holds 0.5 + 0.25 + 0.0625 = **0.8125**, so both sends aimed at slot 0 arrived and
+the slot's own result was added on top. Marking slot 0 `(this)` as well raises it
+to 0.875, one more 0.0625 - slot 3's own result - so the two markers' effects
+still add separately.
+
+With the senders in slots 1, 2 and 3 (`three-123`, the receiver in slot 0):
+
+| store | word | reading |
+|:--|:--|:--|
+| `-acc` | `0x00100050` | r2 = 0.3125 = 0.25 + 0.0625, r3 = 0.0625 |
+| `-dest` | `0x007F00CF` | r0 = 0.8125 = 0.0625 + 0.5 + 0.25, r1 = 0.5 |
+
+Slot 2's own destination rose by slot 3's 0.0625 (the send aimed at slot 2), and
+the unmarked receiver in slot 0 still accumulated both sends aimed at slot 0, so
+"unmarked" is not the same as "nothing arrives". Four senders (`three-all`) leave
+the primes as they were and are the positive control that a slot with no
+receiver of its own still writes its own value.
+
+### Several senders aimed at one slot
+
+Receiver in slot 0 (writing r2 = 0.0625 + accumulator), senders in slots 1 and 2:
+
+| variant | word | r2 | reading |
+|:--|:--|:--|:--|
+| `comp-none-acc` | `0x00BF0010` | 0.0625 | controls: senders unmarked, no sends |
+| `comp-12-acc` | `0x00BF00CF` | 0.8125 | 0.0625 + 0.25 + 0.5: **both arrived** |
+| `comp-12-this0-acc` | `0x00BF00CF` | 0.8125 | `(this)` adds slot 3 (a NOP): unchanged |
+| `comp-123-this0-acc` | `0x001000DF` | 0.875 | slot 3's 0.0625 also added |
+| `comp-12-0send-acc` | `0x00BF00FF` | 1.0 | 0.75 + 0.25 + 0.5 = 1.5, **saturated** |
+| `comp-12-dest` | `0x007F0040` | - | r0 = 0.25, r1 = 0.5, senders unaffected |
+
+So a receiver whose own slot is the sends' target sums every value sent to it,
+and the sum saturates at 1.0 rather than wrapping (`0xFF` for 1.5). This is the
+case section 18's two-sender group did not build: there the receiver sat
+somewhere else and the sends landed on a different slot, so the receiver could
+only take its previous slot's value. Both readings are true of different
+arrangements: the slot's accumulator sums what is sent to it, and the `(this)`
+marker separately pulls the previous slot's result.
+
+### What this settles
+
+On this device and setup:
+
+* slot 0 marked `(other)` transfers **nowhere inside the packet**; the
+  `(i-1) & ~1` rule does not describe it, and the target instruction's `(this)`
+  marker does not change that;
+* a send does **not** cross a packet boundary in either direction tested: an
+  unmarked or `(this)`-marked receiver in the next packet keeps only its own
+  value, while the sending packet's own slots still accumulate as usual;
+* with three senders each send lands on `(i-1) & ~1` in the same packet, and a
+  slot that is itself a sender accumulates the values sent to it, so a slot's
+  destination can be the sum of three contributions (0.8125 measured, and 0.875
+  when `(this)` adds its previous slot);
+* several senders aimed at the receiver's own slot are all added by that
+  receiver, and the sum saturates at 1.0;
+* the two markers' effects remain separable when both fire on the same slot.
+
+### What this does not settle
+
+* **Where slot 0's send goes.** Nothing in the packet, nothing in the next
+  packet, and the sender's own destination is unchanged. Whether the value is
+  dropped or written somewhere unobserved (a lane this harness cannot store)
+  cannot be told apart.
+* **The mechanism.** `(i-1) & ~1` is a description fitted to the transfer set,
+  and the slot-0 exception shows it is not the right description; no claim is
+  made about the control word's internal fields.
+* **More than one packet of senders.** Only a two-packet program was built, and
+  the cross-packet group uses packet 0 as the sender because it is otherwise
+  free.
+* **Saturation forms.** Only one overflow was produced (1.5 -> 1.0); how the
+  accumulator behaves with negative values, or with an fxp difference between
+  operands, is untested.
+* **Two receivers of one send.** Every send here had at most one candidate
+  target slot.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-marks-edge` and `verify-alu-marks-edge` hold 85
+rows each (27 variants, three repeats, and the four control runs), pinned at
+`5b67e52edf59...`; re-pinning from the verify directory is byte-identical.
+
 ## What the runner cost
 
 Five things that produced wrong results first:
