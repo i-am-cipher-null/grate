@@ -586,31 +586,71 @@ set.
 
 ## PSEQ instruction word encoding
 
-PSEQ stands for Program Sequencer. It fetches data from a selected render target and loads it into a register pair. In the tested RGBA8 path, a fetch/store round-trip preserved the bytes exactly; conversion behavior for other formats is not established.
+PSEQ (Program Sequencer) can fetch a selected render target into one of the
+two row-register pairs. The observed fetch encoding is
+`0x00800008 | (N << 16) | (pair << 1)`, where N is the render-target index
+and pair is 0 for r0/r1 or 1 for r2/r3. For example, `0x00820008` selects
+RT2 and r0/r1.
 
-|   Bits | Meaning                 |
-|-------:|:------------------------------|
-| 24..31 | unknown                 |
-|     23 | set in observed fetch encoding |
-| 20..22 | unknown                 |
-| 16..19 | render target select    |
-|  4..15 | unknown                 |
-|      3 | set in observed fetch encoding |
-|      2 | unknown                 |
+|   Bits | Meaning |
+|-------:|:--------|
+| 24..31 | unknown, except bit 24 spill behavior below |
+|     23 | required fetch enable |
+| 20..22 | unknown |
+| 16..19 | render-target index |
+|  4..15 | mostly unknown; selected bits tested inert |
+|      3 | required fetch enable |
+|      2 | unknown |
 |      1 | destination pair select |
-|      0 | unknown                 |
+|      0 | unknown |
 
-The observed fetch encoding is `0x00800008 | (N << 16) | (pair << 1)`,
-where N is the render-target index and pair is 0 for r0/r1 or 1 for r2/r3.
-For example, `0x00820008` selects RT2 and r0/r1. The individual roles of
-bits 3 and 23, and the meaning of other PSEQ encodings, remain unknown.
+Both bits 3 and 23 must be set for the ordinary fetch. Clearing either one
+suppressed the fetch and left the destination registers at their previous
+values. Bit 1 selects the destination pair: clear selects r0/r1, set selects
+r2/r3. The `load rtN, r0, r1` mnemonic assembles to the same word as the
+measured ordinary fetch.
 
-#### Destination registers select:
+Bits 16..19 select the render target. Successful round-trips were measured
+for RT1, the coverage surface (RT3), RT4 and RT5 when those surfaces were
+bound. Unbound target indexes returned unstable partial values and should not
+be treated as defined results.
 
-| Value | Meaning   |
-|------:|:----------|
-|     1 | R2 - R3   |
-|     0 | R0 - R1   |
+### Render-target formats
+
+The format tests used RT5. RGBA8888 preserved all four components in R, G, B,
+A order. The tested narrower formats converted as follows:
+
+| Format | Observed fetch result |
+|:-------|:---------------------|
+| RGBA8888 | All four components preserved |
+| A8 | Alpha component in the fourth destination component; other components zero |
+| L8 | First component replicated to RGB; alpha set to 1.0 |
+| RGB565 | R, G and B quantized to 5/6/5 bits and expanded; alpha set to 1.0 |
+
+The round-trip establishes these mappings for the tested formats and RT5
+configuration, not for every target class or surface layout.
+
+### Other tested bits and spill path
+
+On the A8 target, toggling bits 4, 5, 6, 7, 8, 11, 15, 20, 22, 25 and 31
+individually did not change the measured fetch result. These observations do
+not establish the meaning of untested bits in those ranges or prove that the
+tested bits are reserved in every mode.
+
+With bit 23 set, bit 24 selects a different observed path: the normal fetch
+does not occur, but the fourth component of the low destination word is
+cleared. This is a partial write, not ordinary fetch suppression. The role of
+the other fields in this spill form is unknown.
+
+### Addressing limits
+
+The current round-trip writes the same pattern for every fragment. It
+establishes the target selection, enable bits, destination pair and tested
+format conversions, but does not establish which pixel address PSEQ reads.
+Position-dependent addressing, offsets, alignment, tiled layouts and
+non-default pitches remain untested. The experiment also does not establish a
+frame-to-frame visibility guarantee; it only shows that a store earlier in
+the tested fragment program is visible to a later PSEQ fetch.
 
 ## More patents
 
