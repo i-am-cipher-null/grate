@@ -2900,7 +2900,8 @@ recorded here so the next attempt starts from it.
 `tests/grate/asm/results/pin-tex-sampling` and `verify-tex-sampling` hold 232
 rows each (76 variants, three repeats, plus the four control runs), pinned from
 `199a8ebea802...` to `fcbe778dc3b1...`. Re-pinning from the verify directory is
-byte-identical.
+byte-identical, and `clean-tex-sampling` repeats the same 232 rows from a clone
+of the commit with a clean tree.
 
 ## 16. ALU send ordering and the destination field
 
@@ -3028,7 +3029,8 @@ destination question is answered from the word dumps above instead.
 
 `tests/grate/asm/results/pin-alu-send` and `verify-alu-send` hold 109 rows each
 (35 variants, three repeats, plus the four control runs), pinned at
-`8996a2094b52...`; re-pinning from the verify directory is byte-identical.
+`8996a2094b52...`; re-pinning from the verify directory is byte-identical, and
+`clean-alu-send` repeats the same 109 rows from a clone with a clean tree.
 
 ## What the runner cost
 

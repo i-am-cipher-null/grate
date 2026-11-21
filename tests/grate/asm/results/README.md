@@ -644,3 +644,11 @@ invalidate another; generate such a manifest with
 * commit: 1d3ecd68ca5e28768eae685ad76d8e17c559fd13 with a dirty tree
 * created: 2026-11-21T20:51:01+00:00; 109 rows, repeat 3, timeout 15.0 s
 * summary: 109 passed, 0 failed of 109 - passed
+
+## clean-alu-send
+
+* manifest: `asm_characterize.alu_send.json` (sha256 8996a2094b52)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 9e561d77f63c6314ebe25dba9166b786d7237b58 with a clean tree (clone in /tmp/clean-alu-send)
+* created: 2026-11-21T20:55:20+00:00; 109 rows, repeat 3, timeout 15.0 s
+* summary: 109 passed, 0 failed of 109 - passed
