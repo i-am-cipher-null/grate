@@ -1,0 +1,85 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * The special function unit, one operation at a time.
+ *
+ * Batch 0 primes the row registers with ALU fp20 writes. Batches 1 and 2 carry
+ * three MFU words each, so a PRE first step and its main step can sit in the
+ * same batch or one batch apart. Batch 3 turns the multiplier's r2 and r3
+ * results into fx10 with the ALU, and batch 4 stores them. DW converts an fx10
+ * field linearly, so the stored byte is the result on a 0..1 scale; the
+ * amplified variants instead write K*(value - expected) + 0.5, whose 0x7F is
+ * the expected value and whose neighbours are about one input ulp apart.
+ *
+ * r1 is primed 0.5 so mul1 can return value/2 in the other half: that keeps a
+ * result of 2.0 distinct from anything larger, which a plain 0..1 readout
+ * cannot. r0, r2 and r3 are distinct primes so a write to the wrong register
+ * changes the word.
+ *
+ * The SFU names r3 in every variant. Only the 16-bit field the DW store reads
+ * is shown; the low byte of each stored half is the converted fx10 value.
+ */
+
+.constants
+	[0] = 0.0;
+	[1] = 0.0625;
+	[2] = 0.125;
+	[3] = 0.25;
+	[4] = 0.375;
+	[5] = 0.5;
+	[6] = 0.625;
+	[7] = 0.75;
+	[8] = 1.0;
+	[9] = 1.25;
+	[10] = 1.5;
+	[11] = 1.75;
+	[12] = 2.0;
+	[13] = 3.0;
+	[14] = 4.0;
+	[15] = -0.25;
+	[16] = -0.5;
+	[17] = -1.0;
+	[18] = -2.0;
+	[19] = -1.25;
+	[20] = 0.52359878;
+	[21] = 1.57079633;
+	[22] = 3.14159265;
+	[23] = 6.28318531;
+	[24] = 2.09439510;
+	[25] = 4.71238898;
+	[26] = -0.52359878;
+	[27] = 1.41421356;
+	[28] = 2.5;
+	[29] = 0.875;
+	[30] = @OFFSET@;
+	[31] = 256.0;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@P0@
+		ALU1:	@P1@
+		ALU2:	@P2@
+		ALU3:	@P3@
+;
+EXEC
+	MFU:	@W0@
+	MFU:	@W1@
+	MFU:	@W2@
+;
+EXEC
+	MFU:	@W3@
+	MFU:	@W4@
+	MFU:	@W5@
+;
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+;
+EXEC
+	DW:	@STORE@
+;

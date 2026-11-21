@@ -1306,6 +1306,266 @@ Runs: 22 variants, 70 rows including the two controls before and after, three
 repeats each; `pin-mfu-chain` and `verify-mfu-chain` are 70/70 each, the pin is
 idempotent, and pin and verify agree word for word.
 
+## 7. The SFU opcode matrix
+
+`--set ops` (121 variants) from `tests/grate/asm/sfu_ops.in`, manifest
+`asm_characterize.sfu_ops.json`. Every decoded special-function opcode is run at
+representative inputs: RCP, RSQ, LG2, EX2, SQRT, SIN, COS, FRC, PREEX2, PRESIN
+and PRECOS. The PRE ops are run both alone and with their main op, because
+EX2/SIN/COS are documented as second steps. Each variant is five batches at
+`alu_buffer_size` 1:
+
+    batch 0   prime r0=0.75, r1=0.5, r2=1.0, r3=input
+    batch 1   up to three MFU words
+    batch 2   up to three MFU words
+    batch 3   ALU readout
+    batch 4   store r2, r3
+
+so the PRE and main words can be in the same batch or one batch apart, and only
+the fields being measured change between variants. Every variant writes all
+four row registers before reading one.
+
+### Reading the result without decoding fp20
+
+The raw 16-bit result in the named register is not converted by the store path:
+DW's reading of an fp20 field is logarithmic at the byte level, and the low byte
+is not a simple mantissa. Every row here therefore takes the result through the
+multiplier's `sfu` source in the same MFU word and converts it to fx10 in the
+ALU:
+
+    sfu: rcp r3  mul0: r2, sfu, #1  mul1: r3, sfu, r1
+
+with r1 = 0.5, so r2 holds the value and r3 half of it. The ALU writes both as
+`.l*`, which DW reads as a linear 0..1 byte. The half copy keeps 1.414
+distinguishable from 2.0, but anything at or above 2.0 still reads `0xFF`; the
+amplified variants below cover those cases. The `none` control has no SFU word
+and returns `0xEF7FF7FF`: r2 = 1.0 reads `0xFF`, r3 = 0.5 reads `0x7F`. In every
+word quoted, the low byte of each 16-bit half is the converted value.
+
+For an exactness measurement the r2 conversion is replaced with
+`K*(value-expected)+0.5` at K = 256. `0x7F` is the expected value; one count is
+1/(255*256) = 1.5e-5, and one fp20 ulp at 0.5 is 2^-14 = 6.1e-5, so about four
+counts. The expected value is computed from the fp20 the assembler actually
+stores - its `float_to_fp20` truncates the mantissa - not from the decimal
+input, so `sin(pi/6)` is checked at 0.5234375.
+
+### Every opcode writes the register it names
+
+`inplace-*` runs the op with no multiplier and stores r2 and r3. r2 stays its
+1.0 prime in all eleven variants, and r3 changes from the input prime to:
+
+| op | input | r3 word after | op | input | r3 word after |
+|:--|--:|--:|:--|--:|--:|
+| `rcp` | 1.5 | `F100` | `cos` (after `precos`) | 0 | `F700` |
+| `rsq` | 4.0 | `EF00` | `frc` | 1.75 | `F300` |
+| `lg2` | 1.5 | `F0FF` | `preex2` | 1.0 | `FF00` |
+| `ex2` (after `preex2`) | -1.0 | `EF00` | `presin` | 1.0 | `FF5F` |
+| `sqrt` | 0.25 | `EF00` | `precos` | 1.0 | `FF5F` |
+| `sin` (after `presin`) | pi/6 | `EE00` | | | |
+
+The input prime for `cos` is `0000` and for `frc` `F300`, so each row is a
+different word from what the register started with. The named register is the
+operand and the destination, as `docs/assembler-syntax.md` says; the result is
+also available to the multipliers of the same word (`none` and the `sfu`
+source variants above).
+
+### What each opcode returns
+
+The pair variants run the PRE word first and the main word second, both naming
+r3. The value is the readout byte, quantised to 1/255, with the r3 half used when
+the value is between 1 and 2. Quoted words are r2|r3.
+
+**RCP and RSQ.** RCP is the reciprocal and RSQ the reciprocal square root over
+the positive range; the readout is the exact decimal rounded to the nearest 1/255
+where that is possible, so `1/1.5` reads 170 (`0.667`) and `1/2` reads 127
+(`0.498`):
+
+| `rcp` input | value | word | `rsq` input | value | word |
+|--:|--:|:--|--:|--:|:--|
+| 0.5 | 2.0 | `F7FFFFFF` | 0.0625 | 4.0 (amplified) | `FFFFFF7F` |
+| 0.75 | 1.333 | `F1AAF9FF` | 0.25 | 2.0 (amplified) | `F7FFFF7F` |
+| 1.0 | 1.0 | `EF7FF7FF` | 0.5 | 1.412 | `F2B4FAFF` |
+| 1.5 | 0.667 | `E955F1AA` | 1.0 | 1.0 | `EF7FF7FF` |
+| 2.0 | 0.5 | `E740EF7F` | 2.0 | 0.706 | `EA5BF2B4` |
+| 4.0 | 0.25 | `DF20E740` | 4.0 | 0.5 | `E740EF7F` |
+| -1.0 | -1.0 (amplified) | `0000007F` | -1.0 | maximum | `FFFFFFFF` |
+| 0.0 | maximum | `FFFFFFFF` | 0.0 | maximum | `FFFFFFFF` |
+
+The negative RCP result is measured by the amplified variant, not by the raw
+word: the plain readout clamps everything below zero to `0x00`, so `rcp(-1)`
+reads `0x00000000` there. RSQ of a negative input returns the same maximum as
+RSQ of zero, which is what `RCP(SQRT(x))` predicts (`sqrt(-1)` is 0 below), but
+this set does not establish that as the mechanism.
+
+**LG2 and FRC.** LG2 returns log2, including negative results; the plain readout
+clamps them, and the amplified rows at 0.5 and 0.25 show -1 and -2. FRC is
+floor-based: the two negative inputs give positive fractions.
+
+| `lg2` input | value | `frc` input | value |
+|--:|--:|--:|--:|
+| 0.25 | -2.0 (amplified) | 0.25 | 0.25 |
+| 0.5 | -1.0 (amplified) | 0.5 | 0.5 |
+| 0.75 | negative, reads 0 | 0.75 | 0.75 |
+| 1.0 | 0 | 1.0 | 0 |
+| 1.25 | 0.322 | 1.25 | 0.25 |
+| 1.5 | 0.584 | 1.5 | 0.5 |
+| 2.0 | 1.0 | 1.75 | 0.75 |
+| 3.0 | 1.584 | 2.0 | 0 |
+| 4.0 | at least 2.0, reads the ceiling | -0.25 | 0.75 |
+| | | -1.25 | 0.75 |
+
+`lg2(4)` reads `F7FFFFFF`: r2 saturates and r3 is 2.0, which is also the
+ceiling, so this row proves `>= 2` rather than exactly 2. The fractional rows
+are the same values as `frc(x)` for x and x+1, and `frc(-1.25) = 0.75`
+distinguishes floor from truncation (truncation would read 0).
+
+**SQRT and EX2.** SQRT is the square root; SQRT of a negative input is exactly
+0 (the amplified row against 0.0 reads `0x7F`, so it is not a negative result
+clamped by the readout). EX2 is `2^x` only when its PRE step is present.
+
+| `sqrt` input | value | word | `ex2` input (with `preex2`) | value | word |
+|--:|--:|:--|--:|--:|:--|
+| 0.0625 | 0.25 | `DF20E740` | -2.0 | 0.25 | `DF20E740` |
+| 0.25 | 0.5 | `E740EF7F` | -1.0 | 0.5 | `E740EF7F` |
+| 0.375 | 0.612 | `E84EF09C` | -0.5 | 0.706 | `EA5BF2B4` |
+| 0.5 | 0.706 | `EA5BF2B4` | 0.0 | 1.0 | `EF7FF7FF` |
+| 1.0 | 1.0 | `EF7FF7FF` | 0.25 | 1.184 | `F097F8FF` |
+| 1.5 | 1.224 | `F09CF8FF` | 0.5 | 1.412 | `F2B4FAFF` |
+| 2.0 | 1.412 | `F2B4FAFF` | 1.0 | at least 2.0 | `F7FFFFFF` |
+| 4.0 | at least 2.0 | `F7FFFFFF` | 2.0 | at least 2.0 | `FFFFFFFF` |
+| -1.0 | exactly 0 | `00000000` | | | |
+
+**SIN and COS.** Both are second steps and need PRESIN/PRECOS. The input is in
+radians: `sin(1) = 0.839` and `cos(1) = 0.537` are the radian values, not the
+turn-based ones. The rows at 2*pi and pi return the function's values there;
+this set does not test arguments beyond 2*pi, so it says nothing about how far
+the reduction extends.
+
+| `sin` input | value | word | `cos` input | value | word |
+|--:|--:|:--|--:|--:|:--|
+| 0.0 | 0 | `00000000` | 0.0 | 1.0 | `EF7FF7FF` |
+| pi/6 | 0.498 | `E640EE7F` | pi/6 | 0.867 | `EC6FF4DD` |
+| 0.5 | 0.482 | `E63DEE7B` | 0.5 | 0.878 | `ED70F5E0` |
+| 1.0 | 0.839 | `EC6CF4D6` | 1.0 | 0.537 | `E745EF89` |
+| pi/2 | 1.0 | `EF7FF7FF` | pi/2 | 0 | `8B009300` |
+| 2.0 | 0.910 | `ED74F5E8` | 2*pi/3 | 0 (negative) | `00000000` |
+| pi | 0 (near zero) | `8B009300` | pi | 0 (negative) | `00000000` |
+| 2*pi | 0 | `00000000` | 2*pi | 1.0 | `EF7FF7FF` |
+| -pi/6 | negative, reads 0 | `00000000` | | | |
+
+The negative sine and cosine rows are below zero and clamp in the plain
+readout; the amplified variants measure them: `sin(-pi/6)` reads `0x83` against
+-0.4998605 and `cos(2*pi/3)` reads `0x7C` against -0.49983. `sin(pi)` reads
+`8B009300`, where both converted bytes are 0: the residual is below half a
+count in magnitude, but its sign is not visible in this readout, so the row
+says "zero to the readout", not exactly zero. The same applies to
+`cos(pi/2)`.
+
+### The second steps without their first step
+
+Three controls run EX2, SIN and COS alone in one MFU word, with no PRE word:
+
+| variant | word | read value | pair reads |
+|:--|--:|--:|--:|
+| `ex2-alone-m1` | `0xEF7FF7FF` | 1.0 | 0.5 |
+| `sin-alone-p1` | `0xEF7FF7FF` | 1.0 | 0.839 |
+| `cos-alone-p0` | `0x00000000` | 0.0 | 1.0 |
+
+So EX2 at -1.0 without PREEX2 reads 1.0 (`2^0`), SIN at 1.0 without PRESIN
+reads 1.0, the operand rather than `sin(1)`, and COS at 0 without PRECOS reads
+0. None of the three is usable alone. The earlier survey saw the same shape
+over more inputs; this run has one control row for each and a pair at the same
+input to compare against.
+
+### What the first step leaves
+
+The PRE ops alone, read through the same `sfu` source in their own word:
+
+| op | input | read value | word |
+|:--|--:|--:|--:|
+| `preex2` | -1.0 | 0.5 | `E740EF7F` |
+| `preex2` | 0.0 | 0 | `00000000` |
+| `preex2` | 0.5 | 1.498 | `F3BFFBFF` |
+| `preex2` | 1.0 | at least 2.0 | `F7FFFFFF` |
+| `presin` | 0.0 | 0 | `00000000` |
+| `presin` | pi/6 | at least 2.0 | `FFFFFFFF` |
+| `presin` | 1.0 | at least 2.0 | `FFFFFFFF` |
+| `presin` | pi | at least 2.0 | `FFFFFFFF` |
+| `precos` | 0.0 | 1.0 | `EF7FF7FF` |
+| `precos` | 1.0 | at least 2.0 | `FFFFFFFF` |
+| `precos` | pi | 0 | `00000000` |
+
+These are intermediates, not the main function: `preex2(0)` is 0 rather than 1,
+`preex2(0.5)` is 1.498 rather than 1.414, and `presin(pi/6)` is already at or
+above 2. The values are what the `sfu` source returns in the PRE's own word;
+they are not a coherent function of the input and are not used by the main step
+as a normal operand. The set records them so that a later pairing probe has a
+baseline; it makes no claim about the internal representation beyond the six
+rows.
+
+### Multiplier interaction and ordering
+
+The SFU is evaluated before the multipliers of its word, and the multipliers
+can read the result:
+
+| variant | word | reading |
+|:--|--:|:--|
+| `order-rcp` | `0xF700F100` | r3 = 1.0 (mul0 wrote it), r2 = rcp of the *old* 1.5 (`F100`) |
+| `order-sqrt` | `0xF700EF00` | r3 = 1.0, r2 = sqrt of the old 0.25 (`EF00`) |
+| `both-rcp` | `0xEF00EF00` | rcp(2.0) = 0.5 reaches both r2 and r3 |
+
+So neither multiplier's destination clobbering the operand changes what the
+SFU read, and both multipliers see the same `sfu` result in one word. The
+amplified rows also take their value through `mul0: r2, sfu, #1` and still read
+`0x7F`, so the multiplier does not lose a visible fraction of the result at this
+resolution.
+
+### Observed precision
+
+Twenty-three amplified function rows, each with a known expected value, at 256
+times the error plus 0.5 (the separate `preex2` row is the sampled PRE
+intermediate, not a function result):
+
+| ops and inputs | byte |
+|:--|--:|
+| `rcp` 0.25 (4.0), 1.5, 3.0; `rsq` 0.0625 (4.0), 4.0, 0.25 (2.0); `lg2` 0.5 (-1.0), 0.25 (-2.0); `ex2` -1.0, 0.5; `sqrt` 0.25, 2.0, 4.0, -1.0 (0.0); `cos` 0; `frc` -0.25, 1.75 | `0x7F` |
+| `lg2` 1.5 | `0x7C` |
+| `sin` pi/6 | `0x7C` |
+| `sin` -pi/6 | `0x83` |
+| `cos` 2*pi/3 | `0x7C` |
+
+`0x7F` is the exact value; three counts are 4.6e-5 and four are 6.1e-5, so the
+four non-exact rows are within one fp20 ulp at 0.5. The `sin` and `cos` rows
+are also within the input truncation: the assembler stores
+`pi/6` as 0.5234375, whose sine is 0.4998605, not 0.5. This is the same
+accuracy the earlier amplified probes found for the first-step ops, and it
+extends it to the PRE pairs and to negative results. It does not separate the
+unit's own rounding from the one-ulp input truncation.
+
+### What this set does not settle
+
+* The 16-bit fp20 word is not decoded here. The evidence is the linear readout
+  after the multiplier; the raw words in the `inplace-*` rows are recorded but
+  not interpreted, and the low byte is visibly not part of the same scale as the
+  high byte.
+* The PRE first step's output is only sampled, not modelled. The pairing set is
+  the place to establish which operations invalidate a pending intermediate and
+  how far apart the two words may be.
+* SIN/COS are sampled to 2*pi and at -pi/6 only; arguments beyond 2*pi and the
+  exact argument-reduction range are not covered.
+* `lg2(4)` is only bounded below by 2.0 because both readout scales saturate
+  there; the `lg2(2) = 1.0` row is exact.
+* SFU opcodes outside 0..11, and the `unknown` MFU word fields, are not touched.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-sfu-ops` and `verify-sfu-ops` hold 367 rows each -
+121 variants and three repeats plus the controls - pinned from
+`75d55be7e5bb...` to `82f33210143a...`. Re-pinning the checked-in manifest from
+the pin run reproduces it byte for byte. The run used the Toshiba AC100 with
+the immediate-operand and varying-pipeline controls passing before and after
+the sweep.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

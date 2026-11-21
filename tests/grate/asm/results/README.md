@@ -388,3 +388,19 @@ invalidate another; generate such a manifest with
 * commit: 75eea754ca4bbcea83cae28c9a133a3c9a8e0b75 with a clean tree (clone in /tmp/clean2)
 * created: 2026-11-20T12:11:06+00:00; 70 rows, repeat 3, timeout 10.0 s
 * summary: 70 passed, 0 failed of 70 - passed
+
+## pin-sfu-ops
+
+* manifest: `asm_characterize.sfu_ops.json` (sha256 75d55be7e5bb)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 1592d9412c5294e5b1517fdb2d2db80936364725 with a dirty tree
+* created: 2026-11-21T13:52:43+00:00; 367 rows, repeat 3, timeout 10.0 s
+* summary: 367 passed, 0 failed of 367 - passed
+
+## verify-sfu-ops
+
+* manifest: `asm_characterize.sfu_ops.json` (sha256 82f33210143a)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 1592d9412c5294e5b1517fdb2d2db80936364725 with a dirty tree
+* created: 2026-11-21T13:53:31+00:00; 367 rows, repeat 3, timeout 10.0 s
+* summary: 367 passed, 0 failed of 367 - passed

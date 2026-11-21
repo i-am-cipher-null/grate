@@ -1,0 +1,3319 @@
+{
+  "name": "sfu-opcode-matrix",
+  "created_utc": "2026-11-21T13:52:43+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.sfu_ops.json",
+  "manifest_sha256": "75d55be7e5bb5c749aac016dd94737d0036eee15f794daf19ca59624ef47f05e",
+  "assembler": "/home/freebuff/build/grate/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "1592d9412c5294e5b1517fdb2d2db80936364725",
+  "git_status": "?? tests/grate/asm/make_sfu_probe.py\n?? tests/grate/asm/sfu_ops.in\n?? tests/grate/asm_characterize.sfu_ops.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 10,
+  "manifest_data": {
+    "name": "sfu-opcode-matrix",
+    "repeat": 3,
+    "timeout": 10,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/sfu_ops.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "none",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "NOP",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rcp-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rcp-p0p75",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u7,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rcp-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rcp-p1p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u10,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rcp-p2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u12,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rcp-p4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u14,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rcp-m1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rcp-p0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rsq-p0p0625",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u1,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rsq-p0p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rsq-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rsq-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rsq-p2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u12,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rsq-p4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u14,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rsq-m1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "rsq-p0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "lg2-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "lg2-p0p75",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u7,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "lg2-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "lg2-p1p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u9,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "lg2-p1p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u10,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "lg2-p2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u12,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "lg2-p3",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u13,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "lg2-p4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u14,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "ex2-m2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u18,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "ex2-m1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "ex2-m0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u16,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "ex2-p0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "ex2-p0p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "ex2-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "ex2-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "ex2-p2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u12,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sqrt-p0p0625",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u1,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sqrt-p0p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sqrt-p0p375",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u4,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sqrt-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sqrt-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sqrt-p1p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u10,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sqrt-p2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u12,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sqrt-p4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u14,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sqrt-m1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sin-p0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sin-p0p523599",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u20,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sin-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sin-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sin-p1p570796",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u21,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sin-p2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u12,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sin-p3p141593",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u22,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sin-p6p283185",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u23,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sin-m0p523599",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u26,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "cos-p0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "cos-p0p523599",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u20,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "cos-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "cos-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "cos-p1p570796",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u21,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "cos-p2p094395",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u24,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "cos-p3p141593",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u22,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "cos-p6p283185",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u23,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "frc-p0p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "frc-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "frc-p0p75",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u7,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "frc-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "frc-p1p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u9,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "frc-p1p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u10,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "frc-p1p75",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u11,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "frc-p2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u12,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "frc-m0p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u15,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "frc-m1p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u19,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "preex2-m1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "preex2-p0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "preex2-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "preex2-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "presin-p0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "presin-p0p523599",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u20,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "presin-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "presin-p3p141593",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u22,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "precos-p0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "precos-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "precos-p3p141593",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u22,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "ex2-alone-m1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "sin-alone-p1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "cos-alone-p0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  #1,  #0",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-rcp-p0p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+            "@OFFSET@": "-1023.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-rcp-p1p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u10,  #1,  #0",
+            "@OFFSET@": "-170.16666667",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-rcp-p3",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u13,  #1,  #0",
+            "@OFFSET@": "-84.83333333",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-rsq-p0p0625",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u1,  #1,  #0",
+            "@OFFSET@": "-1023.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-rsq-p4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u14,  #1,  #0",
+            "@OFFSET@": "-127.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-lg2-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "256.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-lg2-p1p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u10,  #1,  #0",
+            "@OFFSET@": "-149.25040018",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-ex2-m1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "-127.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-ex2-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "-361.53867197",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-sqrt-p0p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+            "@OFFSET@": "-127.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-sqrt-p2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u12,  #1,  #0",
+            "@OFFSET@": "-361.53867197",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-sqrt-p4",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u14,  #1,  #0",
+            "@OFFSET@": "-511.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-sin-p0p523599",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u20,  #1,  #0",
+            "@OFFSET@": "-127.49130799",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-sin-m0p523599",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u26,  #1,  #0",
+            "@OFFSET@": "128.49130799",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-cos-p0",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "-255.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-cos-p2p094395",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u24,  #1,  #0",
+            "@OFFSET@": "128.46523079",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-frc-m0p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u15,  #1,  #0",
+            "@OFFSET@": "-191.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-frc-p1p75",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u11,  #1,  #0",
+            "@OFFSET@": "-191.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-preex2-m1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "-127.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-rcp-m1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "256.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-rcp-p0p5",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u5,  #1,  #0",
+            "@OFFSET@": "-511.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-rsq-p0p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+            "@OFFSET@": "-511.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-lg2-p0p25",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+            "@OFFSET@": "512.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "amp-sqrt-m1",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "0.50000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r2, sfu, #1 mul1: r3, sfu, r1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "MAD  r2.l*,  r2,  u31,  u30",
+            "@A1@": "MAD  r3.l*,  r3,  #1,  #0",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-rcp",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u10,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-rsq",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u14,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rsq r3",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-lg2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u10,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: lg2 r3",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-ex2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u17,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "sfu: ex2 r3",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-sqrt",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-sin",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u20,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "sfu: sin r3",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-cos",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u0,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "sfu: cos r3",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-frc",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u11,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: frc r3",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-preex2",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: preex2 r3",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-presin",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: presin r3",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "inplace-precos",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u8,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: precos r3",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "order-rcp",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u10,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r3, src13, src13 mul1: r2, sfu, #1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "order-sqrt",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u3,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: sqrt r3 mul0: r3, src13, src13 mul1: r2, sfu, #1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      },
+      {
+        "name": "both-rcp",
+        "environment": {
+          "GRATE_POKE": "0x520=0x20006005"
+        },
+        "replace": {
+          "fs": {
+            "@P0@": "MAD  r0.lh,  u7,  #1,  #0",
+            "@P1@": "MAD  r1.lh,  u5,  #1,  #0",
+            "@P2@": "MAD  r2.lh,  u8,  #1,  #0",
+            "@P3@": "MAD  r3.lh,  u12,  #1,  #0",
+            "@OFFSET@": "0.00000000",
+            "@STORE@": "store rt1, r2, r3",
+            "@W0@": "sfu: rcp r3 mul0: r2, sfu, #1 mul1: r3, sfu, #1",
+            "@W1@": "NOP",
+            "@W2@": "NOP",
+            "@W3@": "NOP",
+            "@W4@": "NOP",
+            "@W5@": "NOP",
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP"
+          }
+        },
+        "fs": "tests/grate/asm/sfu_ops.in"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 367,
+    "passed": 367,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
