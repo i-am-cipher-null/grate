@@ -491,7 +491,7 @@ The z component comes in some form via r3. The fetch operation of the r3 should 
 
 	gl_FragCoord.z = 1/1000 + max(0.0, r3.low) * 1/4000 + max(0.0, r3.high) * 1/4
 
-There is also dependency on the linker: it should perform the "magic" write to the TRAM0.w with "VEC4 select = VEC4.z".
+A proposed linker dependency is the LINK `(z)` modifier, previously described as a "magic" write of VEC4.z to TRAM0.w. This behavior has not been confirmed. Hardware tests show that `(z)` sets bit 0 of the first LINK instruction word, but the tested programs read zero from every FP20 TRAM component when it is set. Changing the swizzle, enabled export or TRAM row did not change that result, and a control without a varying fetch still executed the draw normally. A two-LINK control also read the ordinary LINK values regardless of whether the `(z)` LINK came before or after it. The identity of the VEC4.z input and how it is populated remain unknown; the special linker write must not be treated as an established way to supply fragment Z.
 
 ## TEX instruction word encoding
 
