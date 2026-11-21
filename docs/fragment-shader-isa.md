@@ -116,10 +116,10 @@ Unlike a regular ALU instruction, the ALU3 instruction words, constituting immed
 |      2 |    MAX   | Maximum            | max(rA * rB, rC * rD)      |
 |      3 |   CSEL   | Conditional select | (rA * rB < 0) ? rB : (rC * rD) |
 
-Hardware tests confirm that CSEL tests the sign of `rA * rB), returns the
+Hardware tests confirm that CSEL tests the sign of `rA * rB`, returns the
 unmultiplied `rB` when that product is negative, and returns `rC * rD`
 otherwise. A zero product takes the latter branch. The assembler accepts only
-`#1` or an omitted fourth operand for `rD`; omitting it uses `rC) as-is.
+`#1` or an omitted fourth operand for `rD`; omitting it uses `rC` as-is.
 Negative values in the `rC * rD` candidate and negative zero have not been
 tested.
 
