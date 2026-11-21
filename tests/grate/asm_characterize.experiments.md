@@ -2065,6 +2065,181 @@ variants, three repeats, plus the four control rows), pinned from
 `6db31af89570...` to `afd7d3f85936...`. Re-pinning from the pin directory is
 byte-identical.
 
+## 11. The TEX instruction
+
+`asm_characterize.tex.json` (60 variants), template `asm/tex_probe.in`. The
+program writes the four coordinate/LOD registers as fp20 in batch 0, fetches in
+batch 1, optionally fetches again in batch 2 and then runs an ALU packet, and
+stores `r2`/`r3` in batch 3. Variants set the texture size, format, pitch and a
+second sampler through the harness (`GRATE_TEX_*`), and `--mipmap` where the
+fetch is supposed to see a mip chain. The word is the RGBA8888 surface word:
+`store rt1, r2, r3` of a fetched texel reproduces the texture's word exactly,
+so a row colour comes back as the same `0x0000FF00`-style word it was written
+as.
+
+### Sensitivity controls
+
+| variant | word |
+|:--|--:|
+| `ctl-white` (s = 0.875) | `0xFFFFFFFF` |
+| `ctl-black` (s = 0.125) | `0x00000000` |
+| `ctl-row0` (`GRATE_TEX_ROWCOLOR`, t = 0.125) | `0x000000FF` |
+| `ctl-row1` (t = 0.375) | `0x0000FF00` |
+| `ctl-row3` (t = 0.875) | `0xFFFFFFFF` |
+
+The five differ, so a fetch that changes the texel, the row or the level shows
+up in the word. `t` walks rows linearly and `s` selects the half.
+
+### Sampler index and the enable bit
+
+`idx1-white` and `idx1-black` both read `0x000000FF`: sampler index 1 is the
+`GRATE_TEX2` surface, which is a uniform `0x000000FF`, and changing `s` cannot
+change it. So bits 0..3 really do select a sampler rather than an offset into
+one texture.
+
+Indexes with nothing bound are not a clean "no texture" answer. With only
+textures 0 and 1 in the context:
+
+| word | index 2 | index 3 | index 5 | index 15 |
+|:--|--:|--:|--:|--:|
+| `s = 0.125` | `0xFFFFFFFF` | `0xFF000000` | `0x00FFFFFF` | `0xFFFFFFF8` |
+
+The values look like whatever the descriptor table holds beyond the bound
+entries, not a defined fill. Only indexes 0 and 1 are meaningful in this
+harness; the rest are recorded, not interpreted.
+
+Clearing bit 10 (`en-off`, word `0x00001020`) leaves the destination registers
+untouched: they still hold the fp20 prime `0.75` (`0xF300F300`), even when `s`
+is 0.875 and an enabled fetch would return white (`en-off-white` is the same
+word). The enabled control `en-on-prime` is `0x00000000`, so the fetch did not
+run, rather than running and writing zero.
+
+### Destinations, coordinates and the "unknown" bits
+
+Bit 5 moves the destination pair: `dest-r0r1` (bit 5 clear, `store rt1, r0,
+r1`) reads `0xFFFFFFFF` while the same white sample through `r2`/`r3` also
+reads `0xFFFFFFFF`, so the bit moves the data but this sample cannot name the
+channel order on that path. The order through `r2`/`r3` is the surface word's.
+
+Bit 4 moves the coordinate registers: `sel-t` (bit 4 set, `s` from `r2`, `t`
+from `r3`) reads `0x000000FF` and `sel-t-control` (same constants, bit 4 clear,
+`t` from `r1`) reads `0x00FF0000`. Since only bit 4 and the register that holds
+`t` differ, the select is real. `sel-s` reads `0x00000000`: with bit 4 set the
+`S` constant (written to `r0`) is ignored and `s` comes from `r2`'s `0.125`.
+
+Bits 6..9 and 11 are inert on every base measured. On the sampler-1 fetch each
+one leaves `0x000000FF` unchanged, and on an explicit-LOD fetch at levels 0, 1
+and 2 each one returns the same word as its base (`0xFFFFFFFF`, `0x00000000`,
+`0x00545454`). An earlier run appeared to change the level-1 answer; it had
+been assembled without `--mipmap`, so it sampled level 0 and proved nothing.
+The corrected measurement is the one in the table. Bits 14..31 were already
+measured inert by `probe_tex_unknown.sh`; this set does not revisit them.
+
+### Wrapping and dimension
+
+The default wrap is **repeat**, not clamp or mirrored repeat:
+
+| variant | word | reading |
+|:--|--:|:--|
+| `wrap-s125` (s = 1.25) | `0x00000000` | 1.25 -> 0.25, black half |
+| `wrap-sn025` (s = -0.25) | `0xFFFFFFFF` | -0.25 -> 0.75, white half |
+| `wrap-s225` (s = 2.25) | `0x00000000` | 2.25 -> 0.25 |
+| `wrap-t125` (t = 1.25) | `0x0000FF00` | 1.25 -> 0.25, row 1 |
+| `wrap-tn025` (t = -0.25) | `0xFFFFFFFF` | -0.25 -> 0.75, row 3 |
+
+Clamp would give white for `wrap-s125` and row 3 for `wrap-t125`; mirrored
+repeat would give white for `wrap-s125`. The measured values are the repeat
+ones.
+
+A 64x64 surface (`size64-l0`) still samples the two-tone image, and an 8x8
+surface with explicit LOD 1 (`size8-lod1`, `--mipmap`) reads `0xFFABABAB`, the
+mixed 4x4 level. So the sampler follows the texture's own dimension and mip
+chain rather than a fixed 4x4.
+
+`pitch64` and `pitch32` allocate the 4x4 surface with a 32- or 64-byte row
+pitch while the data is written through that pitch. At `t = 0.375` the natural
+allocation returns row 1 (`0x0000FF00`) but both pitched allocations return
+`0x00000000`. The sampler therefore walks rows at `width * 4` bytes and has no
+pitch field: a different pitch shears the fetch into the padding.
+
+### Block-compressed formats
+
+A 16x16 DXT1 surface has four block rows, each filled with one solid colour:
+
+| variant | word |
+|:--|--:|
+| `dxt1-16-r0` | `0xFF0000FF` |
+| `dxt1-16-r1` | `0xFF00FF00` |
+| `dxt1-16-r2` | `0xFFFF0000` |
+| `dxt1-16-r3` | `0xFFFFFFFF` |
+
+So block addressing works and `t` selects the block row. The alpha byte is
+`0xFF` in every row, including the row whose stored word had none, which is
+DXT1's 1-bit alpha decoding as opaque. ETC1 gives the same cycle with a small
+decoding difference: `etc1-4-block` reads `0xFF0000FD` where DXT1 reads
+`0xFF0000FF`. A zero DXT1 block (`dxt1-zero`) reads `0xFF000000`, again with
+opaque alpha.
+
+### LOD, bias and explicit level
+
+On the 4x4 chain at `s = t = 0.5`:
+
+| variant | LOD register | bits 12/13 | word |
+|:--|--:|:--|--:|
+| `lod-neg` | -1 | 1/0 | `0xFFFFFFFF` (clamped to level 0) |
+| `lod0` | 0 | 1/0 | `0xFFFFFFFF` |
+| `lod1` | 1 | 1/0 | `0x00000000` |
+| `lod-half` | 1.5 | 1/0 | `0x00000000` (nearest mip) |
+| `lod2` | 2 | 1/0 | `0x00545454` |
+| `lod3` | 3 | 1/0 | `0x00545454` |
+| `lod9` | 9 | 1/0 | `0x00545454` (clamped) |
+| `lod-est` | 2 | 0/0 | `0xFFFFFFFF` (register ignored, estimate used) |
+
+The chain's level contents at the centre are: level 0 white, level 1 black,
+level 2 the flat `0x54`. Fractional levels round to a neighbour, which matches
+the harness's `NEAREST_MIPMAP_NEAREST` filter.
+
+Bias and explicit LOD are different mechanisms, and on a 16x16 chain with the
+same register they select different levels:
+
+| variant | bits 12/13 | LOD | word |
+|:--|:--|--:|--:|
+| `bias0-16` | 1/0 | 0 | `0xFFFFFFFF` |
+| `expl0-16` | 0/1 | 0 | `0xFFFFFFFF` |
+| `bias3-16` | 1/0 | 3 | `0xFFABABAB` |
+| `expl3-16` | 0/1 | 3 | `0x00000000` |
+| `both3-16` | 1/1 | 3 | `0xFFABABAB` |
+
+`0xFFABABAB` is the averaged level (0xAB = 171/255); `expl3-16` lands on a
+different one. `both3-16` equals the bias word, so **bias wins when both bits
+are set**, which is what the current reference says. On the 4x4 chain
+`bias3-4` and `expl3-4` are both `0x00545454`, so that size cannot separate
+them; only 16x16 does, which also means the derivative estimate there is not
+zero. The estimate is not fitted from these three points - the follow-up is a
+size sweep, not a single guess.
+
+### What this set does not settle
+
+* what an unbound sampler index reads, and whether the four different words
+  come from descriptor memory or from an address alias;
+* the channel order on the `r0`/`r1` destination path: separating it from the
+  DW's own register pairing needs a texture with four distinct channels, and
+  the harness only produces uniform rows;
+* the exact LOD estimate - `bias3-16` proves it is not zero but three points
+  cannot name it;
+* linear filtering and mip filtering: the harness always sets the magnitude
+  filter to `NEAREST` and the mip filter to `NEAREST_MIPMAP_NEAREST`, so no
+  bit or coordinate in this set can show a blend;
+* cube maps and shadow samplers, which have no binding path in the harness;
+* why ETC1's low byte is `0xFD` where DXT1's is `0xFF` for the same block
+  colour, which is a decoder difference rather than an instruction effect.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-tex` and `verify-tex` hold 184 rows each (60
+variants, three repeats, plus the controls), pinned from `a7651df17488...` to
+`f5f4bf270ec7...`. Re-pinning from the pin directory is byte-identical.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

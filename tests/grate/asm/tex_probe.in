@@ -1,0 +1,61 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * TEX probe template: coordinates in fp20 row registers, one fetch per batch,
+ * and an ALU packet after the fetch so a single sampled component can be
+ * isolated and stored.
+ *
+ * batch 0  write the four coordinate/LOD registers as fp20 (.lh)
+ * batch 1  the first fetch (variant text)
+ * batch 2  the optional second fetch, then the ALU slots
+ * batch 3  the variant's DW
+ *
+ * The coordinates are fp20 in the high half, which is what TEX reads, so a
+ * .l*-only write would sample zero. The default texture is the 4x4 two-tone
+ * surface: s in [0.5, 1] is white (0xFFFFFFFF), s in [0, 0.5) is black.
+ * GRATE_TEX_ROWCOLOR replaces it with whole rows of 0x000000FF, 0x0000FF00,
+ * 0x00FF0000 and 0xFFFFFFFF, which makes t and the channel order readable.
+ *
+ * The fetch writes the four sampled components as fx10 pairs: r2.lo, r2.hi,
+ * r3.lo, r3.hi. The ALU slots can copy one of those into r3.lo, and the DW
+ * stores r2/r3, so the stored low byte names which component carried a value.
+ *
+ * No placeholder token may appear anywhere except the constants and the
+ * instruction slots.
+ */
+
+.constants
+	[0] = S_CONST;
+	[1] = T_CONST;
+	[2] = R_CONST;
+	[3] = L_CONST;
+	[4] = 0.125;
+	[5] = 0.25;
+	[6] = 0.75;
+	[7] = 1.0;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	MAD  r3.lh,  u3,  #1,  #0
+;
+EXEC
+	TEX:	TEX0_SLOT
+	DW:	NOP
+;
+EXEC
+	TEX:	TEX1_SLOT
+	ALU:
+		ALU0:	X0_SLOT
+		ALU1:	X1_SLOT
+		ALU2:	X2_SLOT
+		ALU3:	X3_SLOT
+	DW:	NOP
+;
+EXEC
+	DW:	STORE_SLOT
+;

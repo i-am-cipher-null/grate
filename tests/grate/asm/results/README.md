@@ -508,3 +508,19 @@ invalidate another; generate such a manifest with
 * commit: 7cc75c67d763cbb1b824b15fa10fe4e1d3df3884 with a clean tree (clone in /tmp/clean-tram)
 * created: 2026-11-21T14:59:13+00:00; 124 rows, repeat 3, timeout 10.0 s
 * summary: 124 passed, 0 failed of 124 - passed
+
+## pin-tex
+
+* manifest: `asm_characterize.tex.json` (sha256 a7651df17488)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 29dea23ef05d9b24b237bb69baf6f52d262dc4df with a dirty tree
+* created: 2026-11-21T15:33:38+00:00; 184 rows, repeat 3, timeout 15.0 s
+* summary: 184 passed, 0 failed of 184 - passed
+
+## verify-tex
+
+* manifest: `asm_characterize.tex.json` (sha256 f5f4bf270ec7)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 29dea23ef05d9b24b237bb69baf6f52d262dc4df with a dirty tree
+* created: 2026-11-21T15:34:29+00:00; 184 rows, repeat 3, timeout 15.0 s
+* summary: 184 passed, 0 failed of 184 - passed

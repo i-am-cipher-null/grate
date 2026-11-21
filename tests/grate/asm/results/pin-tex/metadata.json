@@ -1,0 +1,1433 @@
+{
+  "name": "tex-instruction",
+  "created_utc": "2026-11-21T15:33:38+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.tex.json",
+  "manifest_sha256": "a7651df1748822c52e9ac9928cb62abcef9d4ad228a4511218488c30e3a2cdec",
+  "assembler": "/home/freebuff/build/grate/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "29dea23ef05d9b24b237bb69baf6f52d262dc4df",
+  "git_status": "?? tests/grate/asm/make_tex_probe.py\n?? tests/grate/asm/tex_probe.in\n?? tests/grate/asm_characterize.tex.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 15,
+  "manifest_data": {
+    "name": "tex-instruction",
+    "repeat": 3,
+    "timeout": 15,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/tex_probe.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "ctl-white",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.875",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "ctl-black",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.125",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "ctl-row0",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.125",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_ROWCOLOR": "1"
+        }
+      },
+      {
+        "name": "ctl-row1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.375",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_ROWCOLOR": "1"
+        }
+      },
+      {
+        "name": "ctl-row3",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.875",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_ROWCOLOR": "1"
+        }
+      },
+      {
+        "name": "en-off",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.125",
+            "T_CONST": "0.5",
+            "R_CONST": "0.75",
+            "L_CONST": "0.75",
+            "TEX0_SLOT": "0x00001020",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "en-off-white",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.875",
+            "T_CONST": "0.5",
+            "R_CONST": "0.75",
+            "L_CONST": "0.75",
+            "TEX0_SLOT": "0x00001020",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "en-on-prime",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.125",
+            "T_CONST": "0.5",
+            "R_CONST": "0.75",
+            "L_CONST": "0.75",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "idx1-white",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001421",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX2": "1"
+        }
+      },
+      {
+        "name": "idx1-black",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.125",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001421",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX2": "1"
+        }
+      },
+      {
+        "name": "idx2-black",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.125",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001422",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "idx3-black",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.125",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001423",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "idx5-black",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.125",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001425",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "idx15-black",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.125",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x0000142F",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "dest-r0r1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.875",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001400",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r0, r1",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "sel-s",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.875",
+            "T_CONST": "0.5",
+            "R_CONST": "0.125",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001430",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "sel-t",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.5",
+            "L_CONST": "0.125",
+            "TEX0_SLOT": "0x00001430",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_ROWCOLOR": "1"
+        }
+      },
+      {
+        "name": "sel-t-control",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.5",
+            "L_CONST": "0.125",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_ROWCOLOR": "1"
+        }
+      },
+      {
+        "name": "bit6-idx1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001461",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX2": "1"
+        }
+      },
+      {
+        "name": "bit7-idx1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x000014A1",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX2": "1"
+        }
+      },
+      {
+        "name": "bit8-idx1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001521",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX2": "1"
+        }
+      },
+      {
+        "name": "bit9-idx1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001621",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX2": "1"
+        }
+      },
+      {
+        "name": "bit11-idx1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001C21",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX2": "1"
+        }
+      },
+      {
+        "name": "bit6-lod1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "1.0",
+            "TEX0_SLOT": "0x00002460",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "bit7-lod1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "1.0",
+            "TEX0_SLOT": "0x000024A0",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "bit8-lod1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "1.0",
+            "TEX0_SLOT": "0x00002520",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "bit9-lod1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "1.0",
+            "TEX0_SLOT": "0x00002620",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "bit11-lod1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "1.0",
+            "TEX0_SLOT": "0x00002C20",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "wrap-s125",
+        "replace": {
+          "fs": {
+            "S_CONST": "1.25",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "wrap-sn025",
+        "replace": {
+          "fs": {
+            "S_CONST": "-0.25",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "wrap-s225",
+        "replace": {
+          "fs": {
+            "S_CONST": "2.25",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ]
+      },
+      {
+        "name": "wrap-t125",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "1.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_ROWCOLOR": "1"
+        }
+      },
+      {
+        "name": "wrap-tn025",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "-0.25",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_ROWCOLOR": "1"
+        }
+      },
+      {
+        "name": "size8-l0",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "8x8"
+        }
+      },
+      {
+        "name": "size8-lod1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "1.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "8x8"
+        }
+      },
+      {
+        "name": "size64-l0",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "64x64"
+        }
+      },
+      {
+        "name": "pitch64",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.375",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_ROWCOLOR": "1",
+          "GRATE_TEX_PITCH": "64"
+        }
+      },
+      {
+        "name": "pitch32",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.375",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_ROWCOLOR": "1",
+          "GRATE_TEX_PITCH": "32"
+        }
+      },
+      {
+        "name": "dxt1-4-block",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.125",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_FORMAT": "dxt1"
+        }
+      },
+      {
+        "name": "dxt1-16-r0",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.125",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_FORMAT": "dxt1",
+          "GRATE_TEX_SIZE": "16x16"
+        }
+      },
+      {
+        "name": "dxt1-16-r1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.375",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_FORMAT": "dxt1",
+          "GRATE_TEX_SIZE": "16x16"
+        }
+      },
+      {
+        "name": "dxt1-16-r2",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.625",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_FORMAT": "dxt1",
+          "GRATE_TEX_SIZE": "16x16"
+        }
+      },
+      {
+        "name": "dxt1-16-r3",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.875",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_FORMAT": "dxt1",
+          "GRATE_TEX_SIZE": "16x16"
+        }
+      },
+      {
+        "name": "etc1-4-block",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.125",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_FORMAT": "etc1"
+        }
+      },
+      {
+        "name": "dxt1-zero",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.875",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture"
+        ],
+        "environment": {
+          "GRATE_TEX_FORMAT": "dxt1",
+          "GRATE_TEX_ZERO": "1"
+        }
+      },
+      {
+        "name": "lod0",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "lod1",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "1.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "lod2",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "2.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "lod3",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "3.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "lod-half",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "1.5",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "lod9",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "9.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "lod-neg",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "-1.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "lod-est",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "2.0",
+            "TEX0_SLOT": "0x00000420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "bias3-4",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "3.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "expl3-4",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "3.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ]
+      },
+      {
+        "name": "bias3-16",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "3.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16"
+        }
+      },
+      {
+        "name": "expl3-16",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "3.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16"
+        }
+      },
+      {
+        "name": "both3-16",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "3.0",
+            "TEX0_SLOT": "0x00003420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16"
+        }
+      },
+      {
+        "name": "bias0-16",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00001420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16"
+        }
+      },
+      {
+        "name": "expl0-16",
+        "replace": {
+          "fs": {
+            "S_CONST": "0.5",
+            "T_CONST": "0.5",
+            "R_CONST": "0.0",
+            "L_CONST": "0.0",
+            "TEX0_SLOT": "0x00002420",
+            "TEX1_SLOT": "NOP",
+            "STORE_SLOT": "store rt1, r2, r3",
+            "X0_SLOT": "NOP",
+            "X1_SLOT": "NOP",
+            "X2_SLOT": "NOP",
+            "X3_SLOT": "NOP"
+          }
+        },
+        "args": [
+          "--texture",
+          "--mipmap"
+        ],
+        "environment": {
+          "GRATE_TEX_SIZE": "16x16"
+        }
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 184,
+    "passed": 184,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
