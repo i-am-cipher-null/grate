@@ -195,6 +195,16 @@ Patents:
 |     75 | polygon face            |
 |     76 | kill (discard) fragment |
 
+The row-register range 0..15 is four rows of four components:
+`r(4 * row + component)`. Hardware tests show these registers form one shared
+file across batches and groups: a write remains readable by later batches,
+including across group boundaries. Batches do not rotate through private row
+banks. `alu_buffer_size` controls DW grouping (see DW instruction word
+encoding), not row ownership. TEX, DW and the MFU multiplier address only the
+current pixel-packet row, `r0..r3`, while the ALU can address the other row
+registers. Values needed by TEX or DW must therefore be placed in the current
+row.
+
 #### Result accumulation:
 
 Patent: https://www.google.com/patents/US8521800
@@ -464,15 +474,25 @@ Seems have no effect when the depth or stencil write enabled.
 
 Some of the render targets have an additional special purpose, like depth/stencil store. They are hardwired and their special purpose is active under certain conditions, like when depth/stencil test is enabled.
 
-#### Observed DW position dependence
+#### Observed DW execution with `alu_buffer_size`
 
-In AR20 tests, a DW instruction produced a visible store only when it occupied
-the first batch of its instruction group. For groups of sizes 2, 3 and 4, the
-first-batch probes produced distinct visible results; probes placing DW in
-later batches produced zero in the tested output. The first batch is relative
-to the group, not to the overall program. The tests establish this
-position-dependent behavior, but do not establish the underlying hardware
-mechanism or a general rule for every DW mode.
+Tests with `alu_buffer_size` 2, 3 and 4 show that batches form groups of N.
+A visible DW store occurs only when a group contains exactly one DW and that
+DW is in the group's first batch. The store is deferred until the end of the
+group, so it sees row-register writes made by later batches in that group.
+A DW in any later batch, or a second DW anywhere in the same group, produced
+no observable store in the tested arrangements. The same rule applies
+independently to later groups.
+
+The pattern was unchanged when `pseq_to_dw_exec_nb` was set to 1, 2, 3, 4, 6,
+8, 16 or 31. The hardware mechanism is unknown, and other group sizes and DW
+arrangements have not been exhaustively tested.
+
+The low count field in the fragment start word at `0x520` counts batches,
+not execution slots. Use a count equal to the program's batch count; for
+`alu_buffer_size` greater than one, keep that count a multiple of the buffer
+size. Incomplete final groups were not reliably executable: tested programs
+sometimes returned zero and sometimes hung.
 
 
 | Render target | Usage                    |
