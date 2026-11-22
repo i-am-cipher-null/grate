@@ -1,0 +1,67 @@
+alu_buffer_size = 2
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Two-DW, two-target template for the MRT question: one group of two batches,
+ * then a readback group.
+ *
+ *   batch 0  prime a row pair with payload A, DW slot 0
+ *   batch 1  prime r0/r1 with payload B, DW slot 1
+ *   batch 2  PSEQ fetch into r0/r1, DW slot 2 -> store the fetch to rt1
+ *   batch 3  DW slot 3 (NOP, so group 1 has one DW and it sits in its first
+ *            batch, the only position that produces an observable store)
+ *
+ * At alu_buffer_size 2 the first two batches are one group, so the two DWs are
+ * in the same scheduling group. Section 29 measured that arrangement on rt1 and
+ * rt4; this template puts the same two DWs on rt5, the first index that means
+ * "MRT n+1" rather than the spill surface, so the pair (target that wins) can
+ * be compared with (target that loses) across three kinds of target.
+ *
+ * Payload A is 0x11/0x22/0x33/0x44 and B is 0x0A/0x1B/0x2C/0x3D, so a stored
+ * word names the row it read: 0x44332211 is A, 0x3D2C1B0A is B. In the `pair-`
+ * variants batch 0 primes r2/r3 instead of r0/r1, so the two DWs store
+ * different row pairs and the payload also names which DW's rows the store saw.
+ *
+ * Readback: a later group fetches one target into r0/r1 and stores it to rt1,
+ * which is what the runner reads. A variant is run once per target it needs
+ * read, with only the fetch word different, so both targets are read
+ * independently and the stores under test cannot compete in one group.
+ * rt4 and rt5 are bound in every variant (GRATE_RT4, GRATE_RT5), so the draw is
+ * identical across the whole sweep and an untouched target's baseline is the
+ * same everywhere.
+ */
+
+.constants
+	[0] = 0.06640625;
+	[1] = 0.1328125;
+	[2] = 0.19921875;
+	[3] = 0.265625;
+	[4] = 0.0390625;
+	[5] = 0.10546875;
+	[6] = 0.171875;
+	[7] = 0.23828125;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@P0@
+		ALU1:	@P1@
+		ALU2:	@P2@
+		ALU3:	@P3@
+	DW:	@DW0@
+;
+EXEC
+	ALU:
+		ALU0:	@Q0@
+		ALU1:	@Q1@
+		ALU2:	@Q2@
+		ALU3:	@Q3@
+	DW:	@DW1@
+;
+EXEC
+	PSEQ:	@FETCH@
+	DW:	@STORE@
+;
+EXEC
+	DW:	NOP
+;

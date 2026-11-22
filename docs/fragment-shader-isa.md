@@ -456,8 +456,12 @@ target at whatever it already held.
 A group is one DW word per batch and only the group's first batch stores (notes 3). With
 two DW words in one group and **different** render targets, the first one's target is
 written with the group's final row and the second target is not written at all; with both
-words on the **same** target nothing is written (notes 29). So multi-target output cannot
-be produced by two DWs in one group.
+words on the **same** target nothing is written (notes 29). That is a property of the
+group, not of the targets: it holds for colour against spill (rt1/rt4), for colour or
+spill against the first MRT target, rt5 (rt1/rt5, rt4/rt5), and in both batch orders
+(notes 33). The dropped word leaves its target at its previous content - on rt1 the
+readback stays at the clear colour, so it does not even write zero. So multi-target
+output cannot be produced by two DWs in one group, whatever the two targets are.
 
 #### Source registers select:
 

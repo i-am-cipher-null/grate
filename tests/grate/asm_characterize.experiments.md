@@ -4337,22 +4337,20 @@ readback is `0x44332211` and every written byte is visible in place:
 | 3, 2, 23 | `0x0180000C` | `r1.lo`, `r1.hi` |
 | 3, 2, 0, 23 | `0x0180000D` | `r0.lo`, `r1.lo`, `r1.hi` |
 
-The sixteen rows have one reading. Bit 3 selects `r0.hi`, and bit 2 selects
-`r0.lo`. With neither bit 0 nor bit 23 set, the selected byte(s) are written
-to `r0`; with exactly one of those bits set, the selected byte(s) are redirected
-to the corresponding half of `r1`. With both set, the selected byte(s) are
-written to `r1` and `r0.lo` is also written. When neither bit 3 nor bit 2 is
-set, the `{0, 23}` cell therefore writes only `r0.lo`. The reason for this
-additional `r0.lo` write path is not established.
+The sixteen rows have one reading. Bit 3 writes `r0.hi` and bit 2 writes
+`r0.lo`, independently of each other; with **exactly one** of bits 0 / 23 set,
+the same bytes of `r1` are written instead of `r0`; with **both** set, the `r1`
+write happens *and* `r0.lo` is written as well. Every row above follows from
+that, including the four both-set rows, whose extra `r0.lo` write is measured
+but not explained.
 
 What the grid rules out:
 
 * that bits 0 and 23 are the same bit duplicated in the word's two halves. A
   duplicated bit would make `{0,23}` behave like `{0}`, and it writes where
   neither writes alone;
-* that either bit means "the second half". When combined with bit 2 or 3,
-  either bit redirects the selected byte from `r0` to `r1`. Neither bit alone
-  writes a byte; setting both also produces the extra `r0.lo` write;
+* that either bit means "the second half". Each moves the whole write from
+  `r0` to `r1`, and neither writes a half on its own;
 * that the low halves are untouched. `{2}` writes `r0.lo`, `{3,2}` writes both
   halves of `r0`, and ten of the sixteen rows write a low byte.
 
@@ -4393,16 +4391,13 @@ open.
   destination pair, high and low alike, so it is a byte map and not the
   high-half clear the earlier eight-cell table described.
 * **The selection of bytes is in bits 3, 2, 0 and 23, not in bits 4..15.**
-  Those are inert even as a group. Bit 3 selects `r0.hi`, and bit 2 selects
-  `r0.lo`; exactly one of bits 0 / 23 redirects the selected byte(s) to the
-  corresponding half of `r1`. With both set, the selected byte(s) go to `r1`
-  and `r0.lo` is also written. When neither bit 3 nor bit 2 is set, the
-  `{0, 23}` cell writes only `r0.lo`. The grid above is the whole sixteen-cell
-  map; it does not establish rules for untested fields, other words, or other
-  instruction slots.
-* **Bit 1 suppressed the write in the two combinations tested.** Neither
-  `r0/r1` nor `r2/r3` was written in those cases; other combinations with
-  bit 1 set remain untested.
+  Those are inert even as a group. Bit 3 writes `r0.hi`, bit 2 writes `r0.lo`,
+  and bits 0 / 23 choose between the `r0` pair and the `r1` pair - with both
+  set they write both pairs' bytes plus `r0.lo` again. The grid above is the
+  whole sixteen-cell map; nothing in it establishes a rule for bits 4..15,
+  other words, or other instruction slots.
+* **Bit 1 suppresses it.** With bit 1 set nothing is written to `r0/r1` or to
+  `r2/r3`, so in this form the destination-pair bit does not select a pair.
 * **The form does not write the surface it would read.** A render-target fetch
   of rt4 after the word still returns the tag, so nothing was committed there
   either.
@@ -4736,7 +4731,7 @@ reads `0x4C4C4C4C` (the draw's clear colour) and rt4 reads `0x00000000`.
 | `two-a1-b4` (rt1 in batch 0, rt4 in batch 1) | `0x3D2C1B0A` | `0x00000000` |
 | `two-a4-b1` (rt4 in batch 0, rt1 in batch 1) | `0x00000000` | `0x3D2C1B0A` |
 | `two-a1-b1` (both on rt1) | `0x00000000` | `0x00000000` |
-| `single-1` (one DW on rt1, batch 0) | `0x3D2C1B0A` | `0x4C4C4C4C` |
+| `single-1` (one DW on rt1, batch 0) | `0x3D2C1B0A` | `0x00000000` |
 | `single-4` (one DW on rt4, batch 0) | `0x4C4C4C4C` | `0x3D2C1B0A` |
 | `single-b-1`, `single-b-4` (one DW in batch 1) | nothing | nothing |
 
@@ -4996,6 +4991,115 @@ Three rules, each with a positive and a negative control in the same program:
 (18 variants, three repeats, plus the four control rows), pinned from
 `b53c05466697...`; re-pinning reproduces the manifest byte for byte.
 Regenerate with `python3 tests/grate/asm/make_alu_pack.py`.
+
+## 33. Two DW words in one group: the same rule on the colour, spill and MRT
+
+targets
+
+`--set dw-mrt` (23 variants) from `tests/grate/asm/dw_mrt.in`, manifest
+`asm_characterize.dw_mrt.json`. Section 29 put the two DWs of one group on rt1
+and rt4 - the colour surface the runner reads and the spill surface, both of
+them special - so "the first DW's target wins" could have been a property of
+that pair rather than of MRT output. This set repeats the arrangement on rt5,
+the first index that means MRT output (`5..12 = MRT n+1`, so rt5 is
+`gl_FragData[1]`), and on rt4/rt5, with rt4 and rt5 both bound
+(`GRATE_RT4=1 GRATE_RT5=1`) in every variant so the draw is identical across
+the sweep.
+
+`alu_buffer_size` 2, so batches 0 and 1 are one group: batch 0 primes payload A
+(`0x44332211`) and issues the first DW, batch 1 primes B (`0x3D2C1B0A`) and
+issues the second. A later group fetches one target into `r0/r1` and stores it
+to rt1, and each program is run once per target it needs read, with only the
+fetch word different.
+
+### Hypotheses
+
+| hypothesis | prediction |
+|:--|:--|
+| target-agnostic | first-DW-wins is a rule of the group: in every pair and both orders the first DW's target gets the group's final row and the second target keeps its baseline |
+| spill-specific | the rule depends on rt4 being the spill surface, so `spill-*` differs from `mrt-*` in which target survives |
+| last-wins | the second DW's target is the one written; already refuted for rt1/rt4 by section 29, this asks whether MRT changes it |
+
+### Baselines
+
+| variant | word | reading |
+|:--|--:|:--|
+| `none-read1` | `0x4C4C4C4C` | rt1 holds the draw's clear colour |
+| `none-read4`, `none-read5` | `0x00000000` | rt4 and rt5 are not cleared: an unwritten target reads zero |
+
+The baselines matter for what a dropped DW can be shown *not* to do: on rt4 and
+rt5, zero and "untouched" look the same, but rt1 starts at the clear colour, so
+a readback of `0x4C4C4C4C` there is positive evidence that rt1 was not written
+at all (neither with the group's row nor with zero).
+
+### Measured
+
+Each row is a program; the two `read` columns are the two runs of it.
+
+| variant | rt1 | rt5 | reading |
+|:--|--:|--:|:--|
+| `mrt-a1-b5` (DW0 rt1, DW1 rt5) | `0x3D2C1B0A` | `0x00000000` | first DW's target written, second dropped |
+| `mrt-a5-b1` (DW0 rt5, DW1 rt1) | `0x4C4C4C4C` | `0x3D2C1B0A` | the same with the order reversed |
+
+| variant | rt4 | rt5 | reading |
+|:--|--:|--:|:--|
+| `spill-a4-b5` (DW0 rt4, DW1 rt5) | `0x3D2C1B0A` | `0x00000000` | rt4 is not special: the first word wins on the spill pair too |
+| `spill-a5-b4` (DW0 rt5, DW1 rt4) | `0x00000000` | `0x3D2C1B0A` | the same with the order reversed |
+
+| variant | word | reading |
+|:--|--:|:--|
+| `same-1-read1` | `0x00000000` | both DWs on rt1, with rt5 bound: section 29's same-target result, so binding another surface changes nothing |
+| `same-5-read5` | `0x00000000` | both DWs on rt5: the same-target rule holds on the MRT target |
+| `single-1-read1` | `0x3D2C1B0A` | one DW on rt1: positive control |
+| `single-1-read5` | `0x00000000` | the same program read at rt5: untouched-target control |
+| `single-5-read5` | `0x3D2C1B0A` | one DW on rt5: positive control for the MRT target |
+| `single-5-read1` | `0x4C4C4C4C` | read at rt1: untouched-target control |
+| `single-4-read4` | `0x3D2C1B0A` | one DW on rt4: positive control |
+| `single-5-read4` | `0x00000000` | the same program read at rt4: untouched-target control |
+| `single-b-5-read5` | `0x00000000` | the group's only DW in its second batch, on rt5: the position rule is not about the colour target |
+| `pair-a1-b5-read1` | `0x44332211` | DW0 stores `r2/r3` (payload A) to rt1 and DW1 stores `r0/r1` (B) to rt5: the surviving store read the row pair its own word names |
+| `pair-a1-b5-read5` | `0x00000000` | the same program read at rt5 |
+| `pair-a5-b1-read5` | `0x44332211` | the pair with the targets swapped, same reading |
+
+### What the words say
+
+* **First-DW-wins is a rule of the scheduling group, not of either target.**
+  Every pair - colour/MRT, spill/MRT and same-target - behaves like section
+  29's rt1/rt4 case, and the reversed orders swap which target receives the
+  store. "Specific to the RT1/RT4 combination" is refuted: rt4 is not why the
+  first word wins, and rt5 is not treated differently because it is MRT.
+* **The dropped word leaves its target exactly as it was.** On rt5 the readback
+  is the zero baseline, which cannot distinguish "not written" from "written
+  with zero", but on rt1 the readback is the clear colour `0x4C4C4C4C`, not
+  `0x00000000`: the second word does not write zeros either.
+* **The surviving store reports the group's final contents of the row pair the
+  word names.** With both words on `r0/r1` that is payload B, even for the word
+  in batch 0, which is section 29. The `pair-` variants name `r2/r3` in the
+  first word and `r0/r1` in the second: the store that survives returns A,
+  because that pair's last write is in batch 0. So the row content is
+  evaluated at the group boundary, per row pair, not copied at issue time.
+* **One DW per group is the MRT rule for a compiler.** Two exports cannot share
+  a group whether they go to different targets or to the same one; the second
+  is dropped silently, so a backend that emits a store per output must give
+  each store its own group.
+
+### Not settled
+
+* whether the second word is dropped at decode, at arbitration, or written and
+  then overwritten by the first - the readback shows no write, not the stage;
+* three or more DWs in one group;
+* whether a *first* word that names a class-1 (depth) target also wins over a
+  second word naming a colour target;
+* whether the arbitration is per group or per packet - the two words here are
+  one packet each, so a two-word packet was not measured for DWs;
+* T114 is untested; everything here is AR20.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-dw-mrt` and `verify-dw-mrt` hold 73 rows each (23
+variants, three repeats, plus the four control rows), pinned from
+`1c923cadbfec...`; re-pinning reproduces the manifest byte for byte.
+Regenerate with `python3 tests/grate/asm/make_dw_mrt.py`.
 
 ## What the runner cost
 

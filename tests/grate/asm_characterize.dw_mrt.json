@@ -1,0 +1,626 @@
+{
+	"name": "dw-mrt",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/dw_mrt.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "mrt-a1-b5-read1",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt1, r0, r1",
+					"@DW1@": "store rt5, r0, r1",
+					"@FETCH@": "load rt1, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "DW0 -> rt1 in batch 0, DW1 -> rt5 in batch 1; read rt1: the only word that differs between the two runs",
+			"expected": "0x3D2C1B0A"
+		},
+		{
+			"name": "mrt-a1-b5-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt1, r0, r1",
+					"@DW1@": "store rt5, r0, r1",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "the same program, read rt5: the only word that differs between the two runs",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "mrt-a5-b1-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt5, r0, r1",
+					"@DW1@": "store rt1, r0, r1",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "the same two DWs with the batches swapped: DW0 -> rt5; read rt5: the only word that differs between the two runs",
+			"expected": "0x3D2C1B0A"
+		},
+		{
+			"name": "mrt-a5-b1-read1",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt5, r0, r1",
+					"@DW1@": "store rt1, r0, r1",
+					"@FETCH@": "load rt1, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "the swapped program, read rt1: the only word that differs between the two runs",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "spill-a4-b5-read4",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt4, r0, r1",
+					"@DW1@": "store rt5, r0, r1",
+					"@FETCH@": "load rt4, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "DW0 -> rt4 in batch 0, DW1 -> rt5 in batch 1; read rt4: the only word that differs between the two runs",
+			"expected": "0x3D2C1B0A"
+		},
+		{
+			"name": "spill-a4-b5-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt4, r0, r1",
+					"@DW1@": "store rt5, r0, r1",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "the same program, read rt5: the only word that differs between the two runs",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "spill-a5-b4-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt5, r0, r1",
+					"@DW1@": "store rt4, r0, r1",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "the same two DWs with the batches swapped: DW0 -> rt5; read rt5: the only word that differs between the two runs",
+			"expected": "0x3D2C1B0A"
+		},
+		{
+			"name": "spill-a5-b4-read4",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt5, r0, r1",
+					"@DW1@": "store rt4, r0, r1",
+					"@FETCH@": "load rt4, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "the swapped program, read rt4: the only word that differs between the two runs",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "same-1-read1",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt1, r0, r1",
+					"@DW1@": "store rt1, r0, r1",
+					"@FETCH@": "load rt1, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "both DWs on rt1 with rt5 bound: section 29's same-target result, as a control that binding another target changes nothing",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "same-5-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt5, r0, r1",
+					"@DW1@": "store rt5, r0, r1",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "both DWs on rt5 - the same-target control on the MRT target",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "single-1-read1",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt1, r0, r1",
+					"@DW1@": "NOP",
+					"@FETCH@": "load rt1, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "one DW, on rt1, in the group's first batch; read rt1: the only word that differs between the two runs (the positive control for the target that was written)",
+			"expected": "0x3D2C1B0A"
+		},
+		{
+			"name": "single-1-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt1, r0, r1",
+					"@DW1@": "NOP",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "one DW, on rt1, in the group's first batch; read rt5: the only word that differs between the two runs (the untouched-target control: this must stay at baseline)",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "single-5-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt5, r0, r1",
+					"@DW1@": "NOP",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "one DW, on rt5, in the group's first batch; read rt5: the only word that differs between the two runs (the positive control for the target that was written)",
+			"expected": "0x3D2C1B0A"
+		},
+		{
+			"name": "single-5-read1",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt5, r0, r1",
+					"@DW1@": "NOP",
+					"@FETCH@": "load rt1, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "one DW, on rt5, in the group's first batch; read rt1: the only word that differs between the two runs (the untouched-target control: this must stay at baseline)",
+			"expected": "0x4C4C4C4C"
+		},
+		{
+			"name": "single-4-read4",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt4, r0, r1",
+					"@DW1@": "NOP",
+					"@FETCH@": "load rt4, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "one DW, on rt4, in the group's first batch; read rt4: the only word that differs between the two runs (the positive control for the target that was written)",
+			"expected": "0x3D2C1B0A"
+		},
+		{
+			"name": "single-5-read4",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt5, r0, r1",
+					"@DW1@": "NOP",
+					"@FETCH@": "load rt4, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "one DW, on rt5, in the group's first batch; read rt4: the only word that differs between the two runs (the untouched-target control: this must stay at baseline)",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "single-b-5-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "NOP",
+					"@DW1@": "store rt5, r0, r1",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "the group's only DW sits in its second batch, on rt5: section 29 says that position stores nothing; does it hold for the MRT target",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "none-read1",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "NOP",
+					"@DW1@": "NOP",
+					"@FETCH@": "load rt1, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "no DW in the group: rt1's pre-draw content (the clear)",
+			"expected": "0x4C4C4C4C"
+		},
+		{
+			"name": "none-read4",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "NOP",
+					"@DW1@": "NOP",
+					"@FETCH@": "load rt4, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "no DW in the group: rt4's pre-draw content",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "none-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "NOP",
+					"@DW1@": "NOP",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "no DW in the group: rt5's pre-draw content",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "pair-a1-b5-read1",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r2.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r2.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r3.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt1, r2, r3",
+					"@DW1@": "store rt5, r0, r1",
+					"@FETCH@": "load rt1, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "DW0 stores r2/r3 (payload A, batch 0) to rt1, DW1 stores r0/r1 (payload B, batch 1) to rt5: A means the surviving store used the first DW's own rows, B the group's last row write; read rt1",
+			"expected": "0x44332211"
+		},
+		{
+			"name": "pair-a1-b5-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r2.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r2.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r3.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt1, r2, r3",
+					"@DW1@": "store rt5, r0, r1",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "the same program, read rt5",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "pair-a5-b1-read5",
+			"fs": "tests/grate/asm/dw_mrt.in",
+			"replace": {
+				"fs": {
+					"@P0@": "MAD  r2.l*,  u0,  #1,  #0",
+					"@P1@": "MAD  r2.*h,  u1,  #1,  #0",
+					"@P2@": "MAD  r3.l*,  u2,  #1,  #0",
+					"@P3@": "MAD  r3.*h,  u3,  #1,  #0",
+					"@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+					"@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+					"@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+					"@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+					"@DW0@": "store rt5, r2, r3",
+					"@DW1@": "store rt1, r0, r1",
+					"@FETCH@": "load rt5, r0, r1",
+					"@STORE@": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1",
+				"GRATE_RT5": "1"
+			},
+			"expected_note": "the pair with the targets swapped: DW0 stores r2/r3 (A) to rt5, DW1 stores r0/r1 (B) to rt1; read rt5",
+			"expected": "0x44332211"
+		}
+	]
+}
