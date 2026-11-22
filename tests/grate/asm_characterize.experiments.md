@@ -5161,9 +5161,12 @@ address would look like.
 ### What this settles, and what it does not
 
 There is **no batch-specific effect** of bit 29 or bit 30 on AR20 for these
-shapes: masking the producer, the consumer and an unrelated batch all give the
-same readback, so section 30's inertness is not an artefact of the global mask
-averaging over batches. Whether the bits do something on a T114 is untested -
+shapes: masking the producer (batch 0) and the consumer or storer (batch 1)
+both give the same readback, so section 30's inertness is not an artefact of
+the global mask averaging over batches. This set did *not* mask batch 2 - the
+readback batch, which takes no part in any shape - so an earlier version of
+this paragraph overstated the coverage; section 35 adds the batch-2 variants
+and finds the same nothing there. Whether the bits do something on a T114 is untested -
 the hook has a T114 branch that transforms the word with `to_114_alu_sched`,
 which writes `0xe0` into that byte itself, but no T114 hardware was involved
 here and that path was not exercised.
@@ -5183,6 +5186,226 @@ directory also holds `schedule-words.tsv`, extracted with
 `python3 tests/grate/asm/dump_sched_words.py <run dir>`, which is the per-batch
 0x801/0x806 evidence above. Regenerate the manifest with
 `python3 tests/grate/asm/make_alu_sched_at.py`.
+
+## 35. Bits 29 and 30 on the readback batch
+
+`--set b2` (20 variants) from the same `tests/grate/asm/alu_sched_at.in` and
+generator, manifest `asm_characterize.alu_sched_b2.json`. Section 34 masked
+batches 0 and 1 only; its wording said "the producer, the consumer and a batch
+that takes no part", which read as if the batch-2 (readback) word had been
+masked too. It had not. This set masks batch 2 for the same five shapes, with
+the same unmasked baselines in the same program shape, so the two sets can be
+compared directly.
+
+| mask | schedule words in one run's log (`chain-*`) |
+|:--|:--|
+| none | `0x00000001`, `0x00000005`, `0x00000009` |
+| bit 29 on batch 2 | `0x00000001`, `0x00000005`, `0x20000009` |
+| bit 30 on batch 2 | `0x00000001`, `0x00000005`, `0x40000009` |
+| both on batch 2 | `0x00000001`, `0x00000005`, `0x60000009` |
+
+The mask lands on the third word and nothing else, and every 0x806 word in all
+20 variants is `0x00000000`.
+
+| shape | none | b2:29 | b2:30 | b2:both |
+|:--|--:|--:|--:|--:|
+| `chain` | `0x00100010` | same | same | same |
+| `flush` | `0x00000010` | same | same | same |
+| `row` | `0x00000010` | same | same | same |
+| `dw` | `0x00000010` | same | same | same |
+| `plain` | `0x00000000` | same | same | same |
+
+With batch 0 and 1 (section 34) and now batch 2, all three batches of the
+template have been masked and none of them reacts to either bit. That is still
+only this chip, these five shapes and these three batch positions: it is not a
+claim that the bits are inert in general.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-sched-b2` and `verify-alu-sched-b2` hold 64
+rows each (20 variants, three repeats, plus the four control rows), pinned from
+`79730d3843d8...`, with `schedule-words.tsv` from the dumps; re-pinning
+reproduces the manifest byte for byte. Regenerate with
+`python3 tests/grate/asm/make_alu_sched_at.py --set b2`.
+
+## 36. Two-packet batches, and where the latch rotation actually lives
+
+`--set pack2` (32 variants) from `tests/grate/asm/alu_pack2.in`, manifest
+`asm_characterize.alu_pack2.json`, plus `--set pack3` (13 variants) from the
+three-packet template `asm/alu_pack.in`, manifest
+`asm_characterize.alu_pack3.json` as a direct comparison. Section 32 inferred
+the multi-packet rule from three packets and never tested two.
+
+Two `ALU:` blocks in one batch are accepted by the grammar, and the assembler
+sets the count from the block count, so `pack2` needs no patched schedule word:
+batch 0's word is `0x00000002` (count 2, address 0), batch 1 `0x00000009` and
+batch 2 `0x0000000D`, straight from the run's dump. `two-pkt-exec` (packet 1
+alone writes into a row the next group stores) returns `0x40`, so the second
+packet really executes.
+
+### Two-packet results
+
+| variant | word | reading |
+|:--|--:|:--|
+| `two-pkt-p0-write` | `0x00000010` | packet 0's write reaches the store |
+| `xf-alu0`, `-alu1`, `-alu2`, `-alu3` | `0x00000010` | packet 1 reads each latch packet 0 wrote |
+| `xf-read-s1`, `xf-read-s3` | `0x00000010` | the reading slot does not matter |
+| `xf-bare`, `xf-fp20`, `xf-hi` | `0x00000000` | the format rules of section 28 hold |
+| `back` | `0x00000040` | **packet 0 reads a latch packet 1 writes** |
+| `back-s1`, `-s2`, `-s3` | `0x00000040` | the same for all four latches |
+| `back-cross-a`, `-cross-b` | `0x00000040` | the latch number, not the read slot, decides |
+| `back-unrelated` | `0x00000000` | a different latch is not coupled |
+| `back-value` | `0x0000007F` | the value is the writer's |
+| `back-bare`, `back-fp20` | `0x00000000` | the format rules apply in this direction too |
+| `intra-p1` | `0x00000000` | a packet's own slots do not forward in a two-packet batch |
+| `two-writes-read-p0` | `0x00000040` | both write, packet 0's read sees packet 1's |
+| `two-writes-read-p1` | `0x00000010` | both write, packet 1's read sees packet 0's |
+| `chain-2pkt` | `0x00000010` | one hop across the boundary, the next hop (inside packet 1) dies |
+| `chain-1pkt` | `0x00100010` | the one-packet control: both hops work |
+| `carry-p1` | `0x00000010` | the last packet's slot-0 result carries to the next group |
+| `carry-p0` | `0x00000000` | the first packet's does not |
+| `carry-both` | `0x00000040` | when both write slot 0, the last packet's value carries |
+| `carry-p1-s1` | `0x00000000` | the carry is read by slot 0 only |
+| `row-direct` | `0x00000010` | row control: a row is visible in the next group |
+| `none` | `0x00000000` | baseline |
+
+### The rule that fits, and what it does to section 32
+
+A two-packet batch couples its packets **in both directions**, and a packet
+never sees its own results. The three-packet comparison separates the two
+explanations section 32's shape left open, because its backward test read
+`alu1` from slot 0 while slot 1 wrote (a cross-index read) and so could not
+distinguish "no backward forward" from "packet 0 looks somewhere else":
+
+| three-packet variant | word | reading |
+|:--|--:|:--|
+| `fwd-same`, `fwd-1` | `0x00000010` | packet 1 sees packet 0, packet 2 sees packet 1 |
+| `fwd-two-apart` | `0x00000000` | packet 2 does not see packet 0 |
+| `back-same`, `back-cross-a`, `back-cross-b`, `back-two-apart` | `0x00000000` | packet 0 does not see packet 1 |
+| `back-from-last` | `0x00000040` | **packet 0 sees packet 2, the batch's last** |
+| `both-read-p0` | `0x00000000` | packet 0 sees packet 2, which wrote nothing |
+| `both-read-p0-last` | `0x00000040` | packet 0 sees packet 2 even though it wrote slot 0 itself |
+| `both-read-p1` | `0x00000010` | packet 1 sees packet 0, not its own write |
+| `intra-p1` | `0x00000000` | own packet invisible |
+
+Both packet counts fit one rule: **a latch read in slot S of packet k is served
+by packet (k-1) mod M**, where M is the number of ALU packets the group issues,
+excluding the reading slot's own result. For M=1 that is the packet itself,
+which is exactly the intra-packet bypass of section 28; for M=2 the packets see
+each other in both directions; for M=3 they form the cycle 0<-2<-1<-0.
+
+**This revises section 32**, which said the multi-packet rule was "the previous
+packet, forward only" and that packet 0 sees nothing. The forward half is right
+for packets 1..M-1; the wrap and therefore both two-packet backward rows were
+missed because the three-packet backward test changed two variables at once.
+Section 32's other findings are unaffected: the count field counts packets, a
+batch reaches twelve slots through three blocks, a packet's own slots do not
+forward in a multi-packet batch, the read format rules are the same, and the
+group-boundary carry comes from the last packet.
+
+### How far the rotation reaches
+
+All of the above puts every packet in one batch. `--set latch-rotate` (16
+variants) puts one packet in each of several batches on `asm/alu_latch.in` and
+asks the same questions at three `alu_buffer_size` values:
+
+| variant | size | word | reading |
+|:--|--:|--:|:--|
+| `rot1-fwd` | 1 | `0x00000010` | batch 0 -> batch 1 still forwards |
+| `rot1-back`, `rot1-back-2`, `rot1-two-apart` | 1 | `0x00000000` | at size 1 nothing goes backwards or two batches |
+| `rot2-fwd`, `rot2-back` | 2 | `0x10`, `0x40` | the two batches of a group see each other |
+| `rot3-fwd-adj` | 3 | `0x00000010` | batch 1 -> batch 2 |
+| `rot3-two-apart` | 3 | `0x00000000` | batch 0 -> batch 2 |
+| `rot3-back` | 3 | `0x00000040` | batch 2 -> batch 0 (the wrap) |
+| `rot3-back-adj` | 3 | `0x00000000` | batch 2 -> batch 1 is not the previous packet |
+| `rot2-carry`, `rot2-carry-first` | 2 | `0x00000000` | no cross-group read at size 2 |
+| `rot3-carry`, `rot3-carry-mid`, `rot3-carry-first` | 3 | `0x00000000` | no cross-group read at size 3 from any batch |
+| `rot1-fwd` | 1 | `0x00000010` | the size-1 cross-batch read that section 31 measured |
+
+So the rotation is **group-scoped, with M = number of packets in the group**,
+not batch-scoped: with one packet per batch, size 2 rotates over the two batches
+and size 3 over the three, including the 0<-2 wrap.
+
+That also narrows section 31's group carry. Its `flush-carry` shape put one
+packet in each batch at size 1, and the same shape at sizes 2 and 3 returns
+`0x00` from every batch of the previous group. On this evidence the "previous
+group's last packet's slot-0 result" path is measured **only when a group is a
+single batch**, which is the configuration sections 31 and 32 used; a
+multi-batch group carries nothing across its flush in the shapes tested. Why
+the single-batch group keeps a value that a multi-batch group loses is not
+established.
+
+### Not settled
+
+* the mechanism: a rotating register file, a two-phase issue order, or something
+  else - only the input/output relation is measured;
+* whether the rotation's modulus is the group's packet count or the number of
+  packets the buffer has issued so far, which the size-1/2/3 rows cannot
+  separate from a flush that resets it;
+* why the cross-group read exists at size 1 and not at 2 or 3;
+* four-packet groups (size 2 with two-packet batches, size 4) and the wrap there;
+* `alu_buffer_size` 2 with two-packet batches, which the grammar allows and this
+  set does not cover.
+
+### Recorded runs
+
+`pin-alu-pack2` / `verify-alu-pack2` hold 100 rows each (32 variants, three
+repeats, controls) pinned from `4c8a39c59e9d...`; `pin-alu-pack3` /
+`verify-alu-pack3` 43 rows each (13 variants) from `f36cfda363fa...`;
+`pin-latch-rotate` / `verify-latch-rotate` 52 rows each (16 variants) from
+`9aaff734f726...`. Each directory holds `schedule-words.tsv` from the run's own
+dumps. Regenerate with `make_alu_pack2.py`, `make_alu_pack3.py` and
+`make_latch_rotate.py`.
+
+## 37. send and recv inside a two-packet batch
+
+`--set send-pack` (12 variants) from the same `asm/alu_pack2.in`, manifest
+`asm_characterize.alu_send_pack.json`. Notes 13 and 16 established the markers
+inside one packet: `(this)` is recv, `(other)` is send, recv adds the previous
+slot's raw result, and the transfer pairs are (0,1) (1,0) (1,2) (2,0) (2,3)
+(3,0) (3,2). Nothing was measured in a multi-packet batch, and section 32 left
+it open.
+
+| variant | word | reading |
+|:--|--:|:--|
+| `recv-p1-s0`, `recv-p0-s0` | `0x00000010` | recv alone works in either packet, accumulator 0 |
+| `send-only-p0` | `0x00000040` | the send marker does not change the sender's own write |
+| `send-p1-recv-p1` | `0x00000050` | send and recv still transfer **inside** packet 1 (0.0625 + 0.25) |
+| `plain-p1-recv-p1` | `0x00000010` | its unmarked twin: the difference is the marker |
+| `send-p0-recv-p1` | `0x00000010` | no accumulation across the packet boundary |
+| `plain-p0-recv-p1` | `0x00000010` | unmarked twin, same word |
+| `send-p1-recv-p0` | `0x00000010` | no accumulation in the other direction either |
+| `send-two-p0` | `0x00000010` | two senders in packet 0 still deliver nothing to packet 1 |
+| `send-then-plain-read` | `0x00000010` | a send on the producer does not disturb the latch forward |
+| `carry-recv-p1` | `0x00000010` | the carry holds the plain slot-0 result |
+| `carry-plain-p1` | `0x00000010` | unmarked twin, same word |
+
+What this says:
+
+* the markers work in **any packet** of the batch, including one that is not the
+  first, and a lone recv or send behaves as it does in a one-packet batch;
+* they are **confined to their packet**: no send/recv transfer was observed
+  across a packet boundary in either direction, with one sender or two, even
+  though the latch path does cross (section 36);
+* they do not disturb the latch path: a plain read of a latch written by a
+  sender still returns the value;
+* the group carry holds the slot's own result. A recv in slot 0 has no
+  earlier slot in its packet to accumulate from, so no accumulated value can
+  reach the carry - that part is structural, not a separate measurement, and it
+  is the reason this set cannot test "does the carry take a partial result".
+
+What is not settled: why send/recv do not cross a packet boundary while the
+latch path does; whether a recv in slot 1 of packet 1 can receive a send from a
+slot 0 of packet 0 through the rotation (the markers' transfer matrix would have
+something to say only if the two paths met); and whether the marker bits have a
+meaning in the multi-packet dispatch that this readback cannot see.
+
+### Recorded runs
+
+`pin-alu-send-pack` and `verify-alu-send-pack` hold 40 rows each (12 variants,
+three repeats, controls) pinned from `7398f3f89521...`, with
+`schedule-words.tsv`. Regenerate with `python3
+tests/grate/asm/make_alu_send_pack.py`.
 
 ## What the runner cost
 

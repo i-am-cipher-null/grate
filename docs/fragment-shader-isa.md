@@ -244,6 +244,7 @@ as operands (notes 28). A read is not a read of a retired register:
 | one packet later, same group | the previous packet's slot-K result, from any slot |
 | two packets later | 0 |
 | across a group boundary (`alu_buffer_size` 1) | only `alu0`, and only when read from slot 0 |
+| across a group boundary (`alu_buffer_size` 2 or 3) | 0, from any batch of the previous group |
 
 The value is format-specific: a `.l*` (fx10 low-half) write fills the `aluK.l` view and
 leaves a bare `aluK` (fp20) read at zero, while an `.lh` write fills the bare read. A
@@ -273,12 +274,29 @@ and masking a single batch instead of all of them gives the same result, so the
 inertness is not an average over batches (notes 34).
 
 A batch with more than one packet follows different forwarding rules from the single
-packet case above: a latch read is then served by the **previous packet's** slot-N
-result, for all four latches and any reading slot, one packet deep, so the within-packet
-rule applies only to a one-packet batch (notes 32). Dependent operations still chain -
-one per packet, three deep inside a batch. The group carry also comes from the batch's
-**last** packet, so a batch that writes through slot 0 only in its first packet and ends
-with NOPs carries nothing across the group boundary.
+packet case above, and the rule is circular: **a latch read in slot S of packet k is
+served by packet (k-1) mod M**, where M is the number of packets the group issues,
+for all four latches and any reading slot, and excluding the reading slot's own
+result (notes 32, 36). For M=1 that is the packet itself, which is the within-packet
+rule above; for M=2 the two packets see each other in both directions; for M=3 they
+form the cycle 0<-2<-1<-0. Dependent operations therefore chain one hop per packet,
+three deep inside a three-packet batch, and a two-packet batch forwards backwards as
+well as forwards (notes 36). Section 32's "previous packet, forward only" was the
+forward half of this rule; its backward probe changed latch index and slot at once,
+so it could not see the wrap.
+
+The rotation is group-scoped rather than batch-scoped: with one packet per batch, an
+`alu_buffer_size` of 2 or 3 rotates over the group's batches, wrap included. The group
+carry also comes from the group's **last** packet, so a batch that writes through slot
+0 only in its first packet and ends with NOPs carries nothing across the group
+boundary. That carry is measured only for a group of one batch (`alu_buffer_size` 1);
+at 2 and 3 no cross-group forward was seen from any batch of the previous group
+(notes 36).
+
+The `recv`/`send` accumulator is a separate, **packet-local** path (notes 37): the
+markers work in any packet of a batch, but no transfer was measured across a packet
+boundary in either direction, with one sender or two, and a send does not disturb the
+latch path.
 
 #### Addition disable
 

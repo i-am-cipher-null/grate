@@ -26,10 +26,13 @@ Shapes:
     plain  no write, one store in batch 0: 0x00000000
 
 Settings per shape: no mask, then bits 29, 30 and both on batch 0, and the same
-three on batch 1. Every variant runs with GRATE_DUMP_RAW, so the run's own log
-carries the 0x801 and 0x806 words the assembler uploaded; dump_sched_words.py
-turns those into schedule-words.tsv. That is what separates "the bit is inert"
-from "the bit never reached that batch".
+three on batch 1. `--set b2` builds the second manifest, which masks batch 2 -
+the readback-only batch that the first set left alone - for the same five
+shapes, so the two runs share their unmasked baselines. Every variant runs with
+GRATE_DUMP_RAW, so the run's own log carries the 0x801 and 0x806 words the
+assembler uploaded; dump_sched_words.py turns those into schedule-words.tsv.
+That is what separates "the bit is inert" from "the bit never reached that
+batch".
 
 Predictions:
 
@@ -50,6 +53,7 @@ import pathlib
 
 TEMPLATE = "tests/grate/asm/alu_sched_at.in"
 OUT = "tests/grate/asm_characterize.alu_sched_at.json"
+OUT_B2 = "tests/grate/asm_characterize.alu_sched_b2.json"
 VS = "tests/grate/asm/vs_mov.txt"
 LNK = "tests/grate/asm/linker_vs_tests.txt"
 
@@ -104,6 +108,22 @@ SETTINGS = [
     ("b1-both", 0x60000000, 1),
 ]
 
+# The `--set b2` run masks the readback-only batch, which the first set left
+# unmasked. Same shapes and same unmasked baselines, so the two runs are
+# directly comparable; the batch-2 variants are a separate manifest because a
+# pinned manifest must keep reproducing from its own generator.
+SETTINGS_B2 = [
+    ("none", 0, None),
+    ("b2-29", 0x20000000, 2),
+    ("b2-30", 0x40000000, 2),
+    ("b2-both", 0x60000000, 2),
+]
+
+SETS = {
+    "b01": (SETTINGS, "alu-sched-at", OUT),
+    "b2": (SETTINGS_B2, "alu-sched-at-b2", OUT_B2),
+}
+
 CONTROLS = [
     {
         "name": "immediate-operand",
@@ -122,15 +142,15 @@ CONTROLS = [
 ]
 
 
-def build_manifest():
+def build_manifest(settings=SETTINGS, name="alu-sched-at"):
     entries = []
     names = set()
     for shape, slots, dws, note in SHAPES:
-        for tag, mask, batch in SETTINGS:
-            name = f"{shape}-{tag}"
-            if name in names:
-                raise SystemExit(f"duplicate variant {name}")
-            names.add(name)
+        for tag, mask, batch in settings:
+            variant_name = f"{shape}-{tag}"
+            if variant_name in names:
+                raise SystemExit(f"duplicate variant {variant_name}")
+            names.add(variant_name)
             replace = {}
             for index, prefix in enumerate("ABC"):
                 for slot in range(4):
@@ -146,14 +166,14 @@ def build_manifest():
             else:
                 where = f"mask 0x{mask:08X} on batch {batch} only"
             entries.append({
-                "name": name,
+                "name": variant_name,
                 "fs": TEMPLATE,
                 "replace": {"fs": replace},
                 "environment": environment,
                 "expected_note": f"{note}; {where}",
             })
     return {
-        "name": "alu-sched-at",
+        "name": name,
         "repeat": 3,
         "timeout": 10,
         "program": {"vs": VS, "fs": TEMPLATE, "lnk": LNK},
@@ -206,10 +226,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--results", help="run directory to pin from")
     parser.add_argument("--out", help="manifest to write (default: the set's)")
+    parser.add_argument("--set", choices=sorted(SETS), default="b01",
+                        help="which batches to mask (default: b01)")
     args = parser.parse_args()
 
-    manifest = build_manifest()
-    out = args.out or OUT
+    settings, name, default_out = SETS[args.set]
+    manifest = build_manifest(settings, name)
+    out = args.out or default_out
     if args.results:
         unpinned = pin(manifest, args.results)
         for name, words, statuses in unpinned:

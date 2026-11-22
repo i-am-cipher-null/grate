@@ -1,0 +1,646 @@
+{
+  "name": "alu-sched-at-b2",
+  "created_utc": "2026-11-22T22:05:58+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.alu_sched_b2.json",
+  "manifest_sha256": "79730d3843d8bd004962222169d92e346bbff14932d0cd7a5728baa933377095",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "00cff3825e6d069b6af689622bc2079adb4b5782",
+  "git_status": "M tests/grate/asm/make_alu_sched_at.py\n?? tests/grate/asm_characterize.alu_sched_b2.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 10,
+  "manifest_data": {
+    "name": "alu-sched-at-b2",
+    "repeat": 3,
+    "timeout": 10,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/alu_sched_at.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "chain-none",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@A2@": "MAD  r1.l*,  alu1.l,  #1,  #0",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r0, r1",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "the intra-packet chain of section 30, all in batch 0; no schedule mask",
+        "expected": "0x00100010"
+      },
+      {
+        "name": "chain-b2-29",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@A2@": "MAD  r1.l*,  alu1.l,  #1,  #0",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r0, r1",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x20000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "the intra-packet chain of section 30, all in batch 0; mask 0x20000000 on batch 2 only",
+        "expected": "0x00100010"
+      },
+      {
+        "name": "chain-b2-30",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@A2@": "MAD  r1.l*,  alu1.l,  #1,  #0",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r0, r1",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x40000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "the intra-packet chain of section 30, all in batch 0; mask 0x40000000 on batch 2 only",
+        "expected": "0x00100010"
+      },
+      {
+        "name": "chain-b2-both",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@A2@": "MAD  r1.l*,  alu1.l,  #1,  #0",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r0, r1",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x60000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "the intra-packet chain of section 30, all in batch 0; mask 0x60000000 on batch 2 only",
+        "expected": "0x00100010"
+      },
+      {
+        "name": "flush-none",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "NOP",
+            "@B0@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "batch 0 writes alu0, batch 1 reads it across the group flush, batch 2 stores the row; no schedule mask",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "flush-b2-29",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "NOP",
+            "@B0@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x20000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "batch 0 writes alu0, batch 1 reads it across the group flush, batch 2 stores the row; mask 0x20000000 on batch 2 only",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "flush-b2-30",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "NOP",
+            "@B0@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x40000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "batch 0 writes alu0, batch 1 reads it across the group flush, batch 2 stores the row; mask 0x40000000 on batch 2 only",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "flush-b2-both",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "NOP",
+            "@B0@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x60000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "batch 0 writes alu0, batch 1 reads it across the group flush, batch 2 stores the row; mask 0x60000000 on batch 2 only",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "row-none",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "store rt1, r2, r3",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "a row write in batch 0 stored by batch 1; no schedule mask",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "row-b2-29",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "store rt1, r2, r3",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x20000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "a row write in batch 0 stored by batch 1; mask 0x20000000 on batch 2 only",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "row-b2-30",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "store rt1, r2, r3",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x40000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "a row write in batch 0 stored by batch 1; mask 0x40000000 on batch 2 only",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "row-b2-both",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "store rt1, r2, r3",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x60000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "a row write in batch 0 stored by batch 1; mask 0x60000000 on batch 2 only",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "dw-none",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r2, r3",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "an ALU write and its store in the same batch; no schedule mask",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "dw-b2-29",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r2, r3",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x20000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "an ALU write and its store in the same batch; mask 0x20000000 on batch 2 only",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "dw-b2-30",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r2, r3",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x40000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "an ALU write and its store in the same batch; mask 0x40000000 on batch 2 only",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "dw-b2-both",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r2, r3",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x60000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "an ALU write and its store in the same batch; mask 0x60000000 on batch 2 only",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "plain-none",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r0, r1",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "no write, one store: the baseline for the store itself; no schedule mask",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "plain-b2-29",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r0, r1",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x20000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "no write, one store: the baseline for the store itself; mask 0x20000000 on batch 2 only",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "plain-b2-30",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r0, r1",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x40000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "no write, one store: the baseline for the store itself; mask 0x40000000 on batch 2 only",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "plain-b2-both",
+        "fs": "tests/grate/asm/alu_sched_at.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@D0@": "store rt1, r0, r1",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@D1@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1",
+          "GRATE_ALU_SCHED_OR": "0x60000000",
+          "GRATE_ALU_SCHED_OR_AT": "2"
+        },
+        "expected_note": "no write, one store: the baseline for the store itself; mask 0x60000000 on batch 2 only",
+        "expected": "0x00000000"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 64,
+    "passed": 64,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
