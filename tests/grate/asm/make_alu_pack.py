@@ -31,8 +31,10 @@ changed. Three readings are on the table:
     p0-bare        the packet-to-packet read written bare (the fp20 form)
     p0-hi          packet 0 wrote a high half only
     p0-row         packet 0 writes a row, packet 1 reads it
-    flush-3blk     the write is in the three-packet batch, the next batch reads
-    flush-1blk     the write is in a one-packet batch, the next batch reads
+    chain-3pkt     one dependent hop per packet: three-deep inside one batch
+    flush-3blk     the write is in the three-packet batch's first packet
+    flush-3blk-last the write is in that batch's last packet
+    flush-1blk     the write is in a one-packet batch (section 31's shape)
     direct         the store sees nothing: 0 baseline
 
 `--results DIR` pins each variant to the modal word of its repeats.
