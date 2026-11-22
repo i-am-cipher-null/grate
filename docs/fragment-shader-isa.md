@@ -436,15 +436,15 @@ PSEQ stands for Program Sequencer. It fetches raw data from a selected render ta
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
-| 24..31 | bit 24 selects the zero-write form (below); 25..31 no effect |
-|     23 | fetch enable, required  |
+| 24..31 | bit 24 selects the destination-byte form (below); 25..31 no effect |
+|     23 | fetch enable, required; in the bit-24 form it moves the write into `r1` |
 | 20..22 | no effect               |
 | 16..19 | render target select    |
-|  4..15 | no effect in the fetch form; part of the bit-24 form |
-|      3 | fetch enable, required  |
-|      2 | part of the bit-24 form |
+|  4..15 | no effect in the fetch form; nothing even as a group in the bit-24 form |
+|      3 | fetch enable, required; in the bit-24 form it writes `r0.hi` |
+|      2 | in the bit-24 form it writes `r0.lo` |
 |      1 | dest registers select   |
-|      0 | part of the bit-24 form |
+|      0 | in the bit-24 form it moves the write into `r1` |
 
 Both bit 3 and bit 23 are required for a fetch - clearing either suppresses it - and
 bits 20..22 are inert (notes 25). The earlier reading of these two bits as "one
@@ -461,21 +461,42 @@ unknown enable" is settled: they are a pair.
 
 Bit 24 does **not** select a spill fetch - no word with bit 24 set delivers any part of
 a tagged render target, and a fetch issued afterwards still reads the surface unchanged
-(notes 25). The form writes `0.0` into one or both *high* halves of the destination
-pair; the low halves are never written:
+(notes 25). Instead it writes into the destination pair. Bits 3, 2, 0 and 23 choose the
+bytes, and all sixteen combinations were run with `r0` primed `(0x11, 0x22)` and `r1`
+`(0x33, 0x44)`, so the idle readback is `0x44332211` and each write shows in place:
 
-| bits set beside 24 | register written |
-|:--|:--|
-| 3 | `r0.hi` |
-| 3, 2 | `r0.hi` and `r1.hi` |
-| 2 (without 3) | `r1.hi` |
-| 3, 0 | `r1.hi` |
-| 3, 23 | `r1.hi` |
-| 3, 1 | nothing |
-| 0, or 23, or none, without 3 | nothing |
+| bits beside 24 | word | bytes written | readback |
+|:--|--:|:--|--:|
+| none | `0x01000000` | none | `0x44332211` |
+| 0 | `0x01000001` | none | `0x44332211` |
+| 23 | `0x01800000` | none | `0x44332211` |
+| 3 | `0x01000008` | `r0.hi` | `0x44330011` |
+| 2 | `0x01000004` | `r0.lo` | `0x44332200` |
+| 3, 2 | `0x0100000C` | `r0.lo`, `r0.hi` | `0x44330000` |
+| 0, 23 | `0x01800001` | `r0.lo` | `0x44332200` |
+| 2, 0 | `0x01000005` | `r1.lo` | `0x44002211` |
+| 2, 23 | `0x01800004` | `r1.lo` | `0x44002211` |
+| 3, 0 | `0x01000009` | `r1.hi` | `0x00332211` |
+| 3, 23 | `0x01800008` | `r1.hi` | `0x00332211` |
+| 2, 0, 23 | `0x01800005` | `r0.lo`, `r1.lo` | `0x44002200` |
+| 3, 0, 23 | `0x01800009` | `r0.lo`, `r1.hi` | `0x00332200` |
+| 3, 2, 0 | `0x0100000D` | `r1.lo`, `r1.hi` | `0x00002211` |
+| 3, 2, 23 | `0x0180000C` | `r1.lo`, `r1.hi` | `0x00002211` |
+| 3, 2, 0, 23 | `0x0180000D` | `r0.lo`, `r1.lo`, `r1.hi` | `0x00002200` |
 
-Bits 4..15 do not select the half even as a group. Whether the zero is a literal or a
-read from an address outside the bound surface is not established, and no consumer of
+Bit 3 writes `r0.hi` and bit 2 writes `r0.lo`, independently of each other. With
+exactly one of bits 0 / 23 set, the same bytes of `r1` are written instead of `r0`;
+with both set, the `r1` write happens *and* `r0.lo` is written as well. Two things
+follow from the grid and are worth stating because the earlier table got them wrong:
+the low halves *are* written, so this is not a high-half-only clear, and bits 0 and 23
+are independent - setting both does something neither does alone. The extra `r0.lo`
+write in the both-set rows is measured, not explained.
+
+What lands in those bytes is a value the form produces rather than a constant `0.0`: it
+reads back as zero in almost every draw, but a few repeats of the cells that write a low
+byte read `0x50` instead (notes 25). It is not a surface read - the surface held a tag in
+every word a fetch can reach - and the source stays unidentified. Bit 1 suppresses the
+write in the two cells tried, bits 4..15 add nothing even as a group, and no consumer of
 the form is identified.
 
 These seems to be for Tegra:
