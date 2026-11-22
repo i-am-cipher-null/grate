@@ -23,9 +23,7 @@ The different units seems to be synchronized by separate timing streams.
 
 ## Program sequencer
 
-Allows to execute large fragment shaders in multiple passes. This feature not used in practice, BLOB driver gives up on large shaders.
-
-Controls recirculation of pixel over the fragment shader pipeline.
+Controls recirculation of a pixel over the fragment-shader pipeline, allowing a program to execute in multiple passes. The exact conditions under which the BLOB driver uses this mechanism are not established.
 
 Patent: https://www.google.com/patents/US8411096<br>
 Patent: https://www.google.com/patents/US8659601
@@ -475,21 +473,24 @@ bound (`GRATE_RT5=1`); working AR20 writes to RT6..12 were not demonstrated.
 
 ## PSEQ instruction word encoding
 
-PSEQ stands for Program Sequencer. It fetches raw data from a selected render target, converts that data into FX10 [FP20(?)] format and loads it into registers.
+PSEQ stands for Program Sequencer. It fetches data from a selected render target and loads it into a register pair. In the tested RGBA8 path, a fetch/store round-trip preserved the bytes exactly; conversion behavior for other formats is not established.
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
-| 24..31 | ???                     |
-|     23 | enable (?)              |
-| 20..22 | ???                     |
+| 24..31 | unknown                 |
+|     23 | set in tested fetches   |
+| 20..22 | unknown                 |
 | 16..19 | render target select    |
-|  4..15 | ???                     |
-|      3 | enable (?)              |
-|      2 | ???                     |
-|      1 | dest registers select   |
-|      0 | ???                     |
+|  4..15 | unknown                 |
+|      3 | set in tested fetches   |
+|      2 | unknown                 |
+|      1 | destination pair select |
+|      0 | unknown                 |
 
-Note: bit 3 and bit 23 seems to usually be set together. It's not known which one is the actual enable-bit.
+The observed fetch encoding is `0x00800008 | (N << 16) | (pair << 1)`,
+where N is the render-target index and pair is 0 for r0/r1 or 1 for r2/r3.
+For example, `0x00820008` selects RT2 and r0/r1. The individual roles of
+bits 3 and 23, and the meaning of other PSEQ encodings, remain unknown.
 
 #### Destination registers select:
 
