@@ -263,10 +263,20 @@ of 24..27 the destination field names (notes 28). The assembler refuses `aluN` a
 destination, so this was measured with the destination field patched into an assembled
 word.
 
-The per-batch ALU schedule word (uploaded at `0x801`) carries the instruction count in
-bits 0..1 and the ALU packet address in bits 2..7; the assembler emits everything above
-as zero, and setting bits 29 or 30 there changes neither forwarding nor the DW result on
-AR20 (notes 30).
+The per-batch ALU schedule word (uploaded at `0x801`) carries a **packet count** in bits
+0..1 and the packet address in bits 2..7; a packet is four instruction slots and a batch
+may hold up to three of them, so twelve instructions per batch (notes 32). The assembler
+sets the count from the number of `ALU:` blocks the batch has and refuses a fourth emit
+(`Over 3 ALU instructions per exec batch`). Nothing above bit 7 is emitted, and setting
+bits 29 or 30 changes neither forwarding nor the DW result on AR20 (notes 30).
+
+A batch with more than one packet follows different forwarding rules from the single
+packet case above: a latch read is then served by the **previous packet's** slot-N
+result, for all four latches and any reading slot, one packet deep, so the within-packet
+rule applies only to a one-packet batch (notes 32). Dependent operations still chain -
+one per packet, three deep inside a batch. The group carry also comes from the batch's
+**last** packet, so a batch that writes through slot 0 only in its first packet and ends
+with NOPs carries nothing across the group boundary.
 
 #### Addition disable
 

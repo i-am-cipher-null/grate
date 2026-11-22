@@ -1,0 +1,67 @@
+/*
+ * ALU packing template: three batches, the first with three ALU blocks and the
+ * other two with one each.
+ *
+ * A batch's ALU schedule word carries a packet count in bits 0..1 and a packet
+ * address in bits 2..7, and the assembler sets the count from the number of
+ * `ALU:` blocks the batch has (notes 32). So batch 0 here executes three
+ * packets - twelve instruction slots, `0x00000003` in its schedule word - while
+ * batches 1 and 2 execute one packet each, four slots, `0x00000001`. That puts
+ * a count-3 batch and a count-1 batch in the same program, which is what makes
+ * the forwarding rules comparable with one variable changed.
+ *
+ * `alu_buffer_size = 1`: every batch is its own group, so batch 1's packet 0
+ * also sits one group after batch 0's last packet.
+ *
+ * Slot index: 0..3 = batch 0 packet 0, 4..7 = packet 1, 8..11 = packet 2;
+ * 12..15 = batch 1's only packet; 16..19 = batch 2's.
+ *
+ * Values: u0 = 0.0625 (0x10), u1 = 0.25 (0x40), u2 = 0.5 (0x7F), u3 = 0.125
+ * (0x20). `store rt1, r0, r1` puts r0.lo in the low byte, then r0.hi, r1.lo,
+ * r1.hi.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.25;
+	[2] = 0.5;
+	[3] = 0.125;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	ALU:
+		ALU0:	@A4@
+		ALU1:	@A5@
+		ALU2:	@A6@
+		ALU3:	@A7@
+	ALU:
+		ALU0:	@A8@
+		ALU1:	@A9@
+		ALU2:	@A10@
+		ALU3:	@A11@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@C0@
+		ALU1:	@C1@
+		ALU2:	@C2@
+		ALU3:	@C3@
+	DW:	@D2@
+;

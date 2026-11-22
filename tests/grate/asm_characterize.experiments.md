@@ -4772,6 +4772,9 @@ Regenerate with `python3 tests/grate/asm/make_dw_two_target.py`.
 
 ## 30. Bits 29 and 30 of the ALU schedule word
 
+(Corrected by section 32: bits 0..1 count packets, not instructions. The
+measurements here are unaffected.)
+
 `--set sched-bits` (16 variants) from `tests/grate/asm/alu_sched.in`, manifest
 `asm_characterize.alu_sched.json`. Four shapes, each run with no schedule bit
 set and with bit 29, bit 30 and both:
@@ -4782,8 +4785,9 @@ set and with bit 29, bit 30 and both:
     plain   nothing written, one store
 
 The 0x801 stream has one word per batch and the assembler fills only bits 0..1
-(instruction count) and 2..7 (ALU packet address); everything above is emitted
-as zero, so no program can set bits 29 or 30 through the grammar. The reach is
+(packet count) and 2..7 (packet address); everything above is emitted as zero,
+so no program can set bits 29 or 30 through the grammar. Section 32 shows the
+count is a number of packets, not of instructions. The reach is
 `GRATE_ALU_SCHED_OR`, a mask OR-ed into every schedule word as the stream is
 emitted. Unset, the stream is unchanged, and the 0x806 complement stream comes
 from a different array and is never touched.
@@ -4895,6 +4899,103 @@ only empty form measured).
 43 rows each (13 variants, three repeats, plus the four control rows), pinned
 from `64bb9bf0b736...`; re-pinning reproduces the manifest byte for byte.
 Regenerate with `python3 tests/grate/asm/make_alu_latch_flush.py`.
+
+## 32. Packing three ALU packets into a batch changes the latch rules
+
+`--set pack` (18 variants) from `tests/grate/asm/alu_pack.in`, manifest
+`asm_characterize.alu_pack.json`. The template's first batch has three `ALU:`
+blocks and the other two have one each, so a count-3 batch and a count-1 batch
+sit in the same program and the forwarding rules can be compared with one
+variable changed. Every batch is its own group (`alu_buffer_size` 1).
+
+### The count in the 0x801 word is a number of packets
+
+The six-batch template of section 28 uploads 24 ALU instructions (six packets)
+and its schedule words are `0x00000001, 0x5, 0x9, 0xD, 0x11, 0x15`: count 1,
+address 0..5. A three-block batch emits `0x00000003` and uploads 24 words of
+its own (`0x804` with `0x18`). So the count field counts **packets** and the
+address field is the packet the batch starts at, four instructions per packet.
+Section 30 called bits 0..1 an instruction count; that was wrong, the
+measurements there are unaffected.
+
+A batch therefore has up to 12 instruction slots, and the grammar reaches them
+with repeated `ALU:` blocks. A fourth block is refused: `fs: line 33: Over 3
+ALU instructions per exec batch` - the 2-bit count field is the limit and the
+assembler enforces it.
+
+### Measured, with bytes `r0.lo`, `r0.hi`, `r1.lo`, `r1.hi`
+
+| variant | word | reading |
+|:--|--:|:--|
+| `p0-chain` | `0x00000000` | section 28's chain inside packet 0 of a three-packet batch: dead |
+| `p1-chain` | `0x00100010` | the same chain in a one-packet batch of the same program: works |
+| `p0-x-alu0` | `0x00100000` | packet 0 slot 0 writes, packet 1 slot 0 reads `alu0` |
+| `p0-x-alu1` | `0x00100000` | the same for `alu1` |
+| `p0-x-alu2` | `0x00100000` | the same for `alu2` |
+| `p0-x-alu3` | `0x00100000` | the same for `alu3` |
+| `p0-x-s1` | `0x00100000` | the read issued by slot 1 instead of slot 0: same value |
+| `p0-two-pkt` | `0x00000000` | packet 0 writes, packet 2 reads: two boundaries |
+| `p0-back` | `0x00000000` | packet 0 reads a latch packet 1 writes |
+| `p0-intra-p1` | `0x00000000` | two slots of packet 1, one reading the other's latch |
+| `p0-bare` | `0x00000000` | the bare (fp20) form of the packet-to-packet read |
+| `p0-hi` | `0x00000000` | packet 0 wrote a high half only |
+| `p0-row` | `0x00000000` | a row register written in packet 0, read in packet 1 |
+| `chain-3pkt` | `0x00100010` | a three-deep dependent chain, one hop per packet |
+| `flush-3blk` | `0x00000000` | the write is in the three-packet batch's first packet, next batch reads |
+| `flush-3blk-last` | `0x00100000` | the same with the write in its last packet |
+| `flush-1blk` | `0x00100000` | the same with a one-packet writing batch: section 31's shape |
+| `direct` | `0x00000000` | the store sees nothing: baseline |
+
+### The model the words support
+
+Three rules, each with a positive and a negative control in the same program:
+
+1. **A one-packet batch keeps section 28's intra-packet rule** - a read is
+   served by that packet's slot-N result, either slot order, own slot excluded.
+   `p1-chain` (`0x00100010`) is the positive control, `p0-chain` (`0`) the
+   negative one, and they differ only in which batch holds the chain.
+2. **A batch with more than one packet forwards only from the previous
+   packet**: all four latches (`p0-x-alu0..3`), any reading slot (`p0-x-s1`),
+   one packet deep (`p0-two-pkt`, `p0-intra-p1`) and forward only
+   (`p0-back`). It is still format-specific (`p0-bare`, `p0-hi`) and still not
+   the row path (`p0-row`). `chain-3pkt` shows the useful half of it: three
+   dependent operations, one per packet, chain without leaving the batch.
+3. **The group flush carries the batch's last packet's slot-0 result.** With a
+   one-packet batch that is the only packet, which is section 31's finding;
+   `flush-3blk-last` carries (`0x10`) and `flush-3blk` does not (`0`), because
+   in the second the batch's last packet wrote nothing through slot 0.
+
+### What this means for a compiler
+
+* twelve instructions per batch are available today, through repeated `ALU:`
+  blocks - the four-slot packet is not the batch's limit;
+* packing changes the liveness rules: with more than one packet there is no
+  intra-packet bypass, so a dependent pair must sit in adjacent packets. That
+  is a cheap constraint compared with the alternative, because the batch then
+  carries a three-deep chain internally instead of leaving it to a row round
+  trip or a group boundary;
+* the group-boundary carry a scheduler can lean on comes from the batch's
+  **last** packet, so a batch that ends with NOPs gains nothing from a write in
+  its first packet. `flush-3blk` is the case to avoid.
+
+### Not settled
+
+* why a one-packet batch has the intra-packet rule at all - the pipelining
+  guess is that a single-packet batch is issued as one group while longer
+  batches are issued packet by packet, and it is not measured;
+* count 2 is unreachable with an OR mask (the assembler emits 1), so whether
+  two-packet batches follow rule 2 is inferred from three packets, not measured;
+* whether a batch with four blocks that the assembler allows through a patched
+  count behaves like a wrapped zero or executes part of the fourth packet;
+* whether MFU/TEX per-batch counts use the same packet units;
+* how `send`/`recv` interact with a multi-packet batch.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-pack` and `verify-alu-pack` hold 58 rows each
+(18 variants, three repeats, plus the four control rows), pinned from
+`b53c05466697...`; re-pinning reproduces the manifest byte for byte.
+Regenerate with `python3 tests/grate/asm/make_alu_pack.py`.
 
 ## What the runner cost
 

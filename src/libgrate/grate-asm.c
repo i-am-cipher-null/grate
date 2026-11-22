@@ -407,21 +407,32 @@ struct grate_shader *grate_shader_parse_fragment_asm(const char *asm_txt)
 			HOST1X_OPCODE_NONINCR(0x801, asm_fs_instructions_nb);
 	{
 		/*
-		 * Test hook: OR a mask into every ALU schedule word. On AR20 the
-		 * assembler fills only bits 0..7 of the word (count and address),
-		 * so bits 8..31 - including 29 and 30 - cannot be reached from a
-		 * program. Unset, the stream is byte-identical to before.
+		 * Test hook: OR a mask into the ALU schedule words. On AR20 the
+		 * assembler fills only bits 0..7 of the word (packet count and
+		 * packet address), so bits 8..31 - including 29 and 30 - cannot be
+		 * reached from a program. Unset, the stream is byte-identical to
+		 * before.
+		 *
+		 * GRATE_ALU_SCHED_OR_AT selects one batch's word by index; unset
+		 * means every word. That is what makes a count larger than the one
+		 * the assembler picks testable without letting the last batch of a
+		 * program read packets past the uploaded array.
 		 */
 		const char *sched_or = getenv("GRATE_ALU_SCHED_OR");
 		uint32_t sched_mask = sched_or ?
 				(uint32_t)strtoul(sched_or, NULL, 0) : 0;
+		const char *sched_at = getenv("GRATE_ALU_SCHED_OR_AT");
+		int sched_index = sched_at ? (int)strtol(sched_at, NULL, 0) : -1;
 
 		for (i = 0; i < asm_fs_instructions_nb; i++) {
+			uint32_t mask = sched_index < 0 || sched_index == i ?
+					sched_mask : 0;
+
 			if (grate_chip_info()->soc_id == TEGRA114_SOC)
 				shader->words[words++] =
-					to_114_alu_sched(asm_alu_sched[i].data).data | sched_mask;
+					to_114_alu_sched(asm_alu_sched[i].data).data | mask;
 			else
-				shader->words[words++] = asm_alu_sched[i].data | sched_mask;
+				shader->words[words++] = asm_alu_sched[i].data | mask;
 		}
 	}
 

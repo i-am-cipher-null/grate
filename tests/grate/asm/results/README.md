@@ -1063,3 +1063,19 @@ invalidate another; generate such a manifest with
 * tree: 4380cde3e820f7ba2d7eb5807b3cf5b9ba24d752 with a clean tree
 * created: 2026-11-22T21:09:50+00:00; 43 rows, repeat 3, timeout 20.0 s
 * summary: 43 passed, 0 failed of 43 - passed
+
+## pin-alu-pack
+
+* manifest: `pack.unpinned.json` (sha256 390f1fd747e0, unpinned manifest)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 61132d93d333983b8d675345f33b2b6faea263a5 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T21:26:40+00:00; 58 rows, repeat 3, timeout 20.0 s
+* summary: 58 passed, 0 failed of 58 - passed
+
+## verify-alu-pack
+
+* manifest: `asm_characterize.alu_pack.json` (sha256 b53c05466697, pinned manifest)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 61132d93d333983b8d675345f33b2b6faea263a5 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T21:27:13+00:00; 58 rows, repeat 3, timeout 20.0 s
+* summary: 58 passed, 0 failed of 58 - passed
