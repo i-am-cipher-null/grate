@@ -23,12 +23,14 @@ the schedule streams (section 4.3), "chunk" one complete program in the containe
 **Related documents.** [[Command Stream]], [[Vertex Shader ISA]],
 [[Shader Linking]], [[Writing a Compiler]], [[Compiler Internals]].
 
-**Relation to the repository copy.** The repository carries `docs/fragment-shader-isa.md`,
-the same document without the evidence tables and the retraction history; that copy is
-the one edited alongside the code, and the two must agree on every claim both make.
-Where this file is the only place a claim appears, the repository copy is behind by that
-claim, not disagreeing with it. Measured statements here cite the experiment notes
-(`tests/grate/asm_characterize.experiments.md`) by section.
+**Relationship to the concise specification.** `docs/fragment-shader-isa.md` is the
+concise, canonical ISA description maintained alongside the implementation. This file
+is the extended AR20 research reference: it retains detailed experiment tables, probe
+interpretations, and the history of claims later narrowed or corrected. It is not a
+frozen historical snapshot and is not intended to be a line-for-line copy of the concise
+document. Keep every overlapping current claim consistent between the two; additional
+evidence and unresolved details may live here. Measured statements cite the experiment
+notes (`tests/grate/asm_characterize.experiments.md`) by section.
 
 ## Contents
 
@@ -216,9 +218,13 @@ a `lowp vec2` into one interpolation slot and a `mediump vec2` into two
 ### 4.1 Program sequencer
 
 
-Allows to execute large fragment shaders in multiple passes. This feature not used in practice, BLOB driver gives up on large shaders.
-
-Controls recirculation of pixel over the fragment shader pipeline.
+PSEQ controls recirculation of a fragment through the fragment-shader pipeline. The
+blob emits sufficiently large shaders as multiple complete program chunks and the
+driver uploads those chunks in separate passes; the measured example and its chunk
+table are documented in section 10.2. Row registers, globals and pixel state survive
+between the chunks in the observed program. The mechanism by which the same fragment
+is parked and re-entered between uploads is not established. The earlier reading that
+the feature was unused and that the blob simply gave up on large shaders was incorrect.
 
 Patent: https://www.google.com/patents/US8411096<br>
 Patent: https://www.google.com/patents/US8659601
@@ -267,11 +273,11 @@ The assembler emits them as zero on AR20; for T114 it writes `0xe0` into bits
 29, bit 30 or both on AR20 through a test hook changes neither forwarding, the
 ALU result, nor whether a DW stores, in four shapes that would each notice a
 different failure. Masking **one batch at a time** - the producer, the consumer
-and a batch that takes no part, across five shapes - gives the same nothing, so
-the inertness is not an average over batches (notes 34); the hops are read back
-from the run's own dump, which shows the mask on exactly one 0x801 word and the
-0x806 complement stream untouched. What those bits mean on a T114 is untested
-here.
+and a batch that takes no part - gives the same result across all three batch
+positions and five shapes (notes 34, 35), so the inertness is not an average over
+batches. The hops are read back from the run's own dump, which shows the mask on
+exactly one 0x801 word and the 0x806 complement stream untouched. What those bits
+mean on a T114 is untested here.
 
 ### 4.3.1 Per-unit constraints
 
@@ -660,10 +666,13 @@ same packet", not as a per-slot sum into ALU0.
 The scope was measured directly in a two-packet batch (notes 37): the markers
 work in either packet (`send-p1-recv-p1` = `0x50`, `send-only-p0` = `0x40`,
 `recv` alone = `0x10`), but a send in packet 0 slot 3 into a recv in packet 1
-slot 0 gives `0x10`, the same as its unmarked twin, and so do the reversed
-direction and two senders in one packet. So the "packet" in this section's name
-is a single ALU packet of four slots, and the accumulator does not ride the
-latch rotation across packets.
+slot 0 gives `0x10`, the same as its unmarked twin, as does the tested reverse
+direction; two senders in one packet also do not produce a transfer. These
+negative results cover the tested pairings, not every slot combination. In
+particular, a receive in slot 1 of packet 1 from a sender in slot 0 of packet 0
+through the latch rotation remains untested. So the "packet" in this section's
+name is a single ALU packet of four slots, and the accumulator does not ride the
+latch rotation in the pairings tested so far.
 
 ### 5.13 Addition disable
 
@@ -680,6 +689,27 @@ When bit "addition disable" is set, the Multiply-Add operation turns into two mu
 
 The behaviour below is measured on AR20 hardware. Where it is incomplete the text says so. All
 measurements use the Grate assembler harness (section 10).
+
+**Current forwarding model (synthesis of notes 28, 31, 32 and 36).** A read of
+`aluN` in slot S of packet k is served as follows:
+
+| arrangement | source of the read |
+|:--|:--|
+| one-packet group | that packet's slot-N result, from any other slot; a read in slot N itself is 0 |
+| group with M=2 or M=3 packets | packet `(k-1) mod M`'s slot-N result, for any reading slot; a packet never sees its own results |
+
+The measured rotation is group-scoped, and M=1, 2 and 3 are established. A
+group containing two batches with two ALU packets in each batch (M=4, for
+example `alu_buffer_size=2` with two packets per batch) has not been tested.
+The separate group-flush carry is narrower: only the previous group's last
+packet's slot-0 result was observed by slot 0 of the next group, and only when
+the group is one batch (`alu_buffer_size=1`). No cross-group forwarding was
+observed at buffer sizes 2 or 3 in the tested shapes. This carry is a forward,
+not saved latch storage.
+
+Format remains part of the lookup: `.l*` writes feed fx10 `.l` reads,
+`.lh` writes feed bare fp20 reads, and high-half-only writes were not observed
+in either view. Row registers, not latches, are the storage path across groups.
 
 **Readback channel order (re-measured, and it corrects this document).** Fill all
 four slots with one value, then overwrite exactly one slot and see which byte
@@ -753,8 +783,9 @@ single reader `MAD r2.l*, aluN.l` in the next packet give:
 
 The `alu1` row is misleading: the reader packet's own `ALU1` computed `1.0`
 into `r3.lo`, and repeating the probe with different writer values still returns
-`1.0`. A latch read can therefore be satisfied by the reading packet's own slot
-of the same number. Same-packet shapes show where that works:
+`1.0`. This probe did not isolate the source of that value; later controlled
+tests show that a read in the reading slot's own latch returns zero. Same-packet
+shapes show where cross-slot forwarding works:
 
 | shape (writers `r0.lo = 0.25`, `r0.hi = 0.5`) | read | value |
 |:--|:--|--:|
@@ -764,9 +795,10 @@ of the same number. Same-packet shapes show where that works:
 | reader in slot 3 | `alu1` | 0 (same reason) |
 | reader in slot 2 / slot 3 | `r0.l` / `r0.h` | 0 - row-register writes are not visible in the same packet |
 
-**Which latch survives what.** Reading one latch from one specific slot, with a
-single writer in the previous packet, separates "inside this packet" from
-"carried over":
+**Initial size-1 flush probe: which latch survives what.** Reading one latch
+from one specific slot, with a single writer in the previous packet, separates
+"inside this packet" from "carried over" only for the original
+`alu_buffer_size=1` arrangement:
 
 | read from | latch | previous packet wrote | result |
 |:--|:--|:--|--:|
@@ -777,13 +809,14 @@ single writer in the previous packet, separates "inside this packet" from
 | slot 2 | `alu0` | slot 1, slot 2 or slot 3 only | 0 |
 | any slot | `alu2`, `alu3` | slot 2 / slot 3 low write | 0 |
 
-So exactly one value is carried over a packet boundary: **`alu0`, read from
-slot 0, holds the previous packet's slot-0 result.** Everything else is a
-same-packet path: reading `aluK` from any slot is satisfied by the current
-packet's slot-K **low-half** write, whichever slot performs the read and
-whether slot K comes before or after the reader - the read is served from the
-packet's write bus rather than from a retired register. A high-half-only
-(`.*h`) or fp20 (`.lh`) destination leaves its latch at zero.
+In these size-1 probes, exactly one value crosses the **group flush**:
+**`alu0`, read from slot 0, holds the previous group's last packet's slot-0
+result.** This is not the general within-group packet-forwarding rule measured
+later. The same-packet path is cross-slot: a read of `aluK` is satisfied by
+the packet's slot-K **low-half** write when a different slot performs the read,
+whether slot K comes before or after the reader. A read in slot K itself is
+zero. A high-half-only (`.*h`) or fp20 (`.lh`) destination leaves the fx10
+latch view at zero.
 
 All four latches are live **inside their own packet**, including 2 and 3: with
 `ALU2: MAD r1.l*, u0` and the reader in slot 1 or slot 0, `alu2` returns the
@@ -828,14 +861,18 @@ same chain that works in a one-packet batch dies in a three-packet one:
 | two packets apart | - | `0x00000000` |
 | one hop per packet, three deep | - | `0x00100010` |
 
-**The rule is circular, not forward-only (notes 36).** A latch read in slot S of
-packet k is served by packet **(k-1) mod M**, where M is the number of packets
-the group issues, excluding the reading slot's own result. That is why the
-three-packet "two packets apart" row reads 0 - packet 2's source is packet 1,
-not packet 0 - and why the backward row of the table below is nonzero. The
-earlier "previous packet, forward only / packet 0 sees nothing" wording came
-from a backward probe that moved the latch index and the read slot at the same
-time; a two-packet batch makes the wrap visible in both directions:
+**The rule is circular, not forward-only (notes 36).** For tested groups of
+M=2 or M=3 packets, a latch read in slot S of packet k is served by packet
+**(k-1) mod M**, for every latch index and any reading slot. M=1 is the
+separately measured one-packet case, with same-packet cross-slot forwarding
+and own-slot exclusion. The formula is established for M=1, 2 and 3; an
+`alu_buffer_size=2` group with two ALU packets in each of its two batches
+(M=4) remains untested. That is why the three-packet "two packets apart" row
+reads 0 - packet 2's source is packet 1, not packet 0 - and why the backward
+row of the table below is nonzero. The earlier "previous packet, forward only /
+packet 0 sees nothing" wording came from a backward probe that moved latch
+index and the read slot at the same time; a two-packet batch makes the wrap
+visible in both directions:
 
 | two-packet batch | word | reading |
 |:--|--:|:--|
@@ -858,10 +895,11 @@ fixed by the packet index and ignores what the reader itself wrote.
 
 **The rotation is group-scoped, not batch-scoped.** With one packet per batch,
 `alu_buffer_size` 2 rotates over the group's two batches (forward `0x10`,
-backward `0x40`) and size 3 over its three, including the 0<-2 wrap (`0x40`),
-while size 1 is forward-only (no backward, no two-apart). So M is the group's
-packet count, and the section above's "one packet later, same group" rows are
-the M=2/M=3 case of the same rule.
+backward `0x40`) and size 3 over its three, including the 0<-2 wrap (`0x40`).
+At size 1 the group contains only the single-packet case. Thus M is the total
+ALU packet count in the group, not the count in an individual batch, for the
+arrangements measured. The section above's "one packet later, same group" rows
+are the M=2/M=3 case of the same rule; M=4 remains untested.
 
 The group carry follows the group's **last** packet: a write in the last packet
 of a three-packet batch carries (`0x10`), the same write in its first packet
@@ -886,9 +924,13 @@ the code does not select the latch - a write issued from slot 1 is readable as
 `alu1` whichever of 24..27 the field names (`dist-slot1-dest24-alu1` and
 `dist-slot1-dest25-alu1` both `0x10`, `dist-slot1-dest24-alu0` `0`).
 
-The rule a scheduler needs: chain `slot k writes a low half -> another slot of
-the same packet reads aluK`, or carry a value across a packet boundary only as
-`alu0` into slot 0; land the result in a row register or another low half.
+The scheduler rule supported by the complete tests is: for a one-packet group,
+use same-packet cross-slot forwarding with own-slot exclusion; for groups of
+M=2 or M=3 packets, read packet `(k-1) mod M`'s matching `aluN` latch view.
+Do not treat this rotation as storage across a group boundary. The separate
+flush carry is only the previous group's last packet's slot-0 result into slot
+0 of the next group, and was observed only for one-batch groups. Land values
+that must survive a group in row registers. The M=4 arrangement remains open.
 
 The blob itself relies on the chain heavily: for eight summed `vec4` uniforms it
 emits one packet of `mad r3.hl, c0, #1, c4` ... `mad r3.hl, c8, #1, d0`, reading
@@ -2454,9 +2496,9 @@ communicate through the render target. In a 4-chunk program, chunks 1, 2 and 3
 contain `DW: nop` in every batch and only the **last** chunk stores, so the
 earlier chunks deliberately write nothing - their results have to survive in the
 pixel's own state while the *same* fragment is fed through the pipeline again.
-That is what the ISA reference calls program-sequencer recirculation and
-dismisses as "not used in practice"; it is in fact the mechanism behind a
-uniform-heavy shader. The consequences for a backend that mirrors the split:
+That is the program-sequencer recirculation described in section 4.1; it is
+the mechanism behind the measured uniform-heavy shader. The consequences for
+a backend that mirrors the split:
 
 * row registers, globals and the pixel packet carry **across chunks** - a value a
   later chunk reads must be in a place the next pass still sees;
