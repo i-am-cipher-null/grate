@@ -111,7 +111,7 @@ Unlike a regular ALU instruction, the ALU3 instruction words, constituting immed
 
 Hardware tests confirm that CSEL tests the sign of `rA * rB`, returns the
 unmultiplied `rB` when that product is negative, and returns `rC * rD`
-otherwise. A zero product takes the latter branch.
+otherwise. A zero product takes the latter branch. 
 Negative values in the `rC * rD` candidate and negative zero have not been
 tested.
 
@@ -140,12 +140,13 @@ or 1.0 result. No additional condition-enable bit is required.
 
 #### Condition registers:
 
-Condition-register destinations are selected from registers 64..71. Hardware
-tests show that a write stores a Boolean 0.0 or 1.0 derived from the ALU
-result; applying a condition modifier first replaces that result with the
+Condition-register destinations are selected from registers 64..71. Each
+condition register has low and high FX10 sub-registers holding Boolean values
+0.0 or 1.0. Hardware tests show that a write stores a Boolean derived from the
+ALU result; applying a condition modifier first replaces that result with the
 condition's Boolean value. The low and high sub-registers were independently
 addressable in the tested cases, and writes to different condition registers
-did not interfere.
+did not interfere. The high sub-register is selected with the write-high bit.
 
 A read in the same ALU packet as the write returned the old value (zero in the
 test), while a read in the next packet observed the updated value. Thus the
