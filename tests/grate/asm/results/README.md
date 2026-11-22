@@ -1039,3 +1039,27 @@ invalidate another; generate such a manifest with
 * created: 2026-11-22T20:56:27+00:00; 52 rows, repeat 3, timeout 10.0 s
 * summary: 52 passed, 0 failed of 52 - passed
 * reproduces `pin-alu-sched` word for word (checked with `make_*.py`'s --results comparison)
+
+## pin-alu-latch-flush
+
+* manifest: `flush.unpinned.json` (sha256 5328bb106e8a, unpinned manifest)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 43e346aba492d12dd5f433881d1559433e18bafb with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T21:06:52+00:00; 43 rows, repeat 3, timeout 20.0 s
+* summary: 43 passed, 0 failed of 43 - passed
+
+## verify-alu-latch-flush
+
+* manifest: `asm_characterize.alu_latch_flush.json` (sha256 64bb9bf0b736, pinned manifest)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 43e346aba492d12dd5f433881d1559433e18bafb with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T21:07:14+00:00; 43 rows, repeat 3, timeout 20.0 s
+* summary: 43 passed, 0 failed of 43 - passed
+
+## clean-alu-latch-flush
+
+* manifest: `asm_characterize.alu_latch_flush.json` (sha256 64bb9bf0b736, pinned manifest)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 4380cde3e820f7ba2d7eb5807b3cf5b9ba24d752 with a clean tree
+* created: 2026-11-22T21:09:50+00:00; 43 rows, repeat 3, timeout 20.0 s
+* summary: 43 passed, 0 failed of 43 - passed
