@@ -4289,7 +4289,7 @@ Twenty variants, three repeats, all agreeing:
 | `spill-24` | `0x01000008` | `0x20100010` | `r0.hi` zeroed, no fetch |
 | `spill-24-23` | `0x01800008` | `0x00102010` | `r1.hi` zeroed instead |
 | `spill-b0` | `0x01000009` | `0x00102010` | bit 0 selects the same half as bit 23 |
-| `spill-b2` | `0x0100000C` | `0x20100000` | both high halves zeroed |
+| `spill-b2` | `0x0100000C` | `0x20100000` | both halves of `r0` zeroed |
 | `spill-b1` | `0x0100000A` | `0x20102010` | nothing written |
 | `spill-b4` | `0x01800018` | `0x00102010` | bits 4..15 add nothing |
 | `spill-b12` | `0x01809008` | `0x00102010` | " |
@@ -4297,23 +4297,104 @@ Twenty variants, three repeats, all agreeing:
 | `spill-low` | `0x0180FFF8` | `0x00102010` | every bit 4..15 at once |
 | `spill-nolow` | `0x01000000` | `0x20102010` | without bit 3 nothing is written |
 | `spill-b23-nolow` | `0x01800000` | `0x20102010` | " |
-| `spill-b2-nolow` | `0x01000004` | `0x20102000` | bit 2 alone writes `r1.hi` |
+| `spill-b2-nolow` | `0x01000004` | `0x20102000` | bit 2 alone writes `r0.lo` |
 | `spill-b0-nolow` | `0x01000001` | `0x20102010` | bit 0 alone writes nothing |
 | `spill-pair` | `0x0180000A` (read `r2/r3`) | `0x8F706050` | the pair bit writes nothing to `r2/r3` either |
 | `spill-24-then-fetch` | `0x01000008`, then `0x00840008` | `0x8F706050` | the tag is still there |
 | `spill-24-23-then-fetch` | `0x01800008`, then `0x00840008` | `0x8F706050` | " |
 | `tag-then-fetch` | NOP, then `0x00840008` | `0x8F706050` | the readback control |
 
+Two of those rows were first read the wrong way round. `store rt1, r0, r1`
+stores `[r1.hi][r1.lo][r0.hi][r0.lo]`, so `0x20100000` is `r0.lo` and `r0.hi`,
+not "both high halves"; `0x20102000` is `r0.lo`, not `r1.hi`. With this
+template priming `r0` and `r1` with the *same* pair, a byte position could not
+name a register either way, so neither reading could be checked from the word
+alone. The grid below is the same question asked again with all four halves
+primed differently.
+
+### The destination grid
+
+The bits that matter are 3, 2, 0 and 23. Sixteen combinations, five repeats
+each; `r0` primed `(0x11, 0x22)` and `r1` primed `(0x33, 0x44)`, so the idle
+readback is `0x44332211` and every written byte is visible in place:
+
+| bits beside 24 | word | halves written |
+|:--|--:|:--|
+| none | `0x01000000` | none |
+| 0 | `0x01000001` | none |
+| 23 | `0x01800000` | none |
+| 3 | `0x01000008` | `r0.hi` |
+| 2 | `0x01000004` | `r0.lo` |
+| 3, 2 | `0x0100000C` | `r0.lo`, `r0.hi` |
+| 0, 23 | `0x01800001` | `r0.lo` |
+| 2, 0 | `0x01000005` | `r1.lo` |
+| 2, 23 | `0x01800004` | `r1.lo` |
+| 3, 0 | `0x01000009` | `r1.hi` |
+| 3, 23 | `0x01800008` | `r1.hi` |
+| 2, 0, 23 | `0x01800005` | `r0.lo`, `r1.lo` |
+| 3, 0, 23 | `0x01800009` | `r0.lo`, `r1.hi` |
+| 3, 2, 0 | `0x0100000D` | `r1.lo`, `r1.hi` |
+| 3, 2, 23 | `0x0180000C` | `r1.lo`, `r1.hi` |
+| 3, 2, 0, 23 | `0x0180000D` | `r0.lo`, `r1.lo`, `r1.hi` |
+
+The sixteen rows have one reading. Bit 3 writes `r0.hi` and bit 2 writes
+`r0.lo`, independently of each other; with **exactly one** of bits 0 / 23 set,
+the same bytes of `r1` are written instead of `r0`; with **both** set, the `r1`
+write happens *and* `r0.lo` is written as well. Every row above follows from
+that, including the four both-set rows, whose extra `r0.lo` write is measured
+but not explained.
+
+What the grid rules out:
+
+* that bits 0 and 23 are the same bit duplicated in the word's two halves. A
+  duplicated bit would make `{0,23}` behave like `{0}`, and it writes where
+  neither writes alone;
+* that either bit means "the second half". Each moves the whole write from
+  `r0` to `r1`, and neither writes a half on its own;
+* that the low halves are untouched. `{2}` writes `r0.lo`, `{3,2}` writes both
+  halves of `r0`, and seven of the sixteen rows write a low half.
+
+### The value written is not a constant zero
+
+Every one of the eighty draws wrote the same bytes, but not all of them read
+zero. In the recorded verification run three draws did not:
+
+| variant | expected | draw |
+|:--|--:|--:|
+| `sel-b2-b0` (2, 0) | `0x44002211` | `0x44502211` |
+| `sel-b2-b23` (2, 23) | `0x44002211` | `0x44502211` |
+| `sel-b3-b2-b23` (3, 2, 23) | `0x00002211` | `0x00502211` |
+
+Every dissent is a low byte holding `0x50` where the grid says zero, and every
+dissenting cell is one that writes a low byte; other runs of the same manifest
+dissented in three to five draws of eighty, in cells writing `r0.lo`, `r1.lo` or
+both, with the same `0x50`. `0x50` is the prime of the tag
+batch's `r2.lo` and also the low byte of the stored tag, so which of the two the
+byte comes from is not separated. It is not the byte's own prime (`0x11` or
+`0x33`), so the write happened and landed something else.
+
+The remaining draws read plain zeros, and the same destination bytes read zeros
+in a second program shape: `pseq_spill.in` (five batches, identical primes)
+returns `0x00002010` for `{3,2,0}` and `{3,2,23}` in ten of ten draws of the
+pinning run and fourteen of fourteen of the verification run. So the zero is
+reproducible across shapes and the `0x50` is the exceptional case, not the rule.
+
+So the destination map is stable and the written *value* is not: the form
+writes a byte that reads back as zero in almost every draw, but it is a value
+it produces rather than a constant `0.0`, and where that value comes from is
+open.
+
 ### What this settles
 
 * **The form is not a fetch.** No variant with bit 24 set delivers any part of
   the tagged surface; what it does instead is write zero into one or both *high*
   halves of the destination pair, and the low halves are never touched.
-* **The half selection is the "write mask" the reference alludes to, but it is
-  not in bits 4..15.** Those are inert even as a group. What selects the half
-  is bit 3 (required for any write at all), bit 2 (the second half) and bits 0 /
-  23 (redirect to the second half): `{3}` writes `r0.hi`, `{2}` writes
-  `r1.hi`, `{3,2}` writes both, and `{3,0}` or `{3,23}` write `r1.hi` only.
+* **The selection of bytes is in bits 3, 2, 0 and 23, not in bits 4..15.**
+  Those are inert even as a group. Bit 3 writes `r0.hi`, bit 2 writes `r0.lo`,
+  and bits 0 / 23 choose between the `r0` pair and the `r1` pair - with both
+  set they write both pairs' bytes plus `r0.lo` again. The grid above is the
+  whole sixteen-cell map; nothing in it establishes a rule for bits 4..15,
+  other words, or other instruction slots.
 * **Bit 1 suppresses it.** With bit 1 set nothing is written to `r0/r1` or to
   `r2/r3`, so in this form the destination-pair bit does not select a pair.
 * **The form does not write the surface it would read.** A render-target fetch
@@ -4322,10 +4403,15 @@ Twenty variants, three repeats, all agreeing:
 
 ### What this does not settle
 
-* whether the zero is a literal or a read from an address outside the bound
-  surface. The surface held a tag in every word the fetch can reach, so a read
-  of it would have shown the tag; what is not separated is "read somewhere else"
-  from "clear the register";
+* how the written value is produced. It reads back as zero in almost every
+  draw and as `0x50` in a few (see "The value written is not a constant zero").
+  The
+  surface held a tag in every word a fetch can reach, so "read from somewhere
+  else" and "clear the register, occasionally with stale data" are both open;
+* why the both-set rows write `r0.lo` a second time, and whether that is one
+  write per set selector bit rather than a second destination;
+* whether the map holds for bits above 23 or for destination registers other
+  than `r0/r1` - neither was varied here;
 * what a consumer would use a zero-half write for. A spill/restore sequence at a
   chunk boundary is the plausible context, and nothing here tests it;
 * why the index-0 fetch writes `FFFF` into `r0` and leaves `r1` alone. It is
@@ -4338,6 +4424,19 @@ Twenty variants, three repeats, all agreeing:
 each (20 variants, three repeats, plus the four control rows), pinned from
 `3d1dc560d30c...`; re-pinning reproduces the manifest byte for byte.
 Regenerate with `python3 tests/grate/asm/make_pseq_spill.py`.
+
+`tests/grate/asm/results/pin-pseq-spill-sel`, `verify-pseq-spill-sel` and
+`clean-pseq-spill-sel` hold the grid: 16 variants at five repeats (80 rows, plus
+the control rows), pinned from `4ef484b64084...` on the modal value of each cell.
+A rerun of a cell that dissents fails that repeat against the pinned word, with
+the other value in the `result` column of `results.tsv`; the generator prints
+the dissent while pinning but does not write it into the manifest, which has to
+re-pin byte for byte from a run that does not dissent.
+Regenerate with `python3 tests/grate/asm/make_pseq_spill_sel.py`.
+
+`tests/grate/asm/results/pin-pseq-spill-value` and `verify-pseq-spill-value`
+hold the two-word check against the older shape, 14 rows, pinned from
+`--set value` of the same generator.
 
 ## 26. Which vertex an interpolation-disabled component takes
 

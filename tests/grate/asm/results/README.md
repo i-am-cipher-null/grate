@@ -916,3 +916,35 @@ invalidate another; generate such a manifest with
 * commit: edec85167c566bef819147b4ff75d28b83b8f852 with a clean tree (clone in /tmp/clean-isa5)
 * created: 2026-11-22T00:22:21+00:00; 25 rows, repeat 3, timeout 20.0 s
 * summary: 25 passed, 0 failed of 25 - passed
+
+## pin-pseq-spill-sel
+
+* manifest: `asm_characterize.pseq_spill_sel.json` (sha256 0c67b72cced9, unpinned manifest, five repeats)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: e47326e24fbf1d1fb7a8e47f3900b4726f861d66 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T00:47:28+00:00; 84 rows, repeat 5, timeout 20.0 s
+* summary: 84 passed, 0 failed of 84 - passed
+
+## verify-pseq-spill-sel
+
+* manifest: `asm_characterize.pseq_spill_sel.json` (sha256 a38380f76f3c, pinned manifest, five repeats)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: e47326e24fbf1d1fb7a8e47f3900b4726f861d66 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T00:47:47+00:00; 84 rows, repeat 5, timeout 20.0 s
+* summary: 81 passed, 3 failed of 84 - failed - the failed rows are repeats of a cell that occasionally reads `0x50` where the pinned word has the written zero
+
+## pin-pseq-spill-value
+
+* manifest: `asm_characterize.pseq_spill_value.json` (sha256 91662e911f1c, unpinned manifest, five repeats)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: e47326e24fbf1d1fb7a8e47f3900b4726f861d66 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T00:47:42+00:00; 14 rows, repeat 5, timeout 20.0 s
+* summary: 14 passed, 0 failed of 14 - passed
+
+## verify-pseq-spill-value
+
+* manifest: `asm_characterize.pseq_spill_value.json` (sha256 11cb48fa052c, pinned manifest, five repeats)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: e47326e24fbf1d1fb7a8e47f3900b4726f861d66 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T00:47:58+00:00; 14 rows, repeat 5, timeout 20.0 s
+* summary: 14 passed, 0 failed of 14 - passed

@@ -1,0 +1,54 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * PSEQ bit-24 selector template.
+ *
+ *   batch 0  prime r0 with (0x11, 0x22) and r1 with (0x33, 0x44)
+ *   batch 1  prime r2/r3 with the tag and store it to rt4, so the surface a
+ *            fetch could read holds a recognisable word
+ *   batch 2  the word under test
+ *   batch 3  store r0/r1 to the colour target
+ *
+ * The primes are deliberately different in all four halves. The earlier
+ * template primed both registers with the same pair, which made "r0.hi" and
+ * "r1.lo" indistinguishable in the readback; here `store rt1, r0, r1` reads
+ *
+ *     [r1.hi][r1.lo][r0.hi][r0.lo] = 0x44332211
+ *
+ * and a write to any half moves exactly one byte.
+ */
+
+.constants
+	[0] = 0.06640625;
+	[1] = 0.1328125;
+	[2] = 0.19921875;
+	[3] = 0.265625;
+	[4] = 0.3125;
+	[5] = 0.375;
+	[6] = 0.4375;
+	[7] = 0.5625;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.l*,  u0,  #1,  #0
+		ALU1:	MAD  r0.*h,  u1,  #1,  #0
+		ALU2:	MAD  r1.l*,  u2,  #1,  #0
+		ALU3:	MAD  r1.*h,  u3,  #1,  #0
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u4,  #1,  #0
+		ALU1:	MAD  r2.*h,  u5,  #1,  #0
+		ALU2:	MAD  r3.l*,  u6,  #1,  #0
+		ALU3:	MAD  r3.*h,  u7,  #1,  #0
+	DW:	store rt4, r2, r3
+;
+EXEC
+	PSEQ:	SEL_WORD
+;
+EXEC
+	DW:	store rt1, r0, r1
+;

@@ -1,0 +1,60 @@
+{
+	"name": "pseq-spill-value",
+	"repeat": 5,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/pseq_spill.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "value-3-2-0",
+			"fs": "tests/grate/asm/pseq_spill.in",
+			"replace": {
+				"fs": {
+					"FETCH_WORD": "0x0100000D",
+					"FINAL_WORD": "NOP",
+					"STORE_WORD": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1"
+			},
+			"expected_note": "word 0x0100000D in the earlier program shape",
+			"expected": "0x00002010"
+		},
+		{
+			"name": "value-3-2-23",
+			"fs": "tests/grate/asm/pseq_spill.in",
+			"replace": {
+				"fs": {
+					"FETCH_WORD": "0x0180000C",
+					"FINAL_WORD": "NOP",
+					"STORE_WORD": "store rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_RT4": "1"
+			},
+			"expected_note": "word 0x0180000C in the earlier program shape",
+			"expected": "0x00002010"
+		}
+	]
+}
