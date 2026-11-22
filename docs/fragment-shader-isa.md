@@ -232,6 +232,36 @@ saturates. Identical values are idempotent and the order does not matter. One fx
 writer beside one fp20 writer leaves a value neither wrote (`0x42` where either alone
 reads `0x40`), in both orders; that case is not explained.
 
+#### ALU result registers (`alu0..alu3`)
+
+Registers 24..27 are the result latches of the four scalar slots, and they are readable
+as operands (notes 28). A read is not a read of a retired register:
+
+| where the reader sits | `aluK` returns |
+|:--|:--|
+| same packet, any slot | that packet's slot-K result, whichever slot wrote it and in either order |
+| same packet, slot K itself | 0 |
+| one packet later, same group | the previous packet's slot-K result, from any slot |
+| two packets later | 0 |
+| across a group boundary (`alu_buffer_size` 1) | only `alu0`, and only when read from slot 0 |
+
+The value is format-specific: a `.l*` (fx10 low-half) write fills the `aluK.l` view and
+leaves a bare `aluK` (fp20) read at zero, while an `.lh` write fills the bare read. A
+`.*h`-only write fills neither. That is why an earlier reading of "the result registers
+always read zero" was wrong - those probes read `aluK` bare from packets whose slot K
+wrote a low half, one batch away.
+
+Destination codes 24..27 are accepted by the hardware and write no row register, but they
+do not choose the latch: a write issued from slot K appears on slot K's latch whichever
+of 24..27 the destination field names (notes 28). The assembler refuses `aluN` as a
+destination, so this was measured with the destination field patched into an assembled
+word.
+
+The per-batch ALU schedule word (uploaded at `0x801`) carries the instruction count in
+bits 0..1 and the ALU packet address in bits 2..7; the assembler emits everything above
+as zero, and setting bits 29 or 30 there changes neither forwarding nor the DW result on
+AR20 (notes 30).
+
 #### Addition disable
 
 When bit "addition disable" is set, the Multiply-Add operation turns into two multiplies. The fx10 result of each multiply goes to the low/high subregisters of the destination register.
@@ -404,9 +434,14 @@ groups leaves all four bytes written, so the instruction carries **no per-byte w
 mask**. Bits 11, 12 and 13 are inert on their own and bit 14 is not: it replaces the
 payload with `0x00000000` while still committing the write, whichever pair bit 15
 names. What bit 14 reads is not established - the candidate source (the second row of
-row registers) cannot be populated because `alu_buffer_size = 2` hangs the draw. A
-class-1 store with no depth surface bound, and write modes 0, 2 and 3, leave the colour
+row registers) cannot be populated because `alu_buffer_size = 2` hangs the draw.A class-1 store with no depth surface bound, and write modes 0, 2 and 3, leave the colour
 target at whatever it already held.
+
+A group is one DW word per batch and only the group's first batch stores (notes 3). With
+two DW words in one group and **different** render targets, the first one's target is
+written with the group's final row and the second target is not written at all; with both
+words on the **same** target nothing is written (notes 29). So multi-target output cannot
+be produced by two DWs in one group.
 
 #### Source registers select:
 
