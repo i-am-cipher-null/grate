@@ -4337,20 +4337,22 @@ readback is `0x44332211` and every written byte is visible in place:
 | 3, 2, 23 | `0x0180000C` | `r1.lo`, `r1.hi` |
 | 3, 2, 0, 23 | `0x0180000D` | `r0.lo`, `r1.lo`, `r1.hi` |
 
-The sixteen rows have one reading. Bit 3 writes `r0.hi` and bit 2 writes
-`r0.lo`, independently of each other; with **exactly one** of bits 0 / 23 set,
-the same bytes of `r1` are written instead of `r0`; with **both** set, the `r1`
-write happens *and* `r0.lo` is written as well. Every row above follows from
-that, including the four both-set rows, whose extra `r0.lo` write is measured
-but not explained.
+The sixteen rows have one reading. Bit 3 selects `r0.hi`, and bit 2 selects
+`r0.lo`. With neither bit 0 nor bit 23 set, the selected byte(s) are written
+to `r0`; with exactly one of those bits set, the selected byte(s) are redirected
+to the corresponding half of `r1`. With both set, the selected byte(s) are
+written to `r1` and `r0.lo` is also written. When neither bit 3 nor bit 2 is
+set, the `{0, 23}` cell therefore writes only `r0.lo`. The reason for this
+additional `r0.lo` write path is not established.
 
 What the grid rules out:
 
 * that bits 0 and 23 are the same bit duplicated in the word's two halves. A
   duplicated bit would make `{0,23}` behave like `{0}`, and it writes where
   neither writes alone;
-* that either bit means "the second half". Each moves the whole write from
-  `r0` to `r1`, and neither writes a half on its own;
+* that either bit means "the second half". When combined with bit 2 or 3,
+  either bit redirects the selected byte from `r0` to `r1`. Neither bit alone
+  writes a byte; setting both also produces the extra `r0.lo` write;
 * that the low halves are untouched. `{2}` writes `r0.lo`, `{3,2}` writes both
   halves of `r0`, and ten of the sixteen rows write a low byte.
 
@@ -4391,13 +4393,16 @@ open.
   destination pair, high and low alike, so it is a byte map and not the
   high-half clear the earlier eight-cell table described.
 * **The selection of bytes is in bits 3, 2, 0 and 23, not in bits 4..15.**
-  Those are inert even as a group. Bit 3 writes `r0.hi`, bit 2 writes `r0.lo`,
-  and bits 0 / 23 choose between the `r0` pair and the `r1` pair - with both
-  set they write both pairs' bytes plus `r0.lo` again. The grid above is the
-  whole sixteen-cell map; nothing in it establishes a rule for bits 4..15,
-  other words, or other instruction slots.
-* **Bit 1 suppresses it.** With bit 1 set nothing is written to `r0/r1` or to
-  `r2/r3`, so in this form the destination-pair bit does not select a pair.
+  Those are inert even as a group. Bit 3 selects `r0.hi`, and bit 2 selects
+  `r0.lo`; exactly one of bits 0 / 23 redirects the selected byte(s) to the
+  corresponding half of `r1`. With both set, the selected byte(s) go to `r1`
+  and `r0.lo` is also written. When neither bit 3 nor bit 2 is set, the
+  `{0, 23}` cell writes only `r0.lo`. The grid above is the whole sixteen-cell
+  map; it does not establish rules for untested fields, other words, or other
+  instruction slots.
+* **Bit 1 suppressed the write in the two combinations tested.** Neither
+  `r0/r1` nor `r2/r3` was written in those cases; other combinations with
+  bit 1 set remain untested.
 * **The form does not write the surface it would read.** A render-target fetch
   of rt4 after the word still returns the tag, so nothing was committed there
   either.
