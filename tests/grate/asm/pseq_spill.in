@@ -1,0 +1,51 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * PSEQ form template: five batches.
+ *
+ *   batch 0  prime r0/r1 with the "did nothing" pattern
+ *   batch 1  prime r2/r3 with the tag and store it to rt4
+ *   batch 2  the fetch word under test, if any
+ *   batch 3  an optional second fetch, used to read rt4 back
+ *   batch 4  store r0/r1 to the colour target
+ *
+ * A working fetch replaces the r0/r1 pattern with the tag word; a word that
+ * does nothing leaves the pattern. The two words are distinct in every byte
+ * (0x20102010 against 0x8F706050 after the 8-bit conversion).
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.3125;
+	[3] = 0.375;
+	[4] = 0.4375;
+	[5] = 0.5625;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.l*,  u0,  #1,  #0
+		ALU1:	MAD  r0.*h,  u1,  #1,  #0
+		ALU2:	MAD  r1.l*,  u0,  #1,  #0
+		ALU3:	MAD  r1.*h,  u1,  #1,  #0
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u2,  #1,  #0
+		ALU1:	MAD  r2.*h,  u3,  #1,  #0
+		ALU2:	MAD  r3.l*,  u4,  #1,  #0
+		ALU3:	MAD  r3.*h,  u5,  #1,  #0
+	DW:	store rt4, r2, r3
+;
+EXEC
+	PSEQ:	FETCH_WORD
+;
+EXEC
+	PSEQ:	FINAL_WORD
+;
+EXEC
+	DW:	STORE_WORD
+;

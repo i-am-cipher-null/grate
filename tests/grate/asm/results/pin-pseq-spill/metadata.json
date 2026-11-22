@@ -1,0 +1,356 @@
+{
+  "name": "pseq-spill",
+  "created_utc": "2026-11-21T23:23:28+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.pseq_spill.json",
+  "manifest_sha256": "cb37d9308a7832c15276d29f1f2fcbac5d91d8a432e977d5e177828d5cee593c",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "54b97877a2fe77c7d88bfacffc72a77b19888088",
+  "git_status": "?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/dw_fields.in\n?? tests/grate/asm/make_dw_fields.py\n?? tests/grate/asm/make_pseq_spill.py\n?? tests/grate/asm/pseq_spill.in\n?? tests/grate/asm_characterize.dw_fields.json\n?? tests/grate/asm_characterize.pseq_spill.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "pseq-spill",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/pseq_spill.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "rt4-fetch",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x00840008",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the render-target form for index 4: the tag must land in r0/r1"
+      },
+      {
+        "name": "nofetch",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "NOP",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "no fetch: the r0/r1 pattern is what the store sees"
+      },
+      {
+        "name": "rt4-index0",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x00800008",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "index 0 with the same enables, on a target nothing wrote"
+      },
+      {
+        "name": "spill-24",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01000008",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24 with the low enable bit only"
+      },
+      {
+        "name": "spill-24-23",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01800008",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24 and bit 23 - the form the reference names"
+      },
+      {
+        "name": "spill-b4",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01800018",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24, 23 and bit 4 - a candidate low-bit overlay"
+      },
+      {
+        "name": "spill-b12",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01809008",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24, 23 and bit 12"
+      },
+      {
+        "name": "spill-b15",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01888008",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24, 23 and bit 15"
+      },
+      {
+        "name": "spill-low",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x0180FFF8",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24, 23 and every bit 4..15"
+      },
+      {
+        "name": "spill-b0",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01000009",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the low word bit 0 set beside bit 24"
+      },
+      {
+        "name": "spill-b2",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x0100000C",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the low word bit 2 set beside bit 24"
+      },
+      {
+        "name": "spill-b1",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x0100000A",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the low word bit 1 set beside bit 24, without bit 23"
+      },
+      {
+        "name": "spill-pair",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x0180000A",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r2, r3"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24, 23 and bit 1, with r2/r3 read instead"
+      },
+      {
+        "name": "spill-nolow",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01000000",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24 with no low bit at all - does the mask still write a half"
+      },
+      {
+        "name": "spill-b23-nolow",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01800000",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24 and bit 23, low bits clear"
+      },
+      {
+        "name": "spill-b2-nolow",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01000004",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24 and bit 2, low enable clear"
+      },
+      {
+        "name": "spill-b0-nolow",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01000001",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bit 24 and bit 0, low enable clear"
+      },
+      {
+        "name": "spill-24-then-fetch",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01000008",
+            "FINAL_WORD": "0x00840008",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the spill word, then rt4 read back through the render-target form"
+      },
+      {
+        "name": "spill-24-23-then-fetch",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x01800008",
+            "FINAL_WORD": "0x00840008",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the bit-23 form, then rt4 read back"
+      },
+      {
+        "name": "tag-then-fetch",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "NOP",
+            "FINAL_WORD": "0x00840008",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "its control: no spill word, so the fetch must return the tag"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 64,
+    "passed": 64,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
