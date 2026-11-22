@@ -517,38 +517,36 @@ mechanism or a general rule for every DW mode.
 
 ## PSEQ instruction word encoding
 
-PSEQ stands for Program Sequencer. It fetches raw data from a selected render target, converts that data into FX10 [FP20(?)] format and loads it into registers.
+PSEQ fetches data from a selected render target and loads it into a register
+pair. The observed ordinary fetch encoding is
+`0x00800008 | (N << 16) | (pair << 1)`, where N is the render-target index
+and pair is 0 for r0/r1 or 1 for r2/r3. For example, `0x00820008` selects
+RT2 and r0/r1.
 
-|   Bits | Meaning                 |
-|-------:|:------------------------|
-| 24..31 | bit 24 selects the destination-byte form (below); 25..31 not tested |
-|     23 | fetch enable, required; in the bit-24 form it moves the write into `r1` |
-| 20..22 | no effect               |
-| 16..19 | render target select    |
-|  4..15 | no effect in the fetch form; nothing even as a group in the bit-24 form |
-|      3 | fetch enable, required; in the bit-24 form it writes `r0.hi` |
-|      2 | in the bit-24 form it writes `r0.lo` |
-|      1 | dest registers select   |
-|      0 | in the bit-24 form it moves the write into `r1` |
+|   Bits | Meaning |
+|-------:|:--------|
+| 24..31 | bit 24 selects the destination-byte form below; 25..31 not established in that form |
+|     23 | required ordinary-fetch enable; participates in byte redirection in the bit-24 form |
+| 20..22 | no effect in tested fetches |
+| 16..19 | render-target index |
+|  4..15 | no effect as a group in the bit-24 form; bits 2 and 3 are described separately |
+|      3 | required ordinary-fetch enable; selects `r0.hi` in the bit-24 form |
+|      2 | selects `r0.lo` in the bit-24 form |
+|      1 | ordinary-fetch destination pair select |
+|      0 | participates in byte redirection in the bit-24 form |
 
-Both bit 3 and bit 23 are required for a fetch - clearing either suppresses it - and
-bits 20..22 are inert (notes 25). The earlier reading of these two bits as "one
-unknown enable" is settled: they are a pair.
+Both bits 3 and 23 are required for an ordinary fetch; clearing either
+suppresses it. Bit 1 selects the ordinary-fetch destination pair: clear
+selects r0/r1 and set selects r2/r3.
 
-#### Destination registers select:
+### The bit-24 form
 
-| Value | Meaning   |
-|------:|:----------|
-|     1 | R2 - R3   |
-|     0 | R0 - R1   |
-
-#### The bit-24 form
-
-Bit 24 does **not** select a spill fetch - no word with bit 24 set delivers any part of
-a tagged render target, and a fetch issued afterwards still reads the surface unchanged
-(notes 25). Instead it writes into the destination pair. Bits 3, 2, 0 and 23 choose the
-bytes, and all sixteen combinations were run with `r0` primed `(0x11, 0x22)` and `r1`
-`(0x33, 0x44)`, so the idle readback is `0x44332211` and each write shows in place:
+Bit 24 does **not** select a spill fetch. No tested word with bit 24 set
+delivers data from the tagged render target, and a subsequent fetch still
+reads that surface unchanged. Instead, the form writes selected bytes in
+r0/r1. The complete tested destination map is below. The registers were
+primed distinctly: r0 with low/high bytes `(0x11, 0x22)`, and r1 with
+`(0x33, 0x44)`. The idle readback is therefore `0x44332211`.
 
 | bits beside 24 | word | bytes written | readback |
 |:--|--:|:--|--:|
@@ -569,24 +567,25 @@ bytes, and all sixteen combinations were run with `r0` primed `(0x11, 0x22)` and
 | 3, 2, 23 | `0x0180000C` | `r1.lo`, `r1.hi` | `0x00002211` |
 | 3, 2, 0, 23 | `0x0180000D` | `r0.lo`, `r1.lo`, `r1.hi` | `0x00002200` |
 
-Bit 3 selects `r0.hi` and bit 2 selects `r0.lo`. With neither of bits 0 / 23 set,
-those selected byte(s) are written to `r0`; with exactly one set, the same selected
-byte(s) are written to `r1` instead. With both set, the selected byte(s) are written
-to `r1` and `r0.lo` is also written. When neither bit 3 nor bit 2 is set, the
-`{0, 23}` row therefore writes only `r0.lo`. These rules describe the tested sixteen
-combinations, not a general rule for untested fields or destination pairs. The low
-halves are written, so this is not a high-half-only clear. Bits 0 and 23 are
-independent: setting both does something neither does alone. The reason for the
-additional `r0.lo` write is unknown.
+Bit 3 selects `r0.hi`, and bit 2 selects `r0.lo`. With neither of bits
+0/23 set, the selected byte(s) are written to r0; with exactly one set, those
+same selected byte(s) are redirected to r1. With both set, the selected
+byte(s) are written to r1 and r0.lo is also written. Thus the `{0, 23}`
+combination, with neither byte selected by bit 3 nor bit 2, writes only
+r0.lo. This describes the tested sixteen combinations, not a general rule
+for untested fields or destination pairs. The additional r0.lo write when
+both redirect bits are set is measured but unexplained.
 
-What lands in those bytes is a value the form produces rather than a constant `0.0`: it
-reads back as zero in almost every draw, but a few repeats of the cells that write a low
-byte read `0x50` instead (notes 25). It is not a surface read - the surface held a tag in
-every word a fetch can reach - and the source stays unidentified. Bit 1 suppressed the write in the two combinations tested; other combinations with bit 1 set remain untested., bits 4..15 add nothing even as a group, and no consumer of
-the form is identified.
+The written value is not reliably a constant zero. Most draws read zero in
+the selected bytes, but some repeated draws read `0x50` in a low byte
+instead. The source of that value is unknown. Bit 1 suppressed writes in
+the two combinations tested with it set; other bit-1 combinations were not
+tested. Bits 4..15 had no observed effect in the bit-24 form, including when
+set together. Bits above 23 were not varied in the destination-grid
+experiment.
 
-See [fragment hardware experiment notes, section 25](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md#25-the-pseq-form-bit-24-selects) for the full test grid and dissenting readbacks.
-
+For the full test setup, results and limitations, see [experiment notes,
+section 25](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md#25-the-pseq-form-bit-24-selects).
 ## More patents
 
 These seems to be for Tegra:
