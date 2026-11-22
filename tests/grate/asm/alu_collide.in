@@ -1,0 +1,43 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * ALU collision template.
+ *
+ *   batch 0  three writers into r2, plus r3 primed with 0.75 as a stability
+ *            marker
+ *   batch 1  read the result back as fp20 and convert it to fx10, so the DW
+ *            store can show it as a byte
+ *   batch 2  store
+ *
+ * The readback is what makes an fp20 destination observable: `store` converts
+ * four fx10 codes, so a value written with `.lh` has to pass through an fp20
+ * operand read and a `.l*` destination before it becomes a byte. Both halves
+ * are converted - r2 into the low byte pair and r3 into the high one.
+ */
+
+.constants
+	[0] = 0.25;
+	[2] = 0.5;
+	[4] = 0.75;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	W0
+		ALU1:	W1
+		ALU2:	W2
+		ALU3:	MAD  r3.l*,  u4,  #1,  #0
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  r2,  #1,  #0,  #1
+		ALU1:	MAD  r2.*h,  r3,  #1,  #0,  #1
+		ALU2:	NOP
+		ALU3:	NOP
+	DW:	NOP
+;
+EXEC
+	DW:	store rt1, r2, r3
+;

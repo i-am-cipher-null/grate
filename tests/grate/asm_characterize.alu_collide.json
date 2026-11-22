@@ -1,0 +1,119 @@
+{
+	"name": "alu-collide",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/alu_collide.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "lh-one",
+			"fs": "tests/grate/asm/alu_collide.in",
+			"replace": {
+				"fs": {
+					"W0": "MAD  r2.lh,  u0,  #1,  #0",
+					"W1": "NOP",
+					"W2": "NOP"
+				}
+			},
+			"expected_note": "a single fp20 writer of 0.25: the readback baseline",
+			"expected": "0x00BF0040"
+		},
+		{
+			"name": "lh-same",
+			"fs": "tests/grate/asm/alu_collide.in",
+			"replace": {
+				"fs": {
+					"W0": "MAD  r2.lh,  u0,  #1,  #0",
+					"W1": "MAD  r2.lh,  u0,  #1,  #0",
+					"W2": "NOP"
+				}
+			},
+			"expected_note": "0.25 twice",
+			"expected": "0x00BF0040"
+		},
+		{
+			"name": "lh-two",
+			"fs": "tests/grate/asm/alu_collide.in",
+			"replace": {
+				"fs": {
+					"W0": "MAD  r2.lh,  u0,  #1,  #0",
+					"W1": "MAD  r2.lh,  u2,  #1,  #0",
+					"W2": "NOP"
+				}
+			},
+			"expected_note": "0.25 then 0.5",
+			"expected": "0x00BF00FF"
+		},
+		{
+			"name": "lh-rev",
+			"fs": "tests/grate/asm/alu_collide.in",
+			"replace": {
+				"fs": {
+					"W0": "MAD  r2.lh,  u2,  #1,  #0",
+					"W1": "MAD  r2.lh,  u0,  #1,  #0",
+					"W2": "NOP"
+				}
+			},
+			"expected_note": "0.5 then 0.25 - the order swap",
+			"expected": "0x00BF00FF"
+		},
+		{
+			"name": "lh-three",
+			"fs": "tests/grate/asm/alu_collide.in",
+			"replace": {
+				"fs": {
+					"W0": "MAD  r2.lh,  u0,  #1,  #0",
+					"W1": "MAD  r2.lh,  u2,  #1,  #0",
+					"W2": "MAD  r2.lh,  u4,  #1,  #0"
+				}
+			},
+			"expected_note": "0.25, 0.5 then 0.75 in three slots",
+			"expected": "0x00BF00FF"
+		},
+		{
+			"name": "fx10-then-fp20",
+			"fs": "tests/grate/asm/alu_collide.in",
+			"replace": {
+				"fs": {
+					"W0": "MAD  r2.l*,  u4,  #1,  #0",
+					"W1": "MAD  r2.lh,  u0,  #1,  #0",
+					"W2": "NOP"
+				}
+			},
+			"expected_note": "an fx10 write of 0.75, then an fp20 write of 0.25",
+			"expected": "0x00BF0042"
+		},
+		{
+			"name": "fp20-then-fx10",
+			"fs": "tests/grate/asm/alu_collide.in",
+			"replace": {
+				"fs": {
+					"W0": "MAD  r2.lh,  u0,  #1,  #0",
+					"W1": "MAD  r2.l*,  u4,  #1,  #0",
+					"W2": "NOP"
+				}
+			},
+			"expected_note": "an fp20 write of 0.25, then an fx10 write of 0.75",
+			"expected": "0x00BF0042"
+		}
+	]
+}
