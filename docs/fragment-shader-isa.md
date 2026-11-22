@@ -792,17 +792,33 @@ preceding DW store.
 
 The identity map was reproduced through the tiled framebuffer, linear and
 tiled RT3, and a linear source allocation with 16 texels of row-pitch padding.
-These results establish that the tested fetch follows the source target's
-tile layout and pitch. The same-draw and separate-draw tests also show that
-data written by an earlier draw is visible to a later fetch in the tested
-flush sequence.
+A further test used a tiled RT3 source allocated 16 texels wider than the
+64x64 target: it retained the identity map, and its shifted-source control
+retained the same 16-column shift measured with the linear padded source.
+In these tested layouts, increasing the tiled allocation width did not change
+the observed row mapping. This does not establish behavior for other tile
+layouts or padding amounts.
+
+A later draw read the earlier draw's writes without an explicit flush between
+them, provided both draws were in the same submission. The complete output
+map matched the flushed control, and a no-fetch control showed that the fetch
+had actually run. Three ordered draws in one submission also showed that the
+fetch read the most recent preceding write. Within the fetching draw, a store
+to the source before the fetch was visible to it, while a store after the fetch
+did not change the value already fetched. These results establish ordering
+for the tested instruction and draw sequences, not a general synchronization
+rule.
 
 The address-generation mechanism is not established: the tests do not
 distinguish position registers from the fragment's own target coordinate.
-Fetch-before-flush behavior, a later draw that also writes the source, padded
-pitch on a tiled source, and larger targets remain untested. The RGB565
-control is not an address-map proof because its reduced precision loses the
-X coordinate byte.
+Cross-job visibility, a source that is also the observation target, and other
+write-after-read arrangements remain untested. Targets larger than the tested
+64x64 region, and tiled layouts with different dimensions or padding, also
+remain untested. The RGB565 control is not an address-map proof because its
+reduced precision loses the X coordinate byte.
+
+See [fragment hardware experiment notes, sections 17 and 23](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md#23-pseq-visibility-the-flush-boundary-write-ordering-and-a-padded-tiled-source)
+for the test arrangements and recorded results.
 
 ## More patents
 
