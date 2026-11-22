@@ -264,7 +264,7 @@ The MFU unit can fetch and interpolate 4 component vectors per instruction and/o
 |      4 |   EX2    | Exponent base 2, second step | rA = pow(2.0, rA)    |
 |      5 |   SQRT   | Square root                  | rA = sqrt(rA)        |
 |      6 |   SIN    | Sine, second step            | rA = sin(rA)         |
-|      7 |   COS   | Cosine, second step          | rA = cos(rA)         |
+|      7 |   COS    | Cosine, second step          | rA = cos(rA)         |
 |      8 |   FRC    | Fractional value             | rA = rA - floor(rA)  |
 |      9 |  PREEX2  | Exponent base 2, first step  | prepares EX2 from rA |
 |     10 |  PRESIN  | Sine, first step             | prepares SIN from rA |
@@ -321,7 +321,7 @@ prefix in the fragment fetch selects TRAM row N.
 
 A LINK column set to NOP does not update its destination component. In the
 tested setup, that component retained its previous value across consecutive
-draws; TRAM should not be assumed to be cleared between draws.
+assembler invocations; TRAM should not be assumed to be cleared between draws.
 At the fetch stage, an `ipl` operand of NOP leaves its row register unchanged,
 whereas `sat(NOP)` writes zero. Applying saturate to a fetch clamped a value of
 1.5 to 1.0 in the FP20 row register; the ordinary FX10 byte readback alone
@@ -385,8 +385,9 @@ when one of them also writes the SFU operand register.
 |  Value | Meaning                 |
 |-------:|:------------------------|
 |   0..3 | row register 0..3       |
-|   4..7 | ??? (global registers?) |
-|   8..9 | ???                     |
+|   4..6 | ???                     |
+|   7..8 | ???                     |
+|      9 | fetch-associated value  |
 |     10 | SFU result              |
 |     11 | barycentric coef 0      |
 |     12 | barycentric coef 1      |
@@ -487,43 +488,94 @@ A proposed linker dependency is the LINK `(z)` modifier, previously described as
 
 ## TEX instruction word encoding
 
-The TEX instruction takes the texture coordinates and LOD bias from the first row of the pixel packet (i.e. R0-R3 registers) and writes the sampled data to that first row as well. 
+TEX reads S, T, R and LOD from the first row of the pixel packet, using the
+register group selected by bit 4, and writes the sampled RGBA result to the
+register pair selected by bit 5. The tested fetch writes the four components as
+FX10 halves.
 
-|   Bits | Meaning                               |
-|-------:|:--------------------------------------|
+|   Bits | Meaning                              |
+|-------:|:-------------------------------------|
 |     13 | explicit LOD                         |
-| 14..31 | ???                                   |
-|     12 | enable bias                           |
-|     11 | ???                                   |
-|     10 | enable                                |
-|   6..9 | ???                                   |
-|      5 | sampled data destination regs select  |
-|      4 | texcoords / lod regs select           |
-|   0..3 | sampler index                         |
+| 14..31 | unknown                              |
+|     12 | LOD bias                             |
+|     11 | no effect in tested fetches          |
+|     10 | fetch enable                         |
+|   6..9 | no effect in tested fetches          |
+|      5 | destination pair select              |
+|      4 | coordinate/LOD register group select |
+|   0..3 | sampler index                        |
 
+### Sampler and enable
 
-#### Texture coordinates and LOD registers select:
+Bits 0..3 select the sampler. Sampler 0 and sampler 1 were both tested with
+bound textures and selected the corresponding surfaces. Readbacks from
+unbound sampler indexes were unstable and are not a defined fallback value.
 
-The texture coordinate components (S, T, R) and LOD value are loaded from the
-row registers as fp20's.
+Clearing bit 10 suppresses the fetch and leaves the destination registers
+unchanged. A control with bit 10 set overwrites the same registers, confirming
+that the disabled case is not a fetch that writes zero.
+
+### Coordinate and destination registers
+
+The coordinate components S, T, R and the LOD value are read as FP20 from the
+row registers:
 
 |  Value | Meaning (S, T, R, LOD order) |
 |-------:|:-----------------------------|
 |      1 | R2, R3, R0, R1               |
 |      0 | R0, R1, R2, R3               |
 
-Bit 12 enables LOD bias (TXB); bit 13 selects explicit LOD (TXL) when bit 12 is
-clear. With both bits set, bias mode takes precedence in the tested hardware.
-With neither bit set, the sampler uses its derivative-based LOD estimate.
-
-#### Sampled data destination registers select:
-
-The sampled RGBA data is stored in the two registers as four fx10's.
+Bit 5 selects the destination pair:
 
 |  Value | Meaning |
 |-------:|:--------|
 |      1 | R2-R3   |
 |      0 | R0-R1   |
+
+The RGBA channel order was confirmed through the r2-r3 destination pair.
+The tested texture did not distinguish the channel order through r0-r1, so
+that path remains uncharacterized.
+
+The default wrapping observed for both S and T is repeat: coordinates such as
+1.25 and -0.25 wrap to 0.25 and 0.75, respectively. The sampler follows the
+texture's dimensions rather than a fixed 4x4 size.
+
+### LOD selection
+
+Bit 12 selects LOD bias. When bit 12 is clear, bit 13 selects explicit LOD.
+With both bits clear, the LOD register is ignored and the sampler uses a
+derivative-based estimate. When both bits are set, bias takes precedence in
+the tested hardware.
+
+Explicit LOD values below zero and above the available mip range clamp to the
+end levels. Fractional LOD selected the nearest mip level in the tested
+configuration. Bias and explicit LOD produced different results on a 16x16
+mip chain; the exact derivative-based LOD calculation and the behavior of
+fractional bias were not established.
+
+The experiments used nearest magnification filtering and
+NEAREST_MIPMAP_NEAREST minification filtering. They therefore do not establish
+linear texel filtering or mip-level blending.
+
+### Formats and addressing
+
+RGBA8888 fetches preserved the sampled channel bytes through the tested
+r2-r3 readback path. DXT1 and ETC1 block-compressed surfaces also produced
+readable block rows in the tested cases. DXT1's one-bit alpha decoded as
+opaque in the probes; the ETC1 readback differed slightly from the DXT1
+control and that decoder difference is not explained here.
+
+The sampler stepped through rows at width times four bytes in the tested
+RGBA surface. When the allocation used a larger row pitch, the sampled row
+was instead displaced into padding. The observed TEX path therefore did not
+honor the tested non-default surface pitch.
+
+Bits 6..9 and bit 11 were toggled individually on a bound-sampler fetch and
+on explicit-LOD fetches at three mip levels. They did not change the result in
+those configurations. This does not establish that the fields are reserved
+or inert in every texture mode. Bits 14..31 remain undocumented here; the
+older unknown-bit sweep is not reproduced by the current committed experiment
+set.
 
 ## DW instruction word encoding
 
