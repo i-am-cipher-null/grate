@@ -268,7 +268,9 @@ The per-batch ALU schedule word (uploaded at `0x801`) carries a **packet count**
 may hold up to three of them, so twelve instructions per batch (notes 32). The assembler
 sets the count from the number of `ALU:` blocks the batch has and refuses a fourth emit
 (`Over 3 ALU instructions per exec batch`). Nothing above bit 7 is emitted, and setting
-bits 29 or 30 changes neither forwarding nor the DW result on AR20 (notes 30).
+bits 29 or 30 changes neither forwarding nor the DW result on AR20 (notes 30),
+and masking a single batch instead of all of them gives the same result, so the
+inertness is not an average over batches (notes 34).
 
 A batch with more than one packet follows different forwarding rules from the single
 packet case above: a latch read is then served by the **previous packet's** slot-N

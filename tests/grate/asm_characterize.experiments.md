@@ -5101,6 +5101,89 @@ variants, three repeats, plus the four control rows), pinned from
 `1c923cadbfec...`; re-pinning reproduces the manifest byte for byte.
 Regenerate with `python3 tests/grate/asm/make_dw_mrt.py`.
 
+## 34. Bits 29 and 30 with one batch masked at a time
+
+`--set sched-at` (35 variants) from `tests/grate/asm/alu_sched_at.in`, manifest
+`asm_characterize.alu_sched_at.json`. Section 30 set bits 29 and 30 on **every**
+0x801 word at once, which cannot separate "the bit is inert" from "the bit
+matters only for the packet it is attached to". This set masks one batch at a
+time with `GRATE_ALU_SCHED_OR_AT`, a batch index next to the existing mask, so
+the other batches keep exactly the word the assembler emits.
+
+`alu_buffer_size` 1 and one packet per batch, so the batch index is also the
+packet index and the group index:
+
+    batch 0  producer - the whole shape in `chain`, `dw` and `plain`
+    batch 1  consumer - the group-boundary carry in `flush`, the storing
+             batch in `row`, nothing in the other three
+    batch 2  readback only, part of no shape
+
+Five shapes (`chain`, `flush`, `row`, `dw`, `plain`), each with no mask and with
+bits 29, 30 and both applied to batch 0 and then to batch 1. Every variant runs
+with `GRATE_DUMP_RAW`, and `tests/grate/asm/dump_sched_words.py` turns each
+run's log into the `schedule-words.tsv` recorded with the results.
+
+### The mask reached exactly one batch
+
+The dump of `chain-b0-29`, one run of three batches, one packet each:
+
+| batch | 0x801 word | 0x806 word |
+|:--|--:|--:|
+| 0 | `0x20000001` | `0x00000000` |
+| 1 | `0x00000005` | `0x00000000` |
+| 2 | `0x00000009` | `0x00000000` |
+
+The mask is on batch 0's word only, bit 29 and nothing else; the address field
+still names packets 0, 1 and 2 (`0x1`, `0x5`, `0x9` are count 1 at addresses 0,
+1, 2), so the hook does not perturb the fields the assembler fills. The same
+holds in all 35 variants: `b1-*` moves the bit to batch 1's word, the unmasked
+runs read `0x1/0x5/0x9`, and **every 0x806 word in every run of the set is
+`0x00000000`** - the complement stream is built from a different array and the
+mask never touches it.
+
+### Measured
+
+| shape | none | b0:29 | b0:30 | b0:both | b1:29 | b1:30 | b1:both |
+|:--|--:|--:|--:|--:|--:|--:|--:|
+| `chain` | `0x00100010` | same | same | same | same | same | same |
+| `flush` | `0x00000010` | same | same | same | same | same | same |
+| `row` | `0x00000010` | same | same | same | same | same | same |
+| `dw` | `0x00000010` | same | same | same | same | same | same |
+| `plain` | `0x00000000` | same | same | same | same | same | same |
+
+All seven settings of every shape give the word the shape has with no mask at
+all. `chain` keeps its intra-packet forward, `flush` keeps the group-boundary
+carry, `row` keeps its row, `dw` keeps its store and `plain` still stores
+nothing, so neither bit changes what a batch executes, when it commits, or
+whether its DW writes - the last three being what a change in packet count or
+address would look like.
+
+### What this settles, and what it does not
+
+There is **no batch-specific effect** of bit 29 or bit 30 on AR20 for these
+shapes: masking the producer, the consumer and an unrelated batch all give the
+same readback, so section 30's inertness is not an artefact of the global mask
+averaging over batches. Whether the bits do something on a T114 is untested -
+the hook has a T114 branch that transforms the word with `to_114_alu_sched`,
+which writes `0xe0` into that byte itself, but no T114 hardware was involved
+here and that path was not exercised.
+
+Still open: bit 31 and bits 8..28 individually; a bit that only matters when
+the count or address fields are non-default, e.g. inside a three-packet batch
+(section 32); shapes whose result is not visible in the colour readback (a
+texture or MFU stream); and what the hardware does with the word, since a dump
+shows the upload and not the decode.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-sched-at` and `verify-alu-sched-at` hold 109
+rows each (35 variants, three repeats, plus the four control rows), pinned from
+`5327ba31d3c0...`; re-pinning reproduces the manifest byte for byte. Each
+directory also holds `schedule-words.tsv`, extracted with
+`python3 tests/grate/asm/dump_sched_words.py <run dir>`, which is the per-batch
+0x801/0x806 evidence above. Regenerate the manifest with
+`python3 tests/grate/asm/make_alu_sched_at.py`.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

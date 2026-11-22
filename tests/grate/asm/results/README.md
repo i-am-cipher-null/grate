@@ -1103,3 +1103,21 @@ invalidate another; generate such a manifest with
 * tree: 0b5679c77c0690d820b506f171b1b90f6bdb7812 with the set's files untracked (see metadata git_status)
 * created: 2026-11-22T21:44:19+00:00; 73 rows, repeat 3, timeout 20.0 s
 * summary: 73 passed, 0 failed of 73 - passed
+
+## pin-alu-sched-at
+
+* manifest: `asm_characterize.alu_sched_at.json` (sha256 832cd1c3978a, unpinned manifest)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 01dc02f074bdeea8e256475321032b8e05572682 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T21:47:41+00:00; 109 rows, repeat 3, timeout 10.0 s
+* summary: 109 passed, 0 failed of 109 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## verify-alu-sched-at
+
+* manifest: `asm_characterize.alu_sched_at.json` (sha256 5327ba31d3c0, pinned manifest)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 01dc02f074bdeea8e256475321032b8e05572682 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T21:50:41+00:00; 109 rows, repeat 3, timeout 10.0 s
+* summary: 109 passed, 0 failed of 109 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump

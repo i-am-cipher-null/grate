@@ -47,6 +47,9 @@ def main():
         lines.append("* summary: {} passed, {} failed of {} - {}".format(
             summary["passed"], summary["failed"], rows,
             "passed" if not summary["failed"] else "failed"))
+        if (directory / "schedule-words.tsv").is_file():
+            lines.append("* schedule words: `schedule-words.tsv`, the 0x801 and "
+                         "0x806 words per batch from each run's raw dump")
         blocks.append("\n".join(lines) + "\n")
     (R / "README.md").write_text(text.rstrip("\n") + "\n\n" + "\n".join(blocks))
     print("appended", ", ".join(sys.argv[1:]))
