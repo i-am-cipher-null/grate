@@ -264,20 +264,33 @@ The MFU unit can fetch and interpolate 4 component vectors per instruction and/o
 |      4 |   EX2    | Exponent base 2, second step | rA = pow(2.0, rA)    |
 |      5 |   SQRT   | Square root                  | rA = sqrt(rA)        |
 |      6 |   SIN    | Sine, second step            | rA = sin(rA)         |
-|      7 |   COS    | Cosine, second step          | rA = cos(rA)         |
+|      7 |   COS   | Cosine, second step          | rA = cos(rA)         |
 |      8 |   FRC    | Fractional value             | rA = rA - floor(rA)  |
 |      9 |  PREEX2  | Exponent base 2, first step  | prepares EX2 from rA |
 |     10 |  PRESIN  | Sine, first step             | prepares SIN from rA |
 |     11 |  PRECOS  | Cosine, first step           | prepares COS from rA |
 
-**PREEX2/EX2, PRESIN/SIN and PRECOS/COS are paired operations.** Hardware
-tests show that the PRE operation prepares an internal intermediate consumed
-by the corresponding second-step operation; it is not a normal result that can
-be stored and reused. Both words must use the same operand register, and that
-register must not be written between the two operations. The pair can be
-separated by intervening batches (at least four were tested), but omitting the
-PRE operation produces incorrect results. The maximum lifetime of the
-intermediate is not known.
+**PREEX2/EX2, PRESIN/SIN and PRECOS/COS are paired operations.** The PRE
+operation prepares an internal intermediate for the corresponding second-step
+operation; it is not an ordinary result to store as the function value. Both
+operations must name the same SFU operand register. A write to that register
+between the two operations, through either the multiplier or ALU in the tested
+cases, destroys the pending pair; a write to another register does not.
+
+The pair survived separations of up to 17 MFU words and five batch boundaries
+in the tested sequences. This is the largest tested separation, not an
+established lifetime limit. The second-step operation does not consume the
+intermediate: repeating the same main operation reuses it. A second PRE on the
+same register does not simply replace the pending intermediate and instead
+corrupts the result. Two pairs on different registers were successfully
+interleaved.
+
+Without the corresponding PRE, the tested EX2, SIN and COS controls did not
+produce their normal functions (for example, EX2 of -1 read as 1.0 and SIN of
+1 read as the input 1.0). Intervening SFU operations can disturb a pending pair;
+SIN and COS were exceptions in the tested PRESIN sequence, with the COS
+behavior still unexplained. The behavior of every possible intervening
+operation has not been characterized.
 
 #### var0..3:
 
@@ -335,21 +348,22 @@ in place. Tests with FP20 values in several row registers show that the SFU
 operates on the named register and writes the result back to it. The opcode
 summaries below therefore use `rA` for this in-place operand.
 
-The SFU result is evaluated before the multiplier result and is available to
-MUL through source selector 10. Tests with RCP and SQRT show that selector 10
-exposes the SFU result independently of the selected operand register.
+The SFU is evaluated before the multipliers in its MFU word. Hardware tests
+of all eleven decoded SFU opcodes show that each operation writes its named
+operand register in place, and that selector 10 exposes the SFU result to the
+multipliers in that same word. Both multipliers can read that result, including
+when one of them also writes the SFU operand register.
 
-|  Value | Meaning                |
-|-------:|:-----------------------|
-|   0..3 | row register 0..3      |
-|   4..6 | ???                    |
-|   7..8 | ???                    |
-|      9 | fetch-associated value |
-|     10 | SFU result             |
-|     11 | barycentric coef 0     |
-|     12 | barycentric coef 1     |
-|     13 | 1.0                    |
-| 14..15 | ???                    |
+|  Value | Meaning                 |
+|-------:|:------------------------|
+|   0..3 | row register 0..3       |
+|   4..7 | ??? (global registers?) |
+|   8..9 | ???                     |
+|     10 | SFU result              |
+|     11 | barycentric coef 0      |
+|     12 | barycentric coef 1      |
+|     13 | 1.0                     |
+| 14..15 | ???                     |
 
 Selectors 4, 5 and 6 returned nonzero values that were unchanged when the
 source field or sample position changed. Their identities are not known.
