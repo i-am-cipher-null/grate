@@ -225,12 +225,12 @@ Patent: https://www.google.com/patents/US8521800
 
 When the "recv" bit is set, operand rC is overridden with the accumulation value.
 
-|       | recv            | send             |
-|-------|-----------------|------------------|
-| ALU0: | ALU0 += ALU3    | No action        |
-| ALU1: | ALU1 += ALU0    | ALU0 += ALU1     |
-| ALU2: | ALU2 += ALU1    | ALU0 += ALU2     |
-| ALU3: | ALU3 += ALU2    | ALU2 += ALU3     |
+|       | recv         | send         |
+|-------|--------------|--------------|
+| ALU0: | ALU0 += ALU3 | No action    |
+| ALU1: | ALU1 += ALU0 | ALU0 += ALU1 |
+| ALU2: | ALU2 += ALU1 | ALU0 += ALU2 |
+| ALU3: | ALU3 += ALU2 | ALU2 += ALU3 |
 
 Hardware tests with all twelve producer/consumer slot orderings found that a
 row-register consumer reads the pre-packet value, not the value written by
@@ -244,23 +244,54 @@ Reads through `alu0..3` returned zero at the tested same-packet and later-packet
 separations. A raw-word destination test has not yet been made, so write behavior for
 these registers remains unknown.
 
-With `recv` (`this`), a scalar instruction can add an accumulator value
-carried from another slot to its own result. In the established non-send
-arrangements, the receiver gets the immediately preceding slot's **raw
-result**, not that slot's accumulated destination value. For example, a 0.5
-result after a 0.25 result reads as 0.75. The producer does not need `recv`
-set, and the tested accumulation did not cross a packet boundary.
+The `recv` marker (`this`) and `send` marker (`other`) were tested
+independently across all twelve ordered pairs of ALU slots, with controls for
+neither marker, each marker alone, and both markers.
 
-The additional `send` probes show that a receiver can observe a sender's
-result in several arrangements, but do not yet define a general slot-order
-rule. With senders in slots 0 and 1 and a receiver in slot 2, the receiver
-added the slot-1 result. A receiver in slot 0 with a sender in slot 1 also
-observed that sender in one test, conflicting with an older arrangement that
-reported no transfer when the order was reversed. The operand and destination
-arrangements differed, so that discrepancy remains unresolved. The send bit
-also changed the sender's own destination in the tested cases: a sent product
-and its stored destination did not always match. Do not infer a general
-`send` write rule from these examples.
+With `recv` (`this`) on slot j, that slot adds the immediately preceding
+slot's **raw result** to its own result, wrapping at the packet boundary:
+slot 0 receives from slot 3. The sender does not need `send` set. The value
+received is not the sender's accumulated destination value.
+
+With `send` (`other`) on a slot, its raw result is delivered to another
+slot's accumulator in the same packet. The measured destinations are slot 0
+for senders in slots 1 and 2, and slot 2 for a sender in slot 3. Slot 0 with
+`send` set produced no observable delivery to another slot in the packet.
+The mapping for senders 1 through 3 fits the tested `(i - 1) & ~1` pattern,
+but slot 0 is an exception, so this is not a complete routing formula. A
+receiving slot accumulates delivered values even when it does not have
+`recv` set.
+
+The two markers act independently. A slot with both markers receives the
+preceding slot's raw result and sends its own raw result. In a chaining test,
+the middle slot's destination contained its accumulated value (0.75), while
+the value it forwarded was its unaccumulated result (0.5).
+
+Multiple sends can contribute to the same accumulator. When slots 1 and 2
+both sent to slot 0, slot 0 accumulated its own 0.0625 result plus 0.25 and
+0.5, producing 0.8125. In a separate arrangement, a `recv` contribution
+from slot 3 raised that result to 0.875. An overflow test produced 1.5 before
+accumulation saturation and read back as 1.0. Thus, in the tested cases,
+multiple incoming sends to the target slot's accumulator are added, with the
+observed sum saturating at 1.0.
+
+An earlier two-sender arrangement, where the observed receiver was distinct
+from the send target, produced only the preceding slot's value. That result
+is specific to that arrangement; it does not show that multiple sends to a
+slot's own accumulator are discarded. The tests also found no delivery from
+a send in one packet to a candidate receiver in the following packet.
+
+Slot 0's `send` result was not observed in any other slot or in the following
+packet. The tests cannot distinguish a dropped value from a value routed to
+an unobserved destination. Hardware write-back tests confirmed that
+destinations `r0` and `r1`, like `r2` and `r3`, can be written from each
+of the four ALU slots.
+
+The routing observations are limited to the tested packet arrangements.
+The reason for the routing pattern, the destination (if any) of slot 0's
+send, delivery across other packet arrangements, fan-out from one send to
+multiple receivers, negative-value accumulation, and the saturation behavior
+outside the tested positive overflow case remain unresolved.
 
 When multiple slots wrote the same FX10 half in one packet, the observed
 destination contained the bitwise OR of their FX10 encodings rather than the
