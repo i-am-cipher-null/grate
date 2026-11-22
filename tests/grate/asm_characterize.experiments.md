@@ -4831,6 +4831,71 @@ each (16 variants, three repeats, plus the four control rows), pinned from
 Regenerate with `python3 tests/grate/asm/make_alu_sched.py`. The hook is
 documented in `src/libgrate/grate-asm.c` next to the emission it affects.
 
+## 31. What a group flush carries: a forward, not a register
+
+`--set latch-flush` (13 variants) from `tests/grate/asm/alu_latch.in` at
+`alu_buffer_size` 1, manifest `asm_characterize.alu_latch_flush.json`.
+Section 28 established *that* one latch read survives a group flush; this set
+asks *what* it is, because a register a compiler can stash a value in and a
+pipeline forward are different tools.
+
+| hypothesis | prediction |
+|:--|:--|
+| forwarded | the flush forwards the **previous group's slot-0 result**; a group whose slot 0 wrote nothing carries nothing; one group deep; the writer's row destination is irrelevant |
+| row alias | `alu0` at flush distance reads a row register the previous group wrote, so the writer's row index decides |
+| register | a real saved register holds until overwritten, so an idle group does not lose it and it lasts more than one group |
+
+The two predictions that separate them are the idle group (`flush-idle`) and
+the two-write chain (`flush-two-values`); the row alias is separated by
+writing through r5 and r7 instead of r2.
+
+| variant | forwarded | row alias | register | measured |
+|:--|--:|--:|--:|--:|
+| `flush-carry` (write r2, read next group) | `0x10` | `0x10` | `0x10` | **`0x00000010`** |
+| `flush-carry-r5` | `0x10` | `0` | `0x10` | **`0x00000010`** |
+| `flush-carry-r7` | `0x10` | `0` | `0x10` | **`0x00000010`** |
+| `flush-two-values` (0.0625 then 0.25, read third group) | `0x40` | `0` | `0x10` | **`0x00000040`** |
+| `flush-idle` (all-NOP group between) | `0` | `0` | `0x10` | **`0x00000000`** |
+| `flush-two-deep` (three groups after the write) | `0` | `0` | `0x10` | **`0x00000000`** |
+| `flush-writer-s1` | `0` | `0` | `0` | **`0x00000000`** |
+| `flush-writer-s3` | `0` | `0` | `0` | **`0x00000000`** |
+| `flush-reader-s1` | `0` | `0` | `0` | **`0x00000000`** |
+| `flush-row-direct` (row control) | `0x10` | `0x10` | `0x10` | **`0x00000010`** |
+| `flush-writer-hi` | `0` | `0` | `0` | **`0x00000000`** |
+| `flush-carry-bare` | `0` | `0` | `0` | **`0x00000000`** |
+| `flush-busy-middle` (middle group writes through slot 3) | `0` | `0` | `0x10` | **`0x00000000`** |
+
+Every word matches the forwarded reading and the other two have at least one
+clean contradiction each: the row alias is dead at `flush-carry-r5`/`-r7`
+(the writer's row does not matter) and the register reading dies twice
+(`flush-idle` loses the value, `flush-two-values` returns the *newest* slot-0
+result rather than an older one).
+
+So a latch read across a group boundary is the same forward the packet
+boundary has, one pipeline stage later: it needs slot 0 to have issued an ALU
+result in the group just before, it is served to slot 0 only, it is one group
+deep, and it is format-specific (`flush-writer-hi` and `flush-carry-bare` are
+both zero, matching the within-group rule).
+
+**Consequence for a compiler.** `alu0` is not a spill slot: nothing is saved,
+so a value cannot live in a latch across a group boundary. Crossing a group
+requires a row register (the `flush-row-direct` control and section 28's
+`n1-row`), which is what the assembler already does. The one thing a scheduler
+can rely on is that a group's own slot 0 may read the previous group's slot-0
+result without a row round trip.
+
+Not settled: why slot 0 alone; whether the same holds on a T114; whether the
+"slot 0 wrote" condition is about the slot or about the packet's first
+instruction (the template always has four slots, so an ALU0 that is NOP is the
+only empty form measured).
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-latch-flush` and `verify-alu-latch-flush` hold
+43 rows each (13 variants, three repeats, plus the four control rows), pinned
+from `64bb9bf0b736...`; re-pinning reproduces the manifest byte for byte.
+Regenerate with `python3 tests/grate/asm/make_alu_latch_flush.py`.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

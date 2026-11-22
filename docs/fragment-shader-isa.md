@@ -247,7 +247,13 @@ as operands (notes 28). A read is not a read of a retired register:
 
 The value is format-specific: a `.l*` (fx10 low-half) write fills the `aluK.l` view and
 leaves a bare `aluK` (fp20) read at zero, while an `.lh` write fills the bare read. A
-`.*h`-only write fills neither. That is why an earlier reading of "the result registers
+`.*h`-only write fills neither.
+
+The across-group row is a forward of the *previous group's* slot-0 result, not a saved
+register (notes 31): a group whose slot 0 wrote nothing carries nothing, the value is one
+group deep, and the writer's row destination does not matter. A latch therefore cannot
+carry a value across a group boundary though a row register can, which is what the
+assembler emits when it needs one. That is why an earlier reading of "the result registers
 always read zero" was wrong - those probes read `aluK` bare from packets whose slot K
 wrote a low half, one batch away.
 
