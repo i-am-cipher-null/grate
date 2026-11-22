@@ -1,0 +1,48 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * DW field template: two batches, two stores to rt1.
+ *
+ *   batch 0  prime r0/r1 with the prefill pattern and store them
+ *   batch 1  prime r2/r3 with the payload and store the word under test
+ *
+ * The prefill is what makes a partial write visible. A store that is dropped,
+ * or one that writes only some of the four bytes, leaves the prefill byte in
+ * place; a store that writes all four replaces it. A clear colour cannot tell
+ * "wrote the same bytes" from "did not write", which is why single-bit sweeps
+ * on a cleared target could only ever report "no effect".
+ *
+ * Bytes are the fx10 codes: 17/256, 34/256, 51/256 and 68/256 store as 0x11,
+ * 0x22, 0x33 and 0x44 in r0.lo, r0.hi, r1.lo and r1.hi, and the payload
+ * 0.25/0.5/0.75/1.0 stores as 0x40, 0x7F, 0xBF and 0xFF in r2.lo, r2.hi,
+ * r3.lo and r3.hi.
+ */
+
+.constants
+	[0] = 0.06640625;
+	[1] = 0.1328125;
+	[2] = 0.19921875;
+	[3] = 0.265625;
+	[4] = 0.25;
+	[5] = 0.5;
+	[6] = 0.75;
+	[7] = 1.0;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.l*,  u0,  #1,  #0
+		ALU1:	MAD  r0.*h,  u1,  #1,  #0
+		ALU2:	MAD  r1.l*,  u2,  #1,  #0
+		ALU3:	MAD  r1.*h,  u3,  #1,  #0
+	DW:	store rt1, r0, r1
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u4,  #1,  #0
+		ALU1:	MAD  r2.*h,  u5,  #1,  #0
+		ALU2:	MAD  r3.l*,  u6,  #1,  #0
+		ALU3:	MAD  r3.*h,  u7,  #1,  #0
+	DW:	TEST_WORD
+;

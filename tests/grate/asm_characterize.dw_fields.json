@@ -1,0 +1,215 @@
+{
+	"name": "dw-fields",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/dw_fields.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "prefill-only",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "NOP"
+				}
+			},
+			"expected_note": "batch 1 stores nothing: the prefill pattern 0x44332211 is what survives",
+			"expected": "0x44332211"
+		},
+		{
+			"name": "all",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x00028005"
+				}
+			},
+			"expected_note": "the plain store replaces all four bytes of the prefill",
+			"expected": "0xFFBF7F40"
+		},
+		{
+			"name": "group-6-9",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x000283C5"
+				}
+			},
+			"expected_note": "bits 6..9 as a group of four",
+			"expected": "0xFFBF7F40"
+		},
+		{
+			"name": "group-11-14",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x0002F805"
+				}
+			},
+			"expected_note": "bits 11..14 as a group of four",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "group-18-19",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x000E8005"
+				}
+			},
+			"expected_note": "bits 18..19 - two of the slices dw_enc_src() returns",
+			"expected": "0xFFBF7F40"
+		},
+		{
+			"name": "group-23-25",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x03828005"
+				}
+			},
+			"expected_note": "bits 23..25 - the other operand slices, plus bit 24",
+			"expected": "0xFFBF7F40"
+		},
+		{
+			"name": "group-18-31",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0xFFFE8005"
+				}
+			},
+			"expected_note": "every bit above the class field at once",
+			"expected": "0xFFBF7F40"
+		},
+		{
+			"name": "class-1",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x00018005"
+				}
+			},
+			"expected_note": "class 1 on a colour target with no depth surface bound",
+			"expected": "0x44332211"
+		},
+		{
+			"name": "mode-0",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x00028004"
+				}
+			},
+			"expected_note": "write mode 0 - expected to write nothing",
+			"expected": "0x44332211"
+		},
+		{
+			"name": "mode-2",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x00028006"
+				}
+			},
+			"expected_note": "write mode 2, the spill write of one register",
+			"expected": "0x44332211"
+		},
+		{
+			"name": "mode-3",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x00028007"
+				}
+			},
+			"expected_note": "write mode 3, the spill write of several registers",
+			"expected": "0x44332211"
+		},
+		{
+			"name": "bit-11",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x00028805"
+				}
+			},
+			"expected_note": "bit 11 alone, from a group that wrote a zero payload together",
+			"expected": "0xFFBF7F40"
+		},
+		{
+			"name": "bit-12",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x00029005"
+				}
+			},
+			"expected_note": "bit 12 alone",
+			"expected": "0xFFBF7F40"
+		},
+		{
+			"name": "bit-13",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x0002A005"
+				}
+			},
+			"expected_note": "bit 13 alone",
+			"expected": "0xFFBF7F40"
+		},
+		{
+			"name": "bit-14",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x0002C005"
+				}
+			},
+			"expected_note": "bit 14 alone - the documented zero-payload case",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "bit-14-15",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x0002C005"
+				}
+			},
+			"expected_note": "bits 14 and 15 - whether the pair bit changes the zero payload",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "bit-14-pair0",
+			"fs": "tests/grate/asm/dw_fields.in",
+			"replace": {
+				"fs": {
+					"TEST_WORD": "0x00024005"
+				}
+			},
+			"expected_note": "bit 14 with bit 15 clear: the other pair is named, and the payload stays zero if 14 is a source select rather than a pair bit",
+			"expected": "0x00000000"
+		}
+	]
+}
