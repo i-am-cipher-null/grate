@@ -820,3 +820,67 @@ invalidate another; generate such a manifest with
 * commit: 1bece9527f2e2b3142dbd66f7fb656d3397cea69 with a clean tree (clone in /tmp/clean-isa4)
 * created: 2026-11-21T22:31:29+00:00; 37 rows, repeat 3, timeout 20.0 s
 * summary: 37 passed, 0 failed of 37 - passed
+
+## pin-dw-fields
+
+* manifest: `asm_characterize.dw_fields.json` (sha256 8f922b210b02)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 54b97877a2fe77c7d88bfacffc72a77b19888088 with the set's files untracked (see metadata git_status)
+* created: 2026-11-21T23:19:44+00:00; 55 rows, repeat 3, timeout 20.0 s
+* summary: 55 passed, 0 failed of 55 - passed
+
+## verify-dw-fields
+
+* manifest: `asm_characterize.dw_fields.json` (sha256 f0bbe8c07e39)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 54b97877a2fe77c7d88bfacffc72a77b19888088 with the set's files untracked (see metadata git_status)
+* created: 2026-11-21T23:20:02+00:00; 55 rows, repeat 3, timeout 20.0 s
+* summary: 55 passed, 0 failed of 55 - passed
+
+## pin-pseq-spill
+
+* manifest: `asm_characterize.pseq_spill.json` (sha256 cb37d9308a78)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 54b97877a2fe77c7d88bfacffc72a77b19888088 with the set's files untracked (see metadata git_status)
+* created: 2026-11-21T23:23:28+00:00; 64 rows, repeat 3, timeout 20.0 s
+* summary: 64 passed, 0 failed of 64 - passed
+
+## verify-pseq-spill
+
+* manifest: `asm_characterize.pseq_spill.json` (sha256 3d1dc560d30c)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 54b97877a2fe77c7d88bfacffc72a77b19888088 with the set's files untracked (see metadata git_status)
+* created: 2026-11-21T23:23:58+00:00; 64 rows, repeat 3, timeout 20.0 s
+* summary: 64 passed, 0 failed of 64 - passed
+
+## pin-mfu-dis
+
+* manifest: `asm_characterize.mfu_dis.json` (sha256 5963641cbee5)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 54b97877a2fe77c7d88bfacffc72a77b19888088 with the set's files untracked (see metadata git_status)
+* created: 2026-11-21T23:27:29+00:00; 28 rows, repeat 3, timeout 20.0 s
+* summary: 28 passed, 0 failed of 28 - passed
+
+## verify-mfu-dis
+
+* manifest: `asm_characterize.mfu_dis.json` (sha256 fd756c64d60a)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 54b97877a2fe77c7d88bfacffc72a77b19888088 with the set's files untracked (see metadata git_status)
+* created: 2026-11-21T23:28:07+00:00; 28 rows, repeat 3, timeout 20.0 s
+* summary: 28 passed, 0 failed of 28 - passed
+
+## pin-alu-collide
+
+* manifest: `asm_characterize.alu_collide.json` (sha256 9878e84983d5)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 54b97877a2fe77c7d88bfacffc72a77b19888088 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T00:17:25+00:00; 25 rows, repeat 3, timeout 20.0 s
+* summary: 25 passed, 0 failed of 25 - passed
+
+## verify-alu-collide
+
+* manifest: `asm_characterize.alu_collide.json` (sha256 d9215e6560bb)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 54b97877a2fe77c7d88bfacffc72a77b19888088 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T00:17:49+00:00; 25 rows, repeat 3, timeout 20.0 s
+* summary: 25 passed, 0 failed of 25 - passed

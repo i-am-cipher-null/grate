@@ -4159,6 +4159,313 @@ On this device and setup:
 (11 variants, three repeats, and the four control runs), pinned at
 `6c17fce4b848...`; re-pinning from the verify directory is byte-identical.
 
+## 24. DW field groups: is there a write mask
+
+### The questions
+
+Section 8 records every DW bit that a *single-bit* flip changes and calls 6..9,
+11..14 and 18..31 inert. Two questions survive that sweep:
+
+1. does the word carry a write mask at all - a field that leaves some of the
+   four output bytes unwritten;
+2. do the remaining bits act when set as a group rather than one at a time.
+
+The render-target class field is the reason the second question is not idle.
+Flipping its bits one at a time suggested "bit 16 kills the write, bit 17 is a
+don't-care"; the field is only sensible as a 2-bit value, where 0 and 2 write,
+1 needs a depth surface bound and 3 is invalid. A mask or a mode field in the
+"inert" bits would fail the same way under single-bit flips.
+
+### Why a prefill
+
+A store that is dropped and a store that writes the value the target already
+holds are the same readback on a cleared surface. Every variant therefore stores
+a prefill pattern in batch 0 and the word under test in batch 1, both to rt1:
+
+| batch | ALU writes | store |
+|:--|:--|:--|
+| 0 | `r0/r1` = 17/256, 34/256, 51/256, 68/256 | `store rt1, r0, r1` |
+| 1 | `r2/r3` = 0.25, 0.5, 0.75, 1.0 | the word under test |
+
+The prefill stores as `0x44332211` and the payload as `0xFFBF7F40`, so a byte
+that survives is a positive observation of "not written", and the four bytes
+are distinct on both sides.
+
+### Measured
+
+Seventeen variants, three repeats, all agreeing; `store rt1, r2, r3` is
+`0x00028005` (index 1, class 2, pair r2/r3):
+
+| variant | word | stored | reading |
+|:--|--:|--:|:--|
+| `prefill-only` | NOP | `0x44332211` | batch 0's store is what the target holds |
+| `all` | `0x00028005` | `0xFFBF7F40` | all four bytes replaced |
+| `group-6-9` | `0x000283C5` | `0xFFBF7F40` | no mask in 6..9 |
+| `group-18-19` | `0x000E8005` | `0xFFBF7F40` | the compiler's operand slices, as a group |
+| `group-23-25` | `0x03828005` | `0xFFBF7F40` | ditto, plus bit 24 |
+| `group-18-31` | `0xFFFE8005` | `0xFFBF7F40` | every bit above the class field |
+| `group-11-14` | `0x0002F805` | `0x00000000` | a *zero payload*, not a masked write |
+| `bit-11` | `0x00028805` | `0xFFBF7F40` | inert alone |
+| `bit-12` | `0x00029005` | `0xFFBF7F40` | inert alone |
+| `bit-13` | `0x0002A005` | `0xFFBF7F40` | inert alone |
+| `bit-14` | `0x0002C005` | `0x00000000` | the group's zero is bit 14 |
+| `bit-14-15` | `0x0002E005` | `0x00000000` | the pair bit does not change it |
+| `bit-14-pair0` | `0x00024005` | `0x00000000` | neither does naming the other pair |
+| `class-1` | `0x00018005` | `0x44332211` | no depth surface bound: the store is dropped |
+| `mode-0` | `0x00028004` | `0x44332211` | nothing written |
+| `mode-2` | `0x00028006` | `0x44332211` | spill write of one register: colour untouched |
+| `mode-3` | `0x00028007` | `0x44332211` | spill write of several: colour untouched |
+
+### What this settles
+
+* **There is no per-byte write mask in the DW word on the colour path.** Bits
+  6..9, 18..19, 23..25 and 18..31 together leave the full payload written, and
+  the prefill makes that a statement about writing rather than about a cleared
+  target. Any masking that exists is outside the instruction word (the blob's
+  context carries a `write_mask` for its own bookkeeping).
+* **Bits 11..13 are inert alone and bit 14 is not.** The group 11..14 only
+  looked interesting because it contains 14.
+* **Bit 14 zeroes the payload and still commits the write.** It is not a
+  disable: the target moves from the prefill to `0x00000000`. It is also not
+  the pair select - naming either pair gives the same zeros.
+* **Modes 0, 2 and 3 and a class-1 store without a depth surface write nothing
+  to the colour target**, now measured against a prefill instead of against the
+  clear colour.
+
+### What this does not settle
+
+* where bit 14's zero comes from. "A source that reads zero" and "a deliberate
+  clear-store" are indistinguishable from outside the unit, and the obvious
+  candidate - the second row of row registers, `r4..r7` - cannot be populated:
+  `alu_buffer_size = 2` hangs the draw even for a one-batch program whose whole
+  body is one `MAD` and a store, with no result and no error. That is the same
+  blocker [[Compiler Internals]] records for its own bit-14 attempt, now
+  measured rather than inferred;
+* the spill half-word index. Section 12.9 leaves bits 15 and 17 "open above
+  bit 14" because each landed where the packet index did not predict, and
+  settling it needs the raw spill surface, which this harness reports only as a
+  region digest.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-dw-fields` and `verify-dw-fields` hold 55 rows
+each (17 variants, three repeats, plus the four control rows), pinned from
+`f0bbe8c07e39...`; re-pinning from the verification directory reproduces the
+manifest byte for byte. Regenerate with
+`python3 tests/grate/asm/make_dw_fields.py`.
+
+## 25. The PSEQ form bit 24 selects
+
+### The question
+
+Section 9 says "bit 24 with bit 23 set selects the spill-fetch form, whose write
+mask and slot fields overlay the low bits of this word (section 9.2)" - and
+there is no 9.2. What is measured there is only that setting bit 24 on a working
+fetch suppresses it, and that bits 4..15 are inert in the render-target form.
+
+### The round trip
+
+| batch | what it does |
+|:--|:--|
+| 0 | prime `r0/r1` with the "did nothing" pattern |
+| 1 | prime `r2/r3` with the tag and `store rt4, r2, r3` |
+| 2 | the word under test in the `PSEQ` slot |
+| 3 | an optional second fetch, used to read rt4 back |
+| 4 | `store rt1, r0, r1` |
+
+A fetch replaces the pattern (`0x20102010`) with the tag (`0x8F706050`); a word
+that does nothing leaves the pattern. The tag is stored through rt4 bound with
+`GRATE_RT4=1`.
+
+### Measured
+
+Twenty variants, three repeats, all agreeing:
+
+| variant | word | stored | reading |
+|:--|--:|--:|:--|
+| `rt4-fetch` | `0x00840008` | `0x8F706050` | the render-target form works |
+| `nofetch` | NOP | `0x20102010` | the pattern |
+| `rt4-index0` | `0x00800008` | `0x2010FFFF` | index 0: `r0` becomes `FFFF`, `r1` keeps its pattern |
+| `spill-24` | `0x01000008` | `0x20100010` | `r0.hi` zeroed, no fetch |
+| `spill-24-23` | `0x01800008` | `0x00102010` | `r1.hi` zeroed instead |
+| `spill-b0` | `0x01000009` | `0x00102010` | bit 0 selects the same half as bit 23 |
+| `spill-b2` | `0x0100000C` | `0x20100000` | both high halves zeroed |
+| `spill-b1` | `0x0100000A` | `0x20102010` | nothing written |
+| `spill-b4` | `0x01800018` | `0x00102010` | bits 4..15 add nothing |
+| `spill-b12` | `0x01809008` | `0x00102010` | " |
+| `spill-b15` | `0x01888008` | `0x00102010` | " |
+| `spill-low` | `0x0180FFF8` | `0x00102010` | every bit 4..15 at once |
+| `spill-nolow` | `0x01000000` | `0x20102010` | without bit 3 nothing is written |
+| `spill-b23-nolow` | `0x01800000` | `0x20102010` | " |
+| `spill-b2-nolow` | `0x01000004` | `0x20102000` | bit 2 alone writes `r1.hi` |
+| `spill-b0-nolow` | `0x01000001` | `0x20102010` | bit 0 alone writes nothing |
+| `spill-pair` | `0x0180000A` (read `r2/r3`) | `0x8F706050` | the pair bit writes nothing to `r2/r3` either |
+| `spill-24-then-fetch` | `0x01000008`, then `0x00840008` | `0x8F706050` | the tag is still there |
+| `spill-24-23-then-fetch` | `0x01800008`, then `0x00840008` | `0x8F706050` | " |
+| `tag-then-fetch` | NOP, then `0x00840008` | `0x8F706050` | the readback control |
+
+### What this settles
+
+* **The form is not a fetch.** No variant with bit 24 set delivers any part of
+  the tagged surface; what it does instead is write zero into one or both *high*
+  halves of the destination pair, and the low halves are never touched.
+* **The half selection is the "write mask" the reference alludes to, but it is
+  not in bits 4..15.** Those are inert even as a group. What selects the half
+  is bit 3 (required for any write at all), bit 2 (the second half) and bits 0 /
+  23 (redirect to the second half): `{3}` writes `r0.hi`, `{2}` writes
+  `r1.hi`, `{3,2}` writes both, and `{3,0}` or `{3,23}` write `r1.hi` only.
+* **Bit 1 suppresses it.** With bit 1 set nothing is written to `r0/r1` or to
+  `r2/r3`, so in this form the destination-pair bit does not select a pair.
+* **The form does not write the surface it would read.** A render-target fetch
+  of rt4 after the word still returns the tag, so nothing was committed there
+  either.
+
+### What this does not settle
+
+* whether the zero is a literal or a read from an address outside the bound
+  surface. The surface held a tag in every word the fetch can reach, so a read
+  of it would have shown the tag; what is not separated is "read somewhere else"
+  from "clear the register";
+* what a consumer would use a zero-half write for. A spill/restore sequence at a
+  chunk boundary is the plausible context, and nothing here tests it;
+* why the index-0 fetch writes `FFFF` into `r0` and leaves `r1` alone. It is
+  recorded because it is repeatable and it means index 0 is not a plain colour
+  read, but it is not part of this question.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-pseq-spill` and `verify-pseq-spill` hold 64 rows
+each (20 variants, three repeats, plus the four control rows), pinned from
+`3d1dc560d30c...`; re-pinning reproduces the manifest byte for byte.
+Regenerate with `python3 tests/grate/asm/make_pseq_spill.py`.
+
+## 26. Which vertex an interpolation-disabled component takes
+
+### The question
+
+Section 10 measured that `fp20 (dis)` replaces a component's interpolated value
+with "a vertex value" and recorded that which vertex it is was not determined
+by the single sample. The modifier sets the per-column disable bit of the link
+word, so the question is what the fragment sees for that column.
+
+### Method
+
+The vertex shader exports `a[1].zyxx`, so the harness's unit-vector vertex
+colours become `(0,0,1,1)` for vertices 0 and 3, `(0,1,0,0)` for vertex 1 and
+`(1,0,0,0)` for vertex 2. Three reference variants store each of those vectors
+through the same destination bytes and the same store word as the varying
+variant, so a `(dis)` word can be matched to a vertex by comparison instead of
+by reasoning about the slot-to-component mapping:
+
+| reference | vector | word |
+|:--|:--|--:|
+| `ref-v0v3` | (0, 0, 1, 1) | `0xFFFF0000` |
+| `ref-v1` | (0, 1, 0, 0) | `0x000000FF` |
+| `ref-v2` | (1, 0, 0, 0) | `0x0000FF00` |
+
+### Measured
+
+Eight variants, three repeats, all agreeing:
+
+| variant | linker | stored | reading |
+|:--|:--|--:|:--|
+| `plain` | no modifier | `0x0000FF01` | interpolated, essentially vertex 2's vector |
+| `dis-all` | `(dis)` on all four columns | `0xFFFF0000` | **exactly `ref-v0v3`** |
+| `dis-x` | first column | `0x000000FF` | exactly `ref-v1` |
+| `dis-y` | second column | `0x00000100` | no reference match |
+| `dis-z` | third column | `0x00FF01FF` | no reference match |
+
+### What this settles
+
+* **With every column disabled the sample is one vertex's whole vector, and
+  that vertex is the last one of the covering triangle.** The first fragment's
+  triangle is (1,2,3), so `ref-v0v3` can only be vertex 3: the flat value is
+  the provoking (last) vertex's, not the first's and not a blend;
+* the interpolated control confirms the sample geometry: the plain word is
+  vertex 2's vector to within one step in one component, and vertex 2 is in
+  that triangle.
+
+### What this does not settle
+
+* the single-column words match no reference vector, so this set does not
+  establish the per-component behaviour. `dis-x` happens to equal `ref-v1`
+  exactly and `dis-z` differs from `plain` in two bytes, which is not what a
+  single replaced component would look like under this byte layout - the ipl
+  slot order and the link column order are not pinned against each other here.
+  Section 10's own single-column result (blue replaced, alpha unchanged) stands
+  as the only measurement on that side, and it used a different link word;
+* whether the provoking-vertex rule survives a change of triangle order or a
+  strip; only the quad's two triangles were run.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-mfu-dis` and `verify-mfu-dis` hold 28 rows each
+(eight variants, three repeats, plus the four control rows), pinned from
+`fd756c64d60a...`; re-pinning reproduces the manifest byte for byte.
+Regenerate with `python3 tests/grate/asm/make_mfu_dis.py`.
+
+## 27. Two writers into one register in the fp20 format
+
+### The question
+
+The forwarding set measured several writers into one half with `.l*` / `.*h`
+destinations: the fx10 codes OR, order does not matter and two identical values
+stay one value. It left open what an `.lh` (fp20) destination does with two
+writers, and what happens when one writer uses each format.
+
+### Method
+
+Batch 0 runs two or three writers into `r2` and primes `r3` with 0.75 as a
+marker. Batch 1 reads `r2` as fp20 and writes the fx10 conversion into `r2.lo`
+(and `r3` into `r2.hi`), so the store's byte 0 is the collided value. The fp20
+codes involved are `0.25 = 0xE8`, `0.5 = 0xF0`, `0.75 = 0xF4`, `1.0 = 0xF8`
+and `1.5 = 0xFC`.
+
+### Measured
+
+Seven variants, three repeats, all agreeing:
+
+| variant | writers | word | byte 0 | reading |
+|:--|:--|--:|--:|:--|
+| `lh-one` | 0.25 | `0x00BF0040` | `0x40` | the baseline: 0.25 |
+| `lh-same` | 0.25, 0.25 | `0x00BF0040` | `0x40` | identical values do not combine |
+| `lh-two` | 0.25, 0.5 | `0x00BF00FF` | `0xFF` | **1.0**, not 0.75 |
+| `lh-rev` | 0.5, 0.25 | `0x00BF00FF` | `0xFF` | order does not matter |
+| `lh-three` | 0.25, 0.5, 0.75 | `0x00BF00FF` | `0xFF` | 1.5, saturated in the store |
+| `fx10-then-fp20` | `.l*` 0.75, `.lh` 0.25 | `0x00BF0042` | `0x42` | 0.258 - neither value |
+| `fp20-then-fx10` | `.lh` 0.25, `.l*` 0.75 | `0x00BF0042` | `0x42` | the same, either order |
+
+### What this settles
+
+* **The merge is a bitwise OR of the destination half's own code, and it does
+  not care which format wrote it.** In fp20 `0xE8 | 0xF0 = 0xF8`, which is
+  exactly 1.0 - that is the `0xFF` byte, not a clamp of 0.75. Three writers give
+  `0xFC` = 1.5, which the 8-bit store then saturates;
+* **identical values are idempotent**, the same as in the fx10 case;
+* **mixing the formats leaves a value neither writer wrote** (`0x42`, one fp20
+  step above 0.25), in both orders. A compiler cannot use one register as two
+  scratch values in one packet, and a probe cannot assume the later writer wins.
+
+### What this does not settle
+
+* what writes `alu0..3` directly. The notes' own earlier attempt stands: a
+  64-bit literal in an ALU slot is not a standalone instruction - it is taken as
+  the slot word plus the next slot's control word - and the grammar refuses
+  `aluN` as a destination, so no test in this set writes the latch register.
+  What section 9 measures is that a row-register write is not relayed through
+  the latches, not what would fill them;
+* whether the OR is a property of the row-register file or of the ALU result
+  merge. The behaviour is fixed; the stage that causes it is not;
+* several writers into *different* halves of one register across several packets
+  in one batch.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-collide` and `verify-alu-collide` hold 25 rows
+each (seven variants, three repeats, plus the four control rows), pinned from
+`d9215e6560bb...`; re-pinning reproduces the manifest byte for byte.
+Regenerate with `python3 tests/grate/asm/make_alu_collide.py`.
+
 ## What the runner cost
 
 Five things that produced wrong results first:
