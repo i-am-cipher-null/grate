@@ -1121,3 +1121,20 @@ invalidate another; generate such a manifest with
 * created: 2026-11-22T21:50:41+00:00; 109 rows, repeat 3, timeout 10.0 s
 * summary: 109 passed, 0 failed of 109 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-dw-mrt
+
+* manifest: `asm_characterize.dw_mrt.json` (sha256 1c923cadbfec, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 044523a131e7a209e117fd54957023cf36c3f05d with a clean tree
+* created: 2026-11-22T21:53:11+00:00; 73 rows, repeat 3, timeout 20.0 s
+* summary: 73 passed, 0 failed of 73 - passed
+
+## clean-alu-sched-at
+
+* manifest: `asm_characterize.alu_sched_at.json` (sha256 5327ba31d3c0, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 044523a131e7a209e117fd54957023cf36c3f05d with a clean tree
+* created: 2026-11-22T21:53:21+00:00; 109 rows, repeat 3, timeout 10.0 s
+* summary: 109 passed, 0 failed of 109 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
