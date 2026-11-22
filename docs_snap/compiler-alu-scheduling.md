@@ -338,7 +338,7 @@ and the T114 layout are not.
 | two-packet batch forwarding, both directions, carry, formats | 36 | `asm_characterize.alu_pack2.json` | `pin-alu-pack2`, `verify-alu-pack2`, `clean-alu-pack2` |
 | three-packet rotation and the wrap | 36 | `asm_characterize.alu_pack3.json` | `pin-alu-pack3`, `verify-alu-pack3`, `clean-alu-pack3` |
 | rotation is group-scoped, sizes 1/2/3 | 36 | `asm_characterize.latch_rotate.json` | `pin-latch-rotate`, `verify-latch-rotate`, `clean-latch-rotate` |
-| M=4 rotation, one and two packets per batch | 38 | `asm_characterize.alu_pack4.json`, `_wrap`, `_probe`, `_probe2`, `_size4` | `pin-`/`verify-alu-pack4`, `-wrap`, `-probe`, `-probe2`, `-size4` |
+| M=4 rotation, one and two packets per batch | 38 | `asm_characterize.alu_pack4.json`, `_wrap`, `_probe`, `_probe2`, `_size4` | `pin-`/`verify-`/`clean-alu-pack4`, `-wrap`, `-probe`, `-probe2`, `-size4` |
 | `send`/`recv` are packet-local | 37 | `asm_characterize.alu_send_pack.json` | `pin-alu-send-pack`, `verify-alu-send-pack`, `clean-alu-send-pack` |
 
 The run directories live under `tests/grate/asm/results/` and each holds the

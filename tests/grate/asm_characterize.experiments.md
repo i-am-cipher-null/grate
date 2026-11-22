@@ -5574,7 +5574,10 @@ repeats, controls) pinned from a run on this checkout; `pin-alu-pack4-wrap` /
 `verify-alu-pack4-size4` 28 rows (8). Each directory holds the run's
 `schedule-words.tsv`. The two runs of each set agree row for row, every variant's
 three repeats agree, and the `immediate-operand` and `varying-pipeline` controls
-passed before and after every run. Regenerate with
+passed before and after every run. The `clean-alu-pack4`, `-wrap`, `-probe`,
+`-probe2` and `-size4` runs are the same five manifests from a checkout of the
+commit that contains them, with an empty `git status`, and all five match their
+pinned rows exactly. Regenerate with
 `python3 tests/grate/asm/make_alu_pack4.py` (and `--set wrap|probe|probe2|size4`),
 and pin with `--results DIR`.
 

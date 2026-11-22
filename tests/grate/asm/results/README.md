@@ -1358,3 +1358,48 @@ invalidate another; generate such a manifest with
 * created: 2026-11-22T23:19:54+00:00; 28 rows, repeat 3, timeout 20.0 s
 * summary: 28 passed, 0 failed of 28 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-alu-pack4
+
+* manifest: `asm_characterize.alu_pack4.json` (sha256 47eeba3a80a0, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 2c75209c9b50607a275691a00acc8a8499959c3d with a clean tree
+* created: 2026-11-22T23:25:52+00:00; 109 rows, repeat 3, timeout 20.0 s
+* summary: 109 passed, 0 failed of 109 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-alu-pack4-wrap
+
+* manifest: `asm_characterize.alu_pack4_wrap.json` (sha256 e4a6b6d8003c, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 2c75209c9b50607a275691a00acc8a8499959c3d with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T23:26:04+00:00; 37 rows, repeat 3, timeout 20.0 s
+* summary: 37 passed, 0 failed of 37 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-alu-pack4-probe
+
+* manifest: `asm_characterize.alu_pack4_probe.json` (sha256 d2937137e56c, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 2c75209c9b50607a275691a00acc8a8499959c3d with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T23:26:10+00:00; 37 rows, repeat 3, timeout 20.0 s
+* summary: 37 passed, 0 failed of 37 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-alu-pack4-probe2
+
+* manifest: `asm_characterize.alu_pack4_probe2.json` (sha256 fb143862cb2b, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 2c75209c9b50607a275691a00acc8a8499959c3d with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T23:26:16+00:00; 28 rows, repeat 3, timeout 20.0 s
+* summary: 28 passed, 0 failed of 28 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-alu-pack4-size4
+
+* manifest: `asm_characterize.alu_pack4_size4.json` (sha256 15a92488c015, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 2c75209c9b50607a275691a00acc8a8499959c3d with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T23:26:21+00:00; 28 rows, repeat 3, timeout 20.0 s
+* summary: 28 passed, 0 failed of 28 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
