@@ -65,7 +65,7 @@ FX10 is a signed 10-bit two's-complement value with eight fractional bits. Its r
 
 ## ALU instruction word encoding
 
-The ALU instructions comes in packets of 3 or 4 scalar instructions (the fourth instruction can be traded for embedded constants). Each ALU instruction package seems to run pipelined, and each instruction in a package can use partial results from the previous instruction.
+ALU instructions execute in packets of up to four scalar slots (the fourth slot can be traded for embedded constants). Hardware tests show that row-register writes are not forwarded between scalar slots in the same packet: a consumer reads the value held before the packet, regardless of whether its producer is in an earlier or later slot. The written value is visible to a consumer in the next packet. The separate `recv` accumulation path does carry a previous slot's result; see Result accumulation below.
 
 |   Bits | Meaning                  |
 |-------:|:-------------------------|
@@ -217,6 +217,12 @@ When the "recv" bit is set, operand rC is overridden with the accumulation value
 | ALU1: | ALU1 += ALU0    | ALU0 += ALU1     |
 | ALU2: | ALU2 += ALU1    | ALU0 += ALU2     |
 | ALU3: | ALU3 += ALU2    | ALU2 += ALU3     |
+
+Hardware tests with all twelve producer/consumer slot orderings found that a row-register consumer reads the pre-packet value, not the value written by another slot in that packet. This held for the tested MAD, MUL, MIN and MAX producer/consumer combinations and for the tested low-half, high-half and FP20 writes. Moving the consumer to the next packet made the producer's write visible. Reads through `alu0..3` returned zero at the tested same-packet and later-packet separations; their source behavior remains unidentified.
+
+With `recv` (`this`), a scalar instruction adds the previous slot's **raw result** to its own result. For example, a 0.5 result after a 0.25 result reads as 0.75. A three-slot test showed that the forwarded value is the previous slot's raw result, not its accumulated destination value. The producer does not need `recv` set. The tested `send` arrangements did not change these results, and the accumulation did not cross a packet boundary.
+
+When multiple slots wrote the same FX10 half in one packet, the observed destination contained the bitwise OR of their FX10 encodings rather than the last write or their arithmetic sum. This is an interpretation of the tested readback words; FP20 multi-writer behavior has not been tested.
 
 #### Addition disable
 
