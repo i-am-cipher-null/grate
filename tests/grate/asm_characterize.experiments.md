@@ -4318,7 +4318,7 @@ The bits that matter are 3, 2, 0 and 23. Sixteen combinations, five repeats
 each; `r0` primed `(0x11, 0x22)` and `r1` primed `(0x33, 0x44)`, so the idle
 readback is `0x44332211` and every written byte is visible in place:
 
-| bits beside 24 | word | halves written |
+| bits beside 24 | word | bytes written |
 |:--|--:|:--|
 | none | `0x01000000` | none |
 | 0 | `0x01000001` | none |
@@ -4387,8 +4387,9 @@ open.
 ### What this settles
 
 * **The form is not a fetch.** No variant with bit 24 set delivers any part of
-  the tagged surface; what it does instead is write zero into one or both *high*
-  halves of the destination pair, and the low halves are never touched.
+  the tagged surface; what it does instead is write selected bytes of the
+  destination pair, high and low alike, so it is a byte map and not the
+  high-half clear the earlier eight-cell table described.
 * **The selection of bytes is in bits 3, 2, 0 and 23, not in bits 4..15.**
   Those are inert even as a group. Bit 3 writes `r0.hi`, bit 2 writes `r0.lo`,
   and bits 0 / 23 choose between the `r0` pair and the `r1` pair - with both
