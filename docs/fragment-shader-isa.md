@@ -577,9 +577,9 @@ Bit 5 selects the destination pair:
 |      1 | R2-R3   |
 |      0 | R0-R1   |
 
-The RGBA channel order was confirmed through the r2-r3 destination pair.
-The tested texture did not distinguish the channel order through r0-r1, so
-that path remains uncharacterized.
+The RGBA channel order was confirmed through both destination pairs,
+r0-r1 and r2-r3. The four components retain RGBA order in the tested
+readback paths.
 
 Wrapping and filtering modes are configured in sampler state, separately
 from the TEX instruction word. They are not encoded by the fields documented
@@ -593,10 +593,11 @@ derivative-based estimate. When both bits are set, bias takes precedence in
 the tested hardware.
 
 Explicit LOD values below zero and above the available mip range clamp to the
-end levels. Fractional LOD selected the nearest mip level in the tested
-configuration. Bias and explicit LOD produced different results on a 16x16
-mip chain; the exact derivative-based LOD calculation and the behavior of
-fractional bias were not established.
+end levels. Bias and explicit LOD produced different results on a 16x16 mip
+chain. With both selection bits clear, a varying coordinate reaches the TEX
+fetch and the selected mip level changes with its coordinate gradient. The
+derivative-based estimate is therefore active in this path, but its exact
+formula and the behavior of fractional LOD bias remain unestablished.
 
 ### Formats and addressing
 
