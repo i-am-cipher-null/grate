@@ -4352,7 +4352,7 @@ What the grid rules out:
 * that either bit means "the second half". Each moves the whole write from
   `r0` to `r1`, and neither writes a half on its own;
 * that the low halves are untouched. `{2}` writes `r0.lo`, `{3,2}` writes both
-  halves of `r0`, and seven of the sixteen rows write a low half.
+  halves of `r0`, and ten of the sixteen rows write a low byte.
 
 ### The value written is not a constant zero
 
