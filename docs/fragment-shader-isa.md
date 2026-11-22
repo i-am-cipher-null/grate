@@ -109,6 +109,12 @@ Unlike a regular ALU instruction, the ALU3 instruction words, constituting immed
 |      2 |   MAX    | Maximum            | max(rA * rB, rC * rD)          |
 |      3 |   CSEL   | Conditional select | (rA * rB < 0) ? rB : (rC * rD) |
 
+Hardware tests confirm that CSEL tests the sign of `rA * rB`, returns the
+unmultiplied `rB` when that product is negative, and returns `rC * rD`
+otherwise. A zero product takes the latter branch.
+Negative values in the `rC * rD` candidate and negative zero have not been
+tested.
+
 #### Scale result:
 
 | Value |  Meaning |
@@ -134,11 +140,18 @@ or 1.0 result. No additional condition-enable bit is required.
 
 #### Condition registers:
 
-The condition register comprises two fixed10 values, 0.0 or 1.0. In order to write a value to the condition register, the destination register should be selected to the condition register 64..71. To write to the higher part of the condition register, "write high subregister" bit needs to be set; otherwise lower part will be written regardless of the "write low subregister" bit state.
+Condition-register destinations are selected from registers 64..71. Hardware
+tests show that a write stores a Boolean 0.0 or 1.0 derived from the ALU
+result; applying a condition modifier first replaces that result with the
+condition's Boolean value. The low and high sub-registers were independently
+addressable in the tested cases, and writes to different condition registers
+did not interfere.
 
-    Condition register stored value = !!(ALU result)
-
-Looks like ALU can address up to 2 source CR's in one ALU[0-3] sub-instruction.
+A read in the same ALU packet as the write returned the old value (zero in the
+test), while a read in the next packet observed the updated value. Thus the
+tested condition-register write is not forwarded to another scalar slot in
+the same packet. The tests establish reads from condition registers as ALU
+sources, but do not fully map all source-selector combinations.
 
 #### Kill register:
 
@@ -218,11 +231,42 @@ When the "recv" bit is set, operand rC is overridden with the accumulation value
 | ALU2: | ALU2 += ALU1    | ALU0 += ALU2     |
 | ALU3: | ALU3 += ALU2    | ALU2 += ALU3     |
 
-Hardware tests with all twelve producer/consumer slot orderings found that a row-register consumer reads the pre-packet value, not the value written by another slot in that packet. This held for the tested MAD, MUL, MIN and MAX producer/consumer combinations and for the tested low-half, high-half and FP20 writes. Moving the consumer to the next packet made the producer's write visible. Reads through `alu0..3` returned zero at the tested same-packet and later-packet separations; their source behavior remains unidentified.
+Hardware tests with all twelve producer/consumer slot orderings found that a
+row-register consumer reads the pre-packet value, not the value written by
+another slot in that packet. This held for the tested MAD, MUL, MIN and MAX
+producer/consumer combinations and for low-half, high-half and FP20 writes.
+Moving the consumer to the next packet made the producer's write visible.
+Intervening MFU or TEX stages did not disturb the value unless they wrote the
+same row register.
 
-With `recv` (`this`), a scalar instruction adds the previous slot's **raw result** to its own result. For example, a 0.5 result after a 0.25 result reads as 0.75. A three-slot test showed that the forwarded value is the previous slot's raw result, not its accumulated destination value. The producer does not need `recv` set. The tested `send` arrangements did not change these results, and the accumulation did not cross a packet boundary.
+Reads through `alu0..3` returned zero at the tested same-packet and later-packet
+separations. A raw-word destination test has not yet been made, so write behavior for
+these registers remains unknown.
 
-When multiple slots wrote the same FX10 half in one packet, the observed destination contained the bitwise OR of their FX10 encodings rather than the last write or their arithmetic sum. This is an interpretation of the tested readback words; FP20 multi-writer behavior has not been tested.
+With `recv` (`this`), a scalar instruction can add an accumulator value
+carried from another slot to its own result. In the established non-send
+arrangements, the receiver gets the immediately preceding slot's **raw
+result**, not that slot's accumulated destination value. For example, a 0.5
+result after a 0.25 result reads as 0.75. The producer does not need `recv`
+set, and the tested accumulation did not cross a packet boundary.
+
+The additional `send` probes show that a receiver can observe a sender's
+result in several arrangements, but do not yet define a general slot-order
+rule. With senders in slots 0 and 1 and a receiver in slot 2, the receiver
+added the slot-1 result. A receiver in slot 0 with a sender in slot 1 also
+observed that sender in one test, conflicting with an older arrangement that
+reported no transfer when the order was reversed. The operand and destination
+arrangements differed, so that discrepancy remains unresolved. The send bit
+also changed the sender's own destination in the tested cases: a sent product
+and its stored destination did not always match. Do not infer a general
+`send` write rule from these examples.
+
+When multiple slots wrote the same FX10 half in one packet, the observed
+destination contained the bitwise OR of their FX10 encodings rather than the
+last write or their arithmetic sum. The same OR behavior was observed for
+multiple FP20 (`.lh`) writes: for example, FP20 words `0xEB00` and
+`0xF300` produced `0xFB00`. Mixed FP20/FX10 writes produced values not
+explained by either format's standalone behavior and remain unresolved.
 
 #### Addition disable
 
