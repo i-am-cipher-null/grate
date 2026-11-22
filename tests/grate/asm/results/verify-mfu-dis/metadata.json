@@ -1,0 +1,136 @@
+{
+  "name": "mfu-dis",
+  "created_utc": "2026-11-21T23:28:07+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.mfu_dis.json",
+  "manifest_sha256": "fd756c64d60a341767efa8909e004163667e2b3c845f0887372df8ec6e8eae60",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "54b97877a2fe77c7d88bfacffc72a77b19888088",
+  "git_status": "?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/dw_fields.in\n?? tests/grate/asm/fs_dis.in\n?? tests/grate/asm/fs_dis_ref.in\n?? tests/grate/asm/linker_dis.txt\n?? tests/grate/asm/linker_dis_x.txt\n?? tests/grate/asm/linker_dis_y.txt\n?? tests/grate/asm/linker_dis_z.txt\n?? tests/grate/asm/make_dw_fields.py\n?? tests/grate/asm/make_mfu_dis.py\n?? tests/grate/asm/make_pseq_spill.py\n?? tests/grate/asm/pseq_spill.in\n?? tests/grate/asm/vs_dis.txt\n?? tests/grate/asm_characterize.dw_fields.json\n?? tests/grate/asm_characterize.mfu_dis.json\n?? tests/grate/asm_characterize.pseq_spill.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "mfu-dis",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_dis.txt",
+      "fs": "tests/grate/asm/fs_dis.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_dis.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "plain",
+        "fs": "tests/grate/asm/fs_dis.in",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected_note": "no modifier: the sample is the interpolated value",
+        "expected": "0x0000FF01"
+      },
+      {
+        "name": "dis-all",
+        "fs": "tests/grate/asm/fs_dis.in",
+        "lnk": "tests/grate/asm/linker_dis.txt",
+        "expected_note": "every column disabled: the word names the vertex the fragment sees",
+        "expected": "0xFFFF0000"
+      },
+      {
+        "name": "dis-x",
+        "fs": "tests/grate/asm/fs_dis.in",
+        "lnk": "tests/grate/asm/linker_dis_x.txt",
+        "expected_note": "the first column disabled, the other three interpolated",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "dis-y",
+        "fs": "tests/grate/asm/fs_dis.in",
+        "lnk": "tests/grate/asm/linker_dis_y.txt",
+        "expected_note": "the second column disabled",
+        "expected": "0x00000100"
+      },
+      {
+        "name": "dis-z",
+        "fs": "tests/grate/asm/fs_dis.in",
+        "lnk": "tests/grate/asm/linker_dis_z.txt",
+        "expected_note": "the third column disabled",
+        "expected": "0x00FF01FF"
+      },
+      {
+        "name": "ref-v0v3",
+        "fs": "tests/grate/asm/fs_dis_ref.in",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected_note": "vertex 0/3's vector (0, 0, 1, 1) through the same bytes",
+        "replace": {
+          "fs": {
+            "REF_X": "#0",
+            "REF_Y": "#0",
+            "REF_Z": "#1",
+            "REF_W": "#1"
+          }
+        },
+        "expected": "0xFFFF0000"
+      },
+      {
+        "name": "ref-v1",
+        "fs": "tests/grate/asm/fs_dis_ref.in",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected_note": "vertex 1's vector (0, 1, 0, 0)",
+        "replace": {
+          "fs": {
+            "REF_X": "#0",
+            "REF_Y": "#1",
+            "REF_Z": "#0",
+            "REF_W": "#0"
+          }
+        },
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "ref-v2",
+        "fs": "tests/grate/asm/fs_dis_ref.in",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected_note": "vertex 2's vector (1, 0, 0, 0)",
+        "replace": {
+          "fs": {
+            "REF_X": "#1",
+            "REF_Y": "#0",
+            "REF_Z": "#0",
+            "REF_W": "#0"
+          }
+        },
+        "expected": "0x0000FF00"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 28,
+    "passed": 28,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

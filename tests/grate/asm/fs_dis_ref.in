@@ -1,0 +1,22 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Reference template for the interpolation-disable set: the same destination
+ * bytes the varying template fills, but from immediates. Storing a candidate
+ * vertex vector through this path gives the word the varying path would store
+ * for that vector, so a (dis) word can be matched to a vertex by comparison
+ * instead of by reasoning about the slot-to-component mapping.
+ *
+ * Each immediate below is #0 or #1: one per component of the candidate vector.
+ */
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  REF_Y,  #1,  #0
+		ALU1:	MAD  r2.*h,  REF_X,  #1,  #0
+		ALU2:	MAD  r3.l*,  REF_Z,  #1,  #0
+		ALU3:	MAD  r3.*h,  REF_W,  #1,  #0
+	DW:	store rt1, r2, r3
+;

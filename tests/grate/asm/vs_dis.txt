@@ -1,0 +1,26 @@
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.asm
+
+EXEC(export[0]=vector)
+	MOVv r0.xyzw, a[0].xyzw
+	NOPs
+;
+
+/*
+ * The varying carries one component per vertex, so a value read from it names
+ * a vertex: the harness's vertex colours are the unit vectors, so a[1].z is 1
+ * only at the third vertex, a[1].y only at the second, and a[1].x at the first
+ * and fourth. Writing them to (x, y, z, x) keeps every vertex distinct in a
+ * single component.
+ */
+EXEC(export[7]=vector)
+	MOVv r0.xyzw, a[1].zyxx
+	NOPs
+;
