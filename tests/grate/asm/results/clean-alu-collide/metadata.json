@@ -1,0 +1,147 @@
+{
+  "name": "alu-collide",
+  "created_utc": "2026-11-22T00:22:21+00:00",
+  "manifest": "/tmp/clean-isa5/tests/grate/asm_characterize.alu_collide.json",
+  "manifest_sha256": "d9215e6560bbd68a930bb198ff8aa22f1f0bccc4273cdaf18c8baa9b8db9a424",
+  "assembler": "/tmp/clean-isa5-build/tools/assembler",
+  "repository_root": "/tmp/clean-isa5",
+  "git_commit": "edec85167c566bef819147b4ff75d28b83b8f852",
+  "git_status": "",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/tmp/clean-isa5-build/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "alu-collide",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/alu_collide.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "lh-one",
+        "fs": "tests/grate/asm/alu_collide.in",
+        "replace": {
+          "fs": {
+            "W0": "MAD  r2.lh,  u0,  #1,  #0",
+            "W1": "NOP",
+            "W2": "NOP"
+          }
+        },
+        "expected_note": "a single fp20 writer of 0.25: the readback baseline",
+        "expected": "0x00BF0040"
+      },
+      {
+        "name": "lh-same",
+        "fs": "tests/grate/asm/alu_collide.in",
+        "replace": {
+          "fs": {
+            "W0": "MAD  r2.lh,  u0,  #1,  #0",
+            "W1": "MAD  r2.lh,  u0,  #1,  #0",
+            "W2": "NOP"
+          }
+        },
+        "expected_note": "0.25 twice",
+        "expected": "0x00BF0040"
+      },
+      {
+        "name": "lh-two",
+        "fs": "tests/grate/asm/alu_collide.in",
+        "replace": {
+          "fs": {
+            "W0": "MAD  r2.lh,  u0,  #1,  #0",
+            "W1": "MAD  r2.lh,  u2,  #1,  #0",
+            "W2": "NOP"
+          }
+        },
+        "expected_note": "0.25 then 0.5",
+        "expected": "0x00BF00FF"
+      },
+      {
+        "name": "lh-rev",
+        "fs": "tests/grate/asm/alu_collide.in",
+        "replace": {
+          "fs": {
+            "W0": "MAD  r2.lh,  u2,  #1,  #0",
+            "W1": "MAD  r2.lh,  u0,  #1,  #0",
+            "W2": "NOP"
+          }
+        },
+        "expected_note": "0.5 then 0.25 - the order swap",
+        "expected": "0x00BF00FF"
+      },
+      {
+        "name": "lh-three",
+        "fs": "tests/grate/asm/alu_collide.in",
+        "replace": {
+          "fs": {
+            "W0": "MAD  r2.lh,  u0,  #1,  #0",
+            "W1": "MAD  r2.lh,  u2,  #1,  #0",
+            "W2": "MAD  r2.lh,  u4,  #1,  #0"
+          }
+        },
+        "expected_note": "0.25, 0.5 then 0.75 in three slots",
+        "expected": "0x00BF00FF"
+      },
+      {
+        "name": "fx10-then-fp20",
+        "fs": "tests/grate/asm/alu_collide.in",
+        "replace": {
+          "fs": {
+            "W0": "MAD  r2.l*,  u4,  #1,  #0",
+            "W1": "MAD  r2.lh,  u0,  #1,  #0",
+            "W2": "NOP"
+          }
+        },
+        "expected_note": "an fx10 write of 0.75, then an fp20 write of 0.25",
+        "expected": "0x00BF0042"
+      },
+      {
+        "name": "fp20-then-fx10",
+        "fs": "tests/grate/asm/alu_collide.in",
+        "replace": {
+          "fs": {
+            "W0": "MAD  r2.lh,  u0,  #1,  #0",
+            "W1": "MAD  r2.l*,  u4,  #1,  #0",
+            "W2": "NOP"
+          }
+        },
+        "expected_note": "an fp20 write of 0.25, then an fx10 write of 0.75",
+        "expected": "0x00BF0042"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 25,
+    "passed": 25,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

@@ -884,3 +884,35 @@ invalidate another; generate such a manifest with
 * tree: 54b97877a2fe77c7d88bfacffc72a77b19888088 with the set's files untracked (see metadata git_status)
 * created: 2026-11-22T00:17:49+00:00; 25 rows, repeat 3, timeout 20.0 s
 * summary: 25 passed, 0 failed of 25 - passed
+
+## clean-dw-fields
+
+* manifest: `asm_characterize.dw_fields.json` (sha256 f0bbe8c07e39)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: ea37801afbfebaedd2e367e30c134890b197c2dc with a clean tree (clone in /tmp/clean-isa5)
+* created: 2026-11-22T00:21:57+00:00; 55 rows, repeat 3, timeout 20.0 s
+* summary: 55 passed, 0 failed of 55 - passed
+
+## clean-pseq-spill
+
+* manifest: `asm_characterize.pseq_spill.json` (sha256 3d1dc560d30c)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: caf4bd3bcd3ff5fc7941bac118b6e5ae4703eb5a with a clean tree (clone in /tmp/clean-isa5)
+* created: 2026-11-22T00:22:06+00:00; 64 rows, repeat 3, timeout 20.0 s
+* summary: 64 passed, 0 failed of 64 - passed
+
+## clean-mfu-dis
+
+* manifest: `asm_characterize.mfu_dis.json` (sha256 fd756c64d60a)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 1fad6d426e5943787ea6b83e6f3ad2a63cff44f8 with a clean tree (clone in /tmp/clean-isa5)
+* created: 2026-11-22T00:22:16+00:00; 28 rows, repeat 3, timeout 20.0 s
+* summary: 28 passed, 0 failed of 28 - passed
+
+## clean-alu-collide
+
+* manifest: `asm_characterize.alu_collide.json` (sha256 d9215e6560bb)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: edec85167c566bef819147b4ff75d28b83b8f852 with a clean tree (clone in /tmp/clean-isa5)
+* created: 2026-11-22T00:22:21+00:00; 25 rows, repeat 3, timeout 20.0 s
+* summary: 25 passed, 0 failed of 25 - passed
