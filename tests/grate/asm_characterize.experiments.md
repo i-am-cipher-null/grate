@@ -5226,7 +5226,9 @@ claim that the bits are inert in general.
 rows each (20 variants, three repeats, plus the four control rows), pinned from
 `79730d3843d8...`, with `schedule-words.tsv` from the dumps; re-pinning
 reproduces the manifest byte for byte. Regenerate with
-`python3 tests/grate/asm/make_alu_sched_at.py --set b2`.
+`python3 tests/grate/asm/make_alu_sched_at.py --set b2`. `clean-alu-sched-b2`
+is the same manifest run from a checkout of the commit that contains it, with
+an empty `git status`, and matches the pinned rows exactly.
 
 ## 36. Two-packet batches, and where the latch rotation actually lives
 
@@ -5320,7 +5322,6 @@ asks the same questions at three `alu_buffer_size` values:
 | `rot3-back-adj` | 3 | `0x00000000` | batch 2 -> batch 1 is not the previous packet |
 | `rot2-carry`, `rot2-carry-first` | 2 | `0x00000000` | no cross-group read at size 2 |
 | `rot3-carry`, `rot3-carry-mid`, `rot3-carry-first` | 3 | `0x00000000` | no cross-group read at size 3 from any batch |
-| `rot1-fwd` | 1 | `0x00000010` | the size-1 cross-batch read that section 31 measured |
 
 So the rotation is **group-scoped, with M = number of packets in the group**,
 not batch-scoped: with one packet per batch, size 2 rotates over the two batches
@@ -5355,7 +5356,10 @@ repeats, controls) pinned from `4c8a39c59e9d...`; `pin-alu-pack3` /
 `pin-latch-rotate` / `verify-latch-rotate` 52 rows each (16 variants) from
 `9aaff734f726...`. Each directory holds `schedule-words.tsv` from the run's own
 dumps. Regenerate with `make_alu_pack2.py`, `make_alu_pack3.py` and
-`make_latch_rotate.py`.
+`make_latch_rotate.py`. The `clean-alu-pack2`, `clean-alu-pack3` and
+`clean-latch-rotate` runs are each manifest run from a checkout of the commit
+that contains it, empty `git status`, and all three match their pinned rows
+exactly.
 
 ## 37. send and recv inside a two-packet batch
 
@@ -5404,8 +5408,9 @@ meaning in the multi-packet dispatch that this readback cannot see.
 
 `pin-alu-send-pack` and `verify-alu-send-pack` hold 40 rows each (12 variants,
 three repeats, controls) pinned from `7398f3f89521...`, with
-`schedule-words.tsv`. Regenerate with `python3
-tests/grate/asm/make_alu_send_pack.py`.
+`schedule-words.tsv`; `clean-alu-send-pack` is the same manifest from a
+checkout of the containing commit and matches the pinned rows. Regenerate with
+`python3 tests/grate/asm/make_alu_send_pack.py`.
 
 ## What the runner cost
 

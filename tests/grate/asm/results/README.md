@@ -1228,3 +1228,43 @@ invalidate another; generate such a manifest with
 * created: 2026-11-22T22:21:52+00:00; 52 rows, repeat 3, timeout 20.0 s
 * summary: 52 passed, 0 failed of 52 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-alu-sched-b2
+
+* manifest: `asm_characterize.alu_sched_b2.json` (sha256 79730d3843d8, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 110849f751df2ef66a246ef9b126b5ba0cbdbb74 with a clean tree
+* created: 2026-11-22T22:29:39+00:00; 64 rows, repeat 3, timeout 10.0 s
+* summary: 64 passed, 0 failed of 64 - passed
+
+## clean-alu-pack2
+
+* manifest: `asm_characterize.alu_pack2.json` (sha256 4c8a39c59e9d, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 110849f751df2ef66a246ef9b126b5ba0cbdbb74 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T22:29:48+00:00; 100 rows, repeat 3, timeout 10.0 s
+* summary: 100 passed, 0 failed of 100 - passed
+
+## clean-alu-pack3
+
+* manifest: `asm_characterize.alu_pack3.json` (sha256 f36cfda363fa, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 110849f751df2ef66a246ef9b126b5ba0cbdbb74 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T22:29:59+00:00; 43 rows, repeat 3, timeout 10.0 s
+* summary: 43 passed, 0 failed of 43 - passed
+
+## clean-alu-send-pack
+
+* manifest: `asm_characterize.alu_send_pack.json` (sha256 7398f3f89521, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 110849f751df2ef66a246ef9b126b5ba0cbdbb74 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T22:30:08+00:00; 40 rows, repeat 3, timeout 10.0 s
+* summary: 40 passed, 0 failed of 40 - passed
+
+## clean-latch-rotate
+
+* manifest: `asm_characterize.latch_rotate.json` (sha256 9aaff734f726, pinned manifest, clean clone)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 110849f751df2ef66a246ef9b126b5ba0cbdbb74 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T22:30:14+00:00; 52 rows, repeat 3, timeout 20.0 s
+* summary: 52 passed, 0 failed of 52 - passed

@@ -1,0 +1,440 @@
+{
+  "name": "alu-send-pack",
+  "created_utc": "2026-11-22T22:30:08+00:00",
+  "manifest": "/home/freebuff/clean-110849f/tests/grate/asm_characterize.alu_send_pack.json",
+  "manifest_sha256": "7398f3f895219184462183e7ba618ee9139801566a91b4f00bbe76edd003d80b",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/clean-110849f",
+  "git_commit": "110849f751df2ef66a246ef9b126b5ba0cbdbb74",
+  "git_status": "?? tests/grate/asm/results/clean-alu-pack2/\n?? tests/grate/asm/results/clean-alu-pack3/\n?? tests/grate/asm/results/clean-alu-sched-b2/",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 10,
+  "manifest_data": {
+    "name": "alu-send-pack",
+    "repeat": 3,
+    "timeout": 10,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/alu_pack2.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "recv-p1-s0",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "MAD  r0.l*,  u0,  #1,  #0 (this)",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@A4@": "NOP",
+            "@A5@": "NOP",
+            "@A6@": "NOP",
+            "@A7@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "store rt1, r0, r1",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "recv alone in packet 1 slot 0: 0x10, its own value, no accumulator to add",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "recv-p0-s0",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r0.l*,  u0,  #1,  #0 (this)",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@A4@": "NOP",
+            "@A5@": "NOP",
+            "@A6@": "NOP",
+            "@A7@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "store rt1, r0, r1",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "recv alone in packet 0 slot 0: the same value",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "send-p0-recv-p1",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "MAD  r2.l*,  u1,  #1,  #0 (other)",
+            "@A4@": "MAD  r0.l*,  u0,  #1,  #0 (this)",
+            "@A5@": "NOP",
+            "@A6@": "NOP",
+            "@A7@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "store rt1, r0, r1",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "send 0.25 in packet 0 slot 3, recv 0.0625 in packet 1 slot 0: 0x50 if the accumulator crosses the packet boundary, 0x10 if the markers are confined to a packet",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "plain-p0-recv-p1",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@A4@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@A5@": "NOP",
+            "@A6@": "NOP",
+            "@A7@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "store rt1, r0, r1",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "the same two instructions without the markers: 0x10 is the control that any difference comes from the markers",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "send-p1-recv-p0",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r0.l*,  u0,  #1,  #0 (this)",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@A4@": "NOP",
+            "@A5@": "NOP",
+            "@A6@": "NOP",
+            "@A7@": "MAD  r2.l*,  u1,  #1,  #0 (other)",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "store rt1, r0, r1",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "the markers the other way round: send in packet 1 slot 3, recv in packet 0 slot 0, which is the pair notes 36 found for latch reads",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "send-p1-recv-p1",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@A4@": "NOP",
+            "@A5@": "MAD  r2.l*,  u1,  #1,  #0 (other)",
+            "@A6@": "MAD  r0.l*,  u0,  #1,  #0 (this)",
+            "@A7@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "store rt1, r0, r1",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "both markers inside packet 1 on the (1,2) pair the one-packet matrix says transfers: 0x50 if that path still works in a packet that is not the batch's first",
+        "expected": "0x00000050"
+      },
+      {
+        "name": "plain-p1-recv-p1",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@A4@": "NOP",
+            "@A5@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@A6@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@A7@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "store rt1, r0, r1",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "the unmarked twin of the pair inside packet 1: 0x10",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "send-only-p0",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "MAD  r2.l*,  u1,  #1,  #0 (other)",
+            "@A4@": "NOP",
+            "@A5@": "NOP",
+            "@A6@": "NOP",
+            "@A7@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "store rt1, r2, r3",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "the sender alone in packet 0 slot 3, stored through r2/r3: 0x40, so the marker does not change what a sender writes",
+        "expected": "0x00000040"
+      },
+      {
+        "name": "send-two-p0",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0 (other)",
+            "@A1@": "MAD  r2.l*,  u1,  #1,  #0 (other)",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@A4@": "MAD  r0.l*,  u0,  #1,  #0 (this)",
+            "@A5@": "NOP",
+            "@A6@": "NOP",
+            "@A7@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "store rt1, r0, r1",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "two senders in packet 0 (0.0625 and 0.25) and a receiver in packet 1: notes 13 measured the last sender's value in one packet, 0x50 here",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "send-then-plain-read",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "MAD  r2.l*,  u0,  #1,  #0 (other)",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "NOP",
+            "@A4@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@A5@": "NOP",
+            "@A6@": "NOP",
+            "@A7@": "NOP",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "store rt1, r0, r1",
+            "@D2@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "packet 0 slot 0 writes with the send marker, packet 1 slot 0 reads the latch plainly: 0x10 if the marker leaves the forward path between packets alone, 0 if sending consumes it",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "carry-recv-p1",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "MAD  r2.l*,  u1,  #1,  #0 (other)",
+            "@A4@": "MAD  r0.l*,  u0,  #1,  #0 (this)",
+            "@A5@": "NOP",
+            "@A6@": "NOP",
+            "@A7@": "NOP",
+            "@B0@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "NOP",
+            "@D2@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "batch 0's last packet slot 0 is the receiver of packet 0's sender; batch 1 reads alu0 slot 0 and batch 2 stores: 0x50 if the group carry holds the accumulated result, 0x10 if it holds the plain result",
+        "expected": "0x00000010"
+      },
+      {
+        "name": "carry-plain-p1",
+        "fs": "tests/grate/asm/alu_pack2.in",
+        "replace": {
+          "fs": {
+            "@A0@": "NOP",
+            "@A1@": "NOP",
+            "@A2@": "NOP",
+            "@A3@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@A4@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@A5@": "NOP",
+            "@A6@": "NOP",
+            "@A7@": "NOP",
+            "@B0@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@C2@": "NOP",
+            "@C3@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "NOP",
+            "@D2@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "the unmarked twin of the carry test: 0x10",
+        "expected": "0x00000010"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 40,
+    "passed": 40,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

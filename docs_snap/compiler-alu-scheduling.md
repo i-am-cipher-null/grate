@@ -319,11 +319,11 @@ M for larger groups and the T114 layout are not.
 | count = packets, 12 slots, packed forwarding rules | 32 | `asm_characterize.alu_pack.json` | `pin-alu-pack`, `verify-alu-pack`, `clean-alu-pack` |
 | one DW per group, first word wins, dropped word writes nothing | 29, 33 | `asm_characterize.dw_two_target.json`, `asm_characterize.dw_mrt.json` | `pin-dw-two-target`, `pin-dw-mrt`, `verify-dw-mrt`, `clean-dw-mrt` |
 | bits 29/30 inert globally and per batch | 30, 34 | `asm_characterize.alu_sched.json`, `asm_characterize.alu_sched_at.json` | `pin-alu-sched-at`, `verify-alu-sched-at`, `clean-alu-sched-at` |
-| bits 29/30 inert on the readback batch | 35 | `asm_characterize.alu_sched_b2.json` | `pin-alu-sched-b2`, `verify-alu-sched-b2` |
-| two-packet batch forwarding, both directions, carry, formats | 36 | `asm_characterize.alu_pack2.json` | `pin-alu-pack2`, `verify-alu-pack2` |
-| three-packet rotation and the wrap | 36 | `asm_characterize.alu_pack3.json` | `pin-alu-pack3`, `verify-alu-pack3` |
-| rotation is group-scoped, sizes 1/2/3 | 36 | `asm_characterize.latch_rotate.json` | `pin-latch-rotate`, `verify-latch-rotate` |
-| `send`/`recv` are packet-local | 37 | `asm_characterize.alu_send_pack.json` | `pin-alu-send-pack`, `verify-alu-send-pack` |
+| bits 29/30 inert on the readback batch | 35 | `asm_characterize.alu_sched_b2.json` | `pin-alu-sched-b2`, `verify-alu-sched-b2`, `clean-alu-sched-b2` |
+| two-packet batch forwarding, both directions, carry, formats | 36 | `asm_characterize.alu_pack2.json` | `pin-alu-pack2`, `verify-alu-pack2`, `clean-alu-pack2` |
+| three-packet rotation and the wrap | 36 | `asm_characterize.alu_pack3.json` | `pin-alu-pack3`, `verify-alu-pack3`, `clean-alu-pack3` |
+| rotation is group-scoped, sizes 1/2/3 | 36 | `asm_characterize.latch_rotate.json` | `pin-latch-rotate`, `verify-latch-rotate`, `clean-latch-rotate` |
+| `send`/`recv` are packet-local | 37 | `asm_characterize.alu_send_pack.json` | `pin-alu-send-pack`, `verify-alu-send-pack`, `clean-alu-send-pack` |
 
 The run directories live under `tests/grate/asm/results/` and each holds the
 results rows, the run metadata (device, kernel, tree, source hashes) and, for
