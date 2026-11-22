@@ -111,7 +111,7 @@ Unlike a regular ALU instruction, the ALU3 instruction words, constituting immed
 
 Hardware tests confirm that CSEL tests the sign of `rA * rB`, returns the
 unmultiplied `rB` when that product is negative, and returns `rC * rD`
-otherwise. A zero product takes the latter branch. 
+otherwise. A zero product takes the latter branch.
 Negative values in the `rC * rD` candidate and negative zero have not been
 tested.
 
@@ -690,38 +690,40 @@ bound (`GRATE_RT5=1`); working AR20 writes to RT6..12 were not demonstrated.
 
 ## PSEQ instruction word encoding
 
-PSEQ (Program Sequencer) can fetch a selected render target into one of the
+PSEQ (Program Sequencer) fetches a selected render target into one of the
 two row-register pairs. The observed fetch encoding is
 `0x00800008 | (N << 16) | (pair << 1)`, where N is the render-target index
 and pair is 0 for r0/r1 or 1 for r2/r3. For example, `0x00820008` selects
 RT2 and r0/r1.
 
-|   Bits | Meaning                                     |
-|-------:|:--------------------------------------------|
-| 24..31 | unknown, except bit 24 spill behavior below |
-|     23 | required fetch enable                       |
-| 20..22 | unknown                                     |
-| 16..19 | render-target index                         |
-|  4..15 | mostly unknown; selected bits tested inert  |
-|      3 | required fetch enable                       |
-|      2 | unknown                                     |
-|      1 | destination pair select                     |
-|      0 | unknown                                     |
+|   Bits | Meaning                 |
+|-------:|:------------------------|
+| 25..31 | unknown                 |
+|     24 | partial-write path      |
+|     23 | fetch enable            |
+| 20..22 | unknown                 |
+| 16..19 | render-target index     |
+|  4..15 | unknown                 |
+|      3 | fetch enable            |
+|      2 | unknown                 |
+|      1 | destination pair select |
+|      0 | unknown                 |
 
 Both bits 3 and 23 must be set for the ordinary fetch. Clearing either one
 suppressed the fetch and left the destination registers at their previous
-values. Bit 1 selects the destination pair: clear selects r0/r1, set selects
-r2/r3.
+values.
+
+#### Destination registers select:
+
+| Value | Meaning   |
+|------:|:----------|
+|     1 | R2 - R3   |
+|     0 | R0 - R1   |
 
 Bits 16..19 select the render target. Successful round-trips were measured
-for RT1, the coverage surface (RT3), RT4 and RT5 when those surfaces were
-bound. Unbound target indexes returned unstable partial values and should not
-be treated as defined results.
-
-### Render-target formats
-
-The format tests used RT5. RGBA8888 preserved all four components in R, G, B,
-A order. The tested narrower formats converted as follows:
+for RT1, RT3, RT4 and RT5 when those surfaces were bound. Unbound target
+indexes returned unstable partial values and should not be treated as defined
+results.
 
 ### Render-target formats
 
@@ -738,9 +740,6 @@ A order. The tested narrower formats converted as follows:
 The round-trip establishes these mappings for the tested formats and RT5
 configuration, not for every target class or surface layout.
 
-The round-trip establishes these mappings for the tested formats and RT5
-configuration, not for every target class or surface layout.
-
 ### Other tested bits and spill path
 
 On the A8 target, toggling bits 4, 5, 6, 7, 8, 11, 15, 20, 22, 25 and 31
@@ -751,19 +750,31 @@ tested bits are reserved in every mode.
 With bit 23 set, bit 24 selects a different observed path: the normal fetch
 does not occur, but the fourth component of the low destination word is
 cleared. This is a partial write, not ordinary fetch suppression. The role of
-the other fields in this spill form is unknown.
+the other fields in this form is unknown.
 
 ### Addressing limits
 
-The current round-trip writes the same pattern for every fragment. It
-establishes the target selection, enable bits, destination pair and tested
-format conversions, but does not establish which pixel address PSEQ reads.
-Position-dependent addressing, offsets, alignment, tiled layouts and
-non-default pitches remain untested. The experiment also does not establish a
-frame-to-frame visibility guarantee; it only shows that a store earlier in
-the tested fragment program is visible to a later PSEQ fetch.
+Position-dependent tests used a genuine 64x64 source surface. One draw
+wrote a distinct X/Y tag at every pixel; a later draw fetched the surface
+without writing to it and stored the fetched value to a separate observation
+target. All 4096 pixels matched the expected map. A source map shifted by 16
+columns was read back with the same shift, showing that the fetch uses the
+fetching fragment's own window position rather than an address left by the
+preceding DW store.
 
+The identity map was reproduced through the tiled framebuffer, linear and
+tiled RT3, and a linear source allocation with 16 texels of row-pitch padding.
+These results establish that the tested fetch follows the source target's
+tile layout and pitch. The same-draw and separate-draw tests also show that
+data written by an earlier draw is visible to a later fetch in the tested
+flush sequence.
 
+The address-generation mechanism is not established: the tests do not
+distinguish position registers from the fragment's own target coordinate.
+Fetch-before-flush behavior, a later draw that also writes the source, padded
+pitch on a tiled source, and larger targets remain untested. The RGB565
+control is not an address-map proof because its reduced precision loses the
+X coordinate byte.
 
 ## More patents
 
