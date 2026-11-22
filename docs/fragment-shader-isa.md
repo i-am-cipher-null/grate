@@ -308,6 +308,34 @@ The varying id corresponds to the TRAM component: var0 is TRAM.x, var1 is TRAM.y
 |      1 |   VAR1   | Interpolate one float20 value  |
 |      2 |   VAR2   | Interpolate two fixed10 values |
 
+##### LINK export and TRAM mapping
+
+Hardware tests show that the four component positions in a LINK export map
+independently to the four TRAM destinations named by the LINK swizzle. The
+k-th exported component is written to the TRAM component named by the k-th
+swizzle letter. Repeated destination letters overwrite that component, with
+the later export component winning in the tested cases. `exportM` selects the
+M-th enabled export, not the vertex register number: when exports 0 and 7 were
+enabled, `export1` selected the value exported from register 7. The `tN`
+prefix in the fragment fetch selects TRAM row N.
+
+A LINK column set to NOP does not update its destination component. In the
+tested setup, that component retained its previous value across consecutive
+draws; TRAM should not be assumed to be cleared between draws.
+At the fetch stage, an `ipl` operand of NOP leaves its row register unchanged,
+whereas `sat(NOP)` writes zero. Applying saturate to a fetch clamped a value of
+1.5 to 1.0 in the FP20 row register; the ordinary FX10 byte readback alone
+cannot distinguish the clamped and unclamped values above 1.0.
+
+The tested `(dis)` modifier disabled interpolation for its component and
+exposed a vertex value instead. The selected vertex was not identified by the
+single-sample test. Format conversion also remains partly unresolved: tested
+FX10 low-format fetches produced a value in the low half and zero in the high
+half, while high-format fetches duplicated the value into both halves. Reading
+an FX10-low component as FP20, or an FP20 component through the tested FX10
+fetch, returned zero. These observations are specific to the tested formats
+and encodings and do not establish a general conversion rule.
+
 #### mul0..1
 
 | Bits  | Meaning              |
