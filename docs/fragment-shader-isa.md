@@ -619,16 +619,13 @@ here.
 ### LOD selection
 
 Bit 12 selects LOD bias. When bit 12 is clear, bit 13 selects explicit LOD.
-With both bits clear, the LOD register is ignored and the sampler uses a
+With both bits clear, the LOD register is ignored and the texture unit uses a
 derivative-based estimate. When both bits are set, bias takes precedence in
 the tested hardware.
 
-Explicit LOD values below zero and above the available mip range clamp to the
-end levels. Bias and explicit LOD produced different results on a 16x16 mip
-chain. With both selection bits clear, a varying coordinate reaches the TEX
-fetch and the selected mip level changes with its coordinate gradient. The
-derivative-based estimate is therefore active in this path, but its exact
-formula and the behavior of fractional LOD bias remain unestablished.
+The derivative-based path is handled by the fixed-function texture/sampler
+hardware. The exact derivative reduction, mip-level thresholds, and filtering
+policy are outside the scope of this instruction-word reference.
 
 ### Formats and addressing
 
