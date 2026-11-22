@@ -1,0 +1,63 @@
+alu_buffer_size = 2
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Two-DW template: one group of two batches, then a readback group.
+ *
+ *   batch 0  prime r0/r1 with payload A, DW slot 0
+ *   batch 1  prime r0/r1 with payload B, DW slot 1
+ *   batch 2  PSEQ fetch into r0/r1, DW slot 2
+ *   batch 3  DW slot 3 (NOP, so group 1 has one DW and it is in its first
+ *            batch, the only position that produces an observable store)
+ *
+ * At alu_buffer_size 2 the first two batches are one group, so a DW in each of
+ * them is "two DWs in the same scheduling group" (section 3 measured that a
+ * group with more than one DW stores nothing; this template asks whether the
+ * render target each DW names changes that).
+ *
+ * Payload A is 0x11/0x22/0x33/0x44 and B is 0x0A/0x1B/0x2C/0x3D, so the stored
+ * word names the payload (0x44332211 against 0x3D2C1B0A) as well as the batch
+ * that wrote it. Both stay in the range that survives the fetch's 8-bit to
+ * fp20 conversion unchanged.
+ *
+ * Readback: the fetched target lands in r0/r1 and the group-1 DW stores it to
+ * rt1, which is what the runner reads. A variant is run once per target it
+ * needs read, with only the fetch word different, so both targets can be read
+ * independently without two stores competing in one group. rt4 exists because
+ * the assembler binds it when GRATE_RT4 is set.
+ */
+
+.constants
+	[0] = 0.06640625;
+	[1] = 0.1328125;
+	[2] = 0.19921875;
+	[3] = 0.265625;
+	[4] = 0.0390625;
+	[5] = 0.10546875;
+	[6] = 0.171875;
+	[7] = 0.23828125;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.l*,  u0,  #1,  #0
+		ALU1:	MAD  r0.*h,  u1,  #1,  #0
+		ALU2:	MAD  r1.l*,  u2,  #1,  #0
+		ALU3:	MAD  r1.*h,  u3,  #1,  #0
+	DW:	@DW0@
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r0.l*,  u4,  #1,  #0
+		ALU1:	MAD  r0.*h,  u5,  #1,  #0
+		ALU2:	MAD  r1.l*,  u6,  #1,  #0
+		ALU3:	MAD  r1.*h,  u7,  #1,  #0
+	DW:	@DW1@
+;
+EXEC
+	PSEQ:	@FETCH@
+	DW:	@DW2@
+;
+EXEC
+	DW:	@DW3@
+;

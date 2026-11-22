@@ -964,3 +964,51 @@ invalidate another; generate such a manifest with
 * commit: f85000bcd8ebeeffb7f0de11aebc25510db95fe2 with a clean tree (clone in /tmp/clean-sel)
 * created: 2026-11-22T00:51:53+00:00; 14 rows, repeat 5, timeout 20.0 s
 * summary: 14 passed, 0 failed of 14 - passed
+
+## pin-alu-latch
+
+* manifest: `asm_characterize.alu_latch.json` (sha256 878c23693272, unpinned manifest, repeat 3)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: fcdc4d55cc119584ce8cb1348bc20f2b7ba6b636 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T20:49:49+00:00; 124 rows, repeat 3, timeout 20.0 s
+* summary: 124 passed, 0 failed of 124 - passed
+
+## verify-alu-latch
+
+* manifest: `asm_characterize.alu_latch.json` (sha256 928ef8f26664, pinned manifest, repeat 3)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: fcdc4d55cc119584ce8cb1348bc20f2b7ba6b636 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T20:50:12+00:00; 124 rows, repeat 3, timeout 20.0 s
+* summary: 124 passed, 0 failed of 124 - passed
+
+## pin-dw-two-target
+
+* manifest: `asm_characterize.dw_two_target.json` (sha256 1080c38e5a98, unpinned manifest, repeat 3)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: fcdc4d55cc119584ce8cb1348bc20f2b7ba6b636 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T20:43:34+00:00; 46 rows, repeat 3, timeout 20.0 s
+* summary: 46 passed, 0 failed of 46 - passed
+
+## verify-dw-two-target
+
+* manifest: `asm_characterize.dw_two_target.json` (sha256 8d4cd01de529, pinned manifest, repeat 3)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: fcdc4d55cc119584ce8cb1348bc20f2b7ba6b636 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T20:43:52+00:00; 46 rows, repeat 3, timeout 20.0 s
+* summary: 46 passed, 0 failed of 46 - passed
+
+## pin-alu-sched
+
+* manifest: `asm_characterize.alu_sched.json` (sha256 6617ca38a2c9, unpinned manifest, repeat 3)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: fcdc4d55cc119584ce8cb1348bc20f2b7ba6b636 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T20:47:44+00:00; 52 rows, repeat 3, timeout 10.0 s
+* summary: 52 passed, 0 failed of 52 - passed
+
+## verify-alu-sched
+
+* manifest: `asm_characterize.alu_sched.json` (sha256 b58c6c8895e2, pinned manifest, repeat 3)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: fcdc4d55cc119584ce8cb1348bc20f2b7ba6b636 with the set's files untracked (see metadata git_status)
+* created: 2026-11-22T20:48:59+00:00; 52 rows, repeat 3, timeout 10.0 s
+* summary: 52 passed, 0 failed of 52 - passed

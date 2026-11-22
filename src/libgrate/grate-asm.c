@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <locale.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -404,11 +405,24 @@ struct grate_shader *grate_shader_parse_fragment_asm(const char *asm_txt)
 	/* ALU SCHED */
 	shader->words[words++] =
 			HOST1X_OPCODE_NONINCR(0x801, asm_fs_instructions_nb);
-	for (i = 0; i < asm_fs_instructions_nb; i++) {
-		if (grate_chip_info()->soc_id == TEGRA114_SOC)
-			shader->words[words++] = to_114_alu_sched(asm_alu_sched[i].data).data;
-		else
-			shader->words[words++] = asm_alu_sched[i].data;
+	{
+		/*
+		 * Test hook: OR a mask into every ALU schedule word. On AR20 the
+		 * assembler fills only bits 0..7 of the word (count and address),
+		 * so bits 8..31 - including 29 and 30 - cannot be reached from a
+		 * program. Unset, the stream is byte-identical to before.
+		 */
+		const char *sched_or = getenv("GRATE_ALU_SCHED_OR");
+		uint32_t sched_mask = sched_or ?
+				(uint32_t)strtoul(sched_or, NULL, 0) : 0;
+
+		for (i = 0; i < asm_fs_instructions_nb; i++) {
+			if (grate_chip_info()->soc_id == TEGRA114_SOC)
+				shader->words[words++] =
+					to_114_alu_sched(asm_alu_sched[i].data).data | sched_mask;
+			else
+				shader->words[words++] = asm_alu_sched[i].data | sched_mask;
+		}
 	}
 
 	/* ALU */

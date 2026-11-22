@@ -1,0 +1,308 @@
+{
+  "name": "dw-two-target",
+  "created_utc": "2026-11-22T20:43:52+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.dw_two_target.json",
+  "manifest_sha256": "8d4cd01de5298b34dda65012be8925dbb23c08a4a69833dbf5afaf8c5c38ba7f",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "fcdc4d55cc119584ce8cb1348bc20f2b7ba6b636",
+  "git_status": "?? tests/grate/asm/__pycache__/\n?? tests/grate/asm/alu_latch.in\n?? tests/grate/asm/dw_two_target.in\n?? tests/grate/asm/make_alu_latch.py\n?? tests/grate/asm/make_dw_two_target.py\n?? tests/grate/asm_characterize.alu_latch.json\n?? tests/grate/asm_characterize.dw_two_target.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "dw-two-target",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/dw_two_target.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "two-a1-b4-read1",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "store rt1, r0, r1",
+            "@DW1@": "store rt4, r0, r1",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "DW to rt1 in batch 0, DW to rt4 in batch 1; read rt1 before the readback store changes it",
+        "expected": "0x3D2C1B0A"
+      },
+      {
+        "name": "two-a1-b4-read4",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "store rt1, r0, r1",
+            "@DW1@": "store rt4, r0, r1",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt4, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the same program, read rt4",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "two-a4-b1-read1",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "store rt4, r0, r1",
+            "@DW1@": "store rt1, r0, r1",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the same two DWs with the batch order swapped; read rt1",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "two-a4-b1-read4",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "store rt4, r0, r1",
+            "@DW1@": "store rt1, r0, r1",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt4, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the swapped program, read rt4",
+        "expected": "0x3D2C1B0A"
+      },
+      {
+        "name": "two-a1-b1-read1",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "store rt1, r0, r1",
+            "@DW1@": "store rt1, r0, r1",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "both DWs on rt1 - the arrangement section 3 measured - read rt1",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "two-a1-b1-read4",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "store rt1, r0, r1",
+            "@DW1@": "store rt1, r0, r1",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt4, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the same, read rt4: the untouched-target control for that pair",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "single-1-read1",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "store rt1, r0, r1",
+            "@DW1@": "NOP",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "one DW in the group's first batch, on rt1: the positive control",
+        "expected": "0x3D2C1B0A"
+      },
+      {
+        "name": "single-1-read4",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "store rt1, r0, r1",
+            "@DW1@": "NOP",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt4, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the same program, read rt4: rt4 must keep its baseline",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "single-4-read4",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "store rt4, r0, r1",
+            "@DW1@": "NOP",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt4, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "one DW, on rt4: the positive control for rt4",
+        "expected": "0x3D2C1B0A"
+      },
+      {
+        "name": "single-4-read1",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "store rt4, r0, r1",
+            "@DW1@": "NOP",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the same program, read rt1: rt1 must keep its baseline",
+        "expected": "0x4C4C4C4C"
+      },
+      {
+        "name": "single-b-1-read1",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "NOP",
+            "@DW1@": "store rt1, r0, r1",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the group's only DW sits in its second batch, on rt1: section 3 says that position stores nothing",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "single-b-4-read4",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "NOP",
+            "@DW1@": "store rt4, r0, r1",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt4, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "the same position on rt4, so the position rule is not an artefact of the colour target",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "none-read1",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "NOP",
+            "@DW1@": "NOP",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "no DW in the group: what rt1 holds before any store",
+        "expected": "0x4C4C4C4C"
+      },
+      {
+        "name": "none-read4",
+        "fs": "tests/grate/asm/dw_two_target.in",
+        "replace": {
+          "fs": {
+            "@DW0@": "NOP",
+            "@DW1@": "NOP",
+            "@DW2@": "store rt1, r0, r1",
+            "@DW3@": "NOP",
+            "@FETCH@": "load rt4, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "no DW in the group: what rt4 holds before any store",
+        "expected": "0x00000000"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 46,
+    "passed": 46,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

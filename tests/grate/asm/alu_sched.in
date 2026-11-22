@@ -1,0 +1,38 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * ALU schedule-bit template: two batches, four slots each, one DW per batch.
+ *
+ * The 0x801 stream carries one schedule word per batch. On AR20 the assembler
+ * fills only bits 0..7 (instruction count in 0..1, ALU packet address in 2..7)
+ * and emits zero above that, so the words a program can express never exercise
+ * bits 29 and 30. The variants here set those bits with GRATE_ALU_SCHED_OR,
+ * which ORs a mask into every schedule word at emission; unset, the stream is
+ * unchanged, and the mask never touches the separate 0x806 complement stream.
+ *
+ * Two batches are enough for the shapes that would notice a change in the
+ * schedule: a latch chain inside one packet, a DW store of an ALU-written row
+ * in the same batch, and a row write read back one batch later.
+ */
+
+.constants
+	[0] = 0.0625;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	DW:	@D1@
+;

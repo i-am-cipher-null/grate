@@ -4571,6 +4571,266 @@ each (seven variants, three repeats, plus the four control rows), pinned from
 `d9215e6560bb...`; re-pinning reproduces the manifest byte for byte.
 Regenerate with `python3 tests/grate/asm/make_alu_collide.py`.
 
+## 28. ALU result registers: what a read returns, and what writes them
+
+`--set latch` (40 variants) from `tests/grate/asm/alu_latch.in`, manifest
+`asm_characterize.alu_latch.json`. Six batches of four scalar slots with one DW
+per batch; a variant fills only the slots it needs and leaves the rest NOP.
+
+Section 9 concluded "ALU result registers read zero" and listed "what writes
+`alu0..3`, if anything in the fragment ISA does" as open. Both readings are
+wrong, and the old zero is explained by the shapes it was measured in: a
+`aluK` read written *bare* (the fp20 form) from a packet whose slot K wrote
+`.l*`, at a distance of a whole batch.
+
+### The distance is the variable section 9 did not have
+
+`alu_buffer_size` decides what a batch boundary is. At size 1 every batch is
+its own group, so two batches are separated by a group flush. At size 2 two
+batches share a group, so a producer in batch 0 and a reader in batch 1 differ
+by a packet boundary only. At size 3 the group is three batches, so a reader
+can sit two packets after the producer.
+
+A store only produces a word in a group's first batch (section 3), so the
+reader's output is stored by the next group: readers in batch 1, store in batch
+2 at size 2, and the `*-direct` controls (a plain row write read back at the
+same distance) show that path works.
+
+### Same packet
+
+Bytes are `r0.lo`, `r0.hi`, `r1.lo`, `r1.hi` from the least significant end;
+the producer value is `0.0625` = `0x10` unless the row says otherwise.
+
+| variant | word | reading |
+|:--|--:|:--|
+| `same-chain` | `0x10100010` | three links: `r0.lo`, `r1.lo` and `r1.hi` all `0x10`, each slot reading the one before it |
+| `same-chain-hi` | `0x00001010` | the middle link wrote `.*h`, so the link after it read 0 |
+| `same-backward` | `0x00000040` | slot 0 read `alu1` and got `0.25`, which slot 1 wrote *later* in the packet |
+| `same-two-values` | `0x00000010` | `alu0` = `0x10`; `alu1` read 0 because its writer used `.*h` |
+| `same-self` | `0x00000000` | slot 2 reading `alu2`, its own latch, while writing it |
+| `same-nop` | `0x00000000` | the latch of a slot the packet leaves NOP |
+| `same-bare` | `0x00000000` | the same read written bare (`alu0`) instead of `alu0.l` |
+| `same-bare-lh` | `0x00000010` | the bare read with an `.lh` (fp20) producer |
+| `same-row`, `same-row-baseline` | `0x00000000` | a row read in the writing packet: no forwarding |
+
+So inside a packet a latch read is served by the packet's own slot-K result,
+in either slot order, and the format decides what is visible: `.l` sees a `.l*`
+write, the bare fp20 read sees an `.lh` write and misses a `.l*` one. A slot
+reading its own latch sees nothing.
+
+### One packet later, same group (`alu_buffer_size` 2)
+
+| variant | word | reading |
+|:--|--:|:--|
+| `pkt-alu0-s0` | `0x00000010` | `alu0` from slot 0 |
+| `pkt-alu0-s1` | `0x00000010` | `alu0` from slot 1 - the carry does not need slot 0 here |
+| `pkt-alu1-s0` | `0x00000040` | `alu1` from slot 0 |
+| `pkt-alu2-s0` | `0x0000007F` | `alu2` from slot 0 |
+| `pkt-alu3-s0` | `0x00000020` | `alu3` from slot 0 |
+| `pkt-two-latches` | `0x00007F40` | `alu1` read from slot 0 and `alu2` from slot 1 at once |
+| `pkt-alu0-hi` | `0x00000000` | the producer wrote `.*h` only |
+| `pkt-alu0-fp20` | `0x00000000` | the producer wrote `.lh` and the reader asked for `.l` |
+| `pkt-row` | `0x00000000` | a row read one packet later: not visible inside the group |
+| `pkt-direct` | `0x00000040` | the same row read two batches later, across the group boundary |
+| `pkt-bare` | `0x00000000` | the bare read one packet later |
+
+All four latches survive one packet boundary, from any reading slot, and only
+the low-half (`.l*`) writes fill the fx10 view. The row register does not: it
+becomes visible at the group boundary instead.
+
+### Two packets later and across a batch
+
+| variant | size | word | reading |
+|:--|--:|--:|:--|
+| `pkt3-alu0-s0`, `pkt3-alu1-s0` | 3 | `0x00000000` | a latch does not survive two packet boundaries inside a group |
+| `n1-alu0-s0` | 1 | `0x00000010` | `alu0` read from slot 0 across the group flush |
+| `n1-alu0-s1` | 1 | `0x00000000` | the same latch from slot 1 |
+| `n1-alu1-s0` | 1 | `0x00000000` | `alu1` across the flush |
+| `n1-row` | 1 | `0x00000010` | a row write across the flush: committed |
+| `n1-direct` | 1 | `0x00000040` | the same distance without any latch involved |
+
+So one value crosses a group flush: `alu0` read from slot 0. That is exactly
+the shape section 9 measured, and exactly why it saw zeros everywhere else.
+
+### Direct writes: the destination field does not route
+
+The assembler refuses `aluN` as a destination, so the word is `MAD r2.l*, u0,
+#1, #0` as assembled (part1 `0x00012800`, part0 `0x3F41F200`) with the
+destination field, part1 bits 15..21, rewritten to 24..27. The disassembler
+reads the patched word back as `MAD alu0.l*, u0, #1, #0`, so the field is where
+the table says it is.
+
+| variant | word | reading |
+|:--|--:|:--|
+| `dist-raw-orig` | `0x00000010` | the unpatched raw word writes `r2.lo`: the hex form behaves like the symbolic one |
+| `dist-raw-read` | `0x00000000` | that write read back as a row register in the same packet |
+| `dist-row` | `0x00000000` | the patched word with nothing reading it: `r2` is untouched, so the write did not go to the row |
+| `dist-alu0-same` | `0x00000010` | the patched write issued from slot 0, read from slot 1 as `alu0` |
+| `dist-alu1-same`, `dist-alu2-same`, `dist-alu3-same` | `0x00000000` | the same word with the field at 25, 26, 27, read as that latch from slot 1 |
+| `dist-slot1-dest24-alu1` | `0x00000010` | the field at 24, issued from slot 1, read as `alu1` |
+| `dist-slot1-dest25-alu1` | `0x00000010` | the field at 25, issued from slot 1, read as `alu1` |
+| `dist-slot1-dest24-alu0` | `0x00000000` | the field at 24, issued from slot 1, read as `alu0` |
+| `dist-alu0-next` | `0x00000010` | the patched write one batch later, `alu0` from slot 0 |
+
+Two things follow. The destination codes 24..27 are accepted by the hardware
+and write no row register. They do not choose which latch the value appears
+on: `dist-slot1-dest24-alu1` and `dist-slot1-dest25-alu1` read the same value
+while `dist-slot1-dest24-alu0` reads zero, so the *issuing slot* decides, and
+the field's value only means "no row register" to the writeback.
+
+### What this settles
+
+* a latch read inside a packet is a forward from that slot's result, either
+  order, own slot excluded, format-specific;
+* one packet boundary inside a group keeps all four latches, a second boundary
+  keeps none;
+* a group flush keeps `alu0` read from slot 0 and nothing else;
+* codes 24..27 are legal destinations that write no row register; the latch a
+  read sees is the issuing slot's, not the code's;
+* section 9's "read zero" was the bare-read and batch-distance shape, not a
+  property of the register.
+
+### What this does not settle
+
+* why only slot 0's `alu0` survives a flush - a register file read rather than
+  a latch is the obvious guess and is not measured;
+* the physical form: four latches with byte enables, or a bidirectionally
+  forwarded write bus plus one saved register;
+* whether destination codes 28..31 or an embedded-constant destination behave
+  like 24..27;
+* what `(send)`/`(recv)` do to a latch read; the assembler's five-operand form
+  sets recv and was not used here;
+* two-packet carry at buffer sizes other than 3, and any carry across two
+  groups.
+
+One configuration is a known hang and was dropped: a four-batch program at
+`alu_buffer_size` 3 leaves an incomplete group and the draw times out twice at
+20 s. The template has six batches so size 3 has whole groups, and the six-batch
+form returns the same words as the four-batch form did for every variant that
+existed at that point.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-latch` and `verify-alu-latch` hold 124 rows
+each (40 variants, three repeats, plus the four control rows), pinned from
+`928ef8f26664...`; re-pinning reproduces the manifest byte for byte.
+Regenerate with `python3 tests/grate/asm/make_alu_latch.py`.
+
+## 29. Two DW instructions in one group, on two render targets
+
+`--set dw-two-target` (14 variants) from `tests/grate/asm/dw_two_target.in`,
+manifest `asm_characterize.dw_two_target.json`. `alu_buffer_size` 2, so batches
+0 and 1 are one group. Batch 0 primes `r0/r1` with payload A (`0x44332211`) and
+issues the first DW, batch 1 primes the same pair with payload B
+(`0x3D2C1B0A`) and issues the second. A later group fetches one target into
+`r0/r1` and stores it to rt1, which is what the runner reads, so each program
+is run twice: once reading rt1 and once reading rt4. rt4 is bound with
+`GRATE_RT4=1` in every variant.
+
+Payload A and B differ in every byte and name the batch whose row the store
+read, and the two targets name the DW. Baselines: with no DW in the group rt1
+reads `0x4C4C4C4C` (the draw's clear colour) and rt4 reads `0x00000000`.
+
+| variant | rt1 | rt4 |
+|:--|--:|--:|
+| `two-a1-b4` (rt1 in batch 0, rt4 in batch 1) | `0x3D2C1B0A` | `0x00000000` |
+| `two-a4-b1` (rt4 in batch 0, rt1 in batch 1) | `0x00000000` | `0x3D2C1B0A` |
+| `two-a1-b1` (both on rt1) | `0x00000000` | `0x00000000` |
+| `single-1` (one DW on rt1, batch 0) | `0x3D2C1B0A` | `0x4C4C4C4C` |
+| `single-4` (one DW on rt4, batch 0) | `0x4C4C4C4C` | `0x3D2C1B0A` |
+| `single-b-1`, `single-b-4` (one DW in batch 1) | nothing | nothing |
+
+What the words say:
+
+* with two DWs on **different** targets, the first DW's target is written and
+  the second is not written at all. Section 3's "a second DW in the group
+  suppresses the group's store" therefore holds for one target, not for the
+  group: a second DW on another target leaves the first store intact and
+  silently drops its own;
+* with two DWs on the **same** target nothing is written, which reproduces
+  section 3;
+* a lone DW in the group's second batch writes nothing on either target, so
+  the position rule is not an artefact of the colour target;
+* every store that happens reports payload B, the group's *last* row, including
+  the DW that sits in batch 0 - the same deferred read section 3 measured.
+
+For a compiler this is an MRT constraint, not a scheduling hint: two output
+registers cannot be written by two DW words of one group. The second target
+keeps its pre-draw content, and if both words name the same target neither
+write appears.
+
+Not settled: why the second word is dropped (decode or arbitration), whether
+three DWs behave the same, and whether the first DW is still deferred when the
+second is the one that would have stored.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-dw-two-target` and `verify-dw-two-target` hold 46
+rows each (14 variants, three repeats, plus the four control rows), pinned from
+`8d4cd01de529...`; re-pinning reproduces the manifest byte for byte.
+Regenerate with `python3 tests/grate/asm/make_dw_two_target.py`.
+
+## 30. Bits 29 and 30 of the ALU schedule word
+
+`--set sched-bits` (16 variants) from `tests/grate/asm/alu_sched.in`, manifest
+`asm_characterize.alu_sched.json`. Four shapes, each run with no schedule bit
+set and with bit 29, bit 30 and both:
+
+    chain   two links chained through alu0/alu1, then a store
+    dw      one ALU write and its store in the same batch
+    row     a row write in batch 0 stored by batch 1
+    plain   nothing written, one store
+
+The 0x801 stream has one word per batch and the assembler fills only bits 0..1
+(instruction count) and 2..7 (ALU packet address); everything above is emitted
+as zero, so no program can set bits 29 or 30 through the grammar. The reach is
+`GRATE_ALU_SCHED_OR`, a mask OR-ed into every schedule word as the stream is
+emitted. Unset, the stream is unchanged, and the 0x806 complement stream comes
+from a different array and is never touched.
+
+The runs prove the mask is applied where it matters: every `chain` variant runs
+with `GRATE_DUMP_RAW`, and its own log records the uploaded words.
+
+| mask | schedule words in the run's log |
+|:--|:--|
+| none | `0x00000001`, `0x00000005` |
+| bit 29 | `0x20000001`, `0x20000005` |
+| bit 30 | `0x40000001`, `0x40000005` |
+| both | `0x60000001`, `0x60000005` |
+
+The complement words stayed `0x00000000` in the same dumps.
+
+| shape | no bit | bit 29 | bit 30 | both |
+|:--|--:|--:|--:|--:|
+| chain | `0x00100010` | `0x00100010` | `0x00100010` | `0x00100010` |
+| dw | `0x00000010` | `0x00000010` | `0x00000010` | `0x00000010` |
+| row | `0x00000010` | `0x00000010` | `0x00000010` | `0x00000010` |
+| plain | `0x00000000` | `0x00000000` | `0x00000000` | `0x00000000` |
+
+So neither bit changes forwarding, the ALU words a batch executes, or whether
+its DW stores, for these shapes.
+
+Why that is not surprising: bits 29..31 of the same word are 0xe0 in the layout
+the assembler emits for T114 (`to_114_alu_sched` writes 0xe0 into that byte),
+so on this chip they are part of a layout the AR20 stream does not use. What is
+measured is that setting them on AR20 changes nothing observable; whether they
+mean something on a T114 is untested here.
+
+Not settled: bits 8..28 and 31 individually; whether a bit that only matters
+when the address/count fields are also non-default exists; the mask is applied
+to every batch at once, so a per-batch effect would be averaged out; and the
+blob's own schedule words cannot be inspected because `cgc` needs the
+proprietary compiler, which this checkout does not have - the words inspected
+here are the assembler's.
+
+### Recorded runs
+
+`tests/grate/asm/results/pin-alu-sched` and `verify-alu-sched` hold 52 rows
+each (16 variants, three repeats, plus the four control rows), pinned from
+`b58c6c8895e2...`; re-pinning reproduces the manifest byte for byte.
+Regenerate with `python3 tests/grate/asm/make_alu_sched.py`. The hook is
+documented in `src/libgrate/grate-asm.c` next to the emission it affects.
+
 ## What the runner cost
 
 Five things that produced wrong results first:
