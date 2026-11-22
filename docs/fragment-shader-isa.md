@@ -517,24 +517,23 @@ mechanism or a general rule for every DW mode.
 
 ## PSEQ instruction word encoding
 
-PSEQ stands for Program Sequencer. It fetches data from a selected render target and loads it into a register pair. In the tested RGBA8 path, a fetch/store round-trip preserved the bytes exactly; conversion behavior for other formats is not established.
+PSEQ stands for Program Sequencer. It fetches raw data from a selected render target, converts that data into FX10 [FP20(?)] format and loads it into registers.
 
 |   Bits | Meaning                 |
-|-------:|:------------------------------|
-| 24..31 | unknown                 |
-|     23 | set in observed fetch encoding |
-| 20..22 | unknown                 |
+|-------:|:------------------------|
+| 24..31 | bit 24 selects the destination-byte form (below); 25..31 no effect |
+|     23 | fetch enable, required; in the bit-24 form it moves the write into `r1` |
+| 20..22 | no effect               |
 | 16..19 | render target select    |
-|  4..15 | unknown                 |
-|      3 | set in observed fetch encoding |
-|      2 | unknown                 |
-|      1 | destination pair select |
-|      0 | unknown                 |
+|  4..15 | no effect in the fetch form; nothing even as a group in the bit-24 form |
+|      3 | fetch enable, required; in the bit-24 form it writes `r0.hi` |
+|      2 | in the bit-24 form it writes `r0.lo` |
+|      1 | dest registers select   |
+|      0 | in the bit-24 form it moves the write into `r1` |
 
-The observed fetch encoding is `0x00800008 | (N << 16) | (pair << 1)`,
-where N is the render-target index and pair is 0 for r0/r1 or 1 for r2/r3.
-For example, `0x00820008` selects RT2 and r0/r1. The individual roles of
-bits 3 and 23, and the meaning of other PSEQ encodings, remain unknown.
+Both bit 3 and bit 23 are required for a fetch - clearing either suppresses it - and
+bits 20..22 are inert (notes 25). The earlier reading of these two bits as "one
+unknown enable" is settled: they are a pair.
 
 #### Destination registers select:
 
@@ -542,6 +541,68 @@ bits 3 and 23, and the meaning of other PSEQ encodings, remain unknown.
 |------:|:----------|
 |     1 | R2 - R3   |
 |     0 | R0 - R1   |
+
+#### The bit-24 form
+
+Bit 24 does **not** select a spill fetch - no word with bit 24 set delivers any part of
+a tagged render target, and a fetch issued afterwards still reads the surface unchanged
+(notes 25). Instead it writes into the destination pair. Bits 3, 2, 0 and 23 choose the
+bytes, and all sixteen combinations were run with `r0` primed `(0x11, 0x22)` and `r1`
+`(0x33, 0x44)`, so the idle readback is `0x44332211` and each write shows in place:
+
+| bits beside 24 | word | bytes written | readback |
+|:--|--:|:--|--:|
+| none | `0x01000000` | none | `0x44332211` |
+| 0 | `0x01000001` | none | `0x44332211` |
+| 23 | `0x01800000` | none | `0x44332211` |
+| 3 | `0x01000008` | `r0.hi` | `0x44330011` |
+| 2 | `0x01000004` | `r0.lo` | `0x44332200` |
+| 3, 2 | `0x0100000C` | `r0.lo`, `r0.hi` | `0x44330000` |
+| 0, 23 | `0x01800001` | `r0.lo` | `0x44332200` |
+| 2, 0 | `0x01000005` | `r1.lo` | `0x44002211` |
+| 2, 23 | `0x01800004` | `r1.lo` | `0x44002211` |
+| 3, 0 | `0x01000009` | `r1.hi` | `0x00332211` |
+| 3, 23 | `0x01800008` | `r1.hi` | `0x00332211` |
+| 2, 0, 23 | `0x01800005` | `r0.lo`, `r1.lo` | `0x44002200` |
+| 3, 0, 23 | `0x01800009` | `r0.lo`, `r1.hi` | `0x00332200` |
+| 3, 2, 0 | `0x0100000D` | `r1.lo`, `r1.hi` | `0x00002211` |
+| 3, 2, 23 | `0x0180000C` | `r1.lo`, `r1.hi` | `0x00002211` |
+| 3, 2, 0, 23 | `0x0180000D` | `r0.lo`, `r1.lo`, `r1.hi` | `0x00002200` |
+
+Bit 3 selects `r0.hi` and bit 2 selects `r0.lo`. With neither of bits 0 / 23 set,
+those selected byte(s) are written to `r0`; with exactly one set, the same selected
+byte(s) are written to `r1` instead. With both set, the selected byte(s) are written
+to `r1` and `r0.lo` is also written. When neither bit 3 nor bit 2 is set, the
+`{0, 23}` row therefore writes only `r0.lo`. These rules describe the tested sixteen
+combinations, not a general rule for untested fields or destination pairs. The low
+halves are written, so this is not a high-half-only clear. Bits 0 and 23 are
+independent: setting both does something neither does alone. The reason for the
+additional `r0.lo` write is unknown.
+
+What lands in those bytes is a value the form produces rather than a constant `0.0`: it
+reads back as zero in almost every draw, but a few repeats of the cells that write a low
+byte read `0x50` instead (notes 25). It is not a surface read - the surface held a tag in
+every word a fetch can reach - and the source stays unidentified. Bit 1 suppressed the write in the two combinations tested; other combinations with bit 1 set remain untested., bits 4..15 add nothing even as a group, and no consumer of
+the form is identified.
+
+These seems to be for Tegra:
+- [US8314803: "Buffering deserialized pixel data in a graphics processor unit pipeline"](https://patents.google.com/patent/US8314803)
+- [US9183607: "Scoreboard cache coherence in a graphics pipeline"](https://patents.google.com/patent/US9183607)
+- [US7808512: "Bounding region accumulation for graphics rendering"](https://patents.google.com/patent/US7808512)
+- [US8441497: "Interpolation of vertex attributes in a graphics processor"](https://patents.google.com/patent/US8441497)
+
+These seems to be for GoForce (based on filing dates):
+- [US7969446: "Method for operating low power programmable processor"](https://patents.google.com/patent/US7969446)
+- [US8749576: "Method and system for implementing multiple high precision and low precision interpolators for a graphics pipeline"](https://patents.google.com/patent/US8749576)
+- [EP1759380: "Low power programmable processor"](https://patents.google.com/patent/EP1759380)
+- [US7298375: "Arithmetic logic units in series in a graphics pipeline"](https://patents.google.com/patent/US7298375)
+- [US7724263: "System and method for a universal data write unit in a 3-D graphics pipeline including generic cache memories"](https://patents.google.com/patent/US7724263)
+- [EP1665165: "Pixel processing system and method"](https://patents.google.com/patent/EP1665165)
+- [US8711155: "Early kill removal graphics processing system and method"](https://patents.google.com/patent/US8711155)
+- [US7199799: "Interleaving of pixels for low power programmable processor"](https://patents.google.com/patent/US7199799)
+
+
+See [fragment hardware experiment notes, section 25](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md#25-the-pseq-form-bit-24-selects) for the full test grid and dissenting readbacks.
 
 ## More patents
 
