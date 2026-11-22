@@ -1012,3 +1012,30 @@ invalidate another; generate such a manifest with
 * tree: fcdc4d55cc119584ce8cb1348bc20f2b7ba6b636 with the set's files untracked (see metadata git_status)
 * created: 2026-11-22T20:48:59+00:00; 52 rows, repeat 3, timeout 10.0 s
 * summary: 52 passed, 0 failed of 52 - passed
+
+## clean-alu-latch
+
+* manifest: `asm_characterize.alu_latch.json` (sha256 928ef8f26664)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 70cb3197a56c3b2b720a813b279a739732358596 cloned to a separate directory and built there (clean tree)
+* created: 2026-11-22T20:56:05+00:00; 124 rows, repeat 3, timeout 20.0 s
+* summary: 124 passed, 0 failed of 124 - passed
+* reproduces `pin-alu-latch` word for word (checked with `make_*.py`'s --results comparison)
+
+## clean-dw-two-target
+
+* manifest: `asm_characterize.dw_two_target.json` (sha256 8d4cd01de529)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 70cb3197a56c3b2b720a813b279a739732358596 cloned to a separate directory and built there (clean tree)
+* created: 2026-11-22T20:56:20+00:00; 46 rows, repeat 3, timeout 20.0 s
+* summary: 46 passed, 0 failed of 46 - passed
+* reproduces `pin-dw-two-target` word for word (checked with `make_*.py`'s --results comparison)
+
+## clean-alu-sched
+
+* manifest: `asm_characterize.alu_sched.json` (sha256 b58c6c8895e2)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 70cb3197a56c3b2b720a813b279a739732358596 cloned to a separate directory and built there (clean tree)
+* created: 2026-11-22T20:56:27+00:00; 52 rows, repeat 3, timeout 10.0 s
+* summary: 52 passed, 0 failed of 52 - passed
+* reproduces `pin-alu-sched` word for word (checked with `make_*.py`'s --results comparison)
