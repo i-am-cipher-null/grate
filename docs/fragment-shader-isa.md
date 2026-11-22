@@ -241,20 +241,20 @@ The MFU unit can fetch and interpolate 4 component vectors per instruction and/o
 |  7..13 | var1     |
 |   0..6 | var0     |
 
-| opcode | Mnemonic | Meaning                      | pseudo-code         |
-|-------:|:--------:|:-----------------------------|:--------------------|
-|      0 |    NOP   | No operation                 |                     |
-|      1 |    RCP   | Reciprocal                   | rD = 1.0 / rA       |
-|      2 |    RSQ   | Reciprocal square root       | rD = 1.0 / sqrt(rA) |
-|      3 |    LG2   | Logarithm base 2             | rD = log2(rA)       |
-|      4 |    EX2   | Exponent base 2, second step | rD = pow(2.0, rA)   |
-|      5 |   SQRT   | Square root                  | rD = sqrt(rA)       |
-|      6 |    SIN   | Sine, second step            | rD = sin(rA)        |
-|      7 |    COS   | Cosine, second step          | rD = cos(rA)        |
-|      8 |    FRC   | Fractional value             | rD = rA - floor(rA) |
-|      9 |  PREEX2  | Exponent base 2, first step  | prepares EX2        |
-|     10 |  PRESIN  | Sine, first step             | prepares SIN        |
-|     11 |  PRECOS  | Cosine, first step           | prepares COS        |
+| opcode | Mnemonic | Meaning                      | pseudo-code          |
+|-------:|:--------:|:-----------------------------|:---------------------|
+|      0 |   NOP    | No operation                 |                      |
+|      1 |   RCP    | Reciprocal                   | rA = 1.0 / rA        |
+|      2 |   RSQ    | Reciprocal square root       | rA = 1.0 / sqrt(rA)  |
+|      3 |   LG2    | Logarithm base 2             | rA = log2(rA)        |
+|      4 |   EX2    | Exponent base 2, second step | rA = pow(2.0, rA)    |
+|      5 |   SQRT   | Square root                  | rA = sqrt(rA)        |
+|      6 |   SIN    | Sine, second step            | rA = sin(rA)         |
+|      7 |   COS    | Cosine, second step          | rA = cos(rA)         |
+|      8 |   FRC    | Fractional value             | rA = rA - floor(rA)  |
+|      9 |  PREEX2  | Exponent base 2, first step  | prepares EX2 from rA |
+|     10 |  PRESIN  | Sine, first step             | prepares SIN from rA |
+|     11 |  PRECOS  | Cosine, first step           | prepares COS from rA |
 
 **PREEX2/EX2, PRESIN/SIN and PRECOS/COS are paired operations.** Hardware
 tests show that the PRE operation prepares an internal intermediate consumed
@@ -419,14 +419,21 @@ Data write instruction controls write of values contained in the row registers R
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
-| 16..31 | ???                     |
+| 16..17 | render-target class     |
 |     15 | source registers select |
-| 11..14 | ???                     |
+| 11..14 | unknown / special path  |
 |     10 | stencil write           |
-|   6..9 | ???                     |
+|   6..9 | unknown                 |
 |   2..5 | render target index     |
-|      1 | ???                     |
-|      0 | enable                  |
+|   0..1 | write mode              |
+
+The low two bits select the operation: 0 is a no-op, 1 is an ordinary
+render-target write, and 2 or 3 select the single-register and multi-register
+spill paths. They are a mode field, not a simple enable bit. Bits 16..17 are a
+render-target class, separate from the target index. In the tested AR20 paths,
+class 1 is used for depth and class 2 for ordinary target stores. Class 0 also
+worked in some tested contexts; class 3 did not work in the tested path. The
+full meaning of the class field is not established.
 
 #### Source registers select:
 
@@ -441,14 +448,30 @@ Seems have no effect when the depth or stencil write enabled.
 
 Some of the render targets have an additional special purpose, like depth/stencil store. They are hardwired and their special purpose is active under certain conditions, like when depth/stencil test is enabled.
 
-| Render target | Usage             |
-|--------------:|:------------------|
-|             0 | Depth buffer      |
-|             1 | Color buffer      |
-|             2 | Stencil buffer    |
-|             3 | Coverage buffer ? |
-|             4 | Spill buffer      |
-|         5..12 | MRT n+1           |
+#### Observed DW position dependence
+
+In AR20 tests, a DW instruction produced a visible store only when it occupied
+the first batch of its instruction group. For groups of sizes 2, 3 and 4, the
+first-batch probes produced distinct visible results; probes placing DW in
+later batches produced zero in the tested output. The first batch is relative
+to the group, not to the overall program. The tests establish this
+position-dependent behavior, but do not establish the underlying hardware
+mechanism or a general rule for every DW mode.
+
+
+| Render target | Usage                    |
+|--------------:|:-------------------------|
+|             0 | Depth buffer             |
+|             1 | Color buffer             |
+|             2 | Stencil buffer           |
+|             3 | Auxiliary shader surface |
+|             4 | Register-spill surface   |
+|             5 | Additional color surface |
+|         6..12 | MRT encodings            |
+
+In the tested AR20 path, RT3 was an auxiliary shader-accessible surface, not a
+fixed-function coverage target. An AR20 write to RT5 was tested when explicitly
+bound (`GRATE_RT5=1`); working AR20 writes to RT6..12 were not demonstrated.
 
 ## PSEQ instruction word encoding
 
