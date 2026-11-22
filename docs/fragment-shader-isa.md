@@ -581,9 +581,9 @@ The RGBA channel order was confirmed through the r2-r3 destination pair.
 The tested texture did not distinguish the channel order through r0-r1, so
 that path remains uncharacterized.
 
-The default wrapping observed for both S and T is repeat: coordinates such as
-1.25 and -0.25 wrap to 0.25 and 0.75, respectively. The sampler follows the
-texture's dimensions rather than a fixed 4x4 size.
+Wrapping and filtering modes are configured in sampler state, separately
+from the TEX instruction word. They are not encoded by the fields documented
+here.
 
 ### LOD selection
 
@@ -597,10 +597,6 @@ end levels. Fractional LOD selected the nearest mip level in the tested
 configuration. Bias and explicit LOD produced different results on a 16x16
 mip chain; the exact derivative-based LOD calculation and the behavior of
 fractional bias were not established.
-
-The experiments used nearest magnification filtering and
-NEAREST_MIPMAP_NEAREST minification filtering. They therefore do not establish
-linear texel filtering or mip-level blending.
 
 ### Formats and addressing
 
