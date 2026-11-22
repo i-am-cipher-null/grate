@@ -376,8 +376,8 @@ combinations. `mul0` and `mul1` can produce independent results in one MFU
 word. When both units wrote the same row register in the tested collision
 cases, the value observed was the one written by `mul0`.
 
-The interpolation fetch consumes the most recently written barycentric-weight
-state. The weights need not be calculated in the same MFU word as the fetch:
+The interpolation fetch consumes barycentric-weight state that has been
+written before the fetch. The weights need not be calculated in the same MFU word as the fetch:
 tests produced the same interpolation result when both weights were written
 one or two MFU words earlier in the batch. A fetch also consumed weights
 written in the preceding batch. Conversely, a fetch placed before the weight
