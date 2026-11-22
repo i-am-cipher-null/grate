@@ -306,28 +306,26 @@ are not established.
 
 ##### mul0..1 source registers:
 
-The six-bit field at bits 58..63 selects the SFU destination register.
-The opcode summaries below retain the working assumption that `rA` is both
-the SFU input and destination. Hardware tests identify the destination
-selector, but have not independently verified the input source or confirmed
-that input and destination are the same register; that relationship remains
-unclear.
+The six-bit field at bits 58..63 selects the SFU operand register. The
+register named by `sfu: OPCODE rN` supplies the input and receives the result
+in place. Tests with FP20 values in several row registers show that the SFU
+operates on the named register and writes the result back to it. The opcode
+summaries below therefore use `rA` for this in-place operand.
 
 The SFU result is evaluated before the multiplier result and is available to
-MUL through source selector 10. Tests with RCP and SQRT, and with different
-SFU destination-register selections, show that selector 10 exposes the SFU
-result independently of the selected destination register.
+MUL through source selector 10. Tests with RCP and SQRT show that selector 10
+exposes the SFU result independently of the selected operand register.
 
-|  Value | Meaning                                  |
-|-------:|:-----------------------------------------------|
-|   0..3 | row register 0..3                        |
-|   4..7 | ??? (global registers?)                  |
-|   8..9 | ???                                      |
-|     10 | SFU result                               |
-|     11 | presumed barycentric coefficient 0 (unverified) |
-|     12 | presumed barycentric coefficient 1 (unverified) |
-|     13 | 1.0                                      |
-| 14..15 | ???                                      |
+|  Value | Meaning                 |
+|-------:|:------------------------|
+|   0..3 | row register 0..3       |
+|   4..7 | ??? (global registers?) |
+|   8..9 | ???                     |
+|     10 | SFU result              |
+|     11 | barycentric coef 0      |
+|     12 | barycentric coef 1      |
+|     13 | 1.0                     |
+| 14..15 | ???                     |
 
 Hardware tests show that both multiplier source fields can select row
 registers 0..3 when the other source is selector 13 (1.0). The tested
@@ -336,32 +334,52 @@ values. This establishes row-register reads through both fields in that test;
 it does not explain the zero results observed when both sources select row
 registers.
 
-Selectors 11 and 12 produced the same observed value in a probe without
-varying data being fetched. That probe does not establish that they are
-barycentric coefficients; their meanings remain unverified.
+Selectors 11 and 12 are fragment-provided barycentric coefficients: source 11
+selects the weight of the covering triangle's first vertex and source 12 the
+second, in the triangle's index/draw order. Tests compared them with
+interpolated unit-vertex colours on both the (0, 1, 2) and (1, 2, 3) triangles
+at several sample positions. They do not require a varying fetch; omitting the
+interpolation operation leaves the selector readback unchanged.
 
 #### Interpolation
 
-The current interpolation model assigns the MUL results written to the
-"barycentric weight" destination to the first two vertex weights, with the
-third derived as "1.0 - w0 - w1". The source-selector identities for the
-barycentric coefficients and the complete interpolation path have not yet
-been independently verified by the selector tests.
+Let `lambda_i` be the screen-space barycentric weight of vertex `i`, and
+`W_i` its clip-space W. The measured selector values are proportional to
+`lambda_i / W_i` for the first and second vertices. Define the perspective
+denominator
 
-The proposed calculation is:
+\[
+D = \sum_i \frac{\lambda_i}{W_i}.
+\]
 
-	barycentric weight = barycentric coef * 1.0 / w
+Multiplying a selector by `rcp(r4)` gives the corresponding perspective-correct
+weight, `(lambda_i / W_i) / D`, within the precision of the hardware readback.
+The third normalized weight is the remainder after the first two. An
+interpolated varying follows the weighted sum of its vertex values using these
+perspective-correct weights, rather than a screen-space barycentric sum.
 
-This requires a reciprocal of the fragment's W value, but the SFU input
-selection has not yet been established by the hardware tests. In particular,
-the register named in an SFU operation such as RCP or SQRT is its destination
-in the tested encodings; it must not be treated as evidence of the SFU input.
+The unequal-W probe premultiplied clip-space position by each vertex's W, so
+the projected triangle stayed fixed while one vertex's W changed through 1, 2
+and 4. The selector ratio changed by the corresponding 1:2:4 factors, and an
+independently interpolated scalar matched perspective interpolation rather
+than screen-space interpolation. The readback has only about three mantissa
+bits (roughly 12.5% per step), so the measurements establish the relative
+weights and common denominator but do not resolve a common scale or exact
+normalization more precisely. The 43-variant barycentric and 38-variant
+perspective sweeps passed their pin and verification runs (133/133 and
+118/118 rows respectively, including controls) and reproduced from clean
+checkouts. See the [fragment hardware experiment notes](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md).
 
 #### Fragment w component
 
-The existing pipeline model places the fragment W component in r4 and makes
-it available to the first scheduled MFU instruction. The relationship between
-that value and the SFU input is still to be verified.
+Hardware tests show that `r4` carries the interpolated reciprocal clip W,
+not clip W itself. It is approximately `65536 * D` on a 16.16-style scale,
+where `D = sum(lambda_i / W_i)` is the perspective denominator. With a
+constant clip W across the primitive this reduces to approximately
+`65536 / W`; when vertex W values differ, `r4` tracks the per-fragment
+perspective denominator. The probe's `src13 x rcp(r4)` anchor matched
+`1 / (65536 * D)`. Thus `sfu: rcp r4` supplies the common normalization
+factor used with selectors 11 and 12.
 
 #### Fragment z component
 
