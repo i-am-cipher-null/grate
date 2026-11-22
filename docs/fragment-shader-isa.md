@@ -618,9 +618,8 @@ honor the tested non-default surface pitch.
 Bits 6..9 and bit 11 were toggled individually on a bound-sampler fetch and
 on explicit-LOD fetches at three mip levels. They did not change the result in
 those configurations. This does not establish that the fields are reserved
-or inert in every texture mode. Bits 14..31 remain undocumented here; the
-older unknown-bit sweep is not reproduced by the current committed experiment
-set.
+or inert in every texture mode. Bits 14..31 remain undocumented; their
+behavior has not been established by the current reproducible measurements.
 
 ## DW instruction word encoding
 
