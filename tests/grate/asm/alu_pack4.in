@@ -1,0 +1,112 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Four-packet group template: two batches, two `ALU:` blocks each, at
+ * `alu_buffer_size` 2.
+ *
+ * Sections 28-37 established that in a batch with N packets a latch read in
+ * slot S of packet k is served by packet (k-1) mod N, and that this rotation is
+ * scoped to the group rather than to the batch (notes 36: at sizes 2 and 3 with
+ * one packet per batch the same rule holds across the batches of a group). The
+ * largest group measured so far held three packets. This template puts four
+ * packets in one group by giving each of the group's two batches two packets,
+ * which the grammar expresses directly: the assembler sets each batch's
+ * schedule word count from its number of `ALU:` blocks, so batch 0 emits count
+ * 2 at packet address 0 and batch 1 count 2 at address 2. No schedule word is
+ * patched.
+ *
+ *   batch 0, packet 0   slots 0..3    A0..A3   group A
+ *   batch 0, packet 1   slots 4..7    A4..A7
+ *   batch 1, packet 2   slots 8..11   B0..B3
+ *   batch 1, packet 3   slots 12..15  B4..B7
+ *   batch 2, packet 0   C0..C3       group B (readback / group-boundary carry)
+ *   batch 3             E0..E3       group B
+ *   batch 4, packet 0   F0..F3       group C (store for the carry tests)
+ *   batch 5             G0..G3       group C
+ *
+ * Six batches is three whole groups at size 2. An incomplete final group is not
+ * a fair test of anything and has hung the engine before, so the program is
+ * always a whole number of groups.
+ *
+ * Where the result is observed. A row written by a reader becomes visible at
+ * the group boundary, and only a DW in a group's *first* batch produces an
+ * observable store (notes 3, position matrix over sizes 2-4). So a reader in
+ * group A is stored by the DW of batch 2, group B's first batch, and a reader
+ * in group B is stored by the DW of batch 4. The row file is one shared file
+ * rather than one row per batch (notes 3), so a reader in any of group A's
+ * packets writes the same r0 the batch-2 store reads.
+ *
+ * Values: u0 = 0.0625 (0x10), u1 = 0.125 (0x20), u2 = 0.25 (0x40), u3 = 0.375
+ * (0x60) as fx10, so a stored byte names the packet that wrote it. `store rt1,
+ * r0, r1` puts r0.lo in the low byte.
+ *
+ * Latch index: a write in slot N fills `aluN`, measured in notes 28 and 32. The
+ * reading slot is chosen per variant and is independent of the latch index.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	ALU:
+		ALU0:	@A4@
+		ALU1:	@A5@
+		ALU2:	@A6@
+		ALU3:	@A7@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	ALU:
+		ALU0:	@B4@
+		ALU1:	@B5@
+		ALU2:	@B6@
+		ALU3:	@B7@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@C0@
+		ALU1:	@C1@
+		ALU2:	@C2@
+		ALU3:	@C3@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@E0@
+		ALU1:	@E1@
+		ALU2:	@E2@
+		ALU3:	@E3@
+	DW:	@D3@
+;
+EXEC
+	ALU:
+		ALU0:	@F0@
+		ALU1:	@F1@
+		ALU2:	@F2@
+		ALU3:	@F3@
+	DW:	@D4@
+;
+EXEC
+	ALU:
+		ALU0:	@G0@
+		ALU1:	@G1@
+		ALU2:	@G2@
+		ALU3:	@G3@
+	DW:	@D5@
+;

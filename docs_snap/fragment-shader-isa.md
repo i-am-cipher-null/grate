@@ -696,11 +696,16 @@ measurements use the Grate assembler harness (section 10).
 | arrangement | source of the read |
 |:--|:--|
 | one-packet group | that packet's slot-N result, from any other slot; a read in slot N itself is 0 |
-| group with M=2 or M=3 packets | packet `(k-1) mod M`'s slot-N result, for any reading slot; a packet never sees its own results |
+| group with M=2, 3 or 4 packets, one packet per batch | packet `(k-1) mod M`'s slot-N result, for any reading slot; a packet never sees its own results |
+| group of four packets packed two per batch (`alu_buffer_size=2`) | the cycle's forward edges for every latch; the wrap back to packet 0 serves slot 3 only (notes 38) |
 
-The measured rotation is group-scoped, and M=1, 2 and 3 are established. A
-group containing two batches with two ALU packets in each batch (M=4, for
-example `alu_buffer_size=2` with two packets per batch) has not been tested.
+The measured rotation is group-scoped, and M=1 to 4 are established, with one
+refinement at M=4. At `alu_buffer_size=4` with one packet per batch the whole
+cycle holds, wrap included. At `alu_buffer_size=2` with two packets per batch the
+four forward edges hold for every latch, own-packet and two-packets-apart reads
+are zero, no group-boundary carry survives, and the wrap back to packet 0 serves
+latch 3 only - latches 0 to 2 read 0 (notes 38). Which element of that packing
+costs the wrap is not measured.
 The separate group-flush carry is narrower: only the previous group's last
 packet's slot-0 result was observed by slot 0 of the next group, and only when
 the group is one batch (`alu_buffer_size=1`). No cross-group forwarding was
@@ -865,9 +870,9 @@ same chain that works in a one-packet batch dies in a three-packet one:
 M=2 or M=3 packets, a latch read in slot S of packet k is served by packet
 **(k-1) mod M**, for every latch index and any reading slot. M=1 is the
 separately measured one-packet case, with same-packet cross-slot forwarding
-and own-slot exclusion. The formula is established for M=1, 2 and 3; an
-`alu_buffer_size=2` group with two ALU packets in each of its two batches
-(M=4) remains untested. That is why the three-packet "two packets apart" row
+and own-slot exclusion. The formula is established for M=1 to 4. At M=4 the wrap holds fully when each
+batch holds one packet and only through slot 3 when the group's four packets sit
+in two batches (notes 38), so the wrap edge is the part the packing affects. That is why the three-packet "two packets apart" row
 reads 0 - packet 2's source is packet 1, not packet 0 - and why the backward
 row of the table below is nonzero. The earlier "previous packet, forward only /
 packet 0 sees nothing" wording came from a backward probe that moved latch
@@ -898,8 +903,8 @@ fixed by the packet index and ignores what the reader itself wrote.
 backward `0x40`) and size 3 over its three, including the 0<-2 wrap (`0x40`).
 At size 1 the group contains only the single-packet case. Thus M is the total
 ALU packet count in the group, not the count in an individual batch, for the
-arrangements measured. The section above's "one packet later, same group" rows
-are the M=2/M=3 case of the same rule; M=4 remains untested.
+arrangements measured (M up to 4). The section above's "one packet later, same
+group" rows are the M=2/M=3 case of the same rule.
 
 The group carry follows the group's **last** packet: a write in the last packet
 of a three-packet batch carries (`0x10`), the same write in its first packet
@@ -926,11 +931,13 @@ the code does not select the latch - a write issued from slot 1 is readable as
 
 The scheduler rule supported by the complete tests is: for a one-packet group,
 use same-packet cross-slot forwarding with own-slot exclusion; for groups of
-M=2 or M=3 packets, read packet `(k-1) mod M`'s matching `aluN` latch view.
+M=2 to 4 packets, read packet `(k-1) mod M`'s matching `aluN` latch view, and
+treat a wrap read of a latch other than slot 3 as unavailable in a group whose
+packets are packed two per batch.
 Do not treat this rotation as storage across a group boundary. The separate
 flush carry is only the previous group's last packet's slot-0 result into slot
 0 of the next group, and was observed only for one-batch groups. Land values
-that must survive a group in row registers. The M=4 arrangement remains open.
+that must survive a group in row registers.
 
 The blob itself relies on the chain heavily: for eight summed `vec4` uniforms it
 emits one packet of `mad r3.hl, c0, #1, c4` ... `mad r3.hl, c8, #1, d0`, reading

@@ -1,0 +1,288 @@
+{
+  "name": "alu-pack4-size4",
+  "created_utc": "2026-11-22T23:19:54+00:00",
+  "manifest": "/tmp/alu_pack4_size4.json",
+  "manifest_sha256": "6ed45d798b7a9e6d6f907590ebc063aadfb1f9474343918f2adebd79086df8f7",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "94ea78ddbf010afad6b5e8898282257a94aec0a7",
+  "git_status": "?? tests/grate/asm/alu_pack4.in\n?? tests/grate/asm/make_alu_pack4.py",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "alu-pack4-size4",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/alu_pack4.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "m4-s4-wrap",
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@B4@": "NOP",
+            "@B5@": "NOP",
+            "@B6@": "NOP",
+            "@B7@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "NOP",
+            "@D2@": "NOP",
+            "@D3@": "NOP",
+            "@D4@": "store rt1, r0, r1",
+            "@D5@": "NOP",
+            "@D6@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "size 4, one packet per batch, batch 3 slot 0 writes 0.375 (0x60) and batch 0 slot 0 reads alu0: 0x60 if the M=4 wrap works when each batch holds one packet, which separates M=4 from the two-packets-per-batch shape"
+      },
+      {
+        "name": "m4-s4-fwd01",
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r2.l*,  u0,  #1,  #0",
+            "@B1@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@B4@": "NOP",
+            "@B5@": "NOP",
+            "@B6@": "NOP",
+            "@B7@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "NOP",
+            "@D2@": "NOP",
+            "@D3@": "NOP",
+            "@D4@": "store rt1, r0, r1",
+            "@D5@": "NOP",
+            "@D6@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "size 4, batch 0 writes 0.0625 (0x10) and batch 1 reads: 0x10, the adjacency control"
+      },
+      {
+        "name": "m4-s4-fwd12",
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "NOP",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@B2@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B3@": "NOP",
+            "@B4@": "NOP",
+            "@B5@": "NOP",
+            "@B6@": "NOP",
+            "@B7@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "NOP",
+            "@D2@": "NOP",
+            "@D3@": "NOP",
+            "@D4@": "store rt1, r0, r1",
+            "@D5@": "NOP",
+            "@D6@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "size 4, batch 1 writes 0.125 (0x20) and batch 2 reads: 0x20"
+      },
+      {
+        "name": "m4-s4-fwd23",
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@B3@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B4@": "NOP",
+            "@B5@": "NOP",
+            "@B6@": "NOP",
+            "@B7@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "NOP",
+            "@D2@": "NOP",
+            "@D3@": "NOP",
+            "@D4@": "store rt1, r0, r1",
+            "@D5@": "NOP",
+            "@D6@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "size 4, batch 2 writes 0.25 (0x40) and batch 3 reads: 0x40"
+      },
+      {
+        "name": "m4-s4-twoaway",
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B1@": "NOP",
+            "@B2@": "MAD  r2.l*,  u2,  #1,  #0",
+            "@B3@": "NOP",
+            "@B4@": "NOP",
+            "@B5@": "NOP",
+            "@B6@": "NOP",
+            "@B7@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "NOP",
+            "@D2@": "NOP",
+            "@D3@": "NOP",
+            "@D4@": "store rt1, r0, r1",
+            "@D5@": "NOP",
+            "@D6@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "size 4, batch 2 writes 0x40 and batch 0 reads: 0, two apart"
+      },
+      {
+        "name": "m4-s4-back",
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "MAD  r0.l*,  alu0.l,  #1,  #0",
+            "@B1@": "MAD  r2.l*,  u1,  #1,  #0",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@B4@": "NOP",
+            "@B5@": "NOP",
+            "@B6@": "NOP",
+            "@B7@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "NOP",
+            "@D2@": "NOP",
+            "@D3@": "NOP",
+            "@D4@": "store rt1, r0, r1",
+            "@D5@": "NOP",
+            "@D6@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "size 4, batch 1 writes 0.125 (0x20) and batch 0 reads: 0x20 if a later packet serves an earlier one in this geometry"
+      },
+      {
+        "name": "m4-s4-write-only",
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "MAD  r2.l*,  u3,  #1,  #0",
+            "@B4@": "NOP",
+            "@B5@": "NOP",
+            "@B6@": "NOP",
+            "@B7@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "NOP",
+            "@D2@": "NOP",
+            "@D3@": "NOP",
+            "@D4@": "store rt1, r2, r3",
+            "@D5@": "NOP",
+            "@D6@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "size 4, batch 3 writes 0x60 and nothing reads, stored from the row: 0x60 proves the write lands"
+      },
+      {
+        "name": "m4-s4-none",
+        "fs": "tests/grate/asm/alu_buf_blocks8.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "4",
+            "@B0@": "NOP",
+            "@B1@": "NOP",
+            "@B2@": "NOP",
+            "@B3@": "NOP",
+            "@B4@": "NOP",
+            "@B5@": "NOP",
+            "@B6@": "NOP",
+            "@B7@": "NOP",
+            "@D0@": "NOP",
+            "@D1@": "NOP",
+            "@D2@": "NOP",
+            "@D3@": "NOP",
+            "@D4@": "store rt1, r0, r1",
+            "@D5@": "NOP",
+            "@D6@": "NOP",
+            "@D7@": "NOP"
+          }
+        },
+        "environment": {
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "size 4, no write, one store in batch 4: the word baseline"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 28,
+    "passed": 28,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

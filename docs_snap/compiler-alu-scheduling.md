@@ -59,7 +59,7 @@ slot with that number, whatever its destination field said. "Row" means
 |:--|:--|--:|
 | same packet, batch has **one** packet | any latch, any reader slot, either order, own slot excluded | 28 |
 | same packet, batch has more than one packet | **no** | 32, 36 |
-| read in packet k of a multi-packet batch | packet **(k-1) mod M**'s slot-N result, all four latches, any reader slot; M = the group's packet count | 32, 36 |
+| read in packet k of a multi-packet batch | packet **(k-1) mod M**'s slot-N result, all four latches, any reader slot; M = the group's packet count | 32, 36, 38 |
 | two-packet batch, either direction | both packets see each other; a packet never sees its own results | 36 |
 | three-packet batch | forward one hop, and packet 0 reads packet 2 (the wrap); two packets apart is 0 | 32, 36 |
 | one packet later, batch boundary inside a group (one-packet batches) | all four latches, any slot - the M=2/M=3 case of the rotation | 28, 36 |
@@ -121,7 +121,7 @@ The measured rules give a simple decision procedure.
 |:--|:--|:--|
 | later slot of the **same packet**, batch is one packet | latch of the producing slot | intra-packet bypass (notes 28) |
 | next packet, same batch, consumer is not packet 0 | latch of the producing slot | packet k reads k-1, all four latches (notes 32, 36) |
-| consumer is packet 0 of a multi-packet batch | latch of the batch's **last** packet | the cycle wraps (notes 36) |
+| consumer is packet 0 of a multi-packet batch | latch of the group's **last** packet (at M=4 packed two per batch: slot 3 only, notes 38) | the cycle wraps (notes 36, 38) |
 | any packet after that, same batch | row register, read in a later group | no forward is that deep, and rows commit only at a group boundary |
 | another packet of the **same** batch, non-adjacent | row register, read in a later group | rows are not visible inside a group (notes 28, 32) |
 | later group | row register | the latch carries nothing across a flush once the group is more than one batch, and only slot 0 even then |
@@ -242,10 +242,11 @@ general packet/group scheduling model as fully established.
   input/output relation; a rotating register file, a reordered issue and a
   double-buffered write bus all fit it, and nothing measured separates them.
 * What fixes M. It equals the group's packet count in the measured shapes
-  (`alu_buffer_size` 1/2/3 with one-packet batches, and 1 with a two- and a
-  three-packet batch), but a group of two batches each holding two packets - M=4
-  if the rule holds - is untested, as is `alu_buffer_size` 2 with two-packet
-  batches.
+  (`alu_buffer_size` 1/2/3 with one-packet batches, 1 with a two- and a
+  three-packet batch, and 4 with one packet per batch). With the group's four
+  packets packed two per batch at size 2 (notes 38) the forward edges still
+  follow the rule, but only the slot-3 wrap survives; why the packing costs the
+  other latches' wrap, and what a 3 + 1 packing does, are open.
 * Why the group flush preserves the last packet's slot-0 result when the group
   is a single batch and nothing when it is two or three (notes 36). Sections 31
   and 32 measured only the first case, so their claims hold but their scope is
@@ -267,7 +268,7 @@ measurement but not isolated, **Open** = not established. All are AR20.
 |--:|:--|:--|:--|
 | 1 | In a one-packet batch, a latch read in slot S sees the packet's slot-N result from any slot, in either issue order, whichever slot wrote it. | **Measured** | notes 28 |
 | 2 | The reading slot's own result is 0, in a one-packet batch and in every multi-packet arrangement. | **Measured** | notes 28, 32, 36 |
-| 3 | In a multi-packet batch a latch read in slot S of packet k is served by packet (k-1) mod M, M = the group's packet count, all four latches, any slot. | **Measured** for M=1, 2, 3 | notes 32, 36 |
+| 3 | In a multi-packet batch a latch read in slot S of packet k is served by packet (k-1) mod M, M = the group's packet count, all four latches, any slot. | **Measured** for M=1 to 4 when each batch holds one packet; at M=4 packed two packets per batch the forward edges hold and only the slot-3 wrap does | notes 32, 36, 38 |
 | 4 | A two-packet batch forwards in both directions, so "packet 0 sees packet 1" is legal. Nothing in a multi-packet batch forwards two packets. | **Measured** | notes 36 |
 | 5 | A packet never sees its own results in a multi-packet batch, so its slots are independent and its chain must be one hop per packet. | **Measured** | notes 32, 36 |
 | 6 | `.l*` (fx10) and `.lh` (fp20) writes fill different latch views; a bare read sees only an `.lh` write, an `.l` read only a `.l*` one, a `.*h`-only write fills neither, at every measured distance and in both directions. | **Measured** | notes 28, 36 |
@@ -279,7 +280,7 @@ measurement but not isolated, **Open** = not established. All are AR20.
 | 12 | `recv`/`send` transfer between slots **inside one packet** and work in any tested packet of a batch. Tested cross-packet pairings do not transfer in either direction; the slot-0 sender in packet 0 to slot-1 receiver in packet 1 through rotation remains untested. | **Measured** / **Open** | notes 13, 16, 37 |
 | 13 | A `send` on a producer does not disturb the latch path, and the group carry holds the plain slot-0 result. | **Measured** | notes 37 |
 | 14 | Schedule bits 29 and 30 change nothing observable, on any of the three batches of the template, in five shapes. | **Measured** | notes 30, 34, 35 |
-| 15 | M equals the group's packet count beyond the measured M=1, 2 and 3 cases, including `alu_buffer_size=2` with two ALU packets in each of its two batches (M=4). | **Open** | - |
+| 15 | M equals the group's packet count for M=1 to 4; a four-packet group packed two per batch keeps the forward edges but loses the wrap for latches 0 to 2. | **Measured** for M=1 to 4 | notes 38 |
 | 16 | The rotation applies to MFU/TEX streams or to the bits 8..28 of the schedule word. | **Open** | - |
 | 17 | Anything about T114: the schedule word layout differs and its count field is `count[10:8]`. | **Open** | notes 30 |
 
@@ -320,8 +321,9 @@ measurement but not isolated, **Open** = not established. All are AR20.
   one batch and the writer is its last packet and the reader is slot 0.
 
 None of this is implemented in the compiler, and this note does not justify an
-implementation on its own: the packet-count and rotation rules are measured, but
-M for larger groups and the T114 layout are not.
+implementation on its own: the packet-count and rotation rules are measured up to
+four packets in the packings tested, but groups larger than four, other packings
+and the T114 layout are not.
 
 ## 9. Evidence map
 
@@ -336,6 +338,7 @@ M for larger groups and the T114 layout are not.
 | two-packet batch forwarding, both directions, carry, formats | 36 | `asm_characterize.alu_pack2.json` | `pin-alu-pack2`, `verify-alu-pack2`, `clean-alu-pack2` |
 | three-packet rotation and the wrap | 36 | `asm_characterize.alu_pack3.json` | `pin-alu-pack3`, `verify-alu-pack3`, `clean-alu-pack3` |
 | rotation is group-scoped, sizes 1/2/3 | 36 | `asm_characterize.latch_rotate.json` | `pin-latch-rotate`, `verify-latch-rotate`, `clean-latch-rotate` |
+| M=4 rotation, one and two packets per batch | 38 | `asm_characterize.alu_pack4.json`, `_wrap`, `_probe`, `_probe2`, `_size4` | `pin-`/`verify-alu-pack4`, `-wrap`, `-probe`, `-probe2`, `-size4` |
 | `send`/`recv` are packet-local | 37 | `asm_characterize.alu_send_pack.json` | `pin-alu-send-pack`, `verify-alu-send-pack`, `clean-alu-send-pack` |
 
 The run directories live under `tests/grate/asm/results/` and each holds the

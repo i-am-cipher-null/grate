@@ -241,7 +241,8 @@ as operands (notes 28). A read is not a read of a retired register:
 |:--|:--|
 | same packet, group has one packet | that packet's slot-K result, from any writer slot; a read in slot K itself returns 0 |
 | same packet, group has more than one packet | 0; a packet does not see its own results |
-| packet k in a group of M=2 or M=3 packets | packet `(k-1) mod M`'s slot-K result, for any reading slot |
+| packet k in a group of M=2, 3 or 4 packets, one packet per batch | packet `(k-1) mod M`'s slot-K result, for any reading slot |
+| packet k in a group of four packets packed two per batch | the cycle's forward edges for every latch; the wrap back to packet 0 serves slot 3 only |
 | across a group boundary (`alu_buffer_size` 1) | the previous group's last packet's slot-0 result, readable only from slot 0 |
 | across a group boundary (`alu_buffer_size` 2 or 3) | 0, from any batch of the previous group, in the shapes tested |
 
@@ -282,19 +283,25 @@ served by the slot-K result from packet `(k-1) mod M`**, where M is the total nu
 ALU packets in the group (notes 32, 36). The reading slot may be any slot. For a
 one-packet group, this is the same-packet forwarding described above, with a read of
 the reader's own slot returning 0. For a multi-packet group, a packet does not see its
-own results at all. The rule has been measured for M=2 and M=3 both within one batch
+own results at all. The rule has been measured for M=2, 3 and 4 both within one batch
 and, with one packet per batch, across batches in a group; M=2 therefore forwards in
-both directions, while M=3 forms the cycle 0<-2<-1<-0. Dependent operations can chain
+both directions (that edge is the wrap, not a second mechanism), M=3 forms the cycle
+0<-2<-1<-0 and M=4 the cycle 0<-3<-2<-1<-0 when each batch holds one packet (note 38). Dependent operations can chain
 one hop per packet, and packet 0 can read packet 2 in a three-packet group. This revises
 section 32's "previous packet, forward only": its backward probe changed the latch index
 and reading slot at once, so it did not reveal the wrap (note 36).
 
-The formula is established for the tested M=1, 2 and 3 arrangements, not for every
-possible mixture of batches and packets. In particular, `alu_buffer_size` 2 with two
-packets in each batch (four packets in the group) remains untested.
+The formula is established for the tested M=1 to 4 arrangements, not for every
+possible mixture of batches and packets. Four packets in one group were measured in two
+packings: at `alu_buffer_size` 4 with one packet per batch the cycle holds, wrap
+included; at `alu_buffer_size` 2 with two packets per batch the four forward edges hold
+for every latch, own-packet and two-packets-apart reads return 0, no group-boundary
+carry survives, and the wrap back to packet 0 serves slot 3 only - a wrap read of
+latches 0 to 2 returns 0. Which part of that packing costs the wrap is not measured
+(note 38).
 
 The rotation crosses batch boundaries within a group: with one packet per batch, an
-`alu_buffer_size` of 2 or 3 rotates over the group's batches, wrap included. The
+`alu_buffer_size` of 2, 3 or 4 rotates over the group's batches, wrap included. The
 group-boundary carry is separate: it comes from the group's **last** packet's slot-0
 result, and is readable by slot 0 in the next group. A batch that writes through slot 0
 only in its first packet and ends with NOPs therefore carries nothing. This carry was

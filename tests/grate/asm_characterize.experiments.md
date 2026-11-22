@@ -5295,6 +5295,9 @@ by packet (k-1) mod M**, where M is the number of ALU packets the group issues,
 excluding the reading slot's own result. For M=1 that is the packet itself,
 which is exactly the intra-packet bypass of section 28; for M=2 the packets see
 each other in both directions; for M=3 they form the cycle 0<-2<-1<-0.
+Section 38 measures M = 4 in two packings: the cycle holds when each batch
+holds one packet, wrap included; with four packets in two batches the
+forward edges hold and only latch 3 wraps.
 
 **This revises section 32**, which said the multi-packet rule was "the previous
 packet, forward only" and that packet 0 sees nothing. The forward half is right
@@ -5411,6 +5414,169 @@ three repeats, controls) pinned from `7398f3f89521...`, with
 `schedule-words.tsv`; `clean-alu-send-pack` is the same manifest from a
 checkout of the containing commit and matches the pinned rows. Regenerate with
 `python3 tests/grate/asm/make_alu_send_pack.py`.
+
+## 38. A four-packet group: the forward map holds, the wrap depends on the packing
+
+Sections 28 to 37 established the rule "a latch read in slot S of packet k is
+served by packet (k-1) mod M" for groups of M = 1, 2 and 3 packets, with the
+rotation scoped to the group rather than to the batch. M = 4 was untested, and
+two knobs can produce it: `alu_buffer_size` (batches per group) and the number of
+`ALU:` blocks per batch (packets per batch). The shape asked here is the one the
+open question named: `alu_buffer_size` 2, two batches in the group, two packets
+in each batch, four packets in the group.
+
+The predicted map was packet 0 <- packet 3, 1 <- 0, 2 <- 1, 3 <- 2.
+
+`asm/alu_pack4.in` is six batches - three whole groups at size 2, since an
+incomplete final group is not a fair test - with two `ALU:` blocks in batches 0
+and 1 and one in batches 2 to 5. Group A (batches 0, 1) holds the four packets,
+group B's first batch (2) stores what group A's readers wrote, and group C's
+first batch (4) stores what group B's readers wrote, which is what the
+group-boundary carry variants need. The assembler sets each batch's count from
+its blocks, so the upload carries `0x00000002` (count 2, packet address 0) for
+batch 0 and `0x0000000A` (count 2, address 2) for batch 1, then `0x00000011`,
+`0x15`, `0x19`, `0x1D` (count 1, addresses 4 to 7). Every one of the 239 draws
+in this section dumps its program and `schedule-words.tsv` shows those words with
+`0x806` zero: the second packet is in the group by construction, not by a
+patched schedule word.
+
+Each packet writes its own byte - 0x10, 0x20, 0x40, 0x60 for packets 0 to 3 - so
+a stored byte names the packet that served the read. A write in slot N fills
+`aluN`, and the reading slot is varied independently of the latch index.
+
+### The forward hops hold for every latch
+
+| variant | read | word |
+|:--|:--|--:|
+| `src0-read1` | packet 1 slot 0 reads alu0, packet 0 slot 0 wrote 0x10 | `0x10` |
+| `src1-read2` | packet 2 slot 0 reads alu0, packet 1 slot 0 wrote 0x20 | `0x20` |
+| `src2-read3` | packet 3 slot 0 reads alu0, packet 2 slot 0 wrote 0x40 | `0x40` |
+| `alu1-from-p0` | packet 1 reads alu1 written by packet 0 slot 1 | `0x10` |
+| `alu2-from-p1` | packet 2 reads alu2 written by packet 1 slot 2 | `0x20` |
+| `alu3-from-p2` | packet 3 reads alu3 written by packet 2 slot 3 | `0x40` |
+| `alu0-slot2`, `alu0-slot3` | the 2 -> 3 and 0 -> 1 hops re-read from other slots | `0x40`, `0x10` |
+| `own-p0` .. `own-p3` | each packet reads alu0 from another of its own slots | `0x00` |
+| `pair-p2-p0`, `pair-p3-p1`, `pair-p0-p2`, `pair-p1-p3` | two packets apart, both directions | `0x00` |
+| `both-1-2-read3` | packets 1 and 2 both write alu0, packet 3 reads | `0x40` |
+| `both-0-1-read2` | packets 0 and 1 both write alu0, packet 2 reads | `0x20` |
+| `unmarked`, `none` | all writes no read, and no writes | `0x00` |
+
+So all four forward edges of the cyclic map exist, every latch forwards, the
+own-packet result stays excluded, and nothing reaches two packets. The two
+"both write" cases name the immediate predecessor, so the read is served by one
+identified packet rather than by a merge of everything the group wrote.
+
+### The wrap is latch-dependent in this shape
+
+| variant | write | read | word |
+|:--|:--|:--|--:|
+| `src3-read0` | packet 3 slot 0 (0x60) | packet 0 slot 0 reads alu0 | `0x00` |
+| `alu0-slot1`, `wrap-al0-s2`, `wrap-al0-s3` | packet 3 slot 0 | packet 0 slots 1, 2, 3 read alu0 | `0x00` |
+| `wrap-al1-s0`, `wrap-al1-s1` | packet 3 slot 1 | packet 0 reads alu1 from slots 0 and 1 | `0x00` |
+| `wrap-al2-s0` | packet 3 slot 2 | packet 0 slot 0 reads alu2 | `0x00` |
+| `alu3-from-p3-slot3`, `wrap-al3-s0`, `al3-p3s3-p0s1`, `al3-p3s3-p0s2` | packet 3 slot 3 | packet 0 reads alu3 from slots 3, 0, 1, 2 | `0x60` |
+| `al2-p3s3-p0s3` | packet 3 slot 3 | packet 0 slot 3 reads alu2 | `0x00` |
+| `al3-p3s1-p0s3`, `al3-p3s2-p0s3` | packet 3 slots 1 and 2 | packet 0 slot 3 reads alu3 | `0x00` |
+| `al3-p1s3-p0s3`, `al3-p2s3-p0s3` | packets 1 and 2 slot 3 | packet 0 slot 3 reads alu3 | `0x00` |
+| `al3-p1p3-p0s3` | packets 1 (0x20) and 3 (0x60) slot 3 | packet 0 slot 3 reads alu3 | `0x60` |
+| `al3-p3s3-p1s3` | packet 3 slot 3 | packet 1 slot 3 reads alu3 | `0x00` |
+| `al1-p1s1-p0s1` | packet 1 slot 1 | packet 0 slot 1 reads alu1 | `0x00` |
+| `al3-nowrite` | nothing | packet 0 slot 3 reads alu3 | `0x00` |
+| `p3s3-write-only` | packet 3 slot 3 (0x60) | none, stored from the row | `0x60` |
+
+The wrap from the group's last packet back to packet 0 exists **only through
+latch 3** in this arrangement. It does not depend on the reading slot, it does
+need the write to be in slot 3 (slots 1 and 2 of packet 3 do not serve an alu3
+read), and it needs the asking latch to match (a slot-3 write does not serve an
+alu2 read). The controls bracket it: with no write the read is zero, the write
+by itself lands (`p3s3-write-only` `0x60`), and packet 1 does not see packet 3's
+slot-3 write, so the value is not a rolling "last slot-3 result" register.
+
+### The same M = 4 with one packet per batch has the whole map
+
+If the wrap shortfall were a property of M = 4 it would also appear when each
+batch holds a single packet. `asm/alu_buf_blocks8.in` at `alu_buffer_size` 4
+gives a four-batch group with one `ALU:` block each (all of them slot 0, so this
+tests latch 0), and the store sits in the next group's first batch:
+
+| variant | read | word |
+|:--|:--|--:|
+| `m4-s4-fwd01`, `fwd12`, `fwd23` | the three forward edges, latch 0 | `0x10`, `0x20`, `0x40` |
+| `m4-s4-wrap` | packet 3 slot 0 writes 0x60, packet 0 slot 0 reads alu0 | `0x60` |
+| `m4-s4-twoaway` | packet 2 writes, packet 0 reads | `0x00` |
+| `m4-s4-back` | packet 1 writes, packet 0 reads | `0x00` |
+| `m4-s4-write-only` | the write alone, stored from the row | `0x60` |
+| `m4-s4-none` | no write | `0x00` |
+
+At one packet per batch the cyclic map holds at M = 4, wrap included, in the
+same latch 0 arrangement that returns zero in the two-packets-per-batch shape.
+The shortfall therefore belongs to the **packing** - four packets in two batches
+at size 2 - and not to M = 4.
+
+### No backward edge beyond the wrap
+
+Section 36 described the two-packet batch as coupling "in both directions", and
+that reading needs one correction: the backward edge it measured *is* the wrap.
+At M = 2 the cyclic predecessor of packet 0 is packet 1, so a read in packet 0
+sees the next packet; at M = 4 the predecessor of packet 0 is packet 3, so
+packet 0 must not see packet 1, and it does not (`back-same-p0`, `al1-p1s1-p0s1`).
+The same holds for packet 2 and packet 3 (`back-same-p2`, `back-cross-b1`), and
+the M = 2 and M = 3 controls re-measure the cyclic edges directly
+(`rot2-back-ctl` `0x40`, `rot2-al3-s0`/`-s3` `0x7F`, `rot3-al0-ctl`/
+`rot3-al3-ctl` `0x7F`). Nothing in sections 28 to 37 is contradicted here beyond
+the wording: "both directions" is true where the predecessor is the next packet.
+
+### The formats follow the packet they are read from
+
+`lh-p0` (packet 0 writes fp20, packet 1 reads bare) is `0x10`, so the fp20 path
+forwards the one-hop source in this geometry too. `lh-p3` asks the wrap through
+latch 0 in fp20 and is `0x00`, which is the latch-0 wrap that is missing here
+rather than a format difference. `lh-write-l-read` and `bare-read` are `0x00`,
+the two format mismatches that section 28 measured.
+
+### The group boundary carries nothing at this size
+
+`carry-s0` (packet 3 slot 0 writes, group B slot 0 reads), `carry-s2` (same,
+read from slot 2) and `carry-s3` (packet 3 slot 3 writes, group B slot 3 reads)
+are all `0x00`, with `carry-none` as the no-write control. `carry-ctl-s1`, the
+size-1 arrangement that does carry, is `0x10` in the same run. That matches the
+size-2 and size-3 negative results in section 36 and extends them to a
+four-packet group and to the third latch.
+
+### What is measured, inferred and open
+
+* **Measured**: with `alu_buffer_size` 2 and two packets per batch, the forward
+  edges 0 -> 1 -> 2 -> 3 hold for all four latches, own-packet and
+  two-packets-apart reads are zero, and the wrap from the group's last packet to
+  packet 0 serves latch 3 only, from any reading slot, requiring packet 3's
+  slot-3 write. With `alu_buffer_size` 4 and one packet per batch the whole map
+  holds, wrap included, for latch 0. No group-boundary carry survives either
+  shape. Every word above came from three repeats in two independent runs.
+* **Inferred**: that the two-packets-per-batch shape loses latches 0 to 2's wrap
+  because of how the group's packets are packed rather than because the group is
+  large - the size-4 result is the evidence, and the two shapes differ in
+  packing, batch count and buffer size at once.
+* **Open**: why the packing decides which latch can wrap; whether a 3 + 1
+  packing (three packets in the first batch, one in the second, still M = 4)
+  behaves like the 2 + 2 shape or like the one-packet-per-batch shape; whether
+  the slot-3 wrap exists at other sizes and packings for the same reason;
+  whether the wrap is a hardware path at all or a pipeline effect that the
+  group's last slot-3 write happens to survive. The mechanism is not measured,
+  and these results are rules about the arrangements tested.
+
+### Recorded runs
+
+`pin-alu-pack4` / `verify-alu-pack4` hold 109 rows each (35 variants, three
+repeats, controls) pinned from a run on this checkout; `pin-alu-pack4-wrap` /
+`verify-alu-pack4-wrap` 37 rows each (11 variants); `pin-alu-pack4-probe` /
+`verify-alu-pack4-probe` 37 rows (11); `pin-alu-pack4-probe2` /
+`verify-alu-pack4-probe2` 28 rows (8); `pin-alu-pack4-size4` /
+`verify-alu-pack4-size4` 28 rows (8). Each directory holds the run's
+`schedule-words.tsv`. The two runs of each set agree row for row, every variant's
+three repeats agree, and the `immediate-operand` and `varying-pipeline` controls
+passed before and after every run. Regenerate with
+`python3 tests/grate/asm/make_alu_pack4.py` (and `--set wrap|probe|probe2|size4`),
+and pin with `--results DIR`.
 
 ## What the runner cost
 
