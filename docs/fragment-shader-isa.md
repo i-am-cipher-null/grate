@@ -11,6 +11,13 @@ The fragment shader is separated into five different instruction streams:
 
 The different units seems to be synchronized by separate timing streams.
 
+Measured statements below cite the experiment that established them, by section, in
+`tests/grate/asm_characterize.experiments.md` (for example "notes 24"). This file is the
+repository's copy of the ISA description and the one to edit. A longer version of the
+same document, carrying the full evidence tables and the retraction history, is
+maintained in the documentation snapshot (`docs_snap/fragment-shader-isa.md`, outside
+this repository); the two have to agree on every claim both make.
+
 #### Instructions flow
 
 | Sequence: |   1  |  2  |  2  |  2  |  3  |  4  |  4  |  4  |  5 |
@@ -23,9 +30,17 @@ The different units seems to be synchronized by separate timing streams.
 
 ## Program sequencer
 
-Allows to execute large fragment shaders in multiple passes. This feature not used in practice, BLOB driver gives up on large shaders.
+Allows to execute large fragment shaders in multiple passes. It controls recirculation
+of the pixel over the fragment shader pipeline.
 
-Controls recirculation of pixel over the fragment shader pipeline.
+The earlier reading - "not used in practice, the blob gives up on large shaders" - is
+wrong: a uniform-heavy shader is emitted as several *chunks*, each a complete program
+with its own batch count and its own constant window, and the fragment is fed through
+the pipeline once per chunk. Chunk 2 of a 16-`vec4` shader opens by accumulating onto
+the `r2` chunk 1 wrote, and only the last chunk stores, so row registers and globals
+survive a chunk boundary. How the fragment is parked between passes is still not
+established. Measured from the blob's own output - section 10.2 of the extended
+document (`docs_snap/fragment-shader-isa.md`) for the dumps and the chunk table.
 
 Patent: https://www.google.com/patents/US8411096<br>
 Patent: https://www.google.com/patents/US8659601
@@ -207,6 +222,16 @@ When the "recv" bit is set, operand rC is overridden with the accumulation value
 | ALU2: | ALU2 += ALU1    | ALU0 += ALU2     |
 | ALU3: | ALU3 += ALU2    | ALU2 += ALU3     |
 
+#### Several writers into one half
+
+When more than one slot of a packet writes the same half-register, the results merge by
+a **bitwise OR of the half's own code**, whatever format wrote it (notes 27). In fp20,
+0.25 (`0xE8`) and 0.5 (`0xF0`) merge to `0xF8`, which reads back as 1.0 rather than
+0.75, and three writers leave `0xFC` (1.5), which the 8-bit output conversion then
+saturates. Identical values are idempotent and the order does not matter. One fx10
+writer beside one fp20 writer leaves a value neither wrote (`0x42` where either alone
+reads `0x40`), in both orders; that case is not explained.
+
 #### Addition disable
 
 When bit "addition disable" is set, the Multiply-Add operation turns into two multiplies. The fx10 result of each multiply goes to the low/high subregisters of the destination register.
@@ -298,6 +323,14 @@ The SFU result is evaluated first and is available to use by MUL's via "SFU resu
 |     13 | 1.0                     |
 | 14..15 | ???                     |
 
+#### Interpolation disable
+
+With the link word's `(dis)` modifier set on every column, the fragment reads one
+vertex's vector instead of an interpolated one, and that vertex is the **last** one of
+the covering triangle: in the tested four-column case the sample matched the provoking
+vertex's vector exactly (notes 26). A single disabled column did not match any one
+vertex's vector, so the per-component behaviour is not established by that probe.
+
 #### Interpolation
 
 The barycentric interpolation weights are the MUL's results written to the "barycentric weight" destination register. The weight w0 (related to the first triangle vertex - the "barycentric coef 0" source register) is hardwired to the result of the mul0, the second vertex w1 ("barycentric coef 1" source register) to the mul1. Again, only destination "barycentric weight" registers are hardwired, "barycentric coef" sources are not. The third vertex weight is derived from the w0 and w1 as "1.0 - w0 - w1". The SFU operation should be set to "rcp r4".
@@ -356,14 +389,24 @@ Data write instruction controls write of values contained in the row registers R
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
-| 16..31 | ???                     |
+| 16..31 | 16..17 = render target class (1 = depth, 2 = other); 18..31 no observable effect |
 |     15 | source registers select |
-| 11..14 | ???                     |
+| 11..14 | bit 14 writes a zero payload; 11..13 no effect |
 |     10 | stencil write           |
-|   6..9 | ???                     |
+|   6..9 | no effect on hardware   |
 |   2..5 | render target index     |
-|      1 | ???                     |
-|      0 | enable                  |
+|      1 | write mode, high bit    |
+|      0 | write mode, low bit (1 = render target write, 2/3 = spill write) |
+
+Measured on AR20 (notes 24). With rt1 prefilled by an earlier batch and a payload whose
+four bytes are distinct, setting bits 6..9, 18..19, 23..25 or every bit 18..31 as
+groups leaves all four bytes written, so the instruction carries **no per-byte write
+mask**. Bits 11, 12 and 13 are inert on their own and bit 14 is not: it replaces the
+payload with `0x00000000` while still committing the write, whichever pair bit 15
+names. What bit 14 reads is not established - the candidate source (the second row of
+row registers) cannot be populated because `alu_buffer_size = 2` hangs the draw. A
+class-1 store with no depth surface bound, and write modes 0, 2 and 3, leave the colour
+target at whatever it already held.
 
 #### Source registers select:
 
@@ -393,17 +436,19 @@ PSEQ stands for Program Sequencer. It fetches raw data from a selected render ta
 
 |   Bits | Meaning                 |
 |-------:|:------------------------|
-| 24..31 | ???                     |
-|     23 | enable (?)              |
-| 20..22 | ???                     |
+| 24..31 | bit 24 selects the zero-write form (below); 25..31 no effect |
+|     23 | fetch enable, required  |
+| 20..22 | no effect               |
 | 16..19 | render target select    |
-|  4..15 | ???                     |
-|      3 | enable (?)              |
-|      2 | ???                     |
+|  4..15 | no effect in the fetch form; part of the bit-24 form |
+|      3 | fetch enable, required  |
+|      2 | part of the bit-24 form |
 |      1 | dest registers select   |
-|      0 | ???                     |
+|      0 | part of the bit-24 form |
 
-Note: bit 3 and bit 23 seems to usually be set together. It's not known which one is the actual enable-bit.
+Both bit 3 and bit 23 are required for a fetch - clearing either suppresses it - and
+bits 20..22 are inert (notes 25). The earlier reading of these two bits as "one
+unknown enable" is settled: they are a pair.
 
 #### Destination registers select:
 
@@ -412,7 +457,26 @@ Note: bit 3 and bit 23 seems to usually be set together. It's not known which on
 |     1 | R2 - R3   |
 |     0 | R0 - R1   |
 
-## More patents
+#### The bit-24 form
+
+Bit 24 does **not** select a spill fetch - no word with bit 24 set delivers any part of
+a tagged render target, and a fetch issued afterwards still reads the surface unchanged
+(notes 25). The form writes `0.0` into one or both *high* halves of the destination
+pair; the low halves are never written:
+
+| bits set beside 24 | register written |
+|:--|:--|
+| 3 | `r0.hi` |
+| 3, 2 | `r0.hi` and `r1.hi` |
+| 2 (without 3) | `r1.hi` |
+| 3, 0 | `r1.hi` |
+| 3, 23 | `r1.hi` |
+| 3, 1 | nothing |
+| 0, or 23, or none, without 3 | nothing |
+
+Bits 4..15 do not select the half even as a group. Whether the zero is a literal or a
+read from an address outside the bound surface is not established, and no consumer of
+the form is identified.
 
 These seems to be for Tegra:
 - [US8314803: "Buffering deserialized pixel data in a graphics processor unit pipeline"](https://patents.google.com/patent/US8314803)
