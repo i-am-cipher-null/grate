@@ -8,6 +8,16 @@ and what a backend should change. It contains no new measurements: every claim
 cites the notes section and the pinned manifest that produced it, and anything
 not measured is marked as such.
 
+**Status.** This is a research and design note, not an implemented backend
+specification. The recommended compiler changes below are proposals; this
+document does not describe changes already made to the compiler.
+
+**Relationship to the ISA references.** `docs/fragment-shader-isa.md` is the
+concise canonical ISA description. `docs_snap/fragment-shader-isa.md` is the
+extended AR20 evidence and research reference. This document extracts the
+ALU scheduling and liveness consequences for compiler design; it is not a
+second ISA specification.
+
 **Generation scope.** Everything here is AR20 (Tegra 2, `T20`) behaviour,
 measured on the headless AC100 with the grate assembler and the manifest-driven
 harness. Nothing on this page is claimed for T114 or later, whose schedule word
@@ -190,8 +200,10 @@ assume they are inert on T114.
 
 ## 6. Recommended changes
 
-None of these are implemented: the model above is what would justify them, and
-the last one is the gate.
+None of these changes are implemented. They are proposals, not a description
+of current compiler behaviour. The four-packet rotation case in section 7 is
+the next hardware-validation gate; until it is tested, do not treat the
+general packet/group scheduling model as fully established.
 
 1. **Make the packet an explicit unit in the backend's IR.** A batch is a list
    of one to three packets; the encoder sets `count = len(packets)` and
@@ -239,7 +251,8 @@ the last one is the gate.
   and 32 measured only the first case, so their claims hold but their scope is
   narrower than they read.
 * Why `send`/`recv` do not cross a packet boundary although the latch path does
-  (notes 37).
+  (notes 37), and the untested pairing: receive in slot 1 of packet 1 from a
+  sender in slot 0 of packet 0 through the latch rotation.
 * Whether MFU and TEX per-batch counts use the same packet unit as ALU.
 * Whether the bits 29/30 hazard flags do anything on T114, and what bits 8..28
   mean on AR20.
@@ -263,10 +276,10 @@ measurement but not isolated, **Open** = not established. All are AR20.
 | 9 | That group carry is absent when the group is two or three batches, in the shapes tested. | **Measured** (negative) | notes 36 |
 | 10 | Row registers are the only storage that survives a group: a row write is invisible in its own packet and its own group, visible to the next group. | **Measured** | notes 28, 32 |
 | 11 | A group produces one observable DW; a second DW in the same group is dropped and writes nothing, whatever its target. | **Measured** | notes 29, 33 |
-| 12 | `recv`/`send` transfer between slots **inside one packet**, work in any packet of a batch, and do not transfer across a packet boundary in either direction. | **Measured** | notes 13, 16, 37 |
+| 12 | `recv`/`send` transfer between slots **inside one packet** and work in any tested packet of a batch. Tested cross-packet pairings do not transfer in either direction; the slot-0 sender in packet 0 to slot-1 receiver in packet 1 through rotation remains untested. | **Measured** / **Open** | notes 13, 16, 37 |
 | 13 | A `send` on a producer does not disturb the latch path, and the group carry holds the plain slot-0 result. | **Measured** | notes 37 |
 | 14 | Schedule bits 29 and 30 change nothing observable, on any of the three batches of the template, in five shapes. | **Measured** | notes 30, 34, 35 |
-| 15 | M equals the group's packet count for groups larger than three packets, or when one batch holds two packets at `alu_buffer_size` 2. | **Open** | - |
+| 15 | M equals the group's packet count beyond the measured M=1, 2 and 3 cases, including `alu_buffer_size=2` with two ALU packets in each of its two batches (M=4). | **Open** | - |
 | 16 | The rotation applies to MFU/TEX streams or to the bits 8..28 of the schedule word. | **Open** | - |
 | 17 | Anything about T114: the schedule word layout differs and its count field is `count[10:8]`. | **Open** | notes 30 |
 
