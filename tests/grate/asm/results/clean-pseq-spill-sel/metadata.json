@@ -1,0 +1,280 @@
+{
+  "name": "pseq-spill-sel",
+  "created_utc": "2026-11-22T00:51:42+00:00",
+  "manifest": "/tmp/clean-sel/tests/grate/asm_characterize.pseq_spill_sel.json",
+  "manifest_sha256": "a38380f76f3c0c4486008a2e4b8bd801a6bf1f324edb4b85934eb78e50602127",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/tmp/clean-sel",
+  "git_commit": "f85000bcd8ebeeffb7f0de11aebc25510db95fe2",
+  "git_status": "",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 5,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "pseq-spill-sel",
+    "repeat": 5,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/pseq_spill_sel.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "sel-none",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01000000"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits none beside 24",
+        "expected": "0x44332211"
+      },
+      {
+        "name": "sel-b23",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01800000"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b23 beside 24",
+        "expected": "0x44332211"
+      },
+      {
+        "name": "sel-b0",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01000001"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b0 beside 24",
+        "expected": "0x44332211"
+      },
+      {
+        "name": "sel-b0-b23",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01800001"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b0-b23 beside 24",
+        "expected": "0x44332200"
+      },
+      {
+        "name": "sel-b2",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01000004"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b2 beside 24",
+        "expected": "0x44332200"
+      },
+      {
+        "name": "sel-b2-b23",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01800004"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b2-b23 beside 24",
+        "expected": "0x44002211"
+      },
+      {
+        "name": "sel-b2-b0",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01000005"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b2-b0 beside 24",
+        "expected": "0x44002211"
+      },
+      {
+        "name": "sel-b2-b0-b23",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01800005"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b2-b0-b23 beside 24",
+        "expected": "0x44002200"
+      },
+      {
+        "name": "sel-b3",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01000008"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b3 beside 24",
+        "expected": "0x44330011"
+      },
+      {
+        "name": "sel-b3-b23",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01800008"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b3-b23 beside 24",
+        "expected": "0x00332211"
+      },
+      {
+        "name": "sel-b3-b0",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01000009"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b3-b0 beside 24",
+        "expected": "0x00332211"
+      },
+      {
+        "name": "sel-b3-b0-b23",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x01800009"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b3-b0-b23 beside 24",
+        "expected": "0x00332200"
+      },
+      {
+        "name": "sel-b3-b2",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x0100000C"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b3-b2 beside 24",
+        "expected": "0x44330000"
+      },
+      {
+        "name": "sel-b3-b2-b23",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x0180000C"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b3-b2-b23 beside 24",
+        "expected": "0x00002211"
+      },
+      {
+        "name": "sel-b3-b2-b0",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x0100000D"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b3-b2-b0 beside 24",
+        "expected": "0x00002211"
+      },
+      {
+        "name": "sel-b3-b2-b0-b23",
+        "fs": "tests/grate/asm/pseq_spill_sel.in",
+        "replace": {
+          "fs": {
+            "SEL_WORD": "0x0180000D"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "bits b3-b2-b0-b23 beside 24",
+        "expected": "0x00002200"
+      }
+    ]
+  },
+  "summary": {
+    "success": false,
+    "variants_started": true,
+    "runs": 84,
+    "passed": 83,
+    "failed": 1,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

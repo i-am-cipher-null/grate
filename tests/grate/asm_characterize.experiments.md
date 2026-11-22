@@ -4367,7 +4367,7 @@ zero. In the recorded verification run three draws did not:
 
 Every dissent is a low byte holding `0x50` where the grid says zero, and every
 dissenting cell is one that writes a low byte; other runs of the same manifest
-dissented in three to five draws of eighty, in cells writing `r0.lo`, `r1.lo` or
+dissented in one to five draws of eighty, in cells writing `r0.lo`, `r1.lo` or
 both, with the same `0x50`. `0x50` is the prime of the tag
 batch's `r2.lo` and also the low byte of the stored tag, so which of the two the
 byte comes from is not separated. It is not the byte's own prime (`0x11` or

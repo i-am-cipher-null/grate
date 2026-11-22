@@ -948,3 +948,19 @@ invalidate another; generate such a manifest with
 * tree: e47326e24fbf1d1fb7a8e47f3900b4726f861d66 with the set's files untracked (see metadata git_status)
 * created: 2026-11-22T00:47:58+00:00; 14 rows, repeat 5, timeout 20.0 s
 * summary: 14 passed, 0 failed of 14 - passed
+
+## clean-pseq-spill-sel
+
+* manifest: `asm_characterize.pseq_spill_sel.json` (sha256 a38380f76f3c, pinned manifest, five repeats)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f85000bcd8ebeeffb7f0de11aebc25510db95fe2 with a clean tree (clone in /tmp/clean-sel)
+* created: 2026-11-22T00:51:42+00:00; 84 rows, repeat 5, timeout 20.0 s
+* summary: 83 passed, 1 failed of 84 - failed - the failed row is a repeat of a cell that occasionally reads `0x50` where the pinned word has the written zero
+
+## clean-pseq-spill-value
+
+* manifest: `asm_characterize.pseq_spill_value.json` (sha256 11cb48fa052c, pinned manifest, five repeats)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f85000bcd8ebeeffb7f0de11aebc25510db95fe2 with a clean tree (clone in /tmp/clean-sel)
+* created: 2026-11-22T00:51:53+00:00; 14 rows, repeat 5, timeout 20.0 s
+* summary: 14 passed, 0 failed of 14 - passed

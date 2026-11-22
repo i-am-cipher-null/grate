@@ -1,0 +1,88 @@
+{
+  "name": "pseq-spill-value",
+  "created_utc": "2026-11-22T00:51:53+00:00",
+  "manifest": "/tmp/clean-sel/tests/grate/asm_characterize.pseq_spill_value.json",
+  "manifest_sha256": "11cb48fa052c46669e181ec3b7e182936cff53dd9f1dbb63a8316a3fcae4ebbd",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/tmp/clean-sel",
+  "git_commit": "f85000bcd8ebeeffb7f0de11aebc25510db95fe2",
+  "git_status": "",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 5,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "pseq-spill-value",
+    "repeat": 5,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/pseq_spill.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "value-3-2-0",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x0100000D",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "word 0x0100000D in the earlier program shape",
+        "expected": "0x00002010"
+      },
+      {
+        "name": "value-3-2-23",
+        "fs": "tests/grate/asm/pseq_spill.in",
+        "replace": {
+          "fs": {
+            "FETCH_WORD": "0x0180000C",
+            "FINAL_WORD": "NOP",
+            "STORE_WORD": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_RT4": "1"
+        },
+        "expected_note": "word 0x0180000C in the earlier program shape",
+        "expected": "0x00002010"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 14,
+    "passed": 14,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
