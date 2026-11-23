@@ -1,0 +1,119 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Six-packet group, 3 + 3 split over 2 batches at `alu_buffer_size` 2.
+ *
+ * Notes 43 and 44 narrowed the four-packet 2 + 2 shortfall to three properties
+ * that no other tested four-packet shape has: two multi-packet batches, no
+ * single-packet batch, and both wrap endpoints in multi-packet batches. Every
+ * five-packet split that separates those properties has the complete cycle, so
+ * none of them is sufficient at M = 5. The remaining question is whether the
+ * shortfall needs exactly four packets, or whether it follows uniform
+ * two-packet batches. A six-packet group separates those readings: 2 + 2 + 2
+ * keeps every batch at two packets at a different packet count, while 3 + 3
+ * and 1 + 2 + 3 keep the packet count and move the batch contents.
+ *
+ *   batch 0  packets 0, 1, 2       A0..A11   group A
+ *   batch 1  packets 3, 4, 5       B0..B11   group A
+ *
+ * 2 batches are one whole group at size 2: group A is batches 0 to
+ * 1, group B is batches 2 to 3. Group A holds the six packets
+ * under test; group B is the complete second group, and its first batch
+ * (2) stores group A's rows through the DW. Group B's ALU blocks are kept
+ * so the schedule words show the same distribution twice.
+ *
+ * The assembler sets each batch's schedule count from its block count and each
+ * address from the running ALU instruction index (a 6-bit field in
+ * `instr_sched`), so no schedule word is patched; `dump_sched_words.py` reads
+ * the counts and addresses back from the run's own dump.
+ *
+ * Where the result is observed: a row written by a reader in group A is stored
+ * by the DW of batch 2, group B's first batch (notes 3, 42, 43). Values:
+ * u0 = 0.0625 (0x10), u1 = 0.125 (0x20), u2 = 0.25 (0x40), u3 = 0.375 (0x60),
+ * u4 = 0.4375 (0x70), u5 = 0.03125 (0x08) as fx10, so a stored byte names the
+ * packet that served the read. The sixth value is validated in the same run by
+ * `row-direct-p5`.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+	[4] = 0.4375;
+	[5] = 0.03125;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	ALU:
+		ALU0:	@A4@
+		ALU1:	@A5@
+		ALU2:	@A6@
+		ALU3:	@A7@
+	ALU:
+		ALU0:	@A8@
+		ALU1:	@A9@
+		ALU2:	@A10@
+		ALU3:	@A11@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	ALU:
+		ALU0:	@B4@
+		ALU1:	@B5@
+		ALU2:	@B6@
+		ALU3:	@B7@
+	ALU:
+		ALU0:	@B8@
+		ALU1:	@B9@
+		ALU2:	@B10@
+		ALU3:	@B11@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@C0@
+		ALU1:	@C1@
+		ALU2:	@C2@
+		ALU3:	@C3@
+	ALU:
+		ALU0:	@C4@
+		ALU1:	@C5@
+		ALU2:	@C6@
+		ALU3:	@C7@
+	ALU:
+		ALU0:	@C8@
+		ALU1:	@C9@
+		ALU2:	@C10@
+		ALU3:	@C11@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@E0@
+		ALU1:	@E1@
+		ALU2:	@E2@
+		ALU3:	@E3@
+	ALU:
+		ALU0:	@E4@
+		ALU1:	@E5@
+		ALU2:	@E6@
+		ALU3:	@E7@
+	ALU:
+		ALU0:	@E8@
+		ALU1:	@E9@
+		ALU2:	@E10@
+		ALU3:	@E11@
+	DW:	@D3@
+;
