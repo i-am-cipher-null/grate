@@ -94,13 +94,14 @@ Three consequences are easy to miss:
    latches; size-2 2+2 has only the slot-3 packet-3-to-packet-0 wrap. A
    scheduler must model the actual packing, not infer every wrap edge from M
    alone.
-3. **The group carry is one packet, not one group, of information.** It is the
-   previous group's *last* packet's slot-0 result, so a batch that writes
-   through slot 0 early and ends with NOPs carries nothing (`flush-3blk` `0`
-   against `flush-3blk-last` `0x10`, notes 32), and a group whose slot 0 was
-   idle carries nothing even if other slots wrote (notes 31). It is also only
-   present when the group is a single batch: at `alu_buffer_size` 2 and 3 the
-   same shape carries nothing (notes 36).
+3. **The group-flush carry is separate from the within-group rotation.** The
+   positive path is the previous group's last packet slot-0 result to the next
+   group's slot 0, measured when the group is one batch. No carry appeared at
+   sizes 2 or 3 in the tested shapes (note 36). At size 4, alu0 writes from
+   each packet position and selected alu0/alu1 reader-slot combinations all
+   returned zero, but this was not a complete all-latch/all-slot matrix
+   (note 40). Do not infer that a group-boundary carry is available merely
+   because the packet rotation wraps inside a group.
 
 ### Format rules
 
@@ -155,14 +156,14 @@ Consequences for register allocation:
 Packing is available (12 slots instead of 4) and is not free. The constraints a
 scheduler has to satisfy, in the order they bind:
 
-1. **Dependent ALU operations must be in packets that the rotation pairs.**
-   In a multi-packet batch the latch path is packet (k-1) mod M -> packet k,
-   one hop, any slot, all four latches. So a chain becomes one hop per packet:
-   `chain-3pkt` runs three dependent operations as `0x00100010`, but only
-   because each hop sits in its own packet (notes 32). In a two-packet batch the
-   pair is mutual, so the one hop may point either way (`chain-2pkt` `0x10`,
-   `back` `0x40`, notes 36); in a three-packet batch only the forward hops work
-   and the wrap is the extra one.
+1. **Dependent ALU operations must be in packets that the measured rotation
+   pairs.** M=2 and M=3 use the complete packet rotation in the tested shapes.
+   M=4 is packing-dependent: one packet per batch at size 4 and size-2 splits
+   3+1 or 1+3 have the full cycle; size-2 split 2+2 has the three forward
+   edges for every latch but only the packet-3-slot-3 to packet-0-alu3 wrap.
+   A scheduler must know the actual packet distribution before adding a wrap
+   dependency. Treat any edge not established for that packing as requiring
+   a row-register round trip.
 2. **A packet's slots must be mutually independent.** Inside a packet of a
    multi-packet batch there is no bypass at all - not even backwards - and a
    self-read is zero in every shape (notes 32, 36).
@@ -224,12 +225,12 @@ measured packet/group relation as universal beyond the tested packings.
    of one to three packets; the encoder sets `count = len(packets)` and
    `addr` = the running packet index. Today's reference path has neither concept,
    which is why it cannot pack even where packing is free.
-2. **Encode ALU dependencies as packet edges, not slot edges.** Within a packet,
-   allow only independent operations. Where a batch is known to be one packet,
-   permit the slot chain as a fast path - but decide the packet count before
-   fixing the chain, or the encoder will emit a chain the hardware cannot serve.
-   Validate with the `pack` manifest: `p0-chain` must stay `0` and `p1-chain`
-   `0x00100010` after any change.
+2. **Encode ALU dependencies as packet edges, not slot edges.** Within a
+   packet, allow only independent operations. Choose the packet count and
+   distribution before scheduling dependencies: at M=4 the 2+2 split does
+   not have the same wrap edges as 3+1 and 1+3. Validate the exact packing
+   against the corresponding manifest set, and require a row for any edge
+   not measured in that packing.
 3. **Materialise values into rows at every group boundary, in the format the
    consumer reads** (`.lh` for fp20/bare readers, `.l*` for fx10 readers). The
    only established carry is the one-batch, previous-last-packet slot-0 to
@@ -299,7 +300,7 @@ measurement but not isolated, **Open** = not established. All are AR20.
 | 10 | Row registers are the only storage that survives a group: a row write is invisible in its own packet and its own group, visible to the next group. | **Measured** | notes 28, 32 |
 | 11 | One DW per group, placed in the first batch, is the conservative way to obtain a predictable nonzero group-final payload. Multiple DW results depend on class and placement: mixed depth/colour pairs write zero to the second target; some zero-cleared targets are ambiguous. | **Measured observations; universal arbitration rule open** | notes 29, 33, 42 |
 | 12 | `recv`/`send` transfer between slots inside one packet. Packet-0 slot-0 send to packet-1 slot-1 recv, the reverse, and an alternate slot-3 sender showed no cross-packet transfer; other mappings remain open. | **Measured** / **Open** | notes 13, 16, 37, 41 |
-| 13 | A `send` on a producer does not disturb the latch path, and the group carry holds the plain slot-0 result. | **Measured** | notes 37 |
+| 13 | A `send` on a producer does not disturb ordinary latch forwarding; the plain slot-0 group carry was preserved in the tested one-batch group case. | **Measured** | notes 37 |
 | 14 | Schedule bits 29 and 30 change nothing observable, on any of the three batches of the template, in five shapes. | **Measured** | notes 30, 34, 35 |
 | 15 | M=4 has a full cycle at size 4 one-packet-per-batch and size 2 split 3+1/1+3; size 2 split 2+2 keeps the forward edges but only latch 3 wraps. The reason is unknown. | **Measured** for these packings | notes 38, 39 |
 | 16 | The rotation applies to MFU/TEX streams or to the bits 8..28 of the schedule word. | **Open** | - |
@@ -357,14 +358,16 @@ and the T114 layout are not.
 | intra-packet bypass, own-slot exclusion, format rules | 28 | `asm_characterize.alu_latch.json` | `pin-alu-latch`, `verify-alu-latch`, `clean-alu-latch` |
 | group carry is a forward, one group deep, slot 0 | 31 | `asm_characterize.alu_latch_flush.json` | `pin-alu-latch-flush`, `verify-alu-latch-flush`, `clean-alu-latch-flush` |
 | count = packets, 12 slots, packed forwarding rules | 32 | `asm_characterize.alu_pack.json` | `pin-alu-pack`, `verify-alu-pack`, `clean-alu-pack` |
-| one DW per group, first word wins, dropped word writes nothing | 29, 33 | `asm_characterize.dw_two_target.json`, `asm_characterize.dw_mrt.json` | `pin-dw-two-target`, `pin-dw-mrt`, `verify-dw-mrt`, `clean-dw-mrt` |
+| DW output under multi-word groups: class-2 pairs and later class-1/class-2 / three-word probes | 29, 33, 42 | `asm_characterize.dw_two_target.json`, `asm_characterize.dw_mrt.json`, `asm_characterize.dw_three.json`, `asm_characterize.dw_size3.json`, `asm_characterize.dw_class.json`, `asm_characterize.dw_class1p.json` | `pin-dw-two-target`, `pin-dw-mrt`, `pin-dw-three`, `pin-dw-size3`, `pin-dw-class`, `pin-dw-class1p` |
 | bits 29/30 inert globally and per batch | 30, 34 | `asm_characterize.alu_sched.json`, `asm_characterize.alu_sched_at.json` | `pin-alu-sched-at`, `verify-alu-sched-at`, `clean-alu-sched-at` |
 | bits 29/30 inert on the readback batch | 35 | `asm_characterize.alu_sched_b2.json` | `pin-alu-sched-b2`, `verify-alu-sched-b2`, `clean-alu-sched-b2` |
 | two-packet batch forwarding, both directions, carry, formats | 36 | `asm_characterize.alu_pack2.json` | `pin-alu-pack2`, `verify-alu-pack2`, `clean-alu-pack2` |
 | three-packet rotation and the wrap | 36 | `asm_characterize.alu_pack3.json` | `pin-alu-pack3`, `verify-alu-pack3`, `clean-alu-pack3` |
 | rotation is group-scoped, sizes 1/2/3 | 36 | `asm_characterize.latch_rotate.json` | `pin-latch-rotate`, `verify-latch-rotate`, `clean-latch-rotate` |
-| M=4 rotation: 2+2, 1+1+1+1, 3+1 and 1+3 packings | 38, 39 | `_alu_pack4*`, `asm_characterize.alu_pack13.json`, `asm_characterize.alu_pack43.json` | `pin-`/`verify-`/`clean-alu-pack4*`, `-alu-pack13`, `-alu-pack43` |
+| M=4 rotation: 2+2, 1+1+1+1, 3+1 and 1+3 packings | 38, 39 | `asm_characterize.alu_pack4*.json`, `asm_characterize.alu_pack13.json`, `asm_characterize.alu_pack43.json` | `pin-`/`verify-`/`clean-alu-pack4*`, `-alu-pack13`, `-alu-pack43` |
 | `send`/`recv` are packet-local; cross-packet slot-1 receiver probe | 37, 41 | `asm_characterize.alu_send_pack.json`, `asm_characterize.alu_send_cross.json` | `pin-alu-send-pack`, `pin-alu-send-cross`, `clean-alu-send-cross` |
+| size-4 group-flush carry probes | 40 | `asm_characterize.alu_carry4.json` | `pin-alu-carry4`, `verify-alu-carry4`, `clean-alu-carry4` |
+| three-DW, later-position and depth/colour class probes | 42 | `asm_characterize.dw_three.json`, `asm_characterize.dw_size3.json`, `asm_characterize.dw_class.json`, `asm_characterize.dw_class1p.json` | `pin-dw-three`, `pin-dw-size3`, `pin-dw-class`, `pin-dw-class1p` |
 
 The run directories live under `tests/grate/asm/results/` and each holds the
 results rows, the run metadata (device, kernel, tree, source hashes) and, for
