@@ -241,7 +241,8 @@ as operands (notes 28). A read is not a read of a retired register:
 |:--|:--|
 | same packet, group has one packet | that packet's slot-K result, from any writer slot; a read in slot K itself returns 0 |
 | same packet, group has more than one packet | 0; a packet does not see its own results |
-| packet k in a group of M=2, 3 or 4 packets, one packet per batch | packet `(k-1) mod M`'s slot-K result, for any reading slot |
+| packet k in a group of M=2 or 3 packets, one packet per batch | packet `(k-1) mod M`'s slot-K result, for any reading slot |
+| M=4, size 4, one packet per batch | full cycle demonstrated for alu0; the other latch indices were not exhaustively tested |
 | M=4, size 2, packed 2+2 | forward edges work for all four latches; only packet 3 slot 3 feeds packet 0's alu3 wrap |
 | M=4, size 2, packed 3+1 or 1+3 | full cycle, including every latch's packet-3-to-packet-0 wrap |
 | across a group boundary (`alu_buffer_size` 1) | the previous group's last packet's slot-0 result, readable only from slot 0 |
@@ -290,12 +291,13 @@ read of aluK in slot S of packet k is served by the slot-K result from packet
 same-packet cross-slot path described above, with a read in the reader's own slot
 returning 0. In a multi-packet group a packet does not see its own results.
 
-M=2 and M=3 form complete rotations in the tested arrangements. M=4 is packing
-dependent: the complete cycle holds with one packet per batch at
-alu_buffer_size=4, and also with size 2 when the packets are split 3+1 or 1+3
-(note 39). In both of those size-2 splits, all three forward edges work for all
-four latches, and all four packet-3-to-packet-0 wrap latches are readable from
-every reader slot. The 2+2 split at size 2 is the exception: the three forward
+M=2 and M=3 form complete rotations for all four latches in the tested
+arrangements. M=4 is packing dependent. With one packet per batch at
+alu_buffer_size=4, the complete cycle was demonstrated for alu0; the other
+latch indices were not exhaustively tested (note 38). With size 2 and packets
+split 3+1 or 1+3, all three forward edges work for all four latches, and all
+four packet-3-to-packet-0 wrap latches are readable from every reader slot
+(note 39). The 2+2 split at size 2 is the exception: the three forward
 edges still work for all four latches, own-packet and two-packets-apart reads are
 0, but the wrap is restricted to packet 3 slot 3 feeding packet 0's alu3.
 Wrap reads of alu0, alu1 and alu2 return 0 (note 38). The restriction has been
@@ -308,10 +310,12 @@ and packet 0 can read packet 2 in a three-packet group. This revises section 32'
 "previous packet, forward only": its backward probe changed the latch index and
 reading slot at once, so it did not reveal the wrap (note 36).
 
-The rotation can cross batch boundaries inside a group: with one packet per batch,
-alu_buffer_size 2, 3 and 4 produce the measured M=2, M=3 and M=4 cycles. At
-size 2 with four packets, both 3+1 and 1+3 also give the complete cycle; 2+2 has
-the restricted wrap described above (notes 38, 39).
+The rotation can cross batch boundaries inside a group. With one packet per batch,
+alu_buffer_size 2 and 3 produce the measured M=2 and M=3 cycles. At size 4,
+the M=4 cycle was demonstrated for alu0; the other latch indices were not
+exhaustively tested. At size 2 with four packets, both 3+1 and 1+3 give the
+complete four-latch cycle; 2+2 has the restricted wrap described above
+(notes 38, 39).
 
 The group-boundary carry is separate. The positive path is the previous group's
 last packet's slot-0 result, read from slot 0 in the next group, and it was
