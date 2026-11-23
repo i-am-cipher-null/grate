@@ -84,10 +84,27 @@ group C's first batch -> 0 if the carry that survives a one-batch group (notes
 slot 2 instead, `carry-none` omits the write, and `carry-ctl-s1` is the size-1
 arrangement that does carry (0x10).
 
+**The three-dimensional wrap matrix (`--set m4matrix`).** The `wrap` set
+varied the latch and the reading slot, but the writing slot always matched the
+latch, so producer slot, latch index and reading slot were never separated. The
+ISA does not allow an arbitrary write latch: the issuing slot selects the latch
+and the destination field does not route (notes 28 and 37, the direct-write
+probes). The matrix set therefore varies the three dimensions that can vary -
+packet 3's writing slot P, the latch L that packet 0 reads, and packet 0's
+reading slot R - over all 64 combinations `m4x-pP-alL-sR`. Where L = P the cell
+is an ordinary wrap cell; where L != P packet 3 never filled `aluL`, so a value
+would mean the wrap moves a result between latch indices. Every cell writes
+0x60 in packet 3 slot P and reads `aluL` from packet 0 slot R, with one writer
+and one reader, stored by batch 2 as in the rest of this template. The matrix
+is followed by the exact known-positive and known-negative cells, the known
+forward edge, the 3+1 and 2+1+1 wraps on their own templates, a direct-row
+payload control and the word baseline.
+
 Usage:
 
     tests/grate/asm/make_alu_pack4.py                     # the whole set
     tests/grate/asm/make_alu_pack4.py --set wrap          # the wrap isolation set
+    tests/grate/asm/make_alu_pack4.py --set m4matrix      # the 64-cell matrix
     tests/grate/asm/make_alu_pack4.py --only src3-read0,src0-read1,none,row-direct
     tests/grate/asm/make_alu_pack4.py --results DIR       # pin from a run
 
@@ -132,7 +149,10 @@ import pathlib
 TEMPLATE4 = "tests/grate/asm/alu_pack4.in"
 TEMPLATE_LATCH = "tests/grate/asm/alu_latch.in"
 TEMPLATE8 = "tests/grate/asm/alu_buf_blocks8.in"
+TEMPLATE_PACK43 = "tests/grate/asm/alu_pack43.in"
+TEMPLATE_DIST211 = "tests/grate/asm/alu_dist211.in"
 OUT = "tests/grate/asm_characterize.alu_pack4.json"
+OUT_MATRIX = "tests/grate/asm_characterize.alu_pack4_m4matrix.json"
 OUT_WRAP = "tests/grate/asm_characterize.alu_pack4_wrap.json"
 OUT_PROBE = "tests/grate/asm_characterize.alu_pack4_probe.json"
 OUT_PROBE2 = "tests/grate/asm_characterize.alu_pack4_probe2.json"
@@ -161,10 +181,25 @@ LATCH_SLOTS = [f"{prefix}{index}"
 
 BLOCKS8_SLOTS = [f"B{index}" for index in range(8)]
 
+PACK43_SLOTS = (
+    [f"A{index}" for index in range(12)]      # batch 0, packets 0-2
+    + [f"B{index}" for index in range(4)]     # batch 1, packet 3
+    + [f"{prefix}{index}" for prefix in ("C", "E", "F", "G")
+       for index in range(4)]
+)
+
+DIST211_SLOTS = (
+    [f"A{index}" for index in range(8)]       # batch 0, packets 0 and 1
+    + [f"{prefix}{index}" for prefix in ("B", "C", "E", "F", "G")
+       for index in range(4)]
+)
+
 TEMPLATES = {
     TEMPLATE4: (PACK4_SLOTS, 6),
     TEMPLATE_LATCH: (LATCH_SLOTS, 6),
     TEMPLATE8: (BLOCKS8_SLOTS, 8),
+    TEMPLATE_PACK43: (PACK43_SLOTS, 6),
+    TEMPLATE_DIST211: (DIST211_SLOTS, 6),
 }
 
 
@@ -507,8 +542,61 @@ SIZE4_VARIANTS = [
             {}, {4: STORE01}, abuf=4, template=TEMPLATE8),
 ]
 
+MATRIX_VARIANTS = [
+    variant(
+        f"m4x-p{writer}-al{latch}-s{reader}",
+        f"packet 3 slot {writer} writes 0x60, which fills alu{writer} because "
+        f"the issuing slot selects the latch; packet 0 slot {reader} reads "
+        f"alu{latch}: 0x60 if the wrap delivers the last slot-{writer} result "
+        f"of the group to latch {latch}" + (
+            "" if latch == writer else
+            f"; packet 3 never wrote alu{latch}, so a value would mean the "
+            "wrap crosses latch indices"),
+        {f"B{4 + writer}": wr(U3), f"A{reader}": rd(latch)},
+        {2: STORE01})
+    for writer in range(4)
+    for latch in range(4)
+    for reader in range(4)
+]
+
+MATRIX_CONTROLS = [
+    variant("ctl-ref22-wrap3",
+            "the exact known-positive wrap from notes 38: packet 3 slot 3 "
+            "writes 0x60, packet 0 slot 3 reads alu3: 0x60. Identical to the "
+            "matrix cell `m4x-p3-al3-s3`",
+            {"B7": wr(U3), "A3": rd(3)}, {2: STORE01}),
+    variant("ctl-ref22-wrap0",
+            "the exact known-negative wrap from notes 38: packet 3 slot 0 "
+            "writes 0x60, packet 0 slot 0 reads alu0: 0. Identical to the "
+            "matrix cell `m4x-p0-al0-s0`",
+            {"B0": wr(U3), "A0": rd(0)}, {2: STORE01}),
+    variant("ctl-ref22-fwd",
+            "the known forward edge from notes 38: packet 2 slot 0 writes 0.25 "
+            "(0x40), packet 3 slot 0 reads alu0: 0x40",
+            {"B0": wr(U2), "B4": rd(0)}, {2: STORE01}),
+    variant("ctl-ref31-wrap",
+            "the known-good M=4 3+1 wrap from notes 39, on `asm/alu_pack43.in`: "
+            "packet 3 slot 0 writes 0x60, packet 0 slot 0 reads alu0: 0x60",
+            {"B0": wr(U3), "A0": rd(0)}, {2: STORE01},
+            template=TEMPLATE_PACK43),
+    variant("ctl-ref211-wrap",
+            "the known-good M=4 size-3 2+1+1 wrap from notes 43, on "
+            "`asm/alu_dist211.in`: packet 3 slot 0 writes 0x60, packet 0 slot "
+            "0 reads alu0, stored by batch 3: 0x60",
+            {"C0": wr(U3), "A0": rd(0)}, {3: STORE01},
+            abuf=3, template=TEMPLATE_DIST211),
+    variant("ctl-row-direct-60",
+            "packet 3 slot 3 writes 0x60 and nothing reads a latch; batch 2 "
+            "stores r2: 0x60, the direct-row control for the payload",
+            {"B7": wr(U3)}, {2: STORE23}),
+    variant("none",
+            "no write, one store in batch 2: the word baseline",
+            {}, {2: STORE01}),
+]
+
 SETS = {"main": VARIANTS, "wrap": WRAP_VARIANTS, "probe": PROBE_VARIANTS,
-        "probe2": PROBE2_VARIANTS, "size4": SIZE4_VARIANTS}
+        "probe2": PROBE2_VARIANTS, "size4": SIZE4_VARIANTS,
+        "m4matrix": MATRIX_VARIANTS + MATRIX_CONTROLS}
 
 CONTROLS = [
     {
@@ -620,7 +708,8 @@ def main():
     only = set(args.only.split(",")) if args.only else None
     manifest = build_manifest(only, args.section)
     out = args.out or {"main": OUT, "wrap": OUT_WRAP, "probe": OUT_PROBE,
-                       "probe2": OUT_PROBE2, "size4": OUT_SIZE4}[args.section]
+                       "probe2": OUT_PROBE2, "size4": OUT_SIZE4,
+                       "m4matrix": OUT_MATRIX}[args.section]
     if args.results:
         unpinned = pin(manifest, args.results)
         for name, words, statuses in unpinned:
