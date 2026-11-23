@@ -256,9 +256,12 @@ The across-group row is a forward of the *previous group's last packet's* slot-0
 not a saved register (notes 31, 36): a group whose last packet's slot 0 wrote nothing
 carries nothing, the value is one group deep, and the writer's row destination does not
 matter. This carry was measured for a group of one batch (`alu_buffer_size` 1); no
-cross-group forward was seen for buffer sizes 2 or 3 in the tested shapes (note 36).
-A latch therefore cannot be treated as storage across a group boundary, though a row
-register can, which is what the assembler emits when it needs one. That is why an earlier
+cross-group forward was seen at sizes 2 or 3 in the tested shapes (note 36).
+At size 4, no carry was seen for the tested alu0 writer positions and selected
+alu0/alu1 reader-slot combinations, but that was not a complete latch/slot
+matrix (note 40). A latch therefore cannot be treated as storage across a
+group boundary, though a row register can, which is what the assembler emits
+when it needs one. That is why an earlier
 reading of "the result registers always read zero" was wrong - those probes read
 `aluK` bare from packets whose slot K wrote a low half, one batch away.
 
@@ -506,7 +509,7 @@ groups leaves all four bytes written, so the instruction carries **no per-byte w
 mask**. Bits 11, 12 and 13 are inert on their own and bit 14 is not: it replaces the
 payload with `0x00000000` while still committing the write, whichever pair bit 15
 names. What bit 14 reads is not established - the candidate source (the second row of
-row registers) cannot be populated because `alu_buffer_size = 2` hangs the draw.A class-1 store with no depth surface bound, and write modes 0, 2 and 3, leave the colour
+row registers) cannot be populated because `alu_buffer_size = 2` hangs the draw. A class-1 store with no depth surface bound, and write modes 0, 2 and 3, leave the colour
 target at whatever it already held.
 
 The assembler provides one DW instruction slot per exec batch; additional ALU
@@ -533,7 +536,7 @@ exec-batch grammar has one DW instruction position. For a backend, one DW
 per group remains the conservative choice for a predictable nonzero payload,
 not a claim that later DWs are universally discarded.
 
-#### Source registers select:#### Source registers select:
+#### Source registers select:
 
 Seems have no effect when the depth or stencil write enabled.
 
