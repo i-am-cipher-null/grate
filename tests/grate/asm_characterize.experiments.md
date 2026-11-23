@@ -6381,9 +6381,10 @@ eight match their pinned rows exactly.
   multi-packet batches (`23`, `32`, `122`, `212`, `221` have two and are
   complete), by the absence of a single-packet batch (`23` and `32` have none
   and are complete), by both wrap endpoints sitting in multi-packet batches
-  (`23`, `32` and `212` do and are complete), or by the position or direction of
-  a multi-packet batch (`23` versus `32`, `122` versus `221`, `212` versus `311`
-  are mirrors and agree). The shortfall is confined to a group of four packets
+  (`23`, `32` and `212` do and are complete), or by the position or direction of a multi-packet batch: the reverse splits
+(`23`/`32`, `113`/`311`, `122`/`221`) agree, while `131` and `212` are
+symmetric under reversal. All eight arrangements have the complete five-packet
+cycle. The shortfall is confined to a group of four packets
   holding two packets in each of its two batches; at M = 5 no arrangement
   reproduces it.
 * **Open**: whether "two packets in every batch" is the property, as opposed to
