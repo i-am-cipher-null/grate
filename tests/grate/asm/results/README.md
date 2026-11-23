@@ -1721,3 +1721,131 @@ invalidate another; generate such a manifest with
 * created: 2026-11-23T20:42:14+00:00; 172 rows, repeat 3, timeout 20.0 s
 * summary: 172 passed, 0 failed of 172 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## pin-alu-m5-23
+
+* manifest: `23.json` (sha256 fadde96b2de3)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T20:56:28+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## pin-alu-m5-32
+
+* manifest: `32.json` (sha256 2755ce8432a5)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T20:56:54+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## pin-alu-m5-113
+
+* manifest: `113.json` (sha256 ed579ae8b300)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T20:57:30+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## pin-alu-m5-122
+
+* manifest: `122.json` (sha256 5390804959fd)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T20:57:59+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## pin-alu-m5-131
+
+* manifest: `131.json` (sha256 23df310ca1b7)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T20:58:32+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## pin-alu-m5-212
+
+* manifest: `212.json` (sha256 0f95a647776f)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T20:58:58+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## pin-alu-m5-221
+
+* manifest: `221.json` (sha256 a51538c0a1bb)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T20:59:31+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## pin-alu-m5-311
+
+* manifest: `311.json` (sha256 c063294b78b2)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T20:59:57+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## verify-alu-m5-23
+
+* manifest: `asm_characterize.alu_m5_23.json` (sha256 b33e7d80b966)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T21:02:44+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## verify-alu-m5-32
+
+* manifest: `asm_characterize.alu_m5_32.json` (sha256 5361c236c3cf)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T21:03:10+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## verify-alu-m5-113
+
+* manifest: `asm_characterize.alu_m5_113.json` (sha256 8d038be38d26)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T21:03:35+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## verify-alu-m5-122
+
+* manifest: `asm_characterize.alu_m5_122.json` (sha256 272ba0d37102)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T21:04:02+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## verify-alu-m5-131
+
+* manifest: `asm_characterize.alu_m5_131.json` (sha256 abc1bcc1fbd3)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T21:04:33+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## verify-alu-m5-212
+
+* manifest: `asm_characterize.alu_m5_212.json` (sha256 e709f7beb79b)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T21:05:00+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## verify-alu-m5-221
+
+* manifest: `asm_characterize.alu_m5_221.json` (sha256 395a0cc22514)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T21:05:27+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## verify-alu-m5-311
+
+* manifest: `asm_characterize.alu_m5_311.json` (sha256 009c313d3341)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: a1b0f924719158a2566b2e800e2b703758d9c891 with the new templates, generator and manifests untracked (no tracked file modified)
+* created: 2026-11-23T21:05:54+00:00; 238 rows, repeat 3, timeout 20.0 s
+* summary: 238 passed, 0 failed of 238 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump

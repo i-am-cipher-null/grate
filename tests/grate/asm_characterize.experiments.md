@@ -6186,6 +6186,213 @@ checkout; all four match their pinned rows exactly. Regenerate with
 `python3 tests/grate/asm/make_alu_m4dist.py --set dist211|dist121|dist112|blocks4`
 and pin with `--results DIR`.
 
+## 44. Five-packet groups: the anomaly is not about batch occupancy
+
+Section 43 left the four-packet 2 + 2 shortfall narrowed to three properties that
+2 + 2 shares and every other tested four-packet shape lacks: two multi-packet
+batches, no single-packet batch, and both wrap endpoints in multi-packet
+batches. All three name the same shape in four-packet data, so that data could
+not separate them. A five-packet group can: `1 + 2 + 2` has two multi-packet
+batches *and* a single-packet batch, `2 + 3` has two multi-packet batches and no
+single-packet batch, and `2 + 1 + 2` has both wrap endpoints in multi-packet
+batches with a single-packet batch elsewhere.
+
+### The eight distributions
+
+Five packets fit a two-batch group only as 2 + 3 or 3 + 2, and a three-batch
+group in the six ways below; `asm/alu_m5_23.in` ... `asm/alu_m5_311.in` carry
+them, one template per distribution, all at `alu_buffer_size` 2 or 3:
+
+| set | split | size | group A batches | multi-packet batches | packet 0 multi? | packet 4 multi? |
+|:--|:--|--:|:--|--:|:--|:--|
+| 23 | 2 + 3 | 2 | packets 0,1 \| 2,3,4 | 2 | yes | yes |
+| 32 | 3 + 2 | 2 | packets 0,1,2 \| 3,4 | 2 | yes | yes |
+| 113 | 1 + 1 + 3 | 3 | packet 0 \| 1 \| 2,3,4 | 1 | no | yes |
+| 122 | 1 + 2 + 2 | 3 | packet 0 \| 1,2 \| 3,4 | 2 | no | yes |
+| 131 | 1 + 3 + 1 | 3 | packet 0 \| 1,2,3 \| 4 | 1 | no | no |
+| 212 | 2 + 1 + 2 | 3 | packets 0,1 \| 2 \| 3,4 | 2 | yes | yes |
+| 221 | 2 + 2 + 1 | 3 | packets 0,1 \| 2,3 \| 4 | 2 | yes | no |
+| 311 | 3 + 1 + 1 | 3 | packets 0,1,2 \| 3 \| 4 | 1 | yes | no |
+
+Eight of the nine possible splits at these sizes; the ninth would need a
+four-batch group (`1 + 1 + 1 + 2` at size 4), which is encodable but not part of
+this sweep. Each template keeps the five packets in group A, repeats the same
+distribution in the complete group B, and puts the readback DW in group B's
+first batch (batch 2 at size 2, batch 3 at size 3), so the program is two whole
+groups with no padding: 4 or 6 batches, an exact multiple of the group size.
+
+Testability limits, checked in the assembler rather than assumed: a batch holds
+at most three `ALU` blocks (`src/libgrate/fragment_asm.y`, "Over 3 ALU
+instructions per exec batch"), so `4 + 1` and `1 + 4` are not encodable; and
+`alu_buffer_size` accepts 0..4, so the two- and three-batch groups above are the
+only ones this sweep uses. The schedule address field is six bits, not three
+(`instr_sched` in `src/libgrate/fragment_asm.h`), which is what lets a ten-packet
+program keep ten distinct addresses; the run's own dump confirms addresses 0..9.
+
+### Payloads
+
+Packet *k* writes uniform `k`'s value: u0 = 0.0625 (0x10), u1 = 0.125 (0x20),
+u2 = 0.25 (0x40), u3 = 0.375 (0x60), and u4 = 0.4375 (0x70), the fifth value
+this sweep adds. Each manifest validates all five values in the same run with
+`row-direct-p0` ... `row-direct-p4`, which write the payload in packet 0 and
+store the row directly through r2: 0x10, 0x20, 0x40, 0x60, 0x70 in all eight
+distributions. A conflict test never pairs two producers with the same value, so
+every non-zero result names its source packet uniquely.
+
+### Actual schedule words
+
+From each run's raw dump (`schedule-words.tsv`: `count@address` per batch):
+
+| set | batch words |
+|:--|:--|
+| 23 | `2@0`, `3@2`, `2@5`, `3@7` |
+| 32 | `3@0`, `2@3`, `3@5`, `2@8` |
+| 113 | `1@0`, `1@1`, `3@2`, `1@5`, `1@6`, `3@7` |
+| 122 | `1@0`, `2@1`, `2@3`, `1@5`, `2@6`, `2@8` |
+| 131 | `1@0`, `3@1`, `1@4`, `1@5`, `3@6`, `1@9` |
+| 212 | `2@0`, `1@2`, `2@3`, `2@5`, `1@7`, `2@8` |
+| 221 | `2@0`, `2@2`, `1@4`, `2@5`, `2@7`, `1@9` |
+| 311 | `3@0`, `1@3`, `1@4`, `3@5`, `1@8`, `1@9` |
+
+Every word's count and address match the intended split for both groups, no
+`0x806` word is non-zero in any run, and the addresses reach 9 without a wrap,
+which confirms the six-bit field rather than the three-bit reading of the
+earlier notes. The assembler derives all of this from the block placement; no
+schedule word is patched, and the numbers above are read back from the hardware
+run rather than from the template.
+
+### Forward edges
+
+Sixteen cells per distribution (four edges x four latches), all measured, all
+passing with the value of the source packet:
+
+| set | 0 -> 1 | 1 -> 2 | 2 -> 3 | 3 -> 4 |
+|:--|:--|:--|:--|:--|
+| 23 | 0x10 x4 | 0x20 x4 | 0x40 x4 | 0x60 x4 |
+| 32 | 0x10 x4 | 0x20 x4 | 0x40 x4 | 0x60 x4 |
+| 113 | 0x10 x4 | 0x20 x4 | 0x40 x4 | 0x60 x4 |
+| 122 | 0x10 x4 | 0x20 x4 | 0x40 x4 | 0x60 x4 |
+| 131 | 0x10 x4 | 0x20 x4 | 0x40 x4 | 0x60 x4 |
+| 212 | 0x10 x4 | 0x20 x4 | 0x40 x4 | 0x60 x4 |
+| 221 | 0x10 x4 | 0x20 x4 | 0x40 x4 | 0x60 x4 |
+| 311 | 0x10 x4 | 0x20 x4 | 0x40 x4 | 0x60 x4 |
+
+`fwd01-al0-s2` and `fwd34-al3-s2` read the same two edges from a different
+slot and return the same bytes, so the reading slot does not enter the forward
+path at M = 5 either.
+
+### The wrap from packet 4 to packet 0
+
+Sixteen cells per distribution, writer latch and reading slot varied
+independently; packet 4 writes 0x70, packet 0 reads:
+
+| set | alu0 s0..s3 | alu1 s0..s3 | alu2 s0..s3 | alu3 s0..s3 |
+|:--|:--|:--|:--|:--|
+| 23 | 0x70 x4 | 0x70 x4 | 0x70 x4 | 0x70 x4 |
+| 32 | 0x70 x4 | 0x70 x4 | 0x70 x4 | 0x70 x4 |
+| 113 | 0x70 x4 | 0x70 x4 | 0x70 x4 | 0x70 x4 |
+| 122 | 0x70 x4 | 0x70 x4 | 0x70 x4 | 0x70 x4 |
+| 131 | 0x70 x4 | 0x70 x4 | 0x70 x4 | 0x70 x4 |
+| 212 | 0x70 x4 | 0x70 x4 | 0x70 x4 | 0x70 x4 |
+| 221 | 0x70 x4 | 0x70 x4 | 0x70 x4 | 0x70 x4 |
+| 311 | 0x70 x4 | 0x70 x4 | 0x70 x4 | 0x70 x4 |
+
+One hundred and twenty-eight cells, every one carrying packet 4's value.
+There is no restricted writer slot and no restricted reading slot in any of the
+eight distributions, including the two where packet 4 shares its batch with one
+or two earlier packets and the two where packet 0 shares its batch with a later
+packet. In particular `23` is the closest five-packet analogue of 2 + 2: same
+group size, two packets in the first batch, no single-packet batch, both wrap
+endpoints in multi-packet batches - and its wrap is complete.
+
+### Negatives and conflicts
+
+In all eight distributions, from the same runs:
+
+| variant | measured | reading |
+|:--|:--|:--|
+| `own-p0` .. `own-p4` | 0x00 x5 | a packet never sees its own result |
+| `succ-p*` (5 pairs) | 0x00 | the immediate successor does not serve a read |
+| `twoahead-p*` (5 pairs) | 0x00 | two ahead does not serve a read |
+| `twoback-p*` (5 pairs) | 0x00 | two behind does not serve a read |
+| `both-1-2-read3` | 0x40 | packet 2, the predecessor, not packet 1 |
+| `both-2-3-read4` | 0x60 | packet 3, the predecessor |
+| `both-3-4-read0` | 0x70 | packet 4, the wrap's writer |
+| `both-2-4-read0` | 0x70 | packet 4, not packet 2 |
+| `both-0-4-read2` | 0x00 | neither writer is packet 1, packet 2's predecessor |
+| `three-1-3-4-read0` | 0x70 | packet 4 of the last pair wins |
+| `three-0-2-3-read4` | 0x60 | packet 3, the predecessor |
+| `write-only-p4` | 0x70 | the write lands and the row path works |
+| `read-nowrite` | 0x00 | no writer, no value |
+| `unmarked` | 0x00 | five writes without a reader leave nothing |
+| `none` | 0x00 | the word baseline |
+| `row-direct-p0` .. `p4` | 0x10, 0x20, 0x40, 0x60, 0x70 | payload values are distinct and legal |
+
+The fifteen non-predecessor pairs per distribution are the complete set: for
+every reader, the three sources that are neither itself nor its predecessor,
+which covers the immediate successor in both directions of the ring and the two
+packets at distance two. All 120 cells are zero, so the rotation is exact in all
+eight shapes and not an "any earlier packet in the group" rule: in `23`, for
+example, packet 0 (batch 0) does not serve packet 4 (batch 1), even though it is
+earlier in the group.
+
+### Controls
+
+Every run of every manifest carries the same controls and returns the same
+words:
+
+| control | word | meaning |
+|:--|--:|:--|
+| `ctl-rot2` | 0x40 | size-2 two-packet rotation, still working |
+| `ctl-rot3` | 0x7F | size-3 three-packet rotation, still working |
+| `ctl-carry-s1` | 0x10 | size-1 group-boundary carry |
+| `ctl-ref22-wrap0` | 0x00 | the 2 + 2 latch-0 wrap, still missing in the same run |
+| `ctl-ref22-wrap3` | 0x60 | the 2 + 2 latch-3 wrap, still present |
+| `ctl-ref31-wrap0` | 0x60 | the 3 + 1 wrap, complete |
+| `ctl-ref31-fwd01` | 0x10 | the 3 + 1 adjacent hop |
+| `ctl-ref211-wrap0` | 0x60 | the size-3 2 + 1 + 1 wrap, complete |
+
+The two `immediate-operand` and `varying-pipeline` harness controls ran before
+and after every sweep and returned `0x000000FF` and `0xFF01FF00`.
+
+### Reproducibility
+
+Manifests `asm_characterize.alu_m5_23.json` ... `asm_characterize.alu_m5_311.json`,
+78 variants each (70 matrix, 8 controls), from `make_alu_m5dist.py --set
+23|32|113|122|131|212|221|311`; three repeats per variant, 238 rows per run
+(234 variant draws plus four harness-control rows), and `schedule-words.tsv`
+dumped from the run itself. Pin runs used the unpinned manifests; verify runs
+used the pinned manifests, whose sha256 matches the checked-in ones; pin and
+verify agree row for row in all eight sets. `clean-alu-m5-*` are the committed
+manifests run from a fresh `git worktree` at the commit that contains them, with
+an empty `git status` before and after and the outputs outside the checkout; all
+eight match their pinned rows exactly.
+
+### What is measured, inferred and open
+
+* **Measured**: in all eight five-packet distributions, the 16 forward cells,
+  16 wrap cells, five own-packet negatives, fifteen non-predecessor pairs, seven
+  conflict cases and five baselines behave exactly as the cyclic rule predicts
+  for `0 -> 1 -> 2 -> 3 -> 4 -> 0`, with the same words in every run.
+* **Inferred**: the four-packet 2 + 2 shortfall is not caused by having two
+  multi-packet batches (`23`, `32`, `122`, `212`, `221` have two and are
+  complete), by the absence of a single-packet batch (`23` and `32` have none
+  and are complete), by both wrap endpoints sitting in multi-packet batches
+  (`23`, `32` and `212` do and are complete), or by the position or direction of
+  a multi-packet batch (`23` versus `32`, `122` versus `221`, `212` versus `311`
+  are mirrors and agree). The shortfall is confined to a group of four packets
+  holding two packets in each of its two batches; at M = 5 no arrangement
+  reproduces it.
+* **Open**: whether "two packets in every batch" is the property, as opposed to
+  something specific to four packets. The cheapest discriminator is a six-packet
+  group split `2 + 2 + 2` at size 3 - uniform two per batch at a different packet
+  count - against `3 + 3` and `1 + 2 + 3` at the same size. If `2 + 2 + 2` is
+  restricted and the others are not, the property is uniform two-per-batch; if
+  all three are complete, the shortfall is specific to four packets in two
+  batches. Also open: whether `1 + 1 + 1 + 2` at size 4 (a four-batch group)
+  behaves like the size-3 shapes, and the hardware mechanism, which none of
+  these runs observes.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

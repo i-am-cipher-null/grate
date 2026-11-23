@@ -1,0 +1,113 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Five-packet group, 1 + 3 + 1 split over 3 batches at `alu_buffer_size` 3.
+ *
+ * Notes 38, 39 and 43 measured the four-packet cycle: the 2 + 2 packing at
+ * size 2 keeps the forward edges but restricts packet 3's wrap to packet 0 to
+ * latch 3, while 3 + 1, 1 + 3 and the three size-3 splits 2 + 1 + 1, 1 + 2 + 1
+ * and 1 + 1 + 2 have the complete map. Every one of those shapes has a
+ * single-packet batch, so four packets cannot separate "two multi-packet
+ * batches" from "no single-packet batch" or from "both wrap endpoints sit in
+ * multi-packet batches". This template is one of the eight five-packet splits
+ * that separate them.
+ *
+ *   batch 0  packet 0              A0..A3   group A
+ *   batch 1  packets 1, 2, 3       B0..B11   group A
+ *   batch 2  packet 4              C0..C3   group A
+ *
+ * 3 batches are one whole group at size 3: group A is batches 0 to
+ * 2, group B is batches 3 to 5. Group A holds the five packets
+ * under test; group B is the complete second group, and its first batch
+ * (3) stores group A's rows through the DW. Group B's ALU blocks are kept
+ * so the schedule words show the same distribution twice.
+ *
+ * The assembler sets each batch's schedule count from its block count and each
+ * address from the running ALU instruction index (a 6-bit field in
+ * `instr_sched`), so no schedule word is patched; `dump_sched_words.py` reads
+ * the counts and addresses back from the run's own dump.
+ *
+ * Where the result is observed: a row written by a reader in group A is stored
+ * by the DW of batch 3, group B's first batch (notes 3, 42, 43). Values:
+ * u0 = 0.0625 (0x10), u1 = 0.125 (0x20), u2 = 0.25 (0x40), u3 = 0.375 (0x60),
+ * u4 = 0.4375 (0x70) as fx10, so a stored byte names the packet that served
+ * the read.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+	[4] = 0.4375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	ALU:
+		ALU0:	@B4@
+		ALU1:	@B5@
+		ALU2:	@B6@
+		ALU3:	@B7@
+	ALU:
+		ALU0:	@B8@
+		ALU1:	@B9@
+		ALU2:	@B10@
+		ALU3:	@B11@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@C0@
+		ALU1:	@C1@
+		ALU2:	@C2@
+		ALU3:	@C3@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@E0@
+		ALU1:	@E1@
+		ALU2:	@E2@
+		ALU3:	@E3@
+	DW:	@D3@
+;
+EXEC
+	ALU:
+		ALU0:	@F0@
+		ALU1:	@F1@
+		ALU2:	@F2@
+		ALU3:	@F3@
+	ALU:
+		ALU0:	@F4@
+		ALU1:	@F5@
+		ALU2:	@F6@
+		ALU3:	@F7@
+	ALU:
+		ALU0:	@F8@
+		ALU1:	@F9@
+		ALU2:	@F10@
+		ALU3:	@F11@
+	DW:	@D4@
+;
+EXEC
+	ALU:
+		ALU0:	@G0@
+		ALU1:	@G1@
+		ALU2:	@G2@
+		ALU3:	@G3@
+	DW:	@D5@
+;
