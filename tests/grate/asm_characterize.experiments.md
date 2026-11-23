@@ -5702,9 +5702,12 @@ measured.
 with `schedule-words.tsv` from the run itself. The pin runs were made on
 `1d440df1b497` with the new files untracked; the verify runs are the pinned
 manifests. Two independent runs of each set agree row for row, every variant's
-three repeats agree, and the controls pass before and after. Regenerate with
-`python3 tests/grate/asm/make_alu_pack_dist.py --set 31|13` and pin with
-`--results DIR`.
+three repeats agree, and the controls pass before and after. `clean-alu-pack43`
+and `clean-alu-pack13` are the committed manifests run from a fresh
+`git worktree` at `5db514c` with an empty `git status` before and after and the
+output directories outside the checkout; both match their pinned rows exactly.
+Regenerate with `python3 tests/grate/asm/make_alu_pack_dist.py --set 31|13` and
+pin with `--results DIR`.
 
 ## 40. Group-boundary carry at alu_buffer_size 4
 
@@ -5764,8 +5767,10 @@ rescue the carry.
 
 `pin-alu-carry4` / `verify-alu-carry4` hold 46 rows each (14 variants, three
 repeats, controls) with `schedule-words.tsv`. Two independent runs agree row for
-row and every repeat agrees. Regenerate with
-`python3 tests/grate/asm/make_alu_carry4.py`, pin with `--results DIR`.
+row and every repeat agrees. `clean-alu-carry4` is the committed manifest from
+the same fresh worktree at `5db514c` with an empty `git status`, and matches the
+pinned rows. Regenerate with `python3 tests/grate/asm/make_alu_carry4.py`, pin
+with `--results DIR`.
 
 ## 41. send/recv across a packet boundary, receiver in slot 1
 
@@ -5828,7 +5833,8 @@ path is packet-scoped while the latch path is group-scoped.
 
 `pin-alu-send-cross` / `verify-alu-send-cross` hold 40 rows each (12 variants,
 three repeats, controls) with `schedule-words.tsv`; two independent runs agree
-row for row. Regenerate with
+row for row, and `clean-alu-send-cross` is the committed manifest from the same
+worktree with an empty `git status` and matches the pinned rows. Regenerate with
 `python3 tests/grate/asm/make_alu_send_cross.py`.
 
 ## 42. DW arbitration: three words, the position rule, and the depth class
@@ -5966,7 +5972,10 @@ a class-1 word in a *later* batch of the group stores at all when it is alone
 31 rows, `pin-dw-class` / `verify-dw-class` 19 rows and `pin-dw-class1p` /
 `verify-dw-class1p` 19 rows, three repeats each, with `schedule-words.tsv` for
 all four and `depth16.tsv` for the two class sets. Two independent runs of each
-set agree row for row and the depth16 rows are identical across repeats.
+set agree row for row and the depth16 rows are identical across repeats. The
+four `clean-dw-*` runs are the committed manifests from the same fresh worktree
+at `5db514c` with an empty `git status` and the outputs outside the checkout;
+all four match their pinned rows, and their `depth16.tsv` matches the pin's.
 Regenerate with `python3 tests/grate/asm/make_dw_arb.py --set
 three|size3|class|class1p` and pin with `--results DIR`. The encoding probe is
 `asm/dw_two_per_batch.in`; it is expected to fail and is not part of any

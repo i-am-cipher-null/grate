@@ -1,0 +1,231 @@
+{
+  "name": "dw-class",
+  "created_utc": "2026-11-23T08:35:54+00:00",
+  "manifest": "/home/freebuff/clean-5db514c/tests/grate/asm_characterize.dw_class.json",
+  "manifest_sha256": "87b4468a5923819dfaee266807477585365c5372253c12f4dd8aa918fe2fe788",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/clean-5db514c",
+  "git_commit": "5db514ca4fffb1cb6eb60230031d5a9151c3f0ed",
+  "git_status": "",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "dw-class",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/dw_class.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "depth-then-colour",
+        "fs": "tests/grate/asm/dw_class.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@X0@": "MAD  r2.l*,  u12,  #1,  #0",
+            "@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+            "@X1@": "MAD  r2.*h,  u13,  #1,  #0",
+            "@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+            "@X2@": "MAD  r3.l*,  u14,  #1,  #0",
+            "@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+            "@X3@": "MAD  r3.*h,  u15,  #1,  #0",
+            "@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+            "@Y0@": "MAD  r2.l*,  u12,  #1,  #0",
+            "@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+            "@Y1@": "MAD  r2.*h,  u13,  #1,  #0",
+            "@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+            "@Y2@": "MAD  r3.l*,  u14,  #1,  #0",
+            "@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+            "@Y3@": "MAD  r3.*h,  u15,  #1,  #0",
+            "@DW0@": "store rt0, r0, r1 class 1",
+            "@DW1@": "store rt1, r0, r1",
+            "@FETCH@": "load rt1, r0, r1",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DEPTH": "1",
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "class-1 depth word in batch 0, class-2 colour word on rt1 in batch 1: colour 0x4C4C4C4C and depth 0x4000 if the first word wins, colour 0x3D2C1B0A and depth 0x8000 if the second does",
+        "expected": "0x00000000"
+      },
+      {
+        "name": "colour-then-depth",
+        "fs": "tests/grate/asm/dw_class.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@X0@": "MAD  r2.l*,  u12,  #1,  #0",
+            "@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+            "@X1@": "MAD  r2.*h,  u13,  #1,  #0",
+            "@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+            "@X2@": "MAD  r3.l*,  u14,  #1,  #0",
+            "@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+            "@X3@": "MAD  r3.*h,  u15,  #1,  #0",
+            "@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+            "@Y0@": "MAD  r2.l*,  u12,  #1,  #0",
+            "@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+            "@Y1@": "MAD  r2.*h,  u13,  #1,  #0",
+            "@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+            "@Y2@": "MAD  r3.l*,  u14,  #1,  #0",
+            "@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+            "@Y3@": "MAD  r3.*h,  u15,  #1,  #0",
+            "@DW0@": "store rt1, r0, r1",
+            "@DW1@": "store rt0, r0, r1 class 1",
+            "@FETCH@": "load rt1, r0, r1",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DEPTH": "1",
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "the same two words with the batches swapped: the same two readings, with the target that wins swapped",
+        "expected": "0x3D2C1B0A"
+      },
+      {
+        "name": "single-depth",
+        "fs": "tests/grate/asm/dw_class.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@X0@": "MAD  r2.l*,  u12,  #1,  #0",
+            "@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+            "@X1@": "MAD  r2.*h,  u13,  #1,  #0",
+            "@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+            "@X2@": "MAD  r3.l*,  u14,  #1,  #0",
+            "@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+            "@X3@": "MAD  r3.*h,  u15,  #1,  #0",
+            "@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+            "@Y0@": "MAD  r2.l*,  u12,  #1,  #0",
+            "@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+            "@Y1@": "MAD  r2.*h,  u13,  #1,  #0",
+            "@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+            "@Y2@": "MAD  r3.l*,  u14,  #1,  #0",
+            "@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+            "@Y3@": "MAD  r3.*h,  u15,  #1,  #0",
+            "@DW0@": "store rt0, r0, r1 class 1",
+            "@DW1@": "NOP",
+            "@FETCH@": "load rt1, r0, r1",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DEPTH": "1",
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "one class-1 depth word and nothing else: the positive control for the depth class (depth 0x4000)",
+        "expected": "0x4C4C4C4C"
+      },
+      {
+        "name": "single-colour",
+        "fs": "tests/grate/asm/dw_class.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@X0@": "MAD  r2.l*,  u12,  #1,  #0",
+            "@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+            "@X1@": "MAD  r2.*h,  u13,  #1,  #0",
+            "@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+            "@X2@": "MAD  r3.l*,  u14,  #1,  #0",
+            "@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+            "@X3@": "MAD  r3.*h,  u15,  #1,  #0",
+            "@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+            "@Y0@": "MAD  r2.l*,  u12,  #1,  #0",
+            "@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+            "@Y1@": "MAD  r2.*h,  u13,  #1,  #0",
+            "@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+            "@Y2@": "MAD  r3.l*,  u14,  #1,  #0",
+            "@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+            "@Y3@": "MAD  r3.*h,  u15,  #1,  #0",
+            "@DW0@": "store rt1, r0, r1",
+            "@DW1@": "NOP",
+            "@FETCH@": "load rt1, r0, r1",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DEPTH": "1",
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "one class-2 colour word on rt1: the positive control for the colour side (colour 0x3D2C1B0A, depth 0x8000)",
+        "expected": "0x3D2C1B0A"
+      },
+      {
+        "name": "none",
+        "fs": "tests/grate/asm/dw_class.in",
+        "replace": {
+          "fs": {
+            "@ABUF@": "2",
+            "@P0@": "MAD  r0.l*,  u0,  #1,  #0",
+            "@X0@": "MAD  r2.l*,  u12,  #1,  #0",
+            "@P1@": "MAD  r0.*h,  u1,  #1,  #0",
+            "@X1@": "MAD  r2.*h,  u13,  #1,  #0",
+            "@P2@": "MAD  r1.l*,  u2,  #1,  #0",
+            "@X2@": "MAD  r3.l*,  u14,  #1,  #0",
+            "@P3@": "MAD  r1.*h,  u3,  #1,  #0",
+            "@X3@": "MAD  r3.*h,  u15,  #1,  #0",
+            "@Q0@": "MAD  r0.l*,  u4,  #1,  #0",
+            "@Y0@": "MAD  r2.l*,  u12,  #1,  #0",
+            "@Q1@": "MAD  r0.*h,  u5,  #1,  #0",
+            "@Y1@": "MAD  r2.*h,  u13,  #1,  #0",
+            "@Q2@": "MAD  r1.l*,  u6,  #1,  #0",
+            "@Y2@": "MAD  r3.l*,  u14,  #1,  #0",
+            "@Q3@": "MAD  r1.*h,  u7,  #1,  #0",
+            "@Y3@": "MAD  r3.*h,  u15,  #1,  #0",
+            "@DW0@": "NOP",
+            "@DW1@": "NOP",
+            "@FETCH@": "load rt1, r0, r1",
+            "@STORE@": "store rt1, r0, r1"
+          }
+        },
+        "environment": {
+          "GRATE_DEPTH": "1",
+          "GRATE_DUMP_RAW": "1"
+        },
+        "expected_note": "no DW in either batch: colour 0x4C4C4C4C and depth 0x8000, both baselines in one run",
+        "expected": "0x4C4C4C4C"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 19,
+    "passed": 19,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

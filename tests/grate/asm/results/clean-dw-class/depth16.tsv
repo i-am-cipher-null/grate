@@ -1,0 +1,16 @@
+run	phase	name	iteration	row0_0	row0_1	row0_2	row0_3	mid_0	mid_1	last_0	last_1
+clean-dw-class	variant	depth-then-colour	1	4000	4000	4000	4000	4000	4000	4000	4000
+clean-dw-class	variant	depth-then-colour	2	4000	4000	4000	4000	4000	4000	4000	4000
+clean-dw-class	variant	depth-then-colour	3	4000	4000	4000	4000	4000	4000	4000	4000
+clean-dw-class	variant	colour-then-depth	1	0000	0000	0000	0000	0000	0000	0000	0000
+clean-dw-class	variant	colour-then-depth	2	0000	0000	0000	0000	0000	0000	0000	0000
+clean-dw-class	variant	colour-then-depth	3	0000	0000	0000	0000	0000	0000	0000	0000
+clean-dw-class	variant	single-depth	1	4000	4000	4000	4000	4000	4000	4000	4000
+clean-dw-class	variant	single-depth	2	4000	4000	4000	4000	4000	4000	4000	4000
+clean-dw-class	variant	single-depth	3	4000	4000	4000	4000	4000	4000	4000	4000
+clean-dw-class	variant	single-colour	1	8000	8000	8000	8000	8000	8000	8000	8000
+clean-dw-class	variant	single-colour	2	8000	8000	8000	8000	8000	8000	8000	8000
+clean-dw-class	variant	single-colour	3	8000	8000	8000	8000	8000	8000	8000	8000
+clean-dw-class	variant	none	1	8000	8000	8000	8000	8000	8000	8000	8000
+clean-dw-class	variant	none	2	8000	8000	8000	8000	8000	8000	8000	8000
+clean-dw-class	variant	none	3	8000	8000	8000	8000	8000	8000	8000	8000

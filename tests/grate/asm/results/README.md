@@ -1551,3 +1551,77 @@ invalidate another; generate such a manifest with
 * summary: 19 passed, 0 failed of 19 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
 * depth: `depth16.tsv`, the printed D16 words per draw
+
+## clean-alu-pack43
+
+* manifest: `asm_characterize.alu_pack43.json` (sha256 b9ff81cc9b0c)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 5db514ca4fffb1cb6eb60230031d5a9151c3f0ed with a clean tree (clone in /home/freebuff/clean-5db514c)
+* created: 2026-11-23T08:34:37+00:00; 169 rows, repeat 3, timeout 20.0 s
+* summary: 169 passed, 0 failed of 169 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-alu-pack13
+
+* manifest: `asm_characterize.alu_pack13.json` (sha256 1002e246bdcd)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 5db514ca4fffb1cb6eb60230031d5a9151c3f0ed with a clean tree (clone in /home/freebuff/clean-5db514c)
+* created: 2026-11-23T08:34:59+00:00; 169 rows, repeat 3, timeout 20.0 s
+* summary: 169 passed, 0 failed of 169 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-alu-carry4
+
+* manifest: `asm_characterize.alu_carry4.json` (sha256 0c9fb1f0f644)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 5db514ca4fffb1cb6eb60230031d5a9151c3f0ed with a clean tree (clone in /home/freebuff/clean-5db514c)
+* created: 2026-11-23T08:35:26+00:00; 46 rows, repeat 3, timeout 20.0 s
+* summary: 46 passed, 0 failed of 46 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-alu-send-cross
+
+* manifest: `asm_characterize.alu_send_cross.json` (sha256 8666392d2e30)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 5db514ca4fffb1cb6eb60230031d5a9151c3f0ed with a clean tree (clone in /home/freebuff/clean-5db514c)
+* created: 2026-11-23T08:35:33+00:00; 40 rows, repeat 3, timeout 10.0 s
+* summary: 40 passed, 0 failed of 40 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-dw-three
+
+* manifest: `asm_characterize.dw_three.json` (sha256 95d1509ccfdf)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 5db514ca4fffb1cb6eb60230031d5a9151c3f0ed with a clean tree (clone in /home/freebuff/clean-5db514c)
+* created: 2026-11-23T08:35:40+00:00; 58 rows, repeat 3, timeout 20.0 s
+* summary: 58 passed, 0 failed of 58 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-dw-size3
+
+* manifest: `asm_characterize.dw_size3.json` (sha256 5483ffa0c47a)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 5db514ca4fffb1cb6eb60230031d5a9151c3f0ed with a clean tree (clone in /home/freebuff/clean-5db514c)
+* created: 2026-11-23T08:35:49+00:00; 31 rows, repeat 3, timeout 20.0 s
+* summary: 31 passed, 0 failed of 31 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-dw-class
+
+* manifest: `asm_characterize.dw_class.json` (sha256 87b4468a5923)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 5db514ca4fffb1cb6eb60230031d5a9151c3f0ed with a clean tree (clone in /home/freebuff/clean-5db514c)
+* created: 2026-11-23T08:35:54+00:00; 19 rows, repeat 3, timeout 20.0 s
+* summary: 19 passed, 0 failed of 19 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+* depth: `depth16.tsv`, the printed D16 words per draw
+
+## clean-dw-class1p
+
+* manifest: `asm_characterize.dw_class1p.json` (sha256 37d4687307be)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* tree: 5db514ca4fffb1cb6eb60230031d5a9151c3f0ed with a clean tree (clone in /home/freebuff/clean-5db514c)
+* created: 2026-11-23T08:35:59+00:00; 19 rows, repeat 3, timeout 20.0 s
+* summary: 19 passed, 0 failed of 19 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+* depth: `depth16.tsv`, the printed D16 words per draw
