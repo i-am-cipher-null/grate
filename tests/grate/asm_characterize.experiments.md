@@ -6599,6 +6599,167 @@ exactly. Regenerate with
   `1 + 1 + 1 + 2` at size 4, six-packet groups in fp20 rather than fx10, or
   other writer-slot/latch cross-combinations, none of which was measured here).
 
+## 46. Five packets over four batches: the pair's position does not change the cycle
+
+Section 44 measured the eight five-packet splits of two- and three-batch groups
+and left the size-4 permutations open. A group of four batches holding five
+packets has exactly one two-packet batch, because every batch needs at least
+one packet and a batch holds at most three. The four splits are therefore
+2 + 1 + 1 + 1, 1 + 2 + 1 + 1, 1 + 1 + 2 + 1 and 1 + 1 + 1 + 2. They keep the
+packet count, the batch count, the flush count and the number of single-packet
+batches fixed and move the pair from the group's first batch to its last;
+2 + 1 + 1 + 1 also puts packet 0 in the pair's batch, and 1 + 1 + 1 + 2 is the
+only one in which packet 4 shares the last batch with packet 3.
+
+Hypotheses:
+
+| hypothesis | prediction |
+|:--|:--|
+| four-batch groups all carry the complete cycle | all four complete |
+| the cycle depends on the pair's position | at least one placement restricted |
+| the cycle depends on packet 4 sharing its batch with packet 3 | only 1 + 1 + 1 + 2 restricted |
+
+### Shape, manifests, words
+
+`asm/alu_m5_2111.in` ... `asm/alu_m5_1112.in` are whole two-group programs at
+`alu_buffer_size` 4. Group A is batches 0 to 3, group B is batches 4 to 7, and
+group B's first batch (4) stores group A's rows through the DW. Group B repeats
+the same distribution, and the program uses eight batches and ten packet
+addresses with no padding.
+
+| set | split | group A batches | pair batch |
+|:--|:--|:--|--:|
+| 2111 | 2 + 1 + 1 + 1 | packets 0,1 \| 2 \| 3 \| 4 | 0 |
+| 1211 | 1 + 2 + 1 + 1 | packet 0 \| 1,2 \| 3 \| 4 | 1 |
+| 1121 | 1 + 1 + 2 + 1 | packet 0 \| 1 \| 2,3 \| 4 | 2 |
+| 1112 | 1 + 1 + 1 + 2 | packet 0 \| 1 \| 2 \| 3,4 | 3 |
+
+From each run's raw dump (`schedule-words.tsv`: `count@address` per batch):
+
+| set | batch words |
+|:--|:--|
+| 2111 | `2@0`, `1@2`, `1@3`, `1@4`, `2@5`, `1@7`, `1@8`, `1@9` |
+| 1211 | `1@0`, `2@1`, `1@3`, `1@4`, `1@5`, `2@6`, `1@8`, `1@9` |
+| 1121 | `1@0`, `1@1`, `2@2`, `1@4`, `1@5`, `1@6`, `2@7`, `1@9` |
+| 1112 | `1@0`, `1@1`, `1@2`, `2@3`, `1@5`, `1@6`, `1@7`, `2@8` |
+
+Every count and address matches the intended split in both groups, the ten
+packet addresses 0..9 appear once each, and no `0x806` word is non-zero in any
+run. The assembler derives all of this from the block placement; no schedule
+word is patched, and the numbers above are read back from the hardware runs.
+
+### Matrix coverage
+
+Each manifest (`asm_characterize.alu_m5_2111.json` ... `..._1112.json`, built
+by `make_alu_m5dist.py --set 2111|1211|1121|1112`) has 80 variants: 70 matrix
+variants and the same ten cross-shape controls. The matrix is the one section
+44 uses - 16 forward cells (four edges x four latches), two forward cells
+re-read from another slot, 16 wrap cells (packet 4 slot N writes, packet 0
+slot S reads aluN, four latches x four reader slots), five own-packet reads,
+all 15 non-predecessor source/reader pairs, seven multi-writer cases,
+write-only/read-without-writer/unmarked/no-write baselines and five
+`row-direct` payload controls - so the four splits differ only in their batch
+placement.
+
+As in notes 44 and 45, the wrap couples producer slot N to latch `aluN` and
+varies only the reader's slot. Arbitrary producer-slot/latch cross-combinations
+are not tested.
+
+Three repeats per variant, and the runner adds the two immediate-operand and
+two varying-pipeline harness rows, so each run directory carries 244 result
+rows.
+
+### Forward edges and wrap
+
+All 16 forward cells per set returned the source packet's byte for every
+latch: 0 -> 1 `0x10`, 1 -> 2 `0x20`, 2 -> 3 `0x40`, 3 -> 4 `0x60`. The
+re-reads from another slot returned the same values (`fwd01-al0-s2` `0x10`,
+`fwd34-al3-s2` `0x60`).
+
+All 16 wrap cells per set returned `0x70`: packet 4's result reached packet 0
+through all four latches, from all four reader slots, in every one of the four
+placements. That includes `alu0`, `alu1` and `alu2`, which the M=4 size-2
+2 + 2 packing does not carry.
+
+### Non-predecessor reads, conflicts and baselines
+
+All five own-packet reads and all 15 non-predecessor pairs returned `0x00` in
+every set. The multi-writer cases returned the immediate predecessor:
+
+| case | writers | measured |
+|:--|:--|:--|
+| `both-1-2-read3` | packets 1 (`0x20`), 2 (`0x40`) | `0x40` |
+| `both-2-3-read4` | packets 2, 3 | `0x60` |
+| `both-3-4-read0` | packets 3, 4 | `0x70` |
+| `both-2-4-read0` | packets 2, 4 | `0x70` |
+| `both-0-4-read2` | packets 0, 4 | `0x00` |
+| `three-1-3-4-read0` | packets 1, 3, 4 | `0x70` |
+| `three-0-2-3-read4` | packets 0, 2, 3 | `0x60` |
+
+`write-only-p4` returned `0x70`, `read-nowrite`, `unmarked` and `none`
+returned `0x00`, and `row-direct-p0` ... `row-direct-p4` returned `0x10`,
+`0x20`, `0x40`, `0x60` and `0x70`, validating the five payloads in the same
+runs that use them.
+
+### Controls in the same runs
+
+| control | template | measured |
+|:--|:--|:--|
+| `ctl-rot2` | size 2, one packet per batch | `0x40` |
+| `ctl-rot3` | size 3, one packet per batch | `0x7F` |
+| `ctl-carry-s1` | size 1 group-boundary carry | `0x10` |
+| `ctl-ref22-wrap0` | M=4 2 + 2, latch-0 wrap | `0x00` |
+| `ctl-ref22-wrap3` | M=4 2 + 2, latch-3 wrap | `0x60` |
+| `ctl-ref31-wrap0` | M=4 3 + 1, latch-0 wrap | `0x60` |
+| `ctl-ref31-fwd01` | M=4 3 + 1, packet 0 -> 1 | `0x10` |
+| `ctl-ref211-wrap0` | M=4 2 + 1 + 1, latch-0 wrap | `0x60` |
+| `ctl-ref5-wrap0` | M=5 2 + 3, packet 4 -> 0 | `0x70` |
+| `ctl-ref5-fwd34` | M=5 2 + 3, packet 3 -> 4 | `0x60` |
+
+The M=4 2 + 2 control returned the restricted `0x00` and `0x60` pair in every
+one of the four manifests, so the original anomaly was still observable in the
+same sessions that measured the four-batch shapes.
+
+### Reproducibility
+
+Pin runs used unpinned manifests at branch head
+`35ffc4c06985bc6c6ae6f014722c28339691ecc1`, with `make_alu_m5dist.py`
+modified and the new templates and manifests untracked. Each of the four runs
+has 244 rows and 244 passes (22:15:23-22:16:43 UTC). Pinning wrote the
+manifests with the measured expected words:
+`asm_characterize.alu_m5_2111.json` (sha256 `6c5d35e8a11d`),
+`..._1211.json` (`5097a2633c04`), `..._1121.json` (`470f992740b7`) and
+`..._1112.json` (`4a56477e557f`).
+
+Verify runs used the pinned manifests in the same checkout (22:18:34-22:20:39
+UTC) and passed 244/244 in every set; each run's metadata records the manifest
+sha256 used.
+
+The assets were committed as `a271664a9cf8b80b13df1789b09577be1099dbc1`, and
+clean reproductions ran in a fresh worktree at that commit
+(`~/clean-a271664`, empty `git status` before and after) into
+`~/cruns/clean-alu-m5-*` (22:22:50-22:25:03 UTC). They passed 244/244 in all
+four sets. Pin, verify and clean agree row-for-row, and their schedule dumps
+are byte-identical within each set.
+
+### What the measurements say
+
+All four four-batch distributions have the complete five-packet cycle. Moving
+the single two-packet batch from the first batch to the last, and changing
+whether the wrap endpoints share that batch (2 + 1 + 1 + 1) or whether packet
+4 shares the last batch with packet 3 (1 + 1 + 1 + 2), did not restrict the
+wrap in any set. The M=5 rotation is therefore complete in all twelve tested
+distributions - the eight two- and three-batch splits of section 44 and these
+four four-batch splits - and the M=4 size-2 2 + 2 restriction remains an
+isolated measured exception among the four-, five- and six-packet arrangements
+tested so far.
+
+These runs do not identify a hardware mechanism, and they do not establish
+that every untested five-packet arrangement or group size behaves the same
+way. They also do not test fp20 register formats or the same shapes on another
+SoC, and the producer-slot/latch coupling above limits the wrap matrix to one
+writer slot per latch.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

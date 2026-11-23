@@ -693,7 +693,7 @@ When bit "addition disable" is set, the Multiply-Add operation turns into two mu
 The behaviour below is measured on AR20 hardware. Where it is incomplete the text says so. All
 measurements use the Grate assembler harness (section 10).
 
-**Current forwarding model (synthesis of notes 28, 31, 32, 36, 38, 39, 43, 44 and 45).**
+**Current forwarding model (synthesis of notes 28, 31, 32, 36, 38, 39, 43, 44, 45 and 46).**
 A read of aluN in slot S of packet k is served in the complete tested rotations
 by the slot-N result from packet `(k-1) mod M`, where M is the total number of
 ALU packets in the group. The reading slot can be any of the four slots.
@@ -709,6 +709,7 @@ a packet does not see its own results.
 | M=4, size 4 packed 1+1+1+1 | full cycle for all four latches and every wrap reader slot |
 | M=4, size 2 packed 2+2 | three forward edges work for all four latches; packet 3 slot 3 feeds packet 0's alu3 wrap, readable from any reader slot; wraps for alu0..alu2 return 0 |
 | M=5, size 2 or 3, eight tested distributions | full cycle for all four latches and every packet-4-to-packet-0 wrap reader slot |
+| M=5, size 4, four tested distributions (2+1+1+1, 1+2+1+1, 1+1+2+1, 1+1+1+2) | full cycle for all four latches and every packet-4-to-packet-0 wrap reader slot |
 | M=6, size 2 or 3, four tested distributions (2+2+2, 3+3, 1+2+3, 3+2+1) | full cycle for all four latches and every packet-5-to-packet-0 wrap reader slot |
 
 The read is group-scoped. M=2 and M=3 form complete rotations in the
@@ -753,6 +754,21 @@ six-packet analogue of the M=4 2+2 shape and is complete, uniform two-packet
 occupancy is not sufficient to reproduce the exception. Among the tested
 four-, five- and six-packet arrangements the shortfall appears only in the
 four-packet size-2 2+2 shape; the mechanism remains unknown.
+
+**Four-batch five-packet groups.** Note 46 tested the four size-4 splits:
+2+1+1+1, 1+2+1+1, 1+1+2+1 and 1+1+1+2. A four-batch group with five packets
+has exactly one two-packet batch, so these keep the packet and batch counts
+fixed and move the pair from first to last. All four have the complete cycle:
+all four forward edges for all four latches and all sixteen
+packet-4-to-packet-0 wrap-latch/reader-slot combinations, with the five
+own-packet negatives and all fifteen non-predecessor pairs returning 0. The
+same runs keep the M=4 2+2 control at 0 for the alu0 wrap and 0x60 for alu3,
+and the five-packet 2+3 wrap at 0x70. Because 2+1+1+1 puts packet 0 in the
+pair's batch and 1+1+1+2 puts packet 4 in the last batch with packet 3, and
+neither restricts the wrap, the pair's position is not sufficient either. All
+twelve tested five-packet distributions (eight at sizes 2 and 3, four at size
+4) have the complete cycle; the M=4 size-2 2+2 restriction remains the only
+measured exception, and its mechanism is unknown.
 
 For the five-packet wrap matrix, the producer slot is coupled to the latch
 index: packet 4 writes through slot N to test aluN, while the consumer slot is

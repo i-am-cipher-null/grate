@@ -247,6 +247,7 @@ as operands (notes 28). A read is not a read of a retired register:
 | M=4, size 4, one packet per batch (1+1+1+1) | full cycle for all four latches and every wrap reader slot |
 | M=4, size 2, packed 2+2 | the three forward edges work for all four latches; packet 3 to packet 0 wraps only through alu3, written in slot 3; the reader may use any slot |
 | M=5, size 2 or 3, eight tested distributions | full cycle for all four latches and every packet-4-to-packet-0 wrap reader slot |
+| M=5, size 4, four tested distributions (2+1+1+1, 1+2+1+1, 1+1+2+1, 1+1+1+2) | full cycle for all four latches and every packet-4-to-packet-0 wrap reader slot |
 | M=6, size 2 or 3, four tested distributions (2+2+2, 3+3, 1+2+3, 3+2+1) | full cycle for all four latches and every packet-5-to-packet-0 wrap reader slot |
 | across a group boundary (`alu_buffer_size=1`) | the previous group's last packet's slot-0 result, readable only from slot 0 |
 | across a group boundary (`alu_buffer_size=2` or `3`) | 0, from any batch of the previous group, in the shapes tested |
@@ -334,10 +335,22 @@ and six-packet arrangements the shortfall remains confined to the four-packet
 size-2 2+2 packing. Its mechanism is unknown, and these measurements do not
 establish a general rule for untested group sizes or distributions.
 
+Five packets over four batches force exactly one two-packet batch, so the four
+size-4 distributions move that batch from first to last while holding the
+packet and batch counts fixed: 2+1+1+1, 1+2+1+1, 1+1+2+1 and 1+1+1+2. All four
+have the complete cycle, with the four forward edges for all four latches and
+all sixteen packet-4-to-packet-0 wrap latch/reader-slot cells returning the
+predecessor's value (note 46). 2+1+1+1 puts packet 0 in the pair's batch, and
+1+1+1+2 is the only one where packet 4 shares the last batch with packet 3;
+neither placement restricts the wrap. The M=4 size-2 2+2 exception is therefore
+not reproduced by any tested five-packet arrangement at sizes 2, 3 or 4, and it
+remains the only measured exception among the tested four-, five- and
+six-packet shapes. No mechanism is claimed.
+
 Dependent operations can chain one hop per packet in these complete
 arrangements. Packet 0 can read packet 2 in a three-packet group, packet 0 can
 read packet 3 in the tested four-packet arrangements except the restricted
-2+2 latches, packet 0 can read packet 4 in all eight tested five-packet
+2+2 latches, packet 0 can read packet 4 in all twelve tested five-packet
 arrangements, and packet 0 can read packet 5 in all four tested six-packet
 arrangements. This revises section 32's "previous packet, forward only": its
 backward probe changed the latch index and reading slot at once, so it did not
