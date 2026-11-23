@@ -5712,10 +5712,11 @@ pin with `--results DIR`.
 ## 40. Group-boundary carry at alu_buffer_size 4
 
 Notes 31 and 32 measured a carry from one group's last packet to the next
-group's slot 0 at `alu_buffer_size` 1; notes 36 and 38 found nothing at sizes 2,
-3 and 4 in one-packet-per-batch shapes, but the size-4 test read a group's
-values with the store in the *same* group's next batch and never tried a writer
-in each packet position.
+group's slot 0 at alu_buffer_size 1. Note 36 found no carry at sizes 2 and 3
+in the tested shapes. Section 38's size-4 packet-rotation set established
+within-group forwarding, but its readback did not test a writer in one group
+being read across the next group boundary. This section isolates that
+size-4 group-flush question with complete groups and a separate readback group.
 
 `asm/alu_buf_blocks12.in` is twelve batches, one ALU packet each with four
 slots, which is exactly three size-4 groups:
@@ -5844,11 +5845,15 @@ worktree with an empty `git status` and matches the pinned rows. Regenerate with
 
 ## 42. DW arbitration: three words, the position rule, and the depth class
 
-Notes 29 and 33 measured two DW words in one scheduling group on colour, spill
-and MRT targets and concluded that the first word's target is written with the
-group's final row and the second is dropped. This cycle closes three edges: how
-many DWs a batch can hold at all, what three words in one group do, and whether
-a class-1 (depth) word arbitrates differently from a class-2 (colour) word.
+Notes 29 and 33 measured multiple DW words in one scheduling group on
+colour, spill and MRT targets. Their distinguishable class-2 cases showed the
+first-batch target receiving the group's final row contents and competing
+targets retaining their prior contents; zero-cleared targets and same-target
+cases did not always distinguish a dropped write from a zero write. This
+follow-up probes that interpretation rather than assuming a universal
+first-DW-wins mechanism. It measures three words in a group, the later-batch
+position, and whether a class-1 (depth) word behaves differently from a
+class-2 (colour) word.
 
 ### The encoding allows one DW per batch
 
