@@ -31,7 +31,7 @@ differ on T114 it is called out.
 |:--|:--|:--|
 | packet | one group of four ALU slots, one `sched` address | 4 instructions |
 | batch | one entry in every per-batch stream (`0x801`, `0x804`, `0x806`, `0x901`, PSEQ, MFU, TEX) | 1..3 packets |
-| group | `alu_buffer_size` consecutive batches, flushed together | 1..4 batches measured; tested groups contain up to 5 ALU packets |
+| group | `alu_buffer_size` consecutive batches, flushed together | 1..4 batches measured; tested groups contain up to 6 ALU packets |
 
 The `0x801` word carries `count[1:0]` = **packets** and `addr[7:2]` = the first
 packet of that batch, so a batch reaches 12 instruction slots through repeated
@@ -72,6 +72,7 @@ slot with that number, whatever its destination field said. "Row" means
 | M=4, size 4, split 1+1+1+1 | full cycle, all four latches and all wrap reader slots | 43 |
 | M=4, size 2, split 2+2 | three forward edges for all latches; packet 3 slot 3 feeds packet 0's alu3 wrap, readable from any reader slot | 38, 43 |
 | M=5, size 2 or 3, eight tested distributions | full five-packet cycle, all four latches and all packet-4-to-packet-0 reader slots | 44 |
+| M=6, size 2 or 3, split 2+2+2, 3+3, 1+2+3 or 3+2+1 | full six-packet cycle, all four latches and all packet-5-to-packet-0 reader slots | 45 |
 | two-packet batch, either direction | both packets see each other; a packet never sees its own results | 36 |
 | three-packet batch | forward one hop, and packet 0 reads packet 2 (the wrap); two packets apart is 0 | 32, 36 |
 | one packet later, batch boundary inside a group (one-packet batches) | all four latches, any slot - the M=2/M=3 case of the rotation | 28, 36 |
@@ -96,8 +97,12 @@ Three consequences are easy to miss:
    the only wrap that survives. All other tested M=4 arrangements - size-2
    3+1 and 1+3, the three size-3 splits, and size-4 1+1+1+1 - have the
    complete four-latch cycle. All eight tested M=5 distributions at sizes 2
-   and 3 also have the complete cycle (notes 38, 39, 43, 44). The reason for
-   the M=4 2+2 exception is not known.
+   and 3 also have the complete cycle (notes 38, 39, 43, 44), as do the four
+   tested six-packet distributions - 2+2+2 at size 3, 3+3 at size 2, and
+   1+2+3 and 3+2+1 at size 3 (note 45). Uniform two-packet batches are
+   therefore not sufficient to reproduce the exception: it remains specific
+   to the M=4 size-2 2+2 arrangement among the tested shapes. The reason for
+   that exception is not known.
 3. **The group-flush carry is separate from the within-group rotation.** The
    positive path is the previous group's last packet slot-0 result to the
    next group's slot 0, measured when the group is one batch. No carry appeared
@@ -134,7 +139,7 @@ The measured rules give a simple decision procedure.
 |:--|:--|:--|
 | later slot of the **same packet**, batch is one packet | latch of the producing slot | intra-packet bypass (notes 28) |
 | next packet, same batch, consumer is not packet 0 | latch of the producing slot | packet k reads k-1, all four latches (notes 32, 36) |
-| consumer is packet 0 of a multi-packet group | latch of the group's last packet in a complete tested rotation; M=4 size-2 2+2 permits only the alu3 wrap from packet 3 slot 3; the other tested M=4 packings and all eight tested M=5 distributions have the full four-latch wrap (notes 38, 39, 43, 44) | the cycle wraps, but only where measured |
+| consumer is packet 0 of a multi-packet group | latch of the group's last packet in a complete tested rotation; M=4 size-2 2+2 permits only the alu3 wrap from packet 3 slot 3; the other tested M=4 packings, all eight tested M=5 distributions and all four tested six-packet distributions have the full wrap (notes 38, 39, 43, 44, 45) | the cycle wraps, but only where measured |
 | any packet after that, same batch | row register, read in a later group | no forward is that deep, and rows commit only at a group boundary |
 | another packet of the **same** batch, non-adjacent | row register, read in a later group | rows are not visible inside a group (notes 28, 32) |
 | later group | row register | the latch carries nothing across a flush once the group is more than one batch, and only slot 0 even then |

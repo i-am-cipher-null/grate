@@ -693,7 +693,7 @@ When bit "addition disable" is set, the Multiply-Add operation turns into two mu
 The behaviour below is measured on AR20 hardware. Where it is incomplete the text says so. All
 measurements use the Grate assembler harness (section 10).
 
-**Current forwarding model (synthesis of notes 28, 31, 32, 36, 38, 39, 43 and 44).**
+**Current forwarding model (synthesis of notes 28, 31, 32, 36, 38, 39, 43, 44 and 45).**
 A read of aluN in slot S of packet k is served in the complete tested rotations
 by the slot-N result from packet `(k-1) mod M`, where M is the total number of
 ALU packets in the group. The reading slot can be any of the four slots.
@@ -709,6 +709,7 @@ a packet does not see its own results.
 | M=4, size 4 packed 1+1+1+1 | full cycle for all four latches and every wrap reader slot |
 | M=4, size 2 packed 2+2 | three forward edges work for all four latches; packet 3 slot 3 feeds packet 0's alu3 wrap, readable from any reader slot; wraps for alu0..alu2 return 0 |
 | M=5, size 2 or 3, eight tested distributions | full cycle for all four latches and every packet-4-to-packet-0 wrap reader slot |
+| M=6, size 2 or 3, four tested distributions (2+2+2, 3+3, 1+2+3, 3+2+1) | full cycle for all four latches and every packet-5-to-packet-0 wrap reader slot |
 
 The read is group-scoped. M=2 and M=3 form complete rotations in the
 arrangements measured. M=4 is packing-dependent, but the scope of the exception
@@ -737,8 +738,21 @@ These five-packet results rule out several simple explanations for the M=4
 multi-packet batches, by having no singleton batch, by placing both wrap
 endpoints in multi-packet batches, or by the tested mirrored batch orders.
 They do not establish the cause, prove a general rule for all group sizes, or
-cover every possible distribution. In particular, a six-packet 2+2+2 group
-has not been tested.
+cover every possible distribution.
+
+**Six-packet groups.** Note 45 tested 2+2+2 at size 3, 3+3 at size 2, and
+1+2+3 with its batch-order reverse 3+2+1 at size 3. All four have the complete
+cycle: five forward edges for all four latches and all sixteen
+packet-5-to-packet-0 wrap-latch/reader-slot combinations, with the six
+own-packet negatives and all twenty-four non-predecessor pairs returning 0
+and the conflict cases showing the immediate predecessor. The sixth packet's
+marker value (0x08) was checked by direct row readback in each manifest. In
+the same runs the M=4 2+2 control still returns 0 for the alu0 wrap and 0x60
+for alu3, and the M=5 wrap still returns 0x70. Because 2+2+2 is the closest
+six-packet analogue of the M=4 2+2 shape and is complete, uniform two-packet
+occupancy is not sufficient to reproduce the exception. Among the tested
+four-, five- and six-packet arrangements the shortfall appears only in the
+four-packet size-2 2+2 shape; the mechanism remains unknown.
 
 For the five-packet wrap matrix, the producer slot is coupled to the latch
 index: packet 4 writes through slot N to test aluN, while the consumer slot is

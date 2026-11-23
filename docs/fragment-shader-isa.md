@@ -247,6 +247,7 @@ as operands (notes 28). A read is not a read of a retired register:
 | M=4, size 4, one packet per batch (1+1+1+1) | full cycle for all four latches and every wrap reader slot |
 | M=4, size 2, packed 2+2 | the three forward edges work for all four latches; packet 3 to packet 0 wraps only through alu3, written in slot 3; the reader may use any slot |
 | M=5, size 2 or 3, eight tested distributions | full cycle for all four latches and every packet-4-to-packet-0 wrap reader slot |
+| M=6, size 2 or 3, four tested distributions (2+2+2, 3+3, 1+2+3, 3+2+1) | full cycle for all four latches and every packet-5-to-packet-0 wrap reader slot |
 | across a group boundary (`alu_buffer_size=1`) | the previous group's last packet's slot-0 result, readable only from slot 0 |
 | across a group boundary (`alu_buffer_size=2` or `3`) | 0, from any batch of the previous group, in the shapes tested |
 | across a group boundary (`alu_buffer_size=4`) | 0 in tested cases: alu0 written by each of the four packets, plus selected alu1 cases from packet 3; not a complete latch/slot matrix |
@@ -319,18 +320,33 @@ not sufficient to reproduce the four-packet 2+2 exception. They do not explain
 the hardware mechanism or establish the behaviour of every possible group
 size or distribution.
 
+The six-packet follow-up tested 2+2+2 at size 3, 3+3 at size 2, and 1+2+3 and
+its batch-order reverse 3+2+1 at size 3. All four have the complete cycle: five
+forward edges for all four latches and every packet-5-to-packet-0 wrap
+latch/reader-slot combination (note 45). Own-packet reads, the twenty-four
+non-predecessor source/reader pairs per shape and the conflict cases all agree
+with the same cyclic rule, and the M=4 2+2 and M=5 controls in the same runs
+reproduce their earlier words. In particular 2+2+2 is the closest six-packet
+analogue of the M=4 2+2 shape - uniform two-packet batches at a different
+packet count - and it is complete. Uniform two-packet occupancy is therefore
+not sufficient to reproduce the exception, and among the tested four-, five-
+and six-packet arrangements the shortfall remains confined to the four-packet
+size-2 2+2 packing. Its mechanism is unknown, and these measurements do not
+establish a general rule for untested group sizes or distributions.
+
 Dependent operations can chain one hop per packet in these complete
 arrangements. Packet 0 can read packet 2 in a three-packet group, packet 0 can
 read packet 3 in the tested four-packet arrangements except the restricted
-2+2 latches, and packet 0 can read packet 4 in all eight tested five-packet
+2+2 latches, packet 0 can read packet 4 in all eight tested five-packet
+arrangements, and packet 0 can read packet 5 in all four tested six-packet
 arrangements. This revises section 32's "previous packet, forward only": its
 backward probe changed the latch index and reading slot at once, so it did not
 reveal the wrap (note 36).
 
 The rotation crosses batch boundaries inside a group. The tested M=2 and M=3
-one-packet-per-batch cases form complete cycles; the M=4 and M=5 distributions
-and their coverage are listed above. Do not infer a complete cycle for an
-untested packing from the total packet count alone.
+one-packet-per-batch cases form complete cycles; the M=4, M=5 and M=6
+distributions and their coverage are listed above. Do not infer a complete
+cycle for an untested packing from the total packet count alone.
 
 The group-boundary carry is separate. The positive path is the previous group's
 last packet's slot-0 result, read from slot 0 in the next group, and it was
