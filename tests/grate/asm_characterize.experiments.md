@@ -5749,19 +5749,24 @@ Manifest `asm_characterize.alu_carry4.json` (14 variants) from
 | `carry-ref-s2`, `carry-ref-s3` | group A's last batch, same shape | next group | `0x00` |
 | `carry-ctl-s1` | size 1, batch 0 | batch 1 | `0x10` |
 
-No latch value crosses a size-4 group boundary: not from the last packet, not
-from any earlier packet, not through latch 0 and not through latch 1, and not
-from a second reading slot. The positive controls bracket the zeroes: the write
-itself lands (`row-direct` `0x60`), a within-group read is observable from the
-next group's store (`fwd-within-s4` `0x40`), the non-predecessor backward read
-inside the group is zero, and the size-1 arrangement carries (`carry-ctl-s1`
-`0x10`) in the same run.
+The tested size-4 cross-group latch reads all return 0, but this is not a
+complete all-latch/all-slot matrix. The negative cases cover alu0 writes from
+each of the four packets in group A read by slot 0 of group B; the final
+packet's alu0 write read by slot 1; and the final packet's alu1 write read by
+slots 0 and 2. They establish no carry for those combinations, not for every
+latch or reader slot.
 
-So the size-1 carry model does **not** extend to size 4, and the "previous
-group's last packet's slot-0 result" path is measured only for a group that is
-a single batch. The question "does the writer's position inside the group
-matter" is answered by the four writer positions all reading zero: it does not
-rescue the carry.
+The positive controls bracket the zeroes: the write itself lands
+(row-direct, 0x60), a within-group read is observable from the next group's
+store (fwd-within-s4, 0x40), the non-predecessor backward read inside the group
+is zero, and the size-1 arrangement carries (carry-ctl-s1, 0x10) in the same
+run. The size-2 and size-3 negative controls also return zero.
+
+The size-1 carry model therefore does not extend to the tested size-4
+combinations. The writer-position sweep shows that moving an alu0 writer among
+the four packets does not restore carry when the reader is in slot 0. The
+broader claim that no latch at any writer/reader slot crosses a size-4 group
+boundary remains untested.
 
 ### Recorded runs
 
@@ -5878,40 +5883,34 @@ variants) from `make_dw_arb.py --set three`.
 
 | variant | rt1 | rt4 | rt5 | reading |
 |:--|--:|--:|--:|:--|
-| `three-1-5-4-read1/4/5` | `0x7F6E5D4C` | `0x00` | `0x00` | three words on rt1, rt5, rt4: only the first batch's target is written |
-| `three-4-5-1-read1/4/5` | `0x00` | `0x7F6E5D4C` | `0x00` | reversed order: the other target wins |
-| `same-1-5-1-read1` | `0x00` | - | - | words 0 and 2 both name rt1: nothing is written to it |
-| `same-1-5-1-read5` | - | - | `0x00` | and rt5 is untouched |
-| `single-1-read1`, `single-4-read4`, `single-5-read5` | `0x7F6E5D4C` | `0x7F6E5D4C` | `0x7F6E5D4C` | one word per group writes its target, whichever target it names |
-| `single-1-read5` | `0x00` | - | - | the rt1 program read at rt5: untouched |
-| `single-4-read1`, `single-5-read1` | `0x4C4C4C4C` | `-` | `-` | the rt4/rt5 programs read at rt1: the clear |
-| `pos-b1-1-read1` | `0x00` | - | - | the group's only word in batch 1 stores nothing |
-| `none-read1/4/5` | `0x4C4C4C4C` | `0x00` | `0x00` | baselines |
+| three-1-5-4-read1/4/5 | 0x7F6E5D4C | 0x00 | 0x00 | the first target (rt1) reads the group's final row pair; rt4/rt5 read zero, which matches their zero clear and is inconclusive about dropped versus zero writes |
+| three-4-5-1-read1/4/5 | 0x00 | 0x7F6E5D4C | 0x00 | the first target (rt4) reads the group's final row pair; rt1 reads zero instead of its nonzero clear, so this case includes a zero write to rt1; rt5 remains ambiguous |
+| same-1-5-1-read1 | 0x00 | - | - | two DWs target rt1 from different row pairs; zero differs from the no-DW rt1 clear (0x4C4C4C4C), so this is not evidence that the store was suppressed |
+| same-1-5-1-read5 | - | - | 0x00 | rt5's zero readback matches its zero baseline and is inconclusive |
+| single-1-read1, single-4-read4, single-5-read5 | 0x7F6E5D4C | 0x7F6E5D4C | 0x7F6E5D4C | one DW in the first batch writes the target it names with the group's final row pair |
+| single-1-read5 | 0x00 | - | - | reading rt5 after the rt1-only control gives its zero baseline |
+| single-4-read1, single-5-read1 | 0x4C4C4C4C | - | - | rt1 remains at its nonzero clear when the only DW targets rt4 or rt5 |
+| pos-b1-1-read1 | 0x00 | - | - | a lone DW in batch 1 reads as zero, not as rt1's no-DW clear; this is a zero result, not proof of no store |
+| none-read1/4/5 | 0x4C4C4C4C | 0x00 | 0x00 | pre-draw baselines: rt1 clear, rt4/rt5 zero |
 
-`asm/dw_size3.in` repeats the three-word arrangement with **one packet per
-batch** (the shape notes 29 and 33 used), upload words count 1 at addresses
-0-2, `0x806` = 0:
+asm/dw_size3.in repeats the three-word arrangement with one packet per
+batch (the shape notes 29 and 33 used), upload words count 1 at addresses
+0-2, 0x806 = 0:
 
 | variant | word | reading |
 |:--|--:|:--|
-| `s3-single-1-read1`, `s3-single-4-read4`, `s3-single-5-read5` | `0x7F6E5D4C` | a single word writes rt1, rt4 or rt5 at this size |
-| `s3-three-1-5-4-read1` | `0x7F6E5D4C` | only the first batch's target |
-| `s3-three-1-5-4-read4`, `-read5` | `0x00` | the second and third words' targets are untouched |
-| `s3-single-1-read5`, `s3-none-read1`, `s3-none-read5` | `0x00`, `0x4C4C4C4C`, `0x00` | controls and baselines |
+| s3-single-1-read1, s3-single-4-read4, s3-single-5-read5 | 0x7F6E5D4C | a single word in batch 0 writes its target with the group's final row pair |
+| s3-three-1-5-4-read1 | 0x7F6E5D4C | rt1, the first target, contains the group's final pair-0 row |
+| s3-three-1-5-4-read4, -read5 | 0x00 | rt4/rt5 have zero readbacks, matching their zero baselines; untouched versus zero write is not distinguished |
+| s3-single-1-read5, s3-none-read1, s3-none-read5 | 0x00, 0x4C4C4C4C, 0x00 | target/baseline controls |
 
-So three words behave exactly like two: the target named by the group's first
-batch is written with the group's final rows and the other targets are not, and
-two words on one target suppress the store entirely. The one-packet-per-batch
-control reproduces both statements with the row pairs of notes 29/33, so the
-three-word result does not depend on the second ALU block.
-
-**One correction to the earlier wording.** "First-DW-wins" and "only a word in
-the group's first batch stores" are not separated by any measurement in this
-section: `pos-b1-1-read1` shows a lone word in a later batch stores nothing, and
-no arrangement puts two words in one batch because the encoding forbids it. The
-measurements are consistent with either reading, and notes 33's conclusion
-should be read as "one observable store per group, from the word in its first
-batch" rather than as an arbitration between two executable words.
+The three-word results therefore establish that the first target receives the
+group's final row payload. They do not show that every other target is
+untouched: zero-cleared RT4/RT5 cannot distinguish an omitted write from a
+zero write. In the reversed target order, RT1 is a nonzero-clear control and
+its zero readback shows that it was changed. The same-target sequence also
+changes RT1 from its no-DW clear to zero. Treat these as measured surface
+contents, not as a universal first-DW-wins arbitration mechanism.
 
 ### Depth class against colour class
 
