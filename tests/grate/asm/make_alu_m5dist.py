@@ -11,12 +11,16 @@ multi-packet batches and the only one whose wrap endpoints both sit in
 multi-packet batches. Four packets cannot separate those three properties, so
 this generator builds the five-packet splits that can.
 
-**Eight splits, five packets each.** At `alu_buffer_size` 2 the group is two
+**Twelve splits, five packets each.** At `alu_buffer_size` 2 the group is two
 batches, so the only splits are 2 + 3 and 3 + 2. At size 3 the group is three
 batches and the six splits are 1 + 1 + 3, 1 + 2 + 2, 1 + 3 + 1, 2 + 1 + 2,
-2 + 2 + 1 and 3 + 1 + 1. Each template keeps the five packets in group A and
-repeats the distribution in the complete group B, whose first batch stores group
-A's rows through the DW:
+2 + 2 + 1 and 3 + 1 + 1. At size 4 the group is four batches and the four splits
+are 2 + 1 + 1 + 1, 1 + 2 + 1 + 1, 1 + 1 + 2 + 1 and 1 + 1 + 1 + 2: five packets
+over four batches force exactly one two-packet batch, so those four move that
+batch across a group whose packet and batch counts are fixed, and 1 + 1 + 1 + 2
+is the only one in which packet 4 shares the last batch with packet 3. Each
+template keeps the five packets in group A and repeats the distribution in the
+complete group B, whose first batch stores group A's rows through the DW:
 
     set   size  group A batches          two multi-packet batches?  packet 0  packet 4
     23     2    packets 0,1 | 2,3,4      2                          multi     multi
@@ -27,6 +31,10 @@ A's rows through the DW:
     212    3    packets 0,1 | 2 | 3,4    2                          multi     multi
     221    3    packets 0,1 | 2,3 | 4    2                          multi     single
     311    3    packets 0,1,2 | 3 | 4    1                          multi     single
+    2111   4    packets 0,1 | 2 | 3 | 4  1                          multi     single
+    1211   4    packet 0 | 1,2 | 3 | 4   1                          single    single
+    1121   4    packet 0 | 1 | 2,3 | 4   1                          single    single
+    1112   4    packet 0 | 1 | 2 | 3,4   1                          single    multi
 
 `23` and `32` test "no single-packet batch" in both batch orders. `122` has two
 multi-packet batches and a single-packet batch, so it separates "two
@@ -34,7 +42,11 @@ multi-packet batches" from "no single-packet batch" and from "both wrap
 endpoints in multi-packet batches". `212` has both wrap endpoints in
 multi-packet batches with a single-packet batch, which separates the endpoint
 property from the no-singleton one. `221` and `311` mirror the endpoint
-occupancy of `122` and `212` against the other end of the group.
+occupancy of `122` and `212` against the other end of the group. The four
+four-batch sets hold the group at four batches and five packets and move the
+single two-packet batch from first to last: `2111` keeps packet 0 in the pair's
+batch, `1112` puts packet 4 in the last batch with packet 3, and `1211` and
+`1121` place the pair between those two ends.
 
 Every set carries the same systematic matrix, built by the loops in `matrix()`
 rather than typed by hand:
@@ -64,16 +76,18 @@ The write values are per packet - u0 = 0.0625 (0x10), u1 = 0.125 (0x20), u2 =
 names the packet that served the read. The latch index is the writer's slot, and
 the wrap varies the reader's slot independently of it.
 
-Each manifest also carries the same eight cross-shape controls, built on
+Each manifest also carries the same ten cross-shape controls, built on
 templates that already have recorded runs, so a run that returns unexpected
 cells can be told apart from a broken harness: the size-2 two-packet rotation
 (0x40), the size-3 rotation (0x7F), the size-1 group-boundary carry (0x10), the
 2 + 2 wrap through latch 0 (0x00) and latch 3 (0x60), the 3 + 1 wrap (0x60) and
-forward hop (0x10), and the 2 + 1 + 1 wrap (0x60).
+forward hop (0x10), the 2 + 1 + 1 wrap (0x60), and the five-packet 2 + 3 wrap
+(0x70) and forward hop (0x60).
 
 Usage:
 
     tests/grate/asm/make_alu_m5dist.py --set 23
+    tests/grate/asm/make_alu_m5dist.py --set 2111
     tests/grate/asm/make_alu_m5dist.py --set 23 --only wrap-p4-al0-s0,none
     tests/grate/asm/make_alu_m5dist.py --set 23 --results DIR
 """
@@ -88,6 +102,7 @@ T211 = "tests/grate/asm/alu_dist211.in"
 TPACK4 = "tests/grate/asm/alu_pack4.in"
 TPACK43 = "tests/grate/asm/alu_pack43.in"
 TLATCH = "tests/grate/asm/alu_latch.in"
+T5 = "tests/grate/asm/alu_m5_23.in"
 
 VS = "tests/grate/asm/vs_mov.txt"
 LNK = "tests/grate/asm/linker_vs_tests.txt"
@@ -111,6 +126,10 @@ SPLIT = {
     "212": (3, ((0, 1), (2,), (3, 4))),
     "221": (3, ((0, 1), (2, 3), (4,))),
     "311": (3, ((0, 1, 2), (3,), (4,))),
+    "2111": (4, ((0, 1), (2,), (3,), (4,))),
+    "1211": (4, ((0,), (1, 2), (3,), (4,))),
+    "1121": (4, ((0,), (1,), (2, 3), (4,))),
+    "1112": (4, ((0,), (1,), (2,), (3, 4))),
 }
 
 
@@ -331,6 +350,14 @@ def controls():
             "2 + 1 + 1 at size 3, packet 3 slot 0 writes 0x60, packet 0 slot 0 "
             "reads alu0: 0x60, the three-batch packing with the complete map",
             T211, 3, {"C0": wr(U3), "A0": rd(0)}, {3: STORE01}),
+        ctl("ctl-ref5-wrap0",
+            "five-packet 2 + 3 at size 2, packet 4 slot 0 writes 0x70, packet "
+            "0 slot 0 reads alu0: 0x70, the known-good five-packet wrap",
+            T5, 2, {"B8": wr(U4), "A0": rd(0)}, {2: STORE01}),
+        ctl("ctl-ref5-fwd34",
+            "five-packet 2 + 3 at size 2, packet 3 slot 3 writes 0x60, packet "
+            "4 slot 0 reads alu3: 0x60, the known-good five-packet forward hop",
+            T5, 2, {"B7": wr(U3), "B8": rd(3)}, {2: STORE01}),
     ]
 
 
