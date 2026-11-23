@@ -6186,7 +6186,7 @@ checkout; all four match their pinned rows exactly. Regenerate with
 `python3 tests/grate/asm/make_alu_m4dist.py --set dist211|dist121|dist112|blocks4`
 and pin with `--results DIR`.
 
-## 44. Five-packet groups: the anomaly is not about batch occupancy
+## 44. Five-packet groups: simple batch-occupancy hypotheses do not reproduce the anomaly
 
 Section 43 left the four-packet 2 + 2 shortfall narrowed to three properties that
 2 + 2 shares and every other tested four-packet shape lacks: two multi-packet
@@ -6214,9 +6214,10 @@ them, one template per distribution, all at `alu_buffer_size` 2 or 3:
 | 221 | 2 + 2 + 1 | 3 | packets 0,1 \| 2,3 \| 4 | 2 | yes | no |
 | 311 | 3 + 1 + 1 | 3 | packets 0,1,2 \| 3 \| 4 | 1 | yes | no |
 
-Eight of the nine possible splits at these sizes; the ninth would need a
-four-batch group (`1 + 1 + 1 + 2` at size 4), which is encodable but not part of
-this sweep. Each template keeps the five packets in group A, repeats the same
+These are all eight legal distributions for groups of two or three batches
+with five packets and no batch larger than three. Four-batch groups are also
+encodable; the permutations of 1 + 1 + 1 + 2 at size 4 were not part of this
+sweep. Each template keeps the five packets in group A, repeats the same
 distribution in the complete group B, and puts the readback DW in group B's
 first batch (batch 2 at size 2, batch 3 at size 3), so the program is two whole
 groups with no padding: 4 or 6 batches, an exact multiple of the group size.
@@ -6283,8 +6284,8 @@ path at M = 5 either.
 
 ### The wrap from packet 4 to packet 0
 
-Sixteen cells per distribution, writer latch and reading slot varied
-independently; packet 4 writes 0x70, packet 0 reads:
+Sixteen cells per distribution; packet 4 writes 0x70 through slot N to test
+aluN, while packet 0's reading slot is varied independently:
 
 | set | alu0 s0..s3 | alu1 s0..s3 | alu2 s0..s3 | alu3 s0..s3 |
 |:--|:--|:--|:--|:--|
@@ -6297,13 +6298,15 @@ independently; packet 4 writes 0x70, packet 0 reads:
 | 221 | 0x70 x4 | 0x70 x4 | 0x70 x4 | 0x70 x4 |
 | 311 | 0x70 x4 | 0x70 x4 | 0x70 x4 | 0x70 x4 |
 
-One hundred and twenty-eight cells, every one carrying packet 4's value.
-There is no restricted writer slot and no restricted reading slot in any of the
-eight distributions, including the two where packet 4 shares its batch with one
-or two earlier packets and the two where packet 0 shares its batch with a later
-packet. In particular `23` is the closest five-packet analogue of 2 + 2: same
-group size, two packets in the first batch, no single-packet batch, both wrap
-endpoints in multi-packet batches - and its wrap is complete.
+One hundred and twenty-eight cells, every one carrying packet 4's value. All
+four slot-indexed latch writes reach packet 0 from every reader slot in every
+distribution. The writer slot is coupled to the latch index in this matrix, so
+other writer-slot/latch cross-combinations were not tested. No reader-slot
+restriction was observed, including the two distributions where packet 4 shares
+its batch with earlier packets and the two where packet 0 shares its batch with
+a later packet. In particular `23` is the closest five-packet analogue of
+2 + 2: same group size, two packets in the first batch, no single-packet batch,
+both wrap endpoints in multi-packet batches - and its wrap is complete.
 
 ### Negatives and conflicts
 
