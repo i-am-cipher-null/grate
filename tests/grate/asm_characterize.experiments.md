@@ -5538,10 +5538,11 @@ the two format mismatches that section 28 measured.
 
 `carry-s0` (packet 3 slot 0 writes, group B slot 0 reads), `carry-s2` (same,
 read from slot 2) and `carry-s3` (packet 3 slot 3 writes, group B slot 3 reads)
-are all `0x00`, with `carry-none` as the no-write control. `carry-ctl-s1`, the
-size-1 arrangement that does carry, is `0x10` in the same run. That matches the
-size-2 and size-3 negative results in section 36 and extends them to a
-four-packet group and to the third latch.
+are all `0x00`, with `carry-none` as the no-write control. `carry-ctl-s1`, the size-1 arrangement that does carry, is `0x10` in the
+same run. This establishes no carry for these selected size-2 writer/latch/
+reader combinations and agrees with the size-2/size-3 negative results in
+section 36. The size-4 packet-rotation runs in this section did not measure
+cross-group carry; that separate question is tested in section 40.
 
 ### What is measured, inferred and open
 
@@ -5549,20 +5550,20 @@ four-packet group and to the third latch.
   edges 0 -> 1 -> 2 -> 3 hold for all four latches, own-packet and
   two-packets-apart reads are zero, and the wrap from the group's last packet to
   packet 0 serves latch 3 only, from any reading slot, requiring packet 3's
-  slot-3 write. With `alu_buffer_size` 4 and one packet per batch the whole map
-  holds, wrap included, for latch 0. No group-boundary carry survives either
-  shape. Every word above came from three repeats in two independent runs.
-* **Inferred**: that the two-packets-per-batch shape loses latches 0 to 2's wrap
-  because of how the group's packets are packed rather than because the group is
-  large - the size-4 result is the evidence, and the two shapes differ in
-  packing, batch count and buffer size at once.
-* **Open**: why the packing decides which latch can wrap; whether a 3 + 1
-  packing (three packets in the first batch, one in the second, still M = 4)
-  behaves like the 2 + 2 shape or like the one-packet-per-batch shape; whether
-  the slot-3 wrap exists at other sizes and packings for the same reason;
-  whether the wrap is a hardware path at all or a pipeline effect that the
-  group's last slot-3 write happens to survive. The mechanism is not measured,
-  and these results are rules about the arrangements tested.
+  slot-3 write. With `alu_buffer_size` 4 and one packet per batch, the whole
+  rotation is demonstrated for latch 0 only. The selected size-2 cross-group
+  carry cases return zero; this section's size-4 rotation tests do not measure
+  cross-group carry. Every word above came from three repeats in two independent
+  runs.
+* **Inferred at this point**: the 2 + 2 shape's missing alu0 wrap might be
+  related to packet packing, but this comparison also changes buffer size and
+  batch count: the size-4 control demonstrates only the alu0 cycle.
+* **Resolved later / still open**: section 39 tests 3 + 1 and 1 + 3 at size 2;
+  both restore the complete four-latch map, isolating the observed restriction
+  to the tested 2 + 2 arrangement. Why 2 + 2 loses latches 0-2's wrap, and
+  whether other two-packet-per-batch groups behave the same way, remain open.
+  The hardware mechanism is not measured; conclusions remain limited to the
+  specific arrangements tested.
 
 ### Recorded runs
 
@@ -5830,10 +5831,12 @@ What this says:
 * the marker on the sender is necessary but not sufficient: with it removed the
   result is the same 0x50, i.e. the receiver's own-packet accumulation.
 
-Open: whether any cross-packet send/recv pair exists (the (0,1) pair is the one
-most likely to work, and it does not); whether a recv in packet 1 slot 1 can
-see a send in packet 0 slot 1 through some other slot mapping; why the marker
-path is packet-scoped while the latch path is group-scoped.
+No cross-packet transfer was observed for the tested packet/slot pairings,
+including the packet-0 slot-0 sender to packet-1 slot-1 receiver, its reverse,
+and the packet-0 slot-3 sender to packet-1 slot-1 receiver. Other cross-packet
+slot mappings remain untested, including packet 0 slot 1 to packet 1 slot 1.
+Why the marker path is packet-scoped while the latch path is group-scoped also
+remains open.
 
 ### Recorded runs
 
@@ -5953,11 +5956,15 @@ group's rows and the second word's surface receives `0x00000000`. On the colour
 side that is a measured write of zero, because the clear is `0x4C4C4C4C`; on
 the depth side it is a measured write of zero, because the rasterizer leaves
 `0x8000`.
-* **The class-2 pairs do not do that.** Notes 33's two-word colour/MRT and
-colour/spill pairs, re-run in this session, leave the losing target at its
-baseline (`mrt-a5-b1-read1` `0x4C4C4C4C`, not zero). So "first word wins, second
-is dropped" is the class-2 rule; a group containing a class-1 word has a
-second write that lands zeros.
+* **The earlier distinct-target class-2 pairs did not show a zero write to the
+  losing target.** Notes 33's two-word colour/MRT and colour/spill pairs,
+  re-run in this session, leave the losing target at its baseline
+  (`mrt-a5-b1-read1` `0x4C4C4C4C`, not zero). That result applies to those
+  tested two-word class-2 arrangements; it is not a universal class-2 rule.
+  The later-position and three-word cases above include changed/zero RT1
+  contents, while zero-cleared RT4/RT5 remain ambiguous. Mixed class-1/class-2
+  groups, by contrast, show a distinguishable zero write to the second
+  target.
 * The zero is not a surface artefact: a lone class-1 or class-2 word leaves the
 other surface at its baseline, and the readback fetch of an untouched target
 returns its clear or zero as notes 33 measured.
