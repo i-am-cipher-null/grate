@@ -6380,13 +6380,12 @@ eight match their pinned rows exactly.
 * **Inferred**: the four-packet 2 + 2 shortfall is not caused by having two
   multi-packet batches (`23`, `32`, `122`, `212`, `221` have two and are
   complete), by the absence of a single-packet batch (`23` and `32` have none
-  and are complete), by both wrap endpoints sitting in multi-packet batches
-  (`23`, `32` and `212` do and are complete), or by the position or direction of a multi-packet batch: the reverse splits
-(`23`/`32`, `113`/`311`, `122`/`221`) agree, while `131` and `212` are
-symmetric under reversal. All eight arrangements have the complete five-packet
-cycle. The shortfall is confined to a group of four packets
-  holding two packets in each of its two batches; at M = 5 no arrangement
-  reproduces it.
+  and are complete), or by both wrap endpoints sitting in multi-packet batches
+  (`23`, `32` and `212` do and are complete). The tested batch-order
+  reversals (`23`/`32`, `113`/`311`, `122`/`221`) agree; `131` and
+  `212` are symmetric under reversal and also have complete cycles. The
+  shortfall is confined to the tested four-packet group split 2 + 2; at M = 5
+  no tested arrangement reproduces it.
 * **Open**: whether "two packets in every batch" is the property, as opposed to
   something specific to four packets. The cheapest discriminator is a six-packet
   group split `2 + 2 + 2` at size 3 - uniform two per batch at a different packet
