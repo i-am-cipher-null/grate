@@ -2138,6 +2138,7 @@ invalidate another; generate such a manifest with
 * created: 2026-11-23T22:44:05+00:00; 217 rows, repeat 3, timeout 20.0 s
 * summary: 217 passed, 0 failed of 217 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+* logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory
 
 ## verify-alu-pack4-m4matrix
 
@@ -2147,6 +2148,7 @@ invalidate another; generate such a manifest with
 * created: 2026-11-23T22:44:53+00:00; 217 rows, repeat 3, timeout 20.0 s
 * summary: 217 passed, 0 failed of 217 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+* logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory
 
 ## clean-alu-pack4-m4matrix
 
@@ -2156,3 +2158,4 @@ invalidate another; generate such a manifest with
 * created: 2026-11-23T22:46:26+00:00; 217 rows, repeat 3, timeout 20.0 s
 * summary: 217 passed, 0 failed of 217 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+* logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory

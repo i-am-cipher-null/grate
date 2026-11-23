@@ -6937,7 +6937,11 @@ rows passed before and after every run.
 Artifacts: `asm_characterize.alu_pack4_m4matrix.json`,
 `results/pin-alu-pack4-m4matrix/`, `results/verify-alu-pack4-m4matrix/`,
 `results/clean-alu-pack4-m4matrix/`, each with `metadata.json`, `results.tsv`
-and `schedule-words.tsv`. Regenerate with
+and `schedule-words.tsv`. The per-row stdout and stderr files are in each run
+directory's `logs/`, which `results/.gitignore` excludes (`*/logs/` and
+`*/generated/`), as for every other run: the committed directories carry the
+metadata, results and schedule dumps only, and the `logs/...` paths in
+`results.tsv` are relative to the run directory. Regenerate with
 `python3 tests/grate/asm/make_alu_pack4.py --set m4matrix` and pin with
 `--results DIR`.
 
