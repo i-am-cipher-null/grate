@@ -1,0 +1,46 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * ALU bit 56 (`(sat)` in the assembler grammar) probe.
+ *
+ * The encoding names the bit "saturate result" but its behaviour was never
+ * measured.  Each variant runs one operation into r2 as fp20 (`.lh`), then a
+ * second batch normalises r2 into r3 so the 8-bit DW conversion cannot hide a
+ * difference by clamping: values above 1.0 are scaled down before the store.
+ * The readback word is r3.hi, r3.lo, r2.hi, r2.lo, so byte 1 is r2's raw fp20
+ * code (0xF7 = 1.0, 0xFF = 2.0) and byte 2 is the normalised result in the
+ * 8-bit output conversion (0xFF = 1.0, 0x7F = 0.5, 0x40 = 0.25).
+ *
+ * Batch 0 prefills r2 as 0.5 so a variant that writes nothing is not mistaken
+ * for a written zero.
+ *
+ * The (x2), (eq) and rD/scale cases separate the possible orders: whether the
+ * clamp is applied to the final result, before the result scale, or before the
+ * condition code turns the value into 0/1.
+ */
+
+.constants
+	[0] = 2.0;	/* u0: above 1.0 */
+	[1] = 0.25;	/* u1: normaliser for the above-range tests */
+	[2] = 0.75;	/* u2: inside range; x2 reaches 1.5 */
+	[3] = 0.5;	/* u3: prefill and inside-range operand */
+	[4] = -0.5;	/* u4: below 0.0 */
+	[5] = 0.5;	/* u5: normaliser for the below-zero and scale tests */
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u3,  #1,  #0
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	@OP@
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	@NORM@
+	DW:	store rt1, r2, r3
+;

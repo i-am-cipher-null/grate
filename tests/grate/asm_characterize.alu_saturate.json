@@ -1,0 +1,184 @@
+{
+ "name": "alu-saturate",
+ "repeat": 3,
+ "timeout": 20,
+ "program": {
+  "vs": "tests/grate/asm/vs_mov.txt",
+  "fs": "tests/grate/asm/alu_saturate.in",
+  "lnk": "tests/grate/asm/linker_vs_tests.txt"
+ },
+ "controls": [
+  {
+   "name": "immediate-operand",
+   "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+   "expected": "0x000000FF"
+  },
+  {
+   "name": "varying-pipeline",
+   "fs": "tests/grate/asm/fs_vs_tests.txt",
+   "expected": "0xFF01FF00"
+  }
+ ],
+ "variants": [
+  {
+   "name": "nosat-above",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u0,  #1,  #0,  #1",
+     "@NORM@": "MAD  r3.lh,  r2,  u1,  #0,  #1"
+    }
+   },
+   "expected": "0xEF00FF00"
+  },
+  {
+   "name": "sat-above",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u0,  #1,  #0,  #1  (sat)",
+     "@NORM@": "MAD  r3.lh,  r2,  u1,  #0,  #1"
+    }
+   },
+   "expected": "0xE700F700"
+  },
+  {
+   "name": "nosat-negative",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u4,  #1,  #0,  #1",
+     "@NORM@": "MAD  r3.lh,  -r2,  u5,  #0,  #1"
+    }
+   },
+   "expected": "0xE7000000"
+  },
+  {
+   "name": "sat-negative",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u4,  #1,  #0,  #1  (sat)",
+     "@NORM@": "MAD  r3.lh,  -r2,  u5,  #0,  #1"
+    }
+   },
+   "expected": "0x00000000"
+  },
+  {
+   "name": "sat-inside",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u3,  #1,  #0,  #1  (sat)",
+     "@NORM@": "MAD  r3.lh,  r2,  u5,  #0,  #1"
+    }
+   },
+   "expected": "0xE700EF00"
+  },
+  {
+   "name": "nosat-scale",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u2,  #1,  #0,  #1  (x2)",
+     "@NORM@": "MAD  r3.lh,  r2,  u5,  #0,  #1"
+    }
+   },
+   "expected": "0xF300FB00"
+  },
+  {
+   "name": "sat-scale",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u2,  #1,  #0,  #1  (x2)(sat)",
+     "@NORM@": "MAD  r3.lh,  r2,  u5,  #0,  #1"
+    }
+   },
+   "expected": "0xEF00F700"
+  },
+  {
+   "name": "nosat-eq",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u0,  #1,  #0,  #1  (eq)",
+     "@NORM@": "MAD  r3.lh,  r2,  #1,  #0,  #1"
+    }
+   },
+   "expected": "0x00000000"
+  },
+  {
+   "name": "sat-eq",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u0,  #1,  #0,  #1  (eq)(sat)",
+     "@NORM@": "MAD  r3.lh,  r2,  #1,  #0,  #1"
+    }
+   },
+   "expected": "0x00000000"
+  },
+  {
+   "name": "sat-max",
+   "replace": {
+    "fs": {
+     "@OP@": "MAX  r2.lh,  u0,  #1,  #0,  #1  (sat)",
+     "@NORM@": "MAD  r3.lh,  r2,  #1,  #0,  #1"
+    }
+   },
+   "expected": "0xF700F700"
+  },
+  {
+   "name": "nosat-mul",
+   "replace": {
+    "fs": {
+     "@OP@": "MUL  r2.lh,  u2,  u0,  #0,  #1",
+     "@NORM@": "MAD  r3.lh,  r2,  u5,  #0,  #1"
+    }
+   },
+   "expected": "0xF300FB00"
+  },
+  {
+   "name": "sat-mul",
+   "replace": {
+    "fs": {
+     "@OP@": "MUL  r2.lh,  u2,  u0,  #0,  #1  (sat)",
+     "@NORM@": "MAD  r3.lh,  r2,  u5,  #0,  #1"
+    }
+   },
+   "expected": "0xEF00F700"
+  },
+  {
+   "name": "nosat-fx10",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.l*,  u0,  #1,  #0,  #1",
+     "@NORM@": "MAD  r3.lh,  r2.l,  u1,  #0,  #1"
+    }
+   },
+   "expected": "0xEE0000FF"
+  },
+  {
+   "name": "sat-fx10",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.l*,  u0,  #1,  #0,  #1  (sat)",
+     "@NORM@": "MAD  r3.lh,  r2.l,  u1,  #0,  #1"
+    }
+   },
+   "expected": "0xE70000FF"
+  },
+  {
+   "name": "nosat-ge-negative",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u4,  #1,  #0,  #1  (ge)",
+     "@NORM@": "MAD  r3.lh,  r2,  #1,  #0,  #1"
+    }
+   },
+   "expected": "0x00000000"
+  },
+  {
+   "name": "sat-ge-negative",
+   "replace": {
+    "fs": {
+     "@OP@": "MAD  r2.lh,  u4,  #1,  #0,  #1  (ge)(sat)",
+     "@NORM@": "MAD  r3.lh,  r2,  #1,  #0,  #1"
+    }
+   },
+   "expected": "0xF700F700"
+  }
+ ]
+}
