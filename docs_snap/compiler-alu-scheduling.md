@@ -237,10 +237,11 @@ packings.
    which is why it cannot pack even where packing is free.
 2. **Encode ALU dependencies as packet edges, not slot edges.** Within a
    packet, allow only independent operations. Choose the packet count and
-   distribution before scheduling dependencies: at M=4 the 2+2 split does
-   not have the same wrap edges as 3+1 and 1+3. Validate the exact packing
-   against the corresponding manifest set, and require a row for any edge
-   not measured in that packing.
+   distribution before scheduling dependencies: at M=4 size-2 2+2 does not
+   have the same wrap edges as the other tested four-packet distributions;
+   all tested M=5 distributions have complete cycles. Validate the exact
+   packing against its manifest set, and require a row for any edge not
+   measured in that packing.
 3. **Materialise values into rows at every group boundary, in the format the
    consumer reads** (`.lh` for fp20/bare readers, `.l*` for fx10 readers). The
    only established carry is the one-batch, previous-last-packet slot-0 to
