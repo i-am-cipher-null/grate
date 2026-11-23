@@ -667,12 +667,15 @@ The scope was measured directly in a two-packet batch (notes 37): the markers
 work in either packet (`send-p1-recv-p1` = `0x50`, `send-only-p0` = `0x40`,
 `recv` alone = `0x10`), but a send in packet 0 slot 3 into a recv in packet 1
 slot 0 gives `0x10`, the same as its unmarked twin, as does the tested reverse
-direction; two senders in one packet also do not produce a transfer. These
-negative results cover the tested pairings, not every slot combination. In
-particular, a receive in slot 1 of packet 1 from a sender in slot 0 of packet 0
-through the latch rotation remains untested. So the "packet" in this section's
-name is a single ALU packet of four slots, and the accumulator does not ride the
-latch rotation in the pairings tested so far.
+direction; two senders in one packet also do not produce a transfer. These negative results cover the tested pairings, not every slot combination.
+Note 41 tested the previously outstanding pairing too: packet 0 slot 0 send
+to packet 1 slot 1 recv returns only packet 1's own previous-slot contribution
+(0x50), and with that previous slot disabled the receiver returns its
+unaccumulated value (0x10). The reverse direction and an alternate packet-0
+slot-3 sender also do not transfer. Thus the specifically singled-out (0,1)
+pairing is now closed; other cross-packet slot mappings remain untested.
+The "packet" in this section's name is a single ALU packet of four slots, and
+the accumulator does not ride the latch rotation in the pairings tested.
 
 ### 5.13 Addition disable
 
