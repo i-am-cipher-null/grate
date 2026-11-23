@@ -242,9 +242,11 @@ as operands (notes 28). A read is not a read of a retired register:
 | same packet, group has one packet | that packet's slot-K result, from any writer slot; a read in slot K itself returns 0 |
 | same packet, group has more than one packet | 0; a packet does not see its own results |
 | packet k in a group of M=2, 3 or 4 packets, one packet per batch | packet `(k-1) mod M`'s slot-K result, for any reading slot |
-| packet k in a group of four packets packed two per batch | the cycle's forward edges for every latch; the wrap back to packet 0 serves slot 3 only |
+| M=4, size 2, packed 2+2 | forward edges work for all four latches; only packet 3 slot 3 feeds packet 0's alu3 wrap |
+| M=4, size 2, packed 3+1 or 1+3 | full cycle, including every latch's packet-3-to-packet-0 wrap |
 | across a group boundary (`alu_buffer_size` 1) | the previous group's last packet's slot-0 result, readable only from slot 0 |
 | across a group boundary (`alu_buffer_size` 2 or 3) | 0, from any batch of the previous group, in the shapes tested |
+| across a group boundary (`alu_buffer_size` 4) | 0 in tested cases: alu0 written by each of the four packets, plus selected alu1 cases from packet 3; not a complete latch/slot matrix |
 
 The value is format-specific: a `.l*` (fx10 low-half) write fills the `aluK.l` view and
 leaves a bare `aluK` (fp20) read at zero, while an `.lh` write fills the bare read. A
@@ -278,44 +280,59 @@ DW result in the tested AR20 cases (notes 30, 34, 35). The per-batch tests mask 
 the three batch positions in turn across five shapes and confirm the uploaded `0x801`
 words; they do not establish that these bits are inert for every possible schedule.
 
-The latch forwarding rule is group-scoped: **a read of `aluK` in slot S of packet k is
-served by the slot-K result from packet `(k-1) mod M`**, where M is the total number of
-ALU packets in the group (notes 32, 36). The reading slot may be any slot. For a
-one-packet group, this is the same-packet forwarding described above, with a read of
-the reader's own slot returning 0. For a multi-packet group, a packet does not see its
-own results at all. The rule has been measured for M=2, 3 and 4 both within one batch
-and, with one packet per batch, across batches in a group; M=2 therefore forwards in
-both directions (that edge is the wrap, not a second mechanism), M=3 forms the cycle
-0<-2<-1<-0 and M=4 the cycle 0<-3<-2<-1<-0 when each batch holds one packet (note 38). Dependent operations can chain
-one hop per packet, and packet 0 can read packet 2 in a three-packet group. This revises
-section 32's "previous packet, forward only": its backward probe changed the latch index
-and reading slot at once, so it did not reveal the wrap (note 36).
+The latch forwarding rule is group-scoped. In the complete rotations measured, a
+read of aluK in slot S of packet k is served by the slot-K result from packet
+(k-1) mod M, where M is the total number of ALU packets in the group (notes 32,
+36, 38, 39). The reading slot may be any slot. A one-packet group has the
+same-packet cross-slot path described above, with a read in the reader's own slot
+returning 0. In a multi-packet group a packet does not see its own results.
 
-The formula is established for the tested M=1 to 4 arrangements, not for every
-possible mixture of batches and packets. Four packets in one group were measured in two
-packings: at `alu_buffer_size` 4 with one packet per batch the cycle holds, wrap
-included; at `alu_buffer_size` 2 with two packets per batch the four forward edges hold
-for every latch, own-packet and two-packets-apart reads return 0, no group-boundary
-carry survives, and the wrap back to packet 0 serves slot 3 only - a wrap read of
-latches 0 to 2 returns 0. Which part of that packing costs the wrap is not measured
-(note 38).
+M=2 and M=3 form complete rotations in the tested arrangements. M=4 is packing
+dependent: the complete cycle holds with one packet per batch at
+alu_buffer_size=4, and also with size 2 when the packets are split 3+1 or 1+3
+(note 39). In both of those size-2 splits, all three forward edges work for all
+four latches, and all four packet-3-to-packet-0 wrap latches are readable from
+every reader slot. The 2+2 split at size 2 is the exception: the three forward
+edges still work for all four latches, own-packet and two-packets-apart reads are
+0, but the wrap is restricted to packet 3 slot 3 feeding packet 0's alu3.
+Wrap reads of alu0, alu1 and alu2 return 0 (note 38). The restriction has been
+isolated to the tested 2+2 packing, but its hardware mechanism remains unknown.
+This refines the earlier simple modulo-M model; do not apply the full M=4 cycle
+to every packing.
 
-The rotation crosses batch boundaries within a group: with one packet per batch, an
-`alu_buffer_size` of 2, 3 or 4 rotates over the group's batches, wrap included. The
-group-boundary carry is separate: it comes from the group's **last** packet's slot-0
-result, and is readable by slot 0 in the next group. A batch that writes through slot 0
-only in its first packet and ends with NOPs therefore carries nothing. This carry was
-measured for a group of one batch (`alu_buffer_size` 1); at sizes 2 and 3 no cross-group
-forward was seen from any batch of the previous group in the tested shapes (notes 31,
-32, 36).
+Dependent operations can chain one hop per packet in the complete arrangements,
+and packet 0 can read packet 2 in a three-packet group. This revises section 32's
+"previous packet, forward only": its backward probe changed the latch index and
+reading slot at once, so it did not reveal the wrap (note 36).
 
-The `recv`/`send` accumulator is a separate, **packet-local** path (notes 13, 16, 37).
-The markers work inside a packet in both the first and a later packet of a two-packet
-batch, but the tested send/recv combinations did not transfer across a packet boundary
-in either direction, even though the latch path does. A `send` does not disturb the
-ordinary latch path. This does not establish every possible cross-packet slot pairing;
-in particular, a receiver in slot 1 of packet 1 receiving from slot 0 of packet 0
-through the rotation remains untested.
+The rotation can cross batch boundaries inside a group: with one packet per batch,
+alu_buffer_size 2, 3 and 4 produce the measured M=2, M=3 and M=4 cycles. At
+size 2 with four packets, both 3+1 and 1+3 also give the complete cycle; 2+2 has
+the restricted wrap described above (notes 38, 39).
+
+The group-boundary carry is separate. The positive path is the previous group's
+last packet's slot-0 result, read from slot 0 in the next group, and it was
+established at alu_buffer_size=1 (notes 31, 32, 36). No carry was seen at
+sizes 2 or 3 in the tested shapes. At size 4, the follow-up tested alu0 writes
+from each of the four prior-group packets to next-group slot 0, plus a packet-3
+alu0 write read in slot 1 and selected packet-3 alu1 reads in slots 0 and 2;
+all returned 0 (note 40). That is a negative result for those combinations,
+not a complete test of all four latches and all four reader slots. A latch is
+not established as storage across any group flush; row registers remain the
+proven storage path.
+
+The recv/send accumulator is a separate, packet-local path (notes 13, 16, 37,
+41). It accumulates from earlier slots in the same packet; the tested
+cross-packet pairings do not transfer, even when the receiver is in slot 1 and
+the ordinary latch path can see the sender's packet. In particular, packet 0
+slot 0 send to packet 1 slot 1 recv returns only packet 1's own previous-slot
+contribution; with that previous slot disabled it returns the receiver's
+unaccumulated value. The reverse direction and an alternate packet-0 slot-3
+sender also show no transfer. A same-packet positive control still works, and
+an ordinary alu0 read still crosses the packet boundary (note 41). A send does
+not disturb the ordinary latch path. This closes the previously singled-out
+(0,1) pairing, but not every possible cross-packet slot mapping; the general
+cross-packet marker path remains unproven.
 
 #### Addition disable
 
@@ -492,17 +509,31 @@ names. What bit 14 reads is not established - the candidate source (the second r
 row registers) cannot be populated because `alu_buffer_size = 2` hangs the draw.A class-1 store with no depth surface bound, and write modes 0, 2 and 3, leave the colour
 target at whatever it already held.
 
-A group is one DW word per batch and only the group's first batch stores (notes 3). With
-two DW words in one group and **different** render targets, the first one's target is
-written with the group's final row and the second target is not written at all; with both
-words on the **same** target nothing is written (notes 29). That is a property of the
-group, not of the targets: it holds for colour against spill (rt1/rt4), for colour or
-spill against the first MRT target, rt5 (rt1/rt5, rt4/rt5), and in both batch orders
-(notes 33). The dropped word leaves its target at its previous content - on rt1 the
-readback stays at the clear colour, so it does not even write zero. So multi-target
-output cannot be produced by two DWs in one group, whatever the two targets are.
+The assembler provides one DW instruction slot per exec batch; additional ALU
+packets in that batch do not add DW slots. On AR20, earlier class-2
+colour/spill/MRT tests found that a first-batch DW can write its target with
+the group's final row contents while a competing class-2 target remains at its
+prior value in the distinguishable cases (notes 29, 33). The later position
+and three-word tests refine that rule: a lone DW in a later batch did not
+produce its expected row payload, but its RT1 readback changed from the
+nonzero clear to zero; and a three-word sequence also produced zero on RT1
+where the no-DW baseline was the nonzero clear (note 42). Zero-cleared RT4/RT5
+readbacks cannot distinguish an untouched target from a zero write.
 
-#### Source registers select:
+Mixed class-1 depth and class-2 colour pairs are clearer: in both instruction
+orders and in both tested packings, the first word's target receives its
+expected group-row payload and the second word's target is written with zero
+(depth and colour readbacks both distinguish zero from their untouched
+baselines). The three-word same-target case likewise reads zero on RT1 rather
+than its no-DW clear, so it is not evidence that the store was suppressed.
+Thus a universal "first DW wins and every later DW is dropped" rule is not
+established; behaviour depends on target class and placement (note 42). Two
+DWs in one batch/packet cannot be tested through this assembler: its
+exec-batch grammar has one DW instruction position. For a backend, one DW
+per group remains the conservative choice for a predictable nonzero payload,
+not a claim that later DWs are universally discarded.
+
+#### Source registers select:#### Source registers select:
 
 Seems have no effect when the depth or stencil write enabled.
 
