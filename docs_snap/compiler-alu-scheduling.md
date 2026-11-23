@@ -31,7 +31,7 @@ differ on T114 it is called out.
 |:--|:--|:--|
 | packet | one group of four ALU slots, one `sched` address | 4 instructions |
 | batch | one entry in every per-batch stream (`0x801`, `0x804`, `0x806`, `0x901`, PSEQ, MFU, TEX) | 1..3 packets |
-| group | `alu_buffer_size` consecutive batches, flushed together | 1..4 batches measured |
+| group | `alu_buffer_size` consecutive batches, flushed together | 1..4 batches measured; tested groups contain up to 5 ALU packets |
 
 The `0x801` word carries `count[1:0]` = **packets** and `addr[7:2]` = the first
 packet of that batch, so a batch reaches 12 instruction slots through repeated
@@ -258,10 +258,11 @@ packings.
    `alu0..3` as an intra-packet forwarding path with a lifetime measured in
    packets, never as storage; the measured eviction rules (idle group, second
    packet boundary, own slot) are all silent failures.
-6. **Re-pin the manifests after any scheduler change.** Include `pack`,
-   `pack2`, `pack3`, `latch-rotate`, `alu-pack4` and its wrap/probe/size4 sets,
-   `alu-pack13`, `alu-pack43`, `alu-carry4`, `alu-send-cross`, the DW three-word,
-   size-3 and class sets, `send-pack`, `sched-at`, `sched-b2` and `dw-mrt`.
+6. **Re-pin the manifests after any scheduler change.** Include `pack`, `pack2`, `pack3`, `latch-rotate`, `alu-pack4` and its
+   wrap/probe/size4 sets, `alu-pack13`, `alu-pack43`, the `alu-dist211`,
+   `alu-dist121`, `alu-dist112` and `alu-blocks4` sets, all eight `alu-m5-*`
+   distributions, `alu-carry4`, `alu-send-cross`, the DW three-word, size-3
+   and class sets, `send-pack`, `sched-at`, `sched-b2` and `dw-mrt`.
 
 ## 7. Open questions that limit the model
 
@@ -365,9 +366,9 @@ measurement but not isolated, **Open** = not established. All are AR20.
   one batch and the writer is its last packet and the reader is slot 0.
 
 None of this is implemented in the compiler, and this note does not justify an
-implementation on its own: the packet-count and rotation rules are measured up to
-four packets in the packings tested, but groups larger than four, other packings
-and the T114 layout are not.
+implementation on its own: the packet-count and rotation rules are measured up
+to five packets in the listed packings, but six-packet groups, other
+unmeasured distributions and the T114 layout are not.
 
 ## 9. Evidence map
 
