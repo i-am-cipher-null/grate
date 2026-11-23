@@ -1,0 +1,102 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * One packet per batch, four slots per packet, eight batches: two four-packet
+ * groups at `alu_buffer_size` 4, with every latch and every reading slot
+ * available.
+ *
+ * Notes 38 used `asm/alu_buf_blocks8.in` for the size-4 shape, which carries a
+ * single `ALU0` per batch: that established the whole cycle for latch 0 only.
+ * This template keeps the same grouping and adds the other three slots, so the
+ * four-latch forward and wrap matrices can be completed for the reference
+ * arrangement.
+ *
+ *   batch 0  packet 0   A0..A3     group A
+ *   batch 1  packet 1   B0..B3
+ *   batch 2  packet 2   C0..C3
+ *   batch 3  packet 3   E0..E3
+ *   batch 4  packet 0   F0..F3     group B, first batch: stores group A's rows
+ *   batch 5  packet 1   G0..G3
+ *   batch 6  packet 2   H0..H3
+ *   batch 7  packet 3   J0..J3
+ *
+ * Eight batches is two whole groups at size 4. Each batch holds one `ALU:`
+ * block, so every schedule word carries count 1 and packet addresses 0 to 7;
+ * `dump_sched_words.py` reads them back from the run's own dump.
+ *
+ * Values: u0 = 0.0625 (0x10), u1 = 0.125 (0x20), u2 = 0.25 (0x40), u3 = 0.375
+ * (0x60) as fx10, so a stored byte names the packet that served the read.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@C0@
+		ALU1:	@C1@
+		ALU2:	@C2@
+		ALU3:	@C3@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@E0@
+		ALU1:	@E1@
+		ALU2:	@E2@
+		ALU3:	@E3@
+	DW:	@D3@
+;
+EXEC
+	ALU:
+		ALU0:	@F0@
+		ALU1:	@F1@
+		ALU2:	@F2@
+		ALU3:	@F3@
+	DW:	@D4@
+;
+EXEC
+	ALU:
+		ALU0:	@G0@
+		ALU1:	@G1@
+		ALU2:	@G2@
+		ALU3:	@G3@
+	DW:	@D5@
+;
+EXEC
+	ALU:
+		ALU0:	@H0@
+		ALU1:	@H1@
+		ALU2:	@H2@
+		ALU3:	@H3@
+	DW:	@D6@
+;
+EXEC
+	ALU:
+		ALU0:	@J0@
+		ALU1:	@J1@
+		ALU2:	@J2@
+		ALU3:	@J3@
+	DW:	@D7@
+;

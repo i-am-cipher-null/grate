@@ -5992,6 +5992,200 @@ three|size3|class|class1p` and pin with `--results DIR`. The encoding probe is
 `asm/dw_two_per_batch.in`; it is expected to fail and is not part of any
 manifest.
 
+## 43. Four packets over three batches, and the size-4 four-latch reference
+
+Section 39 left the 2 + 2 shortfall bounded but not explained: the 3 + 1 and
+1 + 3 packings have the complete map, and every one of those shapes has a group
+of two batches. Two variables had never been moved: the number of batches in
+the group, and the place of the multi-packet batch inside it. This section
+moves both, at `alu_buffer_size` 3, with the group still holding four packets,
+and then completes the size-4 reference matrix that section 38 left at latch 0.
+
+Hypotheses:
+
+| hypothesis | prediction for the three-batch shapes |
+|:--|:--|
+| the shortfall belongs to four packets, not to the packing | all three lose latches 0-2's wrap |
+| the shortfall needs more than one batch in the group | all three lose it, as 2 + 2 does |
+| the shortfall follows the position of the multi-packet batch | 2 + 1 + 1 loses it (batch first), or 1 + 1 + 2 does (batch last) |
+| the shortfall needs a batch shape 2 + 2 has and the others do not | all three keep the complete map |
+
+The last row is deliberately vague: 2 + 2 is the only tested four-packet shape
+in which *every* batch holds more than one packet, so "two multi-packet
+batches", "no single-packet batch" and "both wrap endpoints in multi-packet
+batches" all name the same partition of the tested shapes (see
+"What is measured, inferred and open").
+
+### Shape, manifests, words
+
+`asm/alu_dist211.in`, `asm/alu_dist121.in` and `asm/alu_dist112.in` are six
+batches each - two whole groups at `alu_buffer_size` 3 - with group A holding
+the four packets over batches 0 to 2 and group B's first batch (3) storing what
+group A's readers wrote. The two-packet batch is first, second and last
+respectively. What the runs' own dumps carry:
+
+| shape | batch 0 | batch 1 | batch 2 | batches 3-5 |
+|:--|:--|:--|:--|:--|
+| 2 + 1 + 1 | `0x00000002` (2 @ 0) | `0x00000009` (1 @ 2) | `0x0000000D` (1 @ 3) | `0x11`, `0x15`, `0x19` (1 @ 4-6) |
+| 1 + 2 + 1 | `0x00000001` (1 @ 0) | `0x00000006` (2 @ 1) | `0x0000000D` (1 @ 3) | same |
+| 1 + 1 + 2 | `0x00000001` (1 @ 0) | `0x00000005` (1 @ 1) | `0x0000000A` (2 @ 2) | same |
+| 1 + 1 + 1 + 1, size 4 | `0x00000001` | `0x00000005` | `0x00000009` | `0x0D`, `0x11`, `0x15`, `0x19`, `0x1D` |
+
+Every `0x806` word is zero, and the counts are read back from each run
+(`schedule-words.tsv`), not assumed from the template: the assembler derives a
+batch's count from its `ALU:` blocks, so a wrong distribution would show up as
+a different count word rather than as a silently different program. The
+`ctl-ref22-*` and `ctl-ref31-*` variants in the same manifests carry the two-
+and three-packet batches of their own templates, which is what makes the
+same-run comparison meaningful.
+
+**The "4" row of the distribution table cannot be measured.** Four packets in
+one batch at `alu_buffer_size` 1 is not encodable: `src/libgrate/fragment_asm.y`
+raises "Over 3 ALU instructions per exec batch" from the `ALU_INSTRUCTION`
+action, and the count field of `0x801` only encodes 1 to 3. `asm/alu_blocks4one.in`
+is kept as the preserved probe; the assembler exits 1 with
+
+    fs: line 33: Over 3 ALU instructions per exec batch
+    /tmp/blocks4one.in assembler parse failed
+
+so that row is an assembler limitation, not a hardware result, and the tested
+four-packet arrangements are the six in the table above.
+
+Manifests `asm_characterize.alu_dist211.json`, `..._dist121.json`,
+`..._dist112.json` and `..._blocks4.json` (56 variants each) from
+`make_alu_m4dist.py --set dist211|dist121|dist112|blocks4`: 49 matrix variants
+built by loops rather than typed by hand (12 forward cells, 2 reading-slot
+re-reads, 16 wrap cells, 4 own-packet, 4 two-apart, 3 backward, 3 two-writer,
+5 baselines) and the same 7 cross-shape controls in every manifest.
+
+### The forward matrix holds in all three shapes
+
+| read | 2 + 1 + 1 | 1 + 2 + 1 | 1 + 1 + 2 |
+|:--|--:|--:|--:|
+| `fwd01-al0` .. `al3` | `0x10` | `0x10` | `0x10` |
+| `fwd12-al0` .. `al3` | `0x20` | `0x20` | `0x20` |
+| `fwd23-al0` .. `al3` | `0x40` | `0x40` | `0x40` |
+| `fwd01-al0-s2`, `fwd23-al3-s2` | `0x10`, `0x40` | `0x10`, `0x40` | `0x10`, `0x40` |
+
+Thirty-six cells, every one naming the packet that wrote. The forward half of
+the map does not depend on the number of batches, on the position of the
+multi-packet batch, or on the latch.
+
+### The wrap matrix is complete in all three shapes
+
+| wrap | 2 + 1 + 1 | 1 + 2 + 1 | 1 + 1 + 2 |
+|:--|--:|--:|--:|
+| `wrap-al0-s0` .. `-s3` | `0x60` x4 | `0x60` x4 | `0x60` x4 |
+| `wrap-al1-s0` .. `-s3` | `0x60` x4 | `0x60` x4 | `0x60` x4 |
+| `wrap-al2-s0` .. `-s3` | `0x60` x4 | `0x60` x4 | `0x60` x4 |
+| `wrap-al3-s0` .. `-s3` | `0x60` x4 | `0x60` x4 | `0x60` x4 |
+
+Forty-eight cells: packet 3's slot-L write reaches packet 0's aluL read for
+every latch and every reading slot, in every three-batch distribution. The
+1 + 1 + 2 shape is the one that matters most for the earlier reading of the
+anomaly: there packet 3 shares its batch with packet 2, the local arrangement
+it has in 2 + 2, and the wrap still works.
+
+### Negatives and conflicts
+
+| variant | 2 + 1 + 1 | 1 + 2 + 1 | 1 + 1 + 2 | reading |
+|:--|--:|--:|--:|:--|
+| `own-p0` .. `own-p3` | `0x00` | `0x00` | `0x00` | a packet never sees its own result |
+| `pair-p0-p2`, `pair-p2-p0`, `pair-p1-p3`, `pair-p3-p1` | `0x00` | `0x00` | `0x00` | two apart is not the predecessor, either direction |
+| `back-p1-p0`, `back-p2-p1`, `back-p3-p2` | `0x00` | `0x00` | `0x00` | a later packet does not serve an earlier one |
+| `both-1-2-read3` | `0x40` | `0x40` | `0x40` | of two writers with the reader after both, the predecessor supplies the read |
+| `both-2-3-read0` | `0x60` | `0x60` | `0x60` | the wrap's writer wins over the packet before it |
+| `both-0-1-read3` | `0x00` | `0x00` | `0x00` | packets 0 and 1 are not packet 3's predecessor |
+| `write-only-p3` | `0x60` | `0x60` | `0x60` | the write itself lands, stored from the row |
+| `read-nowrite` | `0x00` | `0x00` | `0x00` | no writer, no value |
+| `unmarked`, `none` | `0x00` | `0x00` | `0x00` | baselines |
+| `row-direct` | `0x10` | `0x10` | `0x10` | the row path reaches the store |
+
+`both-0-1-read3` is the one that rules out a "last writer in the group wins"
+reading for this shape: two packets write the latch, and packet 3 - whose
+predecessor is packet 2 - still reads zero.
+
+### The same-run controls
+
+| control | word | meaning |
+|:--|--:|:--|
+| `ctl-rot2` | `0x40` | the known-good size-2 two-packet rotation |
+| `ctl-rot3` | `0x7F` | the known-good size-3 three-packet rotation |
+| `ctl-carry-s1` | `0x10` | the group-boundary carry that does work |
+| `ctl-ref22-wrap0` | `0x00` | 2 + 2's latch-0 wrap, still missing |
+| `ctl-ref22-wrap3` | `0x60` | 2 + 2's latch-3 wrap, still present |
+| `ctl-ref31-wrap0` | `0x60` | 3 + 1's latch-0 wrap, still present |
+| `ctl-ref31-fwd01` | `0x10` | 3 + 1's adjacent hop |
+
+All seven carry the same words in all four runs (four manifests, two passes
+each, plus the clean runs below), so each manifest reproduces the earlier
+sections' results alongside its own.
+
+### The size-4 reference with all four latches
+
+Section 38 measured the size-4, one-packet-per-batch shape with a single
+`ALU0` per batch, which established the cycle for latch 0 only.
+`asm/alu_blocks4.in` keeps that grouping and gives each batch all four slots:
+eight batches, two four-packet groups, the store in group B's first batch
+(4). The same 49-variant matrix runs on it (`s4-` prefix):
+
+| part | cells | result |
+|:--|--:|:--|
+| forward 0 -> 1, 1 -> 2, 2 -> 3 | 12 | `0x10`, `0x20`, `0x40` for every latch |
+| wrap 3 -> 0 | 16 | `0x60` for every latch and reading slot |
+| own-packet | 4 | `0x00` |
+| two apart, both directions | 4 | `0x00` |
+| one hop backwards | 3 | `0x00` |
+| two writers | 3 | `0x40`, `0x60`, `0x00` |
+| write only / no write / baselines | 5 | `0x60` / `0x00` / `0x00` / `0x00` / `0x10` |
+
+`s4-wrap-al0-s0` reproduces section 38's `m4-s4-wrap` (`0x60`), and the other
+forty-eight cells are new. The complete four-latch cycle at size 4 is therefore
+measured, not inferred from the latch-0 case.
+
+### What is measured, inferred and open
+
+* **Measured**: at `alu_buffer_size` 3 with four packets split 2 + 1 + 1,
+  1 + 2 + 1 or 1 + 1 + 2, the cyclic map is complete - twelve forward cells and
+  sixteen wrap cells per shape, every negative and every control as expected.
+  At `alu_buffer_size` 4 with one packet per batch the complete map holds for
+  all four latches. The 2 + 2 shape keeps returning `0x00` for latches 0-2's
+  wrap and `0x60` for latch 3's in the same runs.
+* **Inferred**: the shortfall is not a property of four packets, of a
+  multi-batch group, of the position of a multi-packet batch, of packet 0
+  sharing its batch, or of packet 3 sharing its batch. Among the seven tested
+  four-packet arrangements, 2 + 2 is the only one with the shortfall and the
+  only one in which no batch holds a single packet; it is also the only one in
+  which both wrap endpoints sit in multi-packet batches. Those three statements
+  pick out the same shape in this data set, so the measurements select between
+  "position" and "2 + 2-like", not between the three formulations of the
+  latter.
+* **Open**: which of the three 2 + 2-specific properties is the cause. A
+  five-packet group would separate them: 1 + 2 + 2 has two multi-packet batches
+  and a single-packet batch, 2 + 3 has two multi-packet batches and no
+  single-packet batch, and 1 + 1 + 3 has a single-packet batch but no
+  two-packet one. All three splits are encodable (a batch holds at most three
+  packets, so 4 + 1 and 1 + 4 are not), but five-packet groups are untested.
+  Also open: whether a two-packet batch at a different group size behaves like
+  2 + 2; whether the slot-3 specialness of 2 + 2 is the same mechanism seen from
+  the other side; and the hardware mechanism itself, which none of these runs
+  observes.
+
+### Recorded runs
+
+`pin-alu-dist211` / `verify-alu-dist211`, `-dist121`, `-dist112` and
+`-blocks4` hold 172 rows each (56 variants, three repeats, plus the two
+controls before and after), with `schedule-words.tsv` from the run itself. The
+pin runs were made on `5350c8372aa7021c988112d2ca6eff06972b2410` with the new
+files untracked and no tracked file modified; the verify runs are the pinned
+manifests, whose sha256 matches the checked-in manifests. Pin and verify agree
+row for row in all four sets. `clean-alu-dist211` and the other three are the
+committed manifests run from a fresh `git worktree` at the commit that contains
+them, empty `git status` before and after, output directories outside the
+checkout; all four match their pinned rows exactly. Regenerate with
+`python3 tests/grate/asm/make_alu_m4dist.py --set dist211|dist121|dist112|blocks4`
+and pin with `--results DIR`.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

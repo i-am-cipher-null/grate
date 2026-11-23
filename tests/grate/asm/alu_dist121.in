@@ -1,0 +1,91 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Four-packet group, 1 + 2 + 1 split over three batches: one `ALU:` block in
+ * the group's first batch, two in the second and one in the third, at
+ * `alu_buffer_size` 3.
+ *
+ * Same investigation as `asm/alu_dist211.in`: only the position of the
+ * two-packet batch changes, so the two templates together separate "a
+ * multi-packet batch exists" from "it sits first" (2 + 1 + 1) or second
+ * (1 + 2 + 1).
+ *
+ *   batch 0  packet 0   slots 0..3    A0..A3    group A
+ *   batch 1  packet 1   slots 4..7    B0..B3
+ *            packet 2   slots 8..11   B4..B7
+ *   batch 2  packet 3   slots 12..15  C0..C3
+ *   batch 3  E0..E3                  group B, first batch: stores group A's rows
+ *   batch 4  F0..F3                  group B
+ *   batch 5  G0..G3                  group B
+ *
+ * Six batches is two whole groups at size 3. The assembler sets each batch's
+ * schedule count from its block count, so batch 0 emits count 1 at packet
+ * address 0, batch 1 count 2 at address 1 and batch 2 count 1 at address 3; no
+ * schedule word is patched and `dump_sched_words.py` reads the counts back from
+ * the run's own dump.
+ *
+ * Values: u0 = 0.0625 (0x10), u1 = 0.125 (0x20), u2 = 0.25 (0x40), u3 = 0.375
+ * (0x60) as fx10, so a stored byte names the packet that served the read.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	ALU:
+		ALU0:	@B4@
+		ALU1:	@B5@
+		ALU2:	@B6@
+		ALU3:	@B7@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@C0@
+		ALU1:	@C1@
+		ALU2:	@C2@
+		ALU3:	@C3@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@E0@
+		ALU1:	@E1@
+		ALU2:	@E2@
+		ALU3:	@E3@
+	DW:	@D3@
+;
+EXEC
+	ALU:
+		ALU0:	@F0@
+		ALU1:	@F1@
+		ALU2:	@F2@
+		ALU3:	@F3@
+	DW:	@D4@
+;
+EXEC
+	ALU:
+		ALU0:	@G0@
+		ALU1:	@G1@
+		ALU2:	@G2@
+		ALU3:	@G3@
+	DW:	@D5@
+;

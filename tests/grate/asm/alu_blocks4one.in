@@ -1,0 +1,63 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Encoding-limit probe: four ALU packets in a single batch.
+ *
+ * The comparison of four-packet group distributions names a "4" arrangement at
+ * `alu_buffer_size` 1 - a group that is one batch, holding all four packets -
+ * alongside the 1 + 1 + 1 + 1 arrangement at size 4. The grammar does not allow
+ * it: `src/libgrate/fragment_asm.y` raises "Over 3 ALU instructions per exec
+ * batch" from the `ALU_INSTRUCTION` action, and the batch schedule word's count
+ * field only encodes 1 to 3 anyway (`0x801` low bits: 1, 2, 3). Three blocks
+ * is the maximum, which is what `asm/alu_pack43.in` uses.
+ *
+ * Kept so the limit is recorded as an assembler fact rather than an omission
+ * from the matrix. The assembler rejects this file and the runner exits 1
+ * before any hardware is touched; it is not a hardware result.
+ *
+ *   batch 0  packet 0  @A0@..@A3@
+ *            packet 1  @A4@..@A7@
+ *            packet 2  @A8@..@A11@
+ *            packet 3  @A12@..@A15@     <- rejected here
+ *   batch 1  @B0@..@B3@                 (readback)
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	ALU:
+		ALU0:	@A4@
+		ALU1:	@A5@
+		ALU2:	@A6@
+		ALU3:	@A7@
+	ALU:
+		ALU0:	@A8@
+		ALU1:	@A9@
+		ALU2:	@A10@
+		ALU3:	@A11@
+	ALU:
+		ALU0:	@A12@
+		ALU1:	@A13@
+		ALU2:	@A14@
+		ALU3:	@A15@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	DW:	@D1@
+;

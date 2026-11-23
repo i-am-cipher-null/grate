@@ -1,0 +1,95 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Four-packet group, 2 + 1 + 1 split over three batches: two `ALU:` blocks in
+ * the group's first batch and one in each of the next two, at
+ * `alu_buffer_size` 3.
+ *
+ * Notes 38 and 39 left the packing question open: four packets per group give
+ * the full cycle when split 3 + 1 or 1 + 3 at size 2 and only a slot-3 wrap
+ * when split 2 + 2, while one packet per batch at size 4 has the full cycle.
+ * All of those shapes have a two-batch group, so this template changes the
+ * number of batches as well as where the multi-packet batch sits: three
+ * batches per group, four packets, the two-packet batch first.
+ *
+ *   batch 0  packet 0   slots 0..3    A0..A3    group A
+ *            packet 1   slots 4..7    A4..A7
+ *   batch 1  packet 2   slots 8..11   B0..B3
+ *   batch 2  packet 3   slots 12..15  C0..C3
+ *   batch 3  E0..E3                  group B, first batch: stores group A's rows
+ *   batch 4  F0..F3                  group B
+ *   batch 5  G0..G3                  group B
+ *
+ * Six batches is two whole groups at size 3. The assembler sets each batch's
+ * schedule count from its block count, so batch 0 emits count 2 at packet
+ * address 0, batch 1 count 1 at address 2 and batch 2 count 1 at address 3; no
+ * schedule word is patched and `dump_sched_words.py` reads the counts back from
+ * the run's own dump.
+ *
+ * Where the result is observed: a row written by a reader in group A is stored
+ * by the DW of batch 3, group B's first batch (notes 3, 42). Values: u0 =
+ * 0.0625 (0x10), u1 = 0.125 (0x20), u2 = 0.25 (0x40), u3 = 0.375 (0x60) as
+ * fx10, so a stored byte names the packet that served the read.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	ALU:
+		ALU0:	@A4@
+		ALU1:	@A5@
+		ALU2:	@A6@
+		ALU3:	@A7@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@C0@
+		ALU1:	@C1@
+		ALU2:	@C2@
+		ALU3:	@C3@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@E0@
+		ALU1:	@E1@
+		ALU2:	@E2@
+		ALU3:	@E3@
+	DW:	@D3@
+;
+EXEC
+	ALU:
+		ALU0:	@F0@
+		ALU1:	@F1@
+		ALU2:	@F2@
+		ALU3:	@F3@
+	DW:	@D4@
+;
+EXEC
+	ALU:
+		ALU0:	@G0@
+		ALU1:	@G1@
+		ALU2:	@G2@
+		ALU3:	@G3@
+	DW:	@D5@
+;
