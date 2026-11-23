@@ -1689,3 +1689,35 @@ invalidate another; generate such a manifest with
 * created: 2026-11-23T20:35:44+00:00; 172 rows, repeat 3, timeout 20.0 s
 * summary: 172 passed, 0 failed of 172 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## clean-alu-dist211
+
+* manifest: `asm_characterize.alu_dist211.json` (sha256 341626c537af)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f7d2682e2094adb1ae4e600ef91d0fb26a8a0a62 with a clean tree (worktree in /home/freebuff/clean-f7d2682)
+* created: 2026-11-23T20:41:05+00:00; 172 rows, repeat 3, timeout 20.0 s
+* summary: 172 passed, 0 failed of 172 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## clean-alu-dist121
+
+* manifest: `asm_characterize.alu_dist121.json` (sha256 67a378aa558b)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f7d2682e2094adb1ae4e600ef91d0fb26a8a0a62 with a clean tree (worktree in /home/freebuff/clean-f7d2682)
+* created: 2026-11-23T20:41:26+00:00; 172 rows, repeat 3, timeout 20.0 s
+* summary: 172 passed, 0 failed of 172 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## clean-alu-dist112
+
+* manifest: `asm_characterize.alu_dist112.json` (sha256 03aac559c4af)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f7d2682e2094adb1ae4e600ef91d0fb26a8a0a62 with a clean tree (worktree in /home/freebuff/clean-f7d2682)
+* created: 2026-11-23T20:41:54+00:00; 172 rows, repeat 3, timeout 20.0 s
+* summary: 172 passed, 0 failed of 172 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+## clean-alu-blocks4
+
+* manifest: `asm_characterize.alu_blocks4.json` (sha256 624419715438)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: f7d2682e2094adb1ae4e600ef91d0fb26a8a0a62 with a clean tree (worktree in /home/freebuff/clean-f7d2682)
+* created: 2026-11-23T20:42:14+00:00; 172 rows, repeat 3, timeout 20.0 s
+* summary: 172 passed, 0 failed of 172 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
