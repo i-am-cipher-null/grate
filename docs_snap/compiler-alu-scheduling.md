@@ -1,7 +1,7 @@
 # Compiler ALU scheduling
 
 This document is the compiler-facing reading of the ALU forwarding and
-scheduling behaviour measured on AR20 in notes 28 to 44 of
+scheduling behaviour measured on AR20 in notes 28 to 45 of
 `tests/grate/asm_characterize.experiments.md`. It states what a scheduler may
 rely on, which of the rules in [[Writing a Compiler]] section 4 no longer hold,
 and what a backend should change. It contains no new measurements: every claim
@@ -171,9 +171,12 @@ scheduler has to satisfy, in the order they bind:
    splits, and size-4 1+1+1+1 have the full four-latch cycle. Size-2 split
    2+2 has the three forward edges for every latch but only the packet-3-slot-3
    to packet-0-alu3 wrap. M=5 has the full four-latch cycle in all eight tested
-   size-2 and size-3 distributions. The five-packet wrap matrix varies reader
-   slot independently, while its writer slot is coupled to the latch index.
-   A scheduler must know the actual packet distribution before adding a wrap
+   size-2 and size-3 distributions, and M=6 has the full cycle in all four
+   tested size-2/size-3 distributions. The five- and six-packet wrap matrices
+   vary reader slot independently, while the writer slot is coupled to the
+   latch index. They establish all four matching writer-slot/latch paths across
+   every reader slot, not arbitrary writer-slot/latch cross-combinations. A
+   scheduler must know the actual packet distribution before adding a wrap
    dependency. Treat any edge not established for that packing as requiring
    a row-register round trip.
 2. **A packet's slots must be mutually independent.** Inside a packet of a
@@ -228,13 +231,16 @@ assume they are inert on T114.
 ## 6. Recommended changes
 
 None of these changes are implemented. They are proposals, not a description
-of current compiler behaviour. M=4 has now been tested in size-2 2+2, 3+1 and 1+3, all three size-3
-four-packet splits, and size-4 1+1+1+1. M=5 has been tested in eight size-2
-and size-3 distributions. The remaining forwarding gate is to determine
-whether the M=4 2+2 anomaly is specific to four packets or recurs in a
-uniform 2+2+2 six-packet group. The DW zero-write cases also remain open. Do
-not treat the measured packet/group relation as universal beyond the tested
-packings.
+of current compiler behaviour. M=4 has been tested in size-2 2+2, 3+1 and 1+3,
+all three size-3 four-packet splits, and size-4 1+1+1+1. M=5 has been tested in
+eight size-2 and size-3 distributions. M=6 has been tested in four distributions:
+2+2+2 at size 3, 3+3 at size 2, and 1+2+3/3+2+1 at size 3. All four have the
+complete six-packet cycle. The M=4 size-2 2+2 exception therefore remains
+specific to that arrangement among the tested shapes, although its mechanism
+is unknown. The next forwarding coverage gap is the M=5 size-4 family
+1+1+1+2 and its three batch-order permutations. The DW zero-write cases also
+remain open. Do not treat the measured packet/group relation as universal
+beyond the tested packings.
 
 1. **Make the packet an explicit unit in the backend's IR.** A batch is a list
    of one to three packets; the encoder sets `count = len(packets)` and
@@ -244,7 +250,9 @@ packings.
    packet, allow only independent operations. Choose the packet count and
    distribution before scheduling dependencies: at M=4 size-2 2+2 does not
    have the same wrap edges as the other tested four-packet distributions;
-   all tested M=5 distributions have complete cycles. Validate the exact
+   all tested M=5 distributions and all four tested M=6 distributions have
+   complete cycles. For M=5 and M=6 wrap edges, the producer slot is coupled
+   to the latch index while every reader slot is tested. Validate the exact
    packing against its manifest set, and require a row for any edge not
    measured in that packing.
 3. **Materialise values into rows at every group boundary, in the format the
@@ -267,8 +275,9 @@ packings.
 6. **Re-pin the manifests after any scheduler change.** Include `pack`, `pack2`, `pack3`, `latch-rotate`, `alu-pack4` and its
    wrap/probe/size4 sets, `alu-pack13`, `alu-pack43`, the `alu-dist211`,
    `alu-dist121`, `alu-dist112` and `alu-blocks4` sets, all eight `alu-m5-*`
-   distributions, `alu-carry4`, `alu-send-cross`, the DW three-word, size-3
-   and class sets, `send-pack`, `sched-at`, `sched-b2` and `dw-mrt`.
+   and all four `alu-m6-*` distributions, `alu-carry4`, `alu-send-cross`,
+   the DW three-word, size-3 and class sets, `send-pack`, `sched-at`,
+   `sched-b2` and `dw-mrt`.
 
 ## 7. Open questions that limit the model
 
@@ -281,11 +290,12 @@ packings.
   Size-2 2+2 keeps the three forward edges but only the slot-3 packet-3 to
   packet-0 alu3 wrap. M=5 is measured in all eight size-2 and size-3
   distributions listed in note 44; all have the complete four-latch cycle.
-  The five-packet results rule out simple explanations based on two
-  multi-packet batches, no singleton batch, both wrap endpoints being in
-  multi-packet batches, and the tested batch-order mirrors. The mechanism
-  remains open. The next discriminator is M=6 size-3 2+2+2, compared with
-  3+3 and 1+2+3. The size-4 M=5 distribution 1+1+1+2 is also untested.
+  M=6 is measured in the four size-2/size-3 distributions listed in note 45;
+  all have the complete six-packet cycle, including uniform 2+2+2. These
+  results rule out uniform two-packet occupancy as a sufficient explanation
+  for the M=4 exception. The mechanism remains open. The next packet-count
+  coverage gap is M=5 at size 4: 2+1+1+1, 1+2+1+1, 1+1+2+1 and 1+1+1+2
+  have not been tested.
 * Why the group flush carry exists at size 1 and not in the tested size-2,
   size-3 or size-4 combinations. The size-4 negative matrix covers alu0 from
   each packet and selected alu1/reader-slot cases, not all latch/slot pairs.
@@ -312,7 +322,7 @@ measurement but not isolated, **Open** = not established. All are AR20.
 |--:|:--|:--|:--|
 | 1 | In a one-packet batch, a latch read in slot S sees the packet's slot-N result from any slot, in either issue order, whichever slot wrote it. | **Measured** | notes 28 |
 | 2 | The reading slot's own result is 0, in a one-packet batch and in every multi-packet arrangement. | **Measured** | notes 28, 32, 36 |
-| 3 | Complete tested rotations use packet (k-1) mod M. At M=4, size-2 3+1/1+3, all three size-3 splits and size-4 1+1+1+1 have the full four-latch cycle; size-2 2+2 has only the slot-3 wrap. All eight tested M=5 size-2/size-3 distributions have the full four-latch cycle. | **Measured**, with the listed packing qualifications | notes 32, 36, 38, 39, 43, 44 |
+| 3 | Complete tested rotations use packet (k-1) mod M. At M=4, size-2 3+1/1+3, all three size-3 splits and size-4 1+1+1+1 have the full four-latch cycle; size-2 2+2 has only the slot-3 wrap. All eight tested M=5 size-2/size-3 distributions and all four tested M=6 distributions have the full cycle. | **Measured**, with the listed packing qualifications; wrap writer-slot/latch coverage is paired as described in notes 44 and 45 | notes 32, 36, 38, 39, 43, 44, 45 |
 | 4 | A two-packet batch forwards in both directions, so "packet 0 sees packet 1" is legal. Nothing in a multi-packet batch forwards two packets. | **Measured** | notes 36 |
 | 5 | A packet never sees its own results in a multi-packet batch, so its slots are independent and its chain must be one hop per packet. | **Measured** | notes 32, 36 |
 | 6 | `.l*` (fx10) and `.lh` (fp20) writes fill different latch views; a bare read sees only an `.lh` write, an `.l` read only a `.l*` one, a `.*h`-only write fills neither, at every measured distance and in both directions. | **Measured** | notes 28, 36 |
@@ -324,7 +334,7 @@ measurement but not isolated, **Open** = not established. All are AR20.
 | 12 | `recv`/`send` transfer between slots inside one packet. Packet-0 slot-0 send to packet-1 slot-1 recv, the reverse, and an alternate slot-3 sender showed no cross-packet transfer; other mappings remain open. | **Measured** / **Open** | notes 13, 16, 37, 41 |
 | 13 | A `send` on a producer does not disturb ordinary latch forwarding; the plain slot-0 group carry was preserved in the tested one-batch group case. | **Measured** | notes 37 |
 | 14 | Schedule bits 29 and 30 change nothing observable, on any of the three batches of the template, in five shapes. | **Measured** | notes 30, 34, 35 |
-| 15 | M=4 size-2 3+1/1+3, all three size-3 four-packet splits and size-4 1+1+1+1 have the full four-latch cycle; size-2 2+2 keeps the forward edges but only latch 3 wraps. All eight tested M=5 distributions at sizes 2 and 3 have the full four-latch cycle. The M=4 2+2 mechanism is unknown. | **Measured** for these packings and latch coverage | notes 38, 39, 43, 44 |
+| 15 | M=4 size-2 3+1/1+3, all three size-3 four-packet splits and size-4 1+1+1+1 have the full four-latch cycle; size-2 2+2 keeps the forward edges but only latch 3 wraps. All eight tested M=5 size-2/size-3 distributions and all four tested M=6 distributions have full cycles. The M=4 2+2 mechanism is unknown. | **Measured** for these packings and the paired writer-slot/latch coverage | notes 38, 39, 43, 44, 45 |
 | 16 | The rotation applies to MFU/TEX streams or to the bits 8..28 of the schedule word. | **Open** | - |
 | 17 | Anything about T114: the schedule word layout differs and its count field is `count[10:8]`. | **Open** | notes 30 |
 
@@ -358,9 +368,11 @@ measurement but not isolated, **Open** = not established. All are AR20.
   full four-latch cycle for size-2 3+1/1+3, size-3 2+1+1/1+2+1/1+1+2, and
   size-4 1+1+1+1; for size-2 2+2 allow the three forward edges for every
   latch and the packet-3-to-packet-0 wrap only for alu3 written in slot 3.
-  The eight tested M=5 size-2/size-3 distributions have the full cycle, with
-  the measured writer-slot/latch pairing noted in note 44. Mark unmeasured
-  edges as requiring a row.
+  The eight tested M=5 distributions at sizes 2 and 3 and all four tested
+  M=6 distributions at sizes 2 and 3 have the full cycle (notes 44 and 45).
+  For these wrap matrices the writer slot is paired with the latch index,
+  while the reader slot is varied independently. Mark unmeasured edges as
+  requiring a row.
 * Treat latch lifetimes in packets, and give a value only one latch hop before
   it must be in a row. Materialise to `.lh` for fp20 readers and `.l*` for fx10
   readers, at every group boundary.
@@ -373,8 +385,8 @@ measurement but not isolated, **Open** = not established. All are AR20.
 
 None of this is implemented in the compiler, and this note does not justify an
 implementation on its own: the packet-count and rotation rules are measured up
-to five packets in the listed packings, but six-packet groups, other
-unmeasured distributions and the T114 layout are not.
+to six packets in the listed packings. The four-batch M=5 distributions, other
+unmeasured packings and the T114 layout are not established.
 
 ## 9. Evidence map
 
@@ -392,6 +404,7 @@ unmeasured distributions and the T114 layout are not.
 | M=4 rotation: 2+2, 1+1+1+1, 3+1 and 1+3 packings | 38, 39 | `asm_characterize.alu_pack4*.json`, `asm_characterize.alu_pack13.json`, `asm_characterize.alu_pack43.json` | `pin-`/`verify-`/`clean-alu-pack4*`, `-alu-pack13`, `-alu-pack43` |
 | M=4 size-3 distributions and complete size-4 four-latch reference | 43 | `asm_characterize.alu_dist211.json`, `asm_characterize.alu_dist121.json`, `asm_characterize.alu_dist112.json`, `asm_characterize.alu_blocks4.json` | `pin-`/`verify-`/`clean-alu-dist211`, `-dist121`, `-dist112`, `-blocks4` |
 | M=5 forwarding and wrap matrices across eight distributions | 44 | `asm_characterize.alu_m5_*.json` | `pin-`/`verify-`/`clean-alu-m5-*` |
+| M=6 forwarding and wrap matrices across four distributions | 45 | `asm_characterize.alu_m6_*.json` | `pin-`/`verify-`/`clean-alu-m6-*` |
 | `send`/`recv` are packet-local; cross-packet slot-1 receiver probe | 37, 41 | `asm_characterize.alu_send_pack.json`, `asm_characterize.alu_send_cross.json` | `pin-alu-send-pack`, `pin-alu-send-cross`, `clean-alu-send-cross` |
 | size-4 group-flush carry probes | 40 | `asm_characterize.alu_carry4.json` | `pin-alu-carry4`, `verify-alu-carry4`, `clean-alu-carry4` |
 | three-DW, later-position and depth/colour class probes | 42 | `asm_characterize.dw_three.json`, `asm_characterize.dw_size3.json`, `asm_characterize.dw_class.json`, `asm_characterize.dw_class1p.json` | `pin-dw-three`, `pin-dw-size3`, `pin-dw-class`, `pin-dw-class1p` |
