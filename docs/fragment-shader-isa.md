@@ -308,9 +308,12 @@ for this exception is not established.
 The five-packet follow-up tested all eight legal two- and three-batch
 distributions: 2+3, 3+2, 1+1+3, 1+2+2, 1+3+1, 2+1+2, 2+2+1 and 3+1+1.
 Every one has all four forward edges for all four latches and the complete
-packet-4-to-packet-0 wrap from every reader slot (note 44). Own-packet reads
-and every non-predecessor source/reader pairing tested return 0. These results
-show that two multi-packet batches, the absence of a singleton batch, both wrap
+packet-4-to-packet-0 wrap from every reader slot (note 44). In that wrap matrix,
+packet 4 writes through slot N to test aluN, while packet 0's reader slot is
+varied independently; other writer-slot/latch cross-combinations were not
+tested. Own-packet reads and every non-predecessor source/reader pairing tested
+return 0. These results show that two multi-packet batches, the absence of a
+singleton batch, both wrap
 endpoints being in multi-packet batches, and the tested batch-order mirrors are
 not sufficient to reproduce the four-packet 2+2 exception. They do not explain
 the hardware mechanism or establish the behaviour of every possible group
