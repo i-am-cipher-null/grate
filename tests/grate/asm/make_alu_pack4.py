@@ -18,17 +18,19 @@ draw.
 
 **What the sets measured.** The forward half of the map holds for all four
 latches (`0x10`, `0x20`, `0x40` for 0 -> 1 -> 2 -> 3), own-packet reads and
-two-packets-apart reads are zero, and no group-boundary carry survives. The
-wrap 0 <- 3 behaves differently: through latch 3 it returns the group's last
-packet's value (`alu3-from-p3-slot3` `0x60`, every reading slot, needing packet
-3's slot-3 write specifically), while through latches 0, 1 and 2 it returns 0.
-The `wrap`, `probe` and `probe2` sets separate latch index from writing and
-reading slot for that one result, and `size4` (`asm/alu_buf_blocks8.in`, size 4,
-one packet per batch) re-asks the M=4 question in a different packing, where
-the wrap *does* return latch 0's value (`m4-s4-wrap` `0x60`). So the predicted
-map is confirmed for M=4 at one packet per batch and refined for the
-four-packets-in-two-batches shape, where only the slot-3 wrap survives. Why the
-packing decides that is not measured, and the notes keep it Open.
+two-packets-apart reads are zero, and no group-boundary carry survives. Batch 1
+holds packets 2 and 3, so `B0..B3` are packet 2's slots and only `B4..B7`
+address packet 3. The `wrap`, `probe` and `probe2` variants that write `B0`,
+`B1` or `B2` therefore measure a two-packets-apart read and return 0, and their
+notes call those slots packet 3's. The correctly addressed wrap
+(`alu3-from-p3-slot3`, `B7`) returns 0x60, and `m4matrix` varies packet 3's
+writing slot, the read latch and the reader slot over all 64 combinations:
+every diagonal cell returns 0x60 for all four reader slots and every
+cross-latch cell returns 0 (note 47). The four-packets-in-two-batches shape
+therefore has the complete four-latch cycle, and the earlier "only the slot-3
+wrap survives" reading was a slot-addressing error. `size4`
+(`asm/alu_buf_blocks8.in`, size 4, one packet per batch) independently returns
+latch 0's value (`m4-s4-wrap` `0x60`).
 
 The cyclic map under test, with M = 4:
 
@@ -38,7 +40,7 @@ The cyclic map under test, with M = 4:
 Each packet writes a distinct byte (`u0..u3` = 0x10, 0x20, 0x40, 0x60), so the
 stored byte names the packet that served the read:
 
-    src3-read0    packet 3 slot 0 writes, packet 0 slot 0 reads alu0   -> 0x60
+    src3-read0    `B0` (packet 2) slot 0 writes, packet 0 slot 0 reads -> 0
     src0-read1    packet 0 slot 0 writes, packet 1 slot 0 reads alu0   -> 0x10
     src1-read2    packet 1 slot 0 writes, packet 2 slot 0 reads alu0   -> 0x20
     src2-read3    packet 2 slot 0 writes, packet 3 slot 0 reads alu0   -> 0x40
@@ -112,23 +114,22 @@ Usage:
 first run on a shape the engine has not executed before.
 
 The `wrap` set is the follow-up the main run needed. The forward hops all hold
-(0 -> 1 -> 2 -> 3), but the wrap read from packet 0 returned 0x00 for latch 0
-(`src3-read0`, and `alu0-slot1` from a second reading slot) while the same wrap
-through latch 3 returned 0x60 (`alu3-from-p3-slot3`), so latch index, writer
-slot and reading slot were confounded. The wrap set varies them one at a time,
-and it found the split: only the slot-3 write of the group's last packet is
-visible to packet 0, from any reading slot, and `back-same-p0` (packet 1
-writing to packet 0 inside one batch) is zero because the cyclic predecessor of
-packet 0 is packet 3, which is what the map predicts:
+(0 -> 1 -> 2 -> 3). Its read of latch 0 returned 0x00 (`src3-read0`, and
+`alu0-slot1` from a second reading slot) while latch 3 returned 0x60
+(`alu3-from-p3-slot3`). The set varies latch index, writer slot and reading
+slot one at a time, but its `wrap-al0-*` and `wrap-al1-*` variants write `B0`
+and `B1`, which are packet 2's slots, so those cells are two-packets-apart
+reads rather than wraps. Only `wrap-al3-s0` (`B7`) addresses packet 3, and
+`m4matrix` later completed the properly addressed matrix (note 47):
 
-    wrap-al1-s0, wrap-al2-s0   the last packet's slots 1 and 2, read from packet
-                               0 slot 0 - 0x60 means the wrap exists for those
-                               latches and only slot 0 is special
-    wrap-al3-s0                the same for slot 3 from reading slot 0
-    wrap-al0-s3, wrap-al0-s2   slot 0 of the last packet read from packet 0's
-                               slots 3 and 2
-    wrap-al1-s1                slot 1 read from slot 1: control that the
-                               reading slot is not what makes a wrap fail
+    wrap-al1-s0, wrap-al2-s0   `B1` and `B2`, packet 2's slots 1 and 2, read
+                               from packet 0 slot 0 - 0x00, two apart
+    wrap-al3-s0                packet 3 slot 3 from reading slot 0 - 0x60
+    wrap-al0-s3, wrap-al0-s2   `B0`, packet 2 slot 0, read from packet 0's
+                               slots 3 and 2 - 0x00
+    wrap-al1-s1                packet 2 slot 1 read from slot 1: control that
+                               the reading slot does not decide the two-apart
+                               result
     back-same-p0, back-same-p2 packet 1 writing to packet 0, and packet 3
                                writing to packet 2, inside one batch: does the
                                ordering matter inside a batch at all

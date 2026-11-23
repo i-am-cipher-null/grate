@@ -5582,6 +5582,16 @@ pinned rows exactly. Regenerate with
 `python3 tests/grate/asm/make_alu_pack4.py` (and `--set wrap|probe|probe2|size4`),
 and pin with `--results DIR`.
 
+**Correction (note 47).** The conclusion above rests on variants that wrote
+`B0`, `B1` and `B2`, which are packet 2's slots, while their notes call them
+packet 3's. Only `B7` wrote the group's last packet. Section 47 varies packet
+3's writer slot, the read latch and the reader slot over all 64 combinations
+and finds a complete four-latch wrap: 0x60 in all 16 diagonal cells from every
+reader slot, 0 in the 48 cross-latch cells. The measurements in this section
+(0x60 for `B7`, 0 for `B0`-`B2`) are correct as recorded; their interpretation
+as "only latch 3 wraps" is withdrawn. Sections 39-46 used the `B0` result as a
+control and are otherwise unaffected.
+
 ## 39. M = 4 with 3 + 1 and 1 + 3 packet splitting
 
 Section 38 put four ALU packets in one size-2 group two ways: two packets in
@@ -6750,15 +6760,210 @@ whether the wrap endpoints share that batch (2 + 1 + 1 + 1) or whether packet
 4 shares the last batch with packet 3 (1 + 1 + 1 + 2), did not restrict the
 wrap in any set. The M=5 rotation is therefore complete in all twelve tested
 distributions - the eight two- and three-batch splits of section 44 and these
-four four-batch splits - and the M=4 size-2 2 + 2 restriction remains an
-isolated measured exception among the four-, five- and six-packet arrangements
-tested so far.
+four four-batch splits. Note 47 later showed that the M=4 size-2 2 + 2
+restriction was a slot-addressing artifact and that the 2 + 2 shape is
+complete too, so no tested four-, five- or six-packet arrangement is
+restricted; the comparison with the 2 + 2 control stands, but its "exception"
+is withdrawn.
 
 These runs do not identify a hardware mechanism, and they do not establish
 that every untested five-packet arrangement or group size behaves the same
 way. They also do not test fp20 register formats or the same shapes on another
 SoC, and the producer-slot/latch coupling above limits the wrap matrix to one
 writer slot per latch.
+
+## 47. The size-2 2 + 2 wrap, with writer slot, read latch and reader slot separated
+
+Section 38 reported that a four-packet group in two two-packet batches wrapped
+from packet 3 to packet 0 only through `alu3`, and sections 39, 43, 44, 45 and
+46 treated that as the one restricted M = 4 packing. The `wrap`, `probe` and
+`probe2` sets did vary the latch and the reading slot, but every variant that
+was meant to write "packet 3 slot 0, 1 or 2" wrote `B0`, `B1` or `B2`. Batch 1
+holds packets 2 and 3, so `B0..B3` are packet 2's slots; those cells were
+two-packets-apart reads, not wraps. Only `B7` (packet 3 slot 3) addressed the
+group's last packet. This set separates the three dimensions that can vary -
+packet 3's writing slot P, the latch L that packet 0 reads, and packet 0's
+reading slot R - over all 64 combinations.
+
+The ISA does not allow an arbitrary write latch. The issuing slot selects the
+latch and the destination field does not route: a write issued from slot 1 is
+readable as `alu1` whichever destination code 24..27 names, and not as `alu0`
+(section 17). The matrix therefore varies P, L and R, but "latch written"
+cannot vary independently of P because that combination cannot be encoded.
+Where L = P the cell is an ordinary wrap cell. Where L != P packet 3 never
+wrote `aluL`, so a non-zero result would mean the wrap re-indexes a value
+between latches.
+
+Hypotheses:
+
+| hypothesis | prediction |
+|:--|:--|
+| success follows the writer slot | every L succeeds when P = 3; all P < 3 fail |
+| success follows the read latch | one L succeeds for every P |
+| success follows the reader slot | some R fails for fixed P and L |
+| success needs P = L | exactly the 16 diagonal cells succeed, from all four R |
+| the old restriction was real | only P = 3 with L = 3 succeeds |
+
+### Shape, manifests, words
+
+`asm/alu_pack4.in` is unchanged: six batches at `alu_buffer_size` 2, group A in
+batches 0-1, group B in batches 2-3, group C in batches 4-5. Batch 0 holds
+packets 0 and 1; batch 1 holds packets 2 and 3. Packet 3's slot P is `B{4+P}`,
+packet 0's slot R is `A{R}`, and group B's first batch stores group A's row
+through `store rt1, r0, r1`. Every cell writes `0x60` (u3) in exactly one slot
+and reads exactly one latch from exactly one slot; every other ALU slot is
+`NOP`. No schedule word is patched.
+
+Every one of the 71 variants uploads the same six batch words in every repeat
+(the `ref31` and `ref211` controls use their own templates):
+
+| batch | word | meaning |
+|--:|--:|:--|
+| 0 | `0x00000002` | count 2, packet address 0 |
+| 1 | `0x0000000A` | count 2, packet address 2 |
+| 2 | `0x00000011` | count 1, packet address 4 |
+| 3 | `0x00000015` | count 1, packet address 5 |
+| 4 | `0x00000019` | count 1, packet address 6 |
+| 5 | `0x0000001D` | count 1, packet address 7 |
+
+So group A is four packets in two batches of two, group B repeats the shape and
+stores group A's rows, and every `0x806` complement word is zero.
+
+### Matrix coverage and controls
+
+`make_alu_pack4.py --set m4matrix` writes
+`asm_characterize.alu_pack4_m4matrix.json`: 64 matrix variants named
+`m4x-pP-alL-sR` plus seven variant controls, for 71 variants. Three repeats per
+variant and the runner's two immediate-operand and two varying-pipeline harness
+rows give 217 rows per run, 213 of them variant rows.
+
+| control | expression | result | note |
+|:--|:--|--:|:--|
+| `ctl-ref22-wrap3` | `B7` writes 0x60, `A3` reads alu3 | `0x60` | the exact known-positive cell from section 38, identical to `m4x-p3-al3-s3` |
+| `ctl-ref22-wrap0` | `B0` writes 0x60, `A0` reads alu0 | `0x00` | the exact known-negative from section 38, identical to `m4x-p0-al0-s0`; with the corrected slot table it is a packet 2 -> packet 0 read |
+| `ctl-ref22-fwd` | `B0` writes 0x40, `B4` reads alu0 | `0x40` | the known forward edge, packet 2 -> packet 3, unchanged |
+| `ctl-ref31-wrap` | `alu_pack43.in`: `B0` writes 0x60, `A0` reads alu0 | `0x60` | the 3 + 1 wrap from section 39, on its own template |
+| `ctl-ref211-wrap` | `alu_dist211.in`: `C0` writes 0x60, `A0` reads alu0 | `0x60` | the size-3 2 + 1 + 1 wrap from section 43, on its own template |
+| `ctl-row-direct-60` | `B7` writes 0x60, batch 2 stores r2 | `0x60` | direct-row payload control: the write lands and the store path carries 0x60 |
+| `none` | no write, batch 2 stores r0 | `0x00` | word baseline |
+| harness | immediate-operand / varying-pipeline | `0xFF` / `0xFF01FF00` | before and after every run |
+
+The known positive and negative reproduce their section 38 words exactly, so
+the run is valid for the matrix interpretation; what changes is what the
+negative means.
+
+### Results: the full 4 x 4 x 4 outcome matrix
+
+Every cell writes packet 3 slot P (filling `aluP`) and reads `aluL` from
+packet 0 slot R. Rows are writer slot and read latch; the four columns are the
+reader slot.
+
+| P | L | R=0 | R=1 | R=2 | R=3 |
+|--:|--:|--:|--:|--:|--:|
+| 0 | 0 | `0x60` | `0x60` | `0x60` | `0x60` |
+| 0 | 1 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 0 | 2 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 0 | 3 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 1 | 0 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 1 | 1 | `0x60` | `0x60` | `0x60` | `0x60` |
+| 1 | 2 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 1 | 3 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 2 | 0 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 2 | 1 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 2 | 2 | `0x60` | `0x60` | `0x60` | `0x60` |
+| 2 | 3 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 3 | 0 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 3 | 1 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 3 | 2 | `0x00` | `0x00` | `0x00` | `0x00` |
+| 3 | 3 | `0x60` | `0x60` | `0x60` | `0x60` |
+
+Analysis:
+
+* **Producer slot alone does not decide.** P = 0, 1 and 2 succeed for their own
+  latch, while P = 3 fails for L = 0, 1 and 2. A "last slot only" rule is
+  contradicted by the P < 3 diagonal.
+* **Read latch alone does not decide.** L = 3 is 0 for P = 0, 1 and 2, and
+  L = 0..2 succeed for their matching P.
+* **Reader slot never decides.** Each of the 16 (P, L) pairs returns the same
+  word from all four reader slots.
+* **The interaction is exactly P = L.** Success is the 16 diagonal cells;
+  failure is the remaining 48. There is no three-way interaction, and no
+  partial success inside a cell.
+* **No cross-latch delivery.** The 48 off-diagonal cells read a latch nothing
+  in group A wrote and return 0, so the wrap does not move a value from the
+  writer's latch to another index.
+
+Because the write latch is selected by the writer slot, "P = L" is precisely
+"read the latch that the group's last packet wrote in that slot". The matrix
+therefore shows a complete wrap for every one of group A's four latches, from
+every reader slot, and the only restriction is the one the ISA imposes on
+writes: a packet's slot N writes `aluN` and nothing else.
+
+### Why the earlier reading was wrong
+
+`asm/alu_pack4.in` names batch 1's two packets `B0..B3` and `B4..B7`, and the
+schedule words above (`2@0` then `2@2`) place packets 2 and 3 there. The
+section 38 sets already contain the control that exposes the mislabelling:
+`pair-p2-p0` writes `B0` with 0x40 and reads `A0`, and returns 0 as a
+two-packets-apart negative, exactly as `src3-read0` (B0 with 0x60, `A0`) does.
+`both-own-prev`, also a `B0` write, returns 0. The one cell that wrote the
+group's last packet, `alu3-from-p3-slot3` (`B7`), is the one that returned
+0x60.
+
+So the section 38 conclusion was an addressing error, not a hardware
+restriction: the wrap probes covered packet 3 slot 3 and packet 2 slots 0-2,
+and the resulting 0s were read as missing latches. That error propagated into
+sections 39-46, which used the 2 + 2 negative as a control and explained why
+other packings did not reproduce it. The measurements in those sections are
+unaffected - every one of them re-measured a `B0` write and got 0 - but the
+interpretation "only latch 3 wraps in 2 + 2" is withdrawn.
+
+### Reproducibility
+
+Pinned from actual hardware on 2026-11-23 (Toshiba AC100 / Dynabook AZ, Linux
+`kusma-ac100 7.2.0-gd1efa725955b`, armv7l):
+
+* pin run: unmodified `asm/alu_pack4.in`, generator modified, new manifest
+  untracked, commit `cbb718c`; 213/213 variant rows passed.
+* verify run: the pinned manifest (`sha256 02f35108deeb...`), same commit;
+  213/213 passed, manifest hash matches the run metadata.
+* clean run: fresh worktree at the asset commit `700a4a7`, `git status` empty
+  before and after, 213/213 passed.
+
+Pin, verify and clean agree row for row and iteration for iteration (217 rows
+each), and the three `schedule-words.tsv` files are byte-identical. Control
+rows passed before and after every run.
+
+Artifacts: `asm_characterize.alu_pack4_m4matrix.json`,
+`results/pin-alu-pack4-m4matrix/`, `results/verify-alu-pack4-m4matrix/`,
+`results/clean-alu-pack4-m4matrix/`, each with `metadata.json`, `results.tsv`
+and `schedule-words.tsv`. Regenerate with
+`python3 tests/grate/asm/make_alu_pack4.py --set m4matrix` and pin with
+`--results DIR`.
+
+### What this settles
+
+* **Measured:** the M = 4 size-2 2 + 2 wrap is complete for all four latches
+  and all four reader slots. Success requires reading the latch that packet 3
+  writes in its own slot; the wrap never re-indexes a value.
+* **Measured:** the reader slot is irrelevant to the wrap at this packing.
+* **Measured:** the section 38 positive (`B7` -> alu3) and negative (`B0` ->
+  alu0) still return 0x60 and 0.
+* **Deduced from the template and the schedule words:** the earlier "only
+  latch 3" result came from probing packet 2's slots while labelling them
+  packet 3's. The 3 + 1 and 2 + 1 + 1 wraps in the same manifest confirm the
+  harness reaches the store.
+* **Withdrawn:** "size-2 2 + 2 is the only restricted M = 4 packing". Every
+  tested M = 2, 3, 4, 5 and 6 packing now has the full rotation.
+
+Remaining uncertainty: the writer slot/latch coupling means the "latch" axis
+cannot be varied independently, so these data cannot say whether a write path
+that selected an arbitrary latch would wrap. The mechanism of the rotation
+itself is unchanged and unmeasured; fp20, T114 and untested packet distributions
+remain open, as does the group-boundary carry. The scheduling consequence is
+conservative: a wrap edge is available for the group's last packet's latch, at
+that same slot index and from any reader slot, in every tested packing; any
+other edge requires a row.
 
 ## What the runner cost
 

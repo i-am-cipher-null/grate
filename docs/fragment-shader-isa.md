@@ -245,7 +245,7 @@ as operands (notes 28). A read is not a read of a retired register:
 | M=4, size 2, packed 3+1 or 1+3 | full cycle for all four latches, including packet 3 to packet 0 from every reader slot |
 | M=4, size 3, packed 2+1+1, 1+2+1 or 1+1+2 | full cycle for all four latches, including packet 3 to packet 0 from every reader slot |
 | M=4, size 4, one packet per batch (1+1+1+1) | full cycle for all four latches and every wrap reader slot |
-| M=4, size 2, packed 2+2 | the three forward edges work for all four latches; packet 3 to packet 0 wraps only through alu3, written in slot 3; the reader may use any slot |
+| M=4, size 2, packed 2+2 | full cycle for all four latches, including packet 3 to packet 0 from every reader slot (note 47; the earlier "only alu3 wraps" report came from probes that wrote packet 2's slots) |
 | M=5, size 2 or 3, eight tested distributions | full cycle for all four latches and every packet-4-to-packet-0 wrap reader slot |
 | M=5, size 4, four tested distributions (2+1+1+1, 1+2+1+1, 1+1+2+1, 1+1+1+2) | full cycle for all four latches and every packet-4-to-packet-0 wrap reader slot |
 | M=6, size 2 or 3, four tested distributions (2+2+2, 3+3, 1+2+3, 3+2+1) | full cycle for all four latches and every packet-5-to-packet-0 wrap reader slot |
@@ -295,17 +295,20 @@ reading slot may be any slot. A one-packet group has the same-packet cross-slot
 path described above, with a read in the reader's own slot returning 0. In a
 multi-packet group a packet does not see its own results.
 
-M=2 and M=3 form complete rotations in the tested arrangements. M=4 is
-packing-dependent, but the current exception is narrowly bounded. At size 2,
-the 3+1 and 1+3 distributions have all three forward edges for all four latches,
-and all four packet-3-to-packet-0 wrap latches are readable from every reader
-slot (note 39). At size 3, the 2+1+1, 1+2+1 and 1+1+2 distributions have the
-same complete four-latch cycle (note 43). At size 4, the 1+1+1+1 arrangement
-has now been measured across all four latches and all four wrap reader slots,
-not just alu0 (note 43). The tested M=4 exception is size-2 2+2: its three
-forward edges work for all four latches, but packet 3 slot 3 feeds only packet
-0's alu3 wrap; packet 0 can read that surviving value from any slot. The reason
-for this exception is not established.
+M=2 and M=3 form complete rotations in the tested arrangements. M=4 is also
+complete in every tested packing. At size 2, the 3+1 and 1+3 distributions have
+all three forward edges for all four latches, and all four
+packet-3-to-packet-0 wrap latches are readable from every reader slot (note 39).
+At size 3, the 2+1+1, 1+2+1 and 1+1+2 distributions have the same complete
+four-latch cycle (note 43). At size 4, the 1+1+1+1 arrangement has been measured
+across all four latches and all four wrap reader slots, not just alu0
+(note 43). Notes 38 and 39 reported that size-2 2+2 wrapped only through alu3,
+but those probes wrote `B0`, `B1` and `B2`, which are packet 2's slots, not
+packet 3's. Note 47 varies packet 3's writer slot, the read latch and packet
+0's reader slot over all 64 combinations and finds the full four-latch cycle:
+all sixteen writer-slot/reader-slot diagonal cells return the writer's value
+and all 48 cross-latch cells return 0. The writer slot still selects the latch,
+so the wrap cannot deliver a value to a different latch index.
 
 The five-packet follow-up tested all eight legal two- and three-batch
 distributions: 2+3, 3+2, 1+1+3, 1+2+2, 1+3+1, 2+1+2, 2+2+1 and 3+1+1.
@@ -317,9 +320,9 @@ tested. Own-packet reads and every non-predecessor source/reader pairing tested
 return 0. These results show that two multi-packet batches, the absence of a
 singleton batch, both wrap
 endpoints being in multi-packet batches, and the tested batch-order mirrors are
-not sufficient to reproduce the four-packet 2+2 exception. They do not explain
-the hardware mechanism or establish the behaviour of every possible group
-size or distribution.
+not sufficient to reproduce the restriction once reported for the four-packet
+2+2 shape, which note 47 shows was a slot-addressing artifact. They do not
+establish the behaviour of every possible group size or distribution.
 
 The six-packet follow-up tested 2+2+2 at size 3, 3+3 at size 2, and 1+2+3 and
 its batch-order reverse 3+2+1 at size 3. All four have the complete cycle: five
@@ -329,11 +332,11 @@ non-predecessor source/reader pairs per shape and the conflict cases all agree
 with the same cyclic rule, and the M=4 2+2 and M=5 controls in the same runs
 reproduce their earlier words. In particular 2+2+2 is the closest six-packet
 analogue of the M=4 2+2 shape - uniform two-packet batches at a different
-packet count - and it is complete. Uniform two-packet occupancy is therefore
-not sufficient to reproduce the exception, and among the tested four-, five-
-and six-packet arrangements the shortfall remains confined to the four-packet
-size-2 2+2 packing. Its mechanism is unknown, and these measurements do not
-establish a general rule for untested group sizes or distributions.
+packet count - and it is complete. The four-packet 2+2 shape is complete as
+well once its packet-3 slots are addressed correctly (note 47), so no tested
+four-, five- or six-packet arrangement has a restricted wrap. These
+measurements do not establish a general rule for untested group sizes or
+distributions.
 
 Five packets over four batches force exactly one two-packet batch, so the four
 size-4 distributions move that batch from first to last while holding the
@@ -342,15 +345,15 @@ have the complete cycle, with the four forward edges for all four latches and
 all sixteen packet-4-to-packet-0 wrap latch/reader-slot cells returning the
 predecessor's value (note 46). 2+1+1+1 puts packet 0 in the pair's batch, and
 1+1+1+2 is the only one where packet 4 shares the last batch with packet 3;
-neither placement restricts the wrap. The M=4 size-2 2+2 exception is therefore
-not reproduced by any tested five-packet arrangement at sizes 2, 3 or 4, and it
-remains the only measured exception among the tested four-, five- and
-six-packet shapes. No mechanism is claimed.
+neither placement restricts the wrap. The M=4 size-2 2+2 shape, formerly the
+one apparent exception, is complete as well (note 47). Every tested four-,
+five- and six-packet arrangement therefore has the full wrap. No mechanism
+beyond the measured slot/latch coupling is claimed.
 
 Dependent operations can chain one hop per packet in these complete
 arrangements. Packet 0 can read packet 2 in a three-packet group, packet 0 can
-read packet 3 in the tested four-packet arrangements except the restricted
-2+2 latches, packet 0 can read packet 4 in all twelve tested five-packet
+read packet 3 in every tested four-packet arrangement, packet 0 can read
+packet 4 in all twelve tested five-packet
 arrangements, and packet 0 can read packet 5 in all four tested six-packet
 arrangements. This revises section 32's "previous packet, forward only": its
 backward probe changed the latch index and reading slot at once, so it did not

@@ -2129,3 +2129,30 @@ invalidate another; generate such a manifest with
 * created: 2026-11-23T22:25:03+00:00; 244 rows, repeat 3, timeout 20.0 s
 * summary: 244 passed, 0 failed of 244 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## pin-alu-pack4-m4matrix
+
+* manifest: `asm_characterize.alu_pack4_m4matrix.json` (sha256 1341005111bb)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: cbb718c0cc5e4e098250a33a766b44005f65b366 with make_alu_pack4.py modified, the new manifest untracked, and a local __pycache__
+* created: 2026-11-23T22:44:05+00:00; 217 rows, repeat 3, timeout 20.0 s
+* summary: 217 passed, 0 failed of 217 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## verify-alu-pack4-m4matrix
+
+* manifest: `asm_characterize.alu_pack4_m4matrix.json` (sha256 02f35108deeb)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: cbb718c0cc5e4e098250a33a766b44005f65b366 with make_alu_pack4.py modified, the new manifest untracked, and a local __pycache__
+* created: 2026-11-23T22:44:53+00:00; 217 rows, repeat 3, timeout 20.0 s
+* summary: 217 passed, 0 failed of 217 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+
+## clean-alu-pack4-m4matrix
+
+* manifest: `asm_characterize.alu_pack4_m4matrix.json` (sha256 02f35108deeb)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 700a4a73d398e4db6530cb709f8e2740db6b7942 with a clean tree (worktree in /home/freebuff/clean-700a4a7)
+* created: 2026-11-23T22:46:26+00:00; 217 rows, repeat 3, timeout 20.0 s
+* summary: 217 passed, 0 failed of 217 - passed
+* schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
