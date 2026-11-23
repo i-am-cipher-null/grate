@@ -2134,7 +2134,7 @@ invalidate another; generate such a manifest with
 
 * manifest: `asm_characterize.alu_pack4_m4matrix.json` (sha256 1341005111bb)
 * device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
-* commit: cbb718c0cc5e4e098250a33a766b44005f65b366 with make_alu_pack4.py modified, the new manifest untracked, and a local __pycache__
+* commit: e1116ae442c11daf6b12d13cc89b74ff885761c8 with the template and manifest untracked
 * created: 2026-11-23T22:44:05+00:00; 217 rows, repeat 3, timeout 20.0 s
 * summary: 217 passed, 0 failed of 217 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
@@ -2158,4 +2158,31 @@ invalidate another; generate such a manifest with
 * created: 2026-11-23T22:46:26+00:00; 217 rows, repeat 3, timeout 20.0 s
 * summary: 217 passed, 0 failed of 217 - passed
 * schedule words: `schedule-words.tsv`, the 0x801 and 0x806 words per batch from each run's raw dump
+* logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory
+
+## pin-alu-saturate
+
+* manifest: `asm_characterize.alu_saturate.json` (sha256 7e106294804a)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: cbb718c0cc5e4e098250a33a766b44005f65b366 with make_alu_pack4.py modified, the new manifest untracked, and a local __pycache__
+* created: 2026-11-23T23:26:41+00:00; 52 rows, repeat 3, timeout 20.0 s
+* summary: 52 passed, 0 failed of 52 - passed
+* logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory
+
+## verify-alu-saturate
+
+* manifest: `asm_characterize.alu_saturate.json` (sha256 7e106294804a)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: e1116ae442c11daf6b12d13cc89b74ff885761c8 with the template and manifest untracked
+* created: 2026-11-23T23:26:59+00:00; 52 rows, repeat 3, timeout 20.0 s
+* summary: 52 passed, 0 failed of 52 - passed
+* logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory
+
+## clean-alu-saturate
+
+* manifest: `asm_characterize.alu_saturate.json` (sha256 7e106294804a)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: ea9a4090bcca5e7871961953b434a254ba634af5 with a clean tree (worktree in /home/freebuff/clean-ea9a409)
+* created: 2026-11-23T23:30:09+00:00; 52 rows, repeat 3, timeout 20.0 s
+* summary: 52 passed, 0 failed of 52 - passed
 * logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory

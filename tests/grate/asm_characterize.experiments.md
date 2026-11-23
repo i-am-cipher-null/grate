@@ -6969,6 +6969,82 @@ conservative: a wrap edge is available for the group's last packet's latch, at
 that same slot index and from any reader slot, in every tested packing; any
 other edge requires a row.
 
+## 48. ALU bit 56: `(sat)` clamps the result to 0..1
+
+**Question.** The ALU encoding names bit 56 "saturate result" and the assembler
+accepts `(sat)`, but the behaviour had never been measured. A backend needs to
+know whether the bit clamps, to what range, in which destination formats, and
+where in the result path it sits relative to the result scale and the condition
+code. This matters because a shader that has to clamp a value can otherwise only
+spell the clamp as a `MIN`/`MAX` pair.
+
+**Probe.** `asm_characterize.alu_saturate.json`, template
+`asm/alu_saturate.in`, 16 variants, three repeats each, 52 rows including the
+runner's before/after controls. Three batches at `alu_buffer_size = 1`: batch 0
+prefills `r2` with 0.5, batch 1 runs the tested instruction into `r2.lh` or
+`r2.l*`, and batch 2 reads `r2` and normalises it into `r3` before
+`store rt1, r2, r3`. The normalising batch is what makes values above 1.0
+visible: the readback shows the fp20 code of `r2` in byte 1 and of `r3` in
+byte 3 (`0xF7` = 1.0, `0xFF` = 2.0, `0xFB` = 1.5, `0xF3` = 0.75, `0xEF` = 0.5,
+`0xE7` = 0.25), so a clamped 2.0 reads `0xF7` instead of `0xFF` even though the
+8-bit colour conversion would have saturated both.
+
+| variant | tested operation | without `(sat)` | with `(sat)` |
+|:--|:--|--:|--:|
+| above range | `MAD r2.lh, u0(2.0), #1, #0, #1` | `0xEF00FF00` | `0xE700F700` |
+| below range | `MAD r2.lh, u4(-0.5), #1, #0, #1`, norm `-r2 * 0.5` | `0xE7000000` | `0x00000000` |
+| inside range | `MAD r2.lh, u3(0.5), #1, #0, #1` | not run (same value) | `0xE700EF00` |
+| result scale | `MAD r2.lh, u2(0.75), #1, #0, #1 (x2)` | `0xF300FB00` | `0xEF00F700` |
+| condition | `MAD r2.lh, u4(-0.5), #1, #0, #1 (ge)` | `0x00000000` | `0xF700F700` |
+| condition (eq) | `MAD r2.lh, u0(2.0), #1, #0, #1 (eq)` | `0x00000000` | `0x00000000` |
+| MAX | `MAX r2.lh, u0(2.0), #1, #0, #1` | not run (2.0, `0xFF00FF00`) | `0xF700F700` |
+| MUL | `MUL r2.lh, u2(0.75), u0(2.0), #0, #1` | `0xF300FB00` | `0xEF00F700` |
+| fx10 destination | `MAD r2.l*, u0(2.0), #1, #0, #1`, norm `r2.l * 0.25` | `0xEE0000FF` | `0xE70000FF` |
+
+Reading it:
+
+* **it clamps to exactly 0.0 and 1.0.** 2.0 becomes 1.0 (`0xFF` -> `0xF7`) and
+  the normalised product halves from 0.5 to 0.25. -0.5 becomes 0.0: the
+  normalised `-r2 * 0.5` falls from 0.25 (`0xE7`) to zero. A value already
+  inside the range is unchanged (0.5 stays `0xEF`).
+* **the clamp is after the result scale.** 0.75 with `(x2)` writes 1.5
+  (`0xFB`) without the bit and 1.0 (`0xF7`) with it, so the scale is applied
+  first and the clamp sees its output. Clamping the operand first would have
+  left 0.75 and then stored 1.5.
+* **the clamp is before the condition code.** -0.5 with `(ge)` alone is false
+  and stores 0.0; with `(ge)(sat)` it stores 1.0, because the condition tests
+  the clamped 0.0 (`== 0`, so `>= 0` is true). The condition result is itself
+  0.0 or 1.0, so saturating it changes nothing - which is why the `(eq)` row on
+  2.0 reads zero either way (1.0 clamps to 1.0 and is not equal to zero).
+* **it applies to `MUL`, `MAX` and the fp20 and fx10 write formats, not just
+  `MAD`.** The fx10 row needs the normalised `r3` to show it: the raw low byte
+  of `r2` reads `0xFF` for both 1.0 and 2.0 because the 8-bit conversion of an
+  fx10 value saturates either way, while `r3` is 0.25 with the bit and 0.5
+  without. `MIN` was not run; it shares the clamp path with `MAX` by
+  inference, not measurement.
+* **the negative raw code is not visible in the readback.** `r2` reads zero for
+  -0.5 with and without the bit, because the fp20 sign is outside the 10-bit
+  field the DW conversion shows. The clamp at zero is established by the
+  normalised `r3`, not by `r2`.
+
+**Order of the result path.** Operation, result scale, saturate, condition,
+write. The four stages are separated by the rows above; only the position of
+saturate relative to the condition code reverses an observable value.
+
+**What this does not establish.** The accumulate path (`(this)`/`(other)`) was
+not combined with `(sat)`, a condition-register destination was not tested, and
+values outside the fp20 range above 1.0 or below 0.0 were not run beyond the
+two endpoints (2.0 and -0.5). The clamp endpoint is exactly 1.0 and 0.0 in the
+tested range, and no saturation-of-saturation or `MIN` case was measured.
+
+**Reproducibility.** Pin and verify runs at manifest sha256
+`7e106294804a36be459dd7ddc60d85596392df22019bb65008ac0143756823f3` agree on
+all 52 rows; the controls (`immediate-operand` `0x000000FF`,
+`varying-pipeline` `0xFF01FF00`) pass before and after. The committed run
+directories are `results/pin-alu-saturate`, `results/verify-alu-saturate` and
+`results/clean-alu-saturate`; the per-row logs are untracked, as for every
+other run (`results/.gitignore`).
+
 ## What the runner cost
 
 Five things that produced wrong results first:

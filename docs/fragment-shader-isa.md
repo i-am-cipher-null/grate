@@ -11,7 +11,12 @@ The fragment shader is separated into five different instruction streams:
 
 The different units seems to be synchronized by separate timing streams.
 
-Measured statements below cite the experiment that established them, by section, in
+Each behaviour below carries one of four labels. **Confirmed** means measured by a
+controlled experiment or unambiguous existing evidence, cited by note number.
+**Inferred** means strongly supported but not isolated. **Unknown** means
+unresolved. **Not required for GLES2 scope** marks deliberately excluded
+behaviour. Measured statements cite the experiment that established them, by
+section, in
 `tests/grate/asm_characterize.experiments.md` (for example "notes 24"). This file is the
 canonical ISA description and the one to edit. A longer version of the same document,
 carrying the full evidence tables and the retraction history, is maintained in the
@@ -58,6 +63,39 @@ Instructions schedule specifies the number of MFU instructions or ALU instructio
 
 If the "number of instructions to execute" is 0, then the pipeline stage is NOP, however still takes 1 clock cycle. The "address" is the number of pushed instructions before the instruction to execute, so unit[Address] ... unit[Address + Number of instructions to execute] instructions (or instruction packets) will be executed, where unit stands for MFU or ALU.
 
+### Compiler-facing constraints
+
+The emitter needs the following rules; all are **Confirmed** unless marked.
+
+* A batch holds 1..3 ALU packets of four slots (12 instructions). The `0x801`
+  word's low two bits are the **packet** count, not an instruction count, and a
+  fourth packet is refused by the assembler (note 32).
+* The address fields are unit-local: the ALU address counts **packets** and the
+  MFU address counts MFU words, not batches. An MFU batch is up to three words
+  in series; an ALU batch is up to three packets.
+* One DW position exists per batch; additional ALU packets do not add DW slots
+  (note 42). Two DWs in one batch cannot be encoded with this assembler.
+* Stage order is PSEQ, MFU, TEX, ALU, DW. An ALU result written in a batch is
+  **not** available to a TEX instruction of that same batch; texture
+  coordinates must come from the row registers the earlier group wrote
+  (note 11).
+* Within a packet, slots are independent: there is no same-packet bypass in a
+  multi-packet batch, and a slot reading its own result gets zero (notes 28,
+  32). In a one-packet batch, a slot can read another slot's result from any
+  later slot (note 28).
+* Packing more than one packet per batch makes dependencies packet edges: a
+  packet sees its predecessor, and packet 0 sees the group's last packet in the
+  tested arrangements (notes 36, 39, 43-47). Rows are the only storage that
+  survives a group boundary (notes 28, 31).
+* The assembler limits a program to 64 exec batches and 64 ALU packets; the
+  four slots of a packet count once (note 7).
+* The `alu_buffer_size` group size is driver state, not encoded in the program.
+  Cross-group visibility therefore cannot be chosen by the compiler; it is
+  fixed by the draw state the program ships with.
+* **Unknown:** whether the MFU/TEX per-batch counts use the same packet unit as
+  ALU, and what schedule-word bits 8..28 mean. **Not required for GLES2:** MRT,
+  multi-chunk execution and render-target formats beyond colour.
+
 ## Registers
 
 Registers / embedded constants can either be treated as one FP20 register, or two FX10 values. Their encoding is like so:
@@ -91,7 +129,7 @@ The ALU instructions comes in packets of 3 or 4 scalar instructions (the fourth 
 |     60 | recv                     |
 |     59 | addition disable         |
 | 57..58 | scale result             |
-|     56 | saturate result          |
+|     56 | saturate result, clamp to 0..1 (note 48) |
 | 54..55 | condition code           |
 | 47..53 | destination register     |
 |     46 | write high subregister   |
@@ -156,7 +194,9 @@ Looks like ALU can address up to 2 source CR's in one ALU[0-3] sub-instruction.
 
 #### Kill register:
 
-Non-zero value written to the KILL register discards the fragment, zero keeps it alive and doesn't resurrect the killed fragment. Destination register write mask (low/high halves) is ignored.
+Non-zero value written to the KILL register discards the fragment, zero keeps it alive and doesn't resurrect the killed fragment. Destination register write mask (low/high halves) is ignored. **Confirmed** (note 18): a zero result with an `(eq)` condition discards (the condition turns it into 1.0), an unconditional non-zero write also discards, and the condition may be on the kill instruction itself - it does not need its own packet. A condition register written earlier in the **same batch** is not visible to that instruction (it reads zero), so a compare has to live in an earlier batch or be folded into the kill write.
+
+The blob's discard path does not use the `kill` register at all: it writes coverage (rt3), stencil (rt2), depth (rt0) and colour (rt1) in four batches, with the condition on a row register. On AR20 the measured effect of a shader kill write is that **depth is still written by the rasterizer** (killed fragments included), while the fixed-function stencil `REPLACE` stops and the program's own `DW: store stencil` performs the late update (note 18). A discard-capable GLES2 program with a stencil buffer must therefore emit the stencil store; coverage is a scratch surface and is not consumed by the fixed function (note 24).
 
 #### Position registers:
 
@@ -397,6 +437,19 @@ When bit "addition disable" is set, the Multiply-Add operation turns into two mu
 |            1           |           0           |      rC\*rD     |       rA\*rB     |
 |            0           |           1           |      rA\*rB     |       rC\*rD     |
 
+#### Result saturation
+
+Bit 56 clamps the result to 0.0 .. 1.0. Measured on AR20 with `(sat)` (note 48):
+the clamp is applied after the result scale and before the condition code, on
+`MAD`, `MUL` and `MAX`, in both the fp20 (`.lh`) and fx10 (`.l*`) write formats.
+2.0 stores as 1.0, -0.5 as 0.0, and an in-range value is unchanged. `MIN` shares
+the path by inference only; the accumulate and condition-register write paths
+were not combined with the bit.
+
+A backend can spell a clamp with `(sat)` instead of a `MIN`/`MAX` pair. GLES2
+has no saturate operation, so nothing in the required subset depends on the
+bit; it is available and measured rather than required.
+
 ## MFU instruction word encoding
 
 The MFU unit can fetch and interpolate 4 component vectors per instruction and/or evaluate scalar special functions. Based on [this design](http://pctuning.tyden.cz/ilustrace3/soucek/g80/paper-164.pdf).
@@ -428,15 +481,38 @@ The MFU unit can fetch and interpolate 4 component vectors per instruction and/o
 |     10 |  PRESIN  | Sine, first step             | rD = sin(rA)        |
 |     11 |  PRECOS  | Cosine, first step           | rD = cos(rA)        |
 
+The three `PRE*` opcodes are a hidden first step: they do not produce a value,
+and the matching `EX2`/`SIN`/`COS` word consumes their intermediate. The two
+words may be split across batches in any way, must be given the **same operand**,
+and omitting the `PRE` word silently returns a wrong answer (`ex2(-1)` returns
+1.0 instead of 0.5, `cos(0)` returns 0 instead of 1.0) - confirmed, note 7.
+The `PRE` result read through the `sfu` source is not a reusable function of the
+argument. Row 4 supplies the fragment's reciprocal w on a 2^16 scale, and the
+multipliers accept only rows 0..3 as row sources (note 6).
+
 #### var0..3:
 
 The varying id corresponds to the TRAM component: var0 is TRAM.x, var1 is TRAM.y, var2 is TRAM.z, var3 is TRAM.w.
 
 | Bits | Meaning                  |
 |-----:|:-------------------------|
-| 3..6 | TRAM index to fetch from |
+| 3..6 | TRAM row index to fetch from, 0..15 |
 | 1..2 | opcode                   |
 |    0 | saturate                 |
+
+The 7-bit slot holds a **4-bit** row index (bits 3..6), not a 5-bit one. The
+index is dense and assigned by the compiler (the blob's two linked varyings are
+rows 0 and 1), not the GLSL `location`; the linker's own row field appears only
+on the vertex side (confirmed, note 10). Rows 0 and 7 fetch different data, so
+the rows do not alias. Multiple `LINK` words compose per component: writing `x`
+from one line and `y` from another renders the same frame as one line writing
+both (confirmed, extended document 12.9).
+
+The `.fx10` fetch's half layout is **Unknown** in the tested words: `fx10.l`
+gives `(value, 0)` while `fx10.h` gives `(value, value)`, and a component written
+in the other format reads zero (note 10). `VAR2` is therefore usable only where
+the ordinary fp20 path is not needed, and a backend should prefer `VAR1` for
+GLES2 varyings.
 
 | opcode | Mnemonic | Meaning                        |
 |-------:|:--------:|:-------------------------------|
@@ -456,13 +532,16 @@ The varying id corresponds to the TRAM component: var0 is TRAM.x, var1 is TRAM.y
 
 | Value | Meaning            |
 |------:|:-------------------|
-|     0 | ???                |
+|     0 | writes no row register and supplies no weight (confirmed, note 4) |
 |     1 | barycentric weight |
-|  2..3 | ???                |
+|  2..3 | also supply the weight; indistinguishable from 1 from outside the unit (confirmed, note 4) |
 |     4 | row register 0     |
 |     5 | row register 1     |
 |     6 | row register 2     |
 |     7 | row register 3     |
+
+Destinations 4..7 are a plain row index: each writes exactly one register and
+leaves the other three alone (confirmed, note 4).
 
 ##### mul0..1 source registers:
 
@@ -471,13 +550,15 @@ The SFU result is evaluated first and is available to use by MUL's via "SFU resu
 |  Value | Meaning                 |
 |-------:|:------------------------|
 |   0..3 | row register 0..3       |
-|   4..7 | ??? (global registers?) |
-|   8..9 | ???                     |
+|   4..6 | internal state of the unit, not a row or global register; deterministic (unknown what it is; note 4) |
+|      7 | zero (confirmed, note 4) |
+|      8 | zero (confirmed, note 4) |
+|      9 | zero in a word without a varying fetch, `0x4100` in any word that fetches one (partially identified; note 4) |
 |     10 | SFU result              |
 |     11 | barycentric coef 0      |
 |     12 | barycentric coef 1      |
 |     13 | 1.0                     |
-| 14..15 | ???                     |
+| 14..15 | zero (confirmed, note 4) |
 
 #### Interpolation disable
 
@@ -503,7 +584,7 @@ The z component comes in some form via r3. The fetch operation of the r3 should 
 
 	gl_FragCoord.z = 1/1000 + max(0.0, r3.low) * 1/4000 + max(0.0, r3.high) * 1/4
 
-There is also dependency on the linker: it should perform the "magic" write to the TRAM0.w with "VEC4 select = VEC4.z".
+There is also dependency on the linker: it should perform the "magic" write to the TRAM0.w with "VEC4 select = VEC4.z". **Unknown:** what supplies that VEC4.z input. Every `(z)` link word tested (all columns fp20, different swizzles, exports and rows) read zero, while the same linker without `(z)` read the export, so the bit switches the link's source to an input these programs do not populate (note 10). `gl_FragCoord.z` depends on this and is not established end to end.
 
 ## TEX instruction word encoding
 
@@ -511,14 +592,29 @@ The TEX instruction takes the texture coordinates and LOD bias from the first ro
 
 |   Bits | Meaning                               |
 |-------:|:--------------------------------------|
-| 13..31 | ???                                   |
+| 14..31 | bit 14 is not a projective divide; 15..31 inert (confirmed, note 11) |
+|     13 | explicit LOD                          |
 |     12 | enable bias                           |
-|     11 | ???                                   |
+|     11 | inert (confirmed, note 11)            |
 |     10 | enable                                |
-|   6..9 | ???                                   |
+|   6..9 | inert (confirmed, note 11)            |
 |      5 | sampled data destination regs select  |
 |      4 | texcoords / lod regs select           |
 |   0..3 | sampler index                         |
+
+"Inert" is scoped to what the harness can bind: `RGBA8888`, `dxt1`, `etc1` and
+`d16` surfaces, all linear 2D. Setting bits 6, 7, 8, 9, 11, 15, 16, 20, 24, 28
+or 31 on a sample that demonstrably moves with bit 5, bit 4 and the coordinate
+leaves the result byte-identical (note 11). Cube maps and shadow samplers have
+no binding path in the test driver, so nothing here covers them. Bit 14 does not
+halve `s` when R is 2.0, so it is not the NV30 projective divide. R has no
+observable effect on these descriptors (note 19).
+
+A `D16` descriptor samples as zero in every component rather than reading the
+surface's 16-bit texels; the RGBA path over the same coordinates and program
+returns four distinct colours, so this is the depth-format path, not the
+coordinates or destination registers. **Unknown** whether another descriptor
+reaches the texels (note 19).
 
 
 #### Texture coordinates and LOD registers select:
@@ -529,6 +625,17 @@ The texture coordinate components (S, T, R) and level-of-detail bias are loaded 
 |-------:|:-----------------------------|
 |      1 | R2, R3, R0, R1               |
 |      0 | R0, R1, R2, R3               |
+
+The fourth register from that select (R3, or R1 when the select is 1) carries
+the level of detail. Which kind depends on bits 12 and 13, and they do not
+combine (confirmed, note 15):
+
+| bit 13 | bit 12 | meaning |
+|-------:|-------:|:--------|
+| 0 | 0 | LOD from the unit's own derivative estimate; the register is ignored |
+| 0 | 1 | **bias**: the estimate plus the register, clamped at 0 (what `TXB` emits) |
+| 1 | 0 | **explicit**: the register is the LOD, no estimate involved |
+| 1 | 1 | bias wins - bit 13 is ignored |
 
 #### Sampled data destination registers select:
 
@@ -693,3 +800,32 @@ These seems to be for GoForce (based on filing dates):
 - [EP1665165: "Pixel processing system and method"](https://patents.google.com/patent/EP1665165)
 - [US8711155: "Early kill removal graphics processing system and method"](https://patents.google.com/patent/US8711155)
 - [US7199799: "Interleaving of pixels for low power programmable processor"](https://patents.google.com/patent/US7199799)
+
+## GLES2 operation checklist
+
+The table answers, for each operation the required subset needs: which
+instruction emits it, where its operands come from, what it reads and writes,
+where it can run, and how well it is established. Row/column details are in the
+sections above.
+
+| GLES2 operation | instruction | operands and format | stage / batch | constraints | status |
+|:--|:--|:--|:--|:--|:--|
+| varying interpolation | MFU `ipl` (`varN` slots) | TRAM row index bits 3..6, `VAR1` fp20 or `VAR2` two fx10 | MFU; weights earlier in the batch or an earlier batch | both weights must be written; a fetch uses only earlier writes in its batch | **Confirmed** (notes 4, 10) |
+| flat varying / provoking vertex | `(dis)` on every link column | linker state, not the shader word | MFU | per-component `(dis)` not established | **Confirmed** for all-columns; **Unknown** for one column (note 26) |
+| special function | MFU `RCP/RSQ/LG2/EX2/SQRT/SIN/COS/FRC` plus `PRE*` | one row register, fp20; result in place or via `sfu` source | MFU | `PRE` and main must share the operand and may split across batches | **Confirmed** (note 7) |
+| varying/constant read | MFU row source, ALU `uN`/`rN` | uniform 32..63, rows 0..15, row 4 = reciprocal w | MFU/ALU | rows rewritten by the same group read their old value | **Confirmed** (notes 4, 6) |
+| add / multiply / multiply-add | ALU `MAD` | `rA*rB + rC*rD`, four operand modifiers | ALU, any packet | result scale 0..3; write masks choose fp20 vs fx10 | **Confirmed** (note 1) |
+| multiply without addend | ALU `MUL` (bit 59) | same fields, addend dropped; two products in the two halves | ALU | `.l*`/`.*h` write both halves, `.lh` keeps one | **Confirmed** (note 1) |
+| min / max | ALU `MIN`/`MAX` | `min/max(rA*rB, rC*rD)` | ALU | operand behaviour not isolated from the encoder's description | **Inferred** |
+| compare / select | ALU condition codes plus `(eq)/(gt)/(ge)` | condition applies to the ALU result, 0.0 or 1.0 | ALU | condition register written in the same batch reads zero | **Confirmed** (notes 13, 18) |
+| clamp to 0..1 | ALU `(sat)` (bit 56) | after result scale, before condition | ALU | applies to fp20 and fx10 write formats | **Confirmed** (note 48) |
+| texture sample | TEX | coordinates S,T,R + LOD from the selected row pair; result two registers of four fx10 | TEX; coordinates from a prior group | bits 6..9, 11 and 15..31 inert on the tested 2D descriptors; sampler index in bits 0..3 | **Confirmed** (notes 2, 11, 15) |
+| explicit / bias LOD | TEX bits 13 / 12 | fourth row register | TEX | bit 12 wins when both set | **Confirmed** (note 15) |
+| discard | ALU write to register 76 | any non-zero result discards | ALU | write mask ignored; condition on the instruction or an earlier batch | **Confirmed** (note 18) |
+| depth / stencil side effects of discard | blob's four-store sequence: coverage rt3, stencil rt2, depth rt0, colour rt1 | DW per batch | DW | depth still written by the rasterizer; program must write stencil; coverage is scratch | **Confirmed** (notes 18, 24) |
+| fragment colour output | DW `store rt1, r0/r1 or r2/r3` | payload `r2.lo, r2.hi, r3.lo, r3.hi`; RGBA8888 conversion | DW | one DW position per batch; one DW per group for a predictable payload | **Confirmed** (notes 24, 29, 42) |
+| fragment position | row registers 72/73 | fx10 in the high half; `x + 8192`, `8192 + height - 1 - y` | ALU operand | offset not separable from the 8-bit conversion | **Confirmed** formula, **Inferred** offset (note 8) |
+| polygon face | row register 75 | fx10 low half: +1.0 or 0.0 | ALU operand | fp20 and high-half reads are zero | **Confirmed** (note 8) |
+| `gl_FragCoord.z` | r3 fetch plus the VEC4.z link write | two fp20 halves recombined by `1/1000 + max(0,r3.lo)/4000 + max(0,r3.hi)/4` | MFU fetch, later ALU | needs a populated VEC4.z input that no tested link produced | **Unknown** (note 10) |
+| integer / bitwise / shift | - | - | - | outside GLES2 | **Not required** |
+| cube maps, shadow samplers, projective divide | - | - | - | no binding path, bit 14 not a divide | **Not required / Unknown** |

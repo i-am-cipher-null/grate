@@ -326,7 +326,7 @@ The ALU instructions comes in packets of 3 or 4 scalar instructions (the fourth 
 |     60 | accumulate this (add the previous slot's result) |
 |     59 | addition disable         |
 | 57..58 | scale result             |
-|     56 | saturate result          |
+|     56 | saturate result, clamp to 0..1 (note 48) |
 | 54..55 | condition code           |
 | 47..53 | destination register     |
 |     46 | write high subregister   |
@@ -335,6 +335,15 @@ The ALU instructions comes in packets of 3 or 4 scalar instructions (the fourth 
 | 19..31 | operand rB               |
 |  6..18 | operand rC               |
 |   0..5 | operand rD               |
+
+**Bit 56 clamps the result to 0.0 .. 1.0 (measured, note 48).** The clamp is
+applied after the result scale and before the condition code, for `MAD`, `MUL`
+and `MAX`, in both the fp20 (`.lh`) and fx10 (`.l*`) write formats: 2.0 stores
+as 1.0, -0.5 as 0.0, and an in-range value is unchanged. `MIN` shares the path
+by inference only; the accumulate and condition-register write paths were not
+combined with the bit. A backend can spell a clamp with `(sat)` instead of a
+`MIN`/`MAX` pair, but GLES2 has no saturate operation and the bit is optional.
+The ordering rows are in section 48.
 
 **Bits 60 and 61 are the accumulate pair (measured).** `(this)` (bit 60) makes
 the instruction add the *previous slot's* result and ignore its own `rC`
@@ -1508,7 +1517,7 @@ The MFU unit can fetch and interpolate 4 component vectors per instruction and/o
 |  7..13 | var1     |
 |   0..6 | var0     |
 
-Each 7-bit `varN` slot is `[0]` saturate, `[2:1]` opcode, `[7:3]` a **5-bit row
+Each 7-bit `varN` slot is `[0]` saturate, `[2:1]` opcode, `[6:3]` a **4-bit row
 index** into TRAM. `libcgc/shader.c` prints exactly that field as `v<n>`, and the
 blob's output for two linked varyings is `ipl: var1 v0, var1 v0, var1 v1, var1
 v1` - dense row indices 0 and 1, unrelated to the GLSL `location`s the varyings
