@@ -701,18 +701,19 @@ rotations:
 |:--|:--|
 | one-packet group | that packet's slot-N result, from any other slot; a read in slot N itself is 0 |
 | group with M=2 or 3 packets | packet (k-1) mod M's slot-N result, for any reading slot; a packet never sees its own results |
-| M=4, one packet per batch (size 4) | full packet cycle, including packet 3 to packet 0, for all four latches |
+| M=4, one packet per batch (size 4) | full packet cycle demonstrated for alu0; the other latch indices were not exhaustively tested |
 | M=4, size 2 packed 3+1 or 1+3 | full packet cycle, including every latch's packet-3-to-packet-0 wrap |
 | M=4, size 2 packed 2+2 | three forward edges work for all four latches; the wrap packet 3 to packet 0 works only for alu3, written in slot 3; wraps for alu0..alu2 return 0 |
 
 The read is group-scoped, and in a multi-packet group a packet does not see its
 own results. M=2 and M=3 form complete rotations in the tested arrangements.
-M=4 is packing-dependent: at size 2, both 3+1 and 1+3 have all three forward
+M=4 is packing-dependent. At size 2, both 3+1 and 1+3 have all three forward
 edges for all four latches and all four wrap latches readable from every
 reader slot (note 39). The 2+2 split at size 2 is the exception: its forward
 edges work for all four latches, own-packet and two-packets-apart reads are 0,
 but only packet 3 slot 3 feeds packet 0's alu3; wraps for alu0..alu2 are 0
-(note 38). The complete cycle also holds at size 4 with one packet per batch
+(note 38). With one packet per batch at size 4, a complete cycle was
+demonstrated for alu0; the other latch indices were not exhaustively tested
 (note 38). The 2+2 restriction has been isolated to that tested packing, but
 its mechanism remains unknown; do not apply the complete modulo-M cycle to
 every M=4 packing.
@@ -897,9 +898,11 @@ same chain that works in a one-packet batch dies in a three-packet one:
 M=2 or M=3 packets, a latch read in slot S of packet k is served by packet
 **(k-1) mod M**, for every latch index and any reading slot. M=1 is the
 separately measured one-packet case, with same-packet cross-slot forwarding
-and own-slot exclusion. The formula is established for M=1 to 4. At M=4 the wrap holds fully when each
-batch holds one packet and only through slot 3 when the group's four packets sit
-in two batches (notes 38), so the wrap edge is the part the packing affects. That is why the three-packet "two packets apart" row
+and own-slot exclusion. M=4 is packing-dependent: the size-2 splits 3+1 and
+1+3 have the complete four-latch cycle, while size-2 split 2+2 has only the
+slot-3 packet-3-to-packet-0 wrap (notes 38, 39). With one packet per batch
+at size 4, the full cycle was demonstrated for alu0; other latch indices
+were not exhaustively tested (note 38). That is why the three-packet "two packets apart" row
 reads 0 - packet 2's source is packet 1, not packet 0 - and why the backward
 row of the table below is nonzero. The earlier "previous packet, forward only /
 packet 0 sees nothing" wording came from a backward probe that moved latch
@@ -929,9 +932,11 @@ fixed by the packet index and ignores what the reader itself wrote.
 `alu_buffer_size` 2 rotates over the group's two batches (forward `0x10`,
 backward `0x40`) and size 3 over its three, including the 0<-2 wrap (`0x40`).
 At size 1 the group contains only the single-packet case. Thus M is the total
-ALU packet count in the group, not the count in an individual batch, for the
-arrangements measured (M up to 4). The section above's "one packet later, same
-group" rows are the M=2/M=3 case of the same rule.
+ALU packet count in the group in the arrangements measured. For M=4, the
+size-2 3+1 and 1+3 shapes have a full four-latch cycle, the size-2 2+2 shape
+has the restricted wrap, and the size-4 one-packet-per-batch test establishes
+the complete cycle for alu0 only (notes 38, 39). The section above's "one
+packet later, same group" rows are the M=2/M=3 case of the same rule.
 
 The group carry follows the group's **last** packet: a write in the last packet
 of a three-packet batch carries (`0x10`), the same write in its first packet
@@ -959,10 +964,12 @@ the code does not select the latch - a write issued from slot 1 is readable as
 The scheduler rule supported by the complete tests is: use same-packet
 cross-slot forwarding with own-slot exclusion for a one-packet group; for
 multi-packet groups use packet (k-1) mod M only in the tested complete
-arrangements. At M=4, a group split 3+1 or 1+3 at size 2, or one packet per
-batch at size 4, has the full cycle. A size-2 2+2 group has the forward edges
-but only the slot-3 packet-3-to-packet-0 wrap; treat alu0..alu2 wrap edges as
-unavailable. Do not treat this rotation as storage across a group boundary.
+arrangements. At M=4, a size-2 group split 3+1 or 1+3 has the full four-latch
+cycle. A size-2 2+2 group has the forward edges but only the slot-3
+packet-3-to-packet-0 wrap; treat alu0..alu2 wrap edges as unavailable. The
+size-4 one-packet-per-batch test demonstrates the full cycle for alu0 only;
+do not assume the other latch indices were proven for that packing. Do not
+treat this rotation as storage across a group boundary.
 
 The separate flush carry is established only for a one-batch group: the
 previous group's last packet's slot-0 result into slot 0 of the next group.
