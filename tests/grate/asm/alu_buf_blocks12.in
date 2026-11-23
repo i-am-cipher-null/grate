@@ -1,0 +1,133 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Twelve batches, one ALU packet each with all four slots, for group-boundary
+ * questions at `alu_buffer_size` 4.
+ *
+ * `asm/alu_buf_blocks8.in` holds two size-4 groups and was enough for the
+ * within-group map (notes 38), but a cross-group read has to be observed from
+ * the *next* group's first batch - a row written in a group only reaches a
+ * store in the group after it - so a write in group A and a read in group B
+ * needs a third group to store from. Twelve batches is exactly three groups at
+ * size 4:
+ *
+ *   group A  batches 0..3    one packet each, four slots per packet
+ *   group B  batches 4..7    the readers of anything that crossed
+ *   group C  batches 8..11   the store (batch 8, group C's first batch)
+ *
+ * One `ALU:` block is one packet and its four `ALU0..ALU3` slots are that
+ * packet's slots, so a write in `ALU1` fills `alu1`, and reading `alu1` from a
+ * packet's `ALU0` changes the reading slot while keeping the latch index.
+ *
+ * The same template is also run at `alu_buffer_size` 2 and 3, where the groups
+ * are two and three batches wide, as the negative reference arrangements of
+ * notes 36 and 38 in the identical shape.
+ *
+ * Values: u0 = 0.0625 (0x10), u1 = 0.125 (0x20), u2 = 0.25 (0x40), u3 = 0.375
+ * (0x60) as fx10.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@Q000@
+		ALU1:	@Q001@
+		ALU2:	@Q002@
+		ALU3:	@Q003@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@Q010@
+		ALU1:	@Q011@
+		ALU2:	@Q012@
+		ALU3:	@Q013@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@Q020@
+		ALU1:	@Q021@
+		ALU2:	@Q022@
+		ALU3:	@Q023@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@Q030@
+		ALU1:	@Q031@
+		ALU2:	@Q032@
+		ALU3:	@Q033@
+	DW:	@D3@
+;
+EXEC
+	ALU:
+		ALU0:	@Q040@
+		ALU1:	@Q041@
+		ALU2:	@Q042@
+		ALU3:	@Q043@
+	DW:	@D4@
+;
+EXEC
+	ALU:
+		ALU0:	@Q050@
+		ALU1:	@Q051@
+		ALU2:	@Q052@
+		ALU3:	@Q053@
+	DW:	@D5@
+;
+EXEC
+	ALU:
+		ALU0:	@Q060@
+		ALU1:	@Q061@
+		ALU2:	@Q062@
+		ALU3:	@Q063@
+	DW:	@D6@
+;
+EXEC
+	ALU:
+		ALU0:	@Q070@
+		ALU1:	@Q071@
+		ALU2:	@Q072@
+		ALU3:	@Q073@
+	DW:	@D7@
+;
+EXEC
+	ALU:
+		ALU0:	@Q080@
+		ALU1:	@Q081@
+		ALU2:	@Q082@
+		ALU3:	@Q083@
+	DW:	@D8@
+;
+EXEC
+	ALU:
+		ALU0:	@Q090@
+		ALU1:	@Q091@
+		ALU2:	@Q092@
+		ALU3:	@Q093@
+	DW:	@D9@
+;
+EXEC
+	ALU:
+		ALU0:	@Q100@
+		ALU1:	@Q101@
+		ALU2:	@Q102@
+		ALU3:	@Q103@
+	DW:	@D10@
+;
+EXEC
+	ALU:
+		ALU0:	@Q110@
+		ALU1:	@Q111@
+		ALU2:	@Q112@
+		ALU3:	@Q113@
+	DW:	@D11@
+;

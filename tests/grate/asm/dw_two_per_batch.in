@@ -1,0 +1,35 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Encoding-limit probe: two DW instructions in one exec batch.
+ *
+ * Not a hardware program. The grammar's exec-batch rule is
+ *
+ *     EXEC PSEQ MFU TEX ALU_INSTRUCTIONS ALU_COMPLEMENT DW_INSTRUCTION ';'
+ *
+ * so a batch carries exactly one DW word, and `ALU:` blocks divide a batch into
+ * packets without adding a DW slot. This file names a DW in both of a batch's
+ * two packets to show the grammar rejects it, which is the evidence for "two
+ * DWs in one packet cannot be measured on this assembler" - the limit belongs
+ * to the encoding, not to the hardware.
+ *
+ * Expected: the parser rejects the file (a syntax error at the second `DW:`).
+ * Keep the error text with whatever record quotes it.
+ */
+
+.constants
+	[0] = 0.0625;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r2.l*,  u0,  #1,  #0
+	ALU:
+		ALU0:	MAD  r2.l*,  u0,  #1,  #0
+	DW:	store rt1, r0, r1
+	DW:	store rt5, r0, r1
+;
+EXEC
+	DW:	NOP
+;

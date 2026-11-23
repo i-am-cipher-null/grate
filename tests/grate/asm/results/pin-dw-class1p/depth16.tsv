@@ -1,0 +1,16 @@
+run	phase	name	iteration	row0_0	row0_1	row0_2	row0_3	mid_0	mid_1	last_0	last_1
+pin-dw-class1p	variant	c1p-depth-then-colour	1	0F42	0F42	0F42	0F42	0F42	0F42	0F42	0F42
+pin-dw-class1p	variant	c1p-depth-then-colour	2	0F42	0F42	0F42	0F42	0F42	0F42	0F42	0F42
+pin-dw-class1p	variant	c1p-depth-then-colour	3	0F42	0F42	0F42	0F42	0F42	0F42	0F42	0F42
+pin-dw-class1p	variant	c1p-colour-then-depth	1	0000	0000	0000	0000	0000	0000	0000	0000
+pin-dw-class1p	variant	c1p-colour-then-depth	2	0000	0000	0000	0000	0000	0000	0000	0000
+pin-dw-class1p	variant	c1p-colour-then-depth	3	0000	0000	0000	0000	0000	0000	0000	0000
+pin-dw-class1p	variant	c1p-single-depth	1	0F42	0F42	0F42	0F42	0F42	0F42	0F42	0F42
+pin-dw-class1p	variant	c1p-single-depth	2	0F42	0F42	0F42	0F42	0F42	0F42	0F42	0F42
+pin-dw-class1p	variant	c1p-single-depth	3	0F42	0F42	0F42	0F42	0F42	0F42	0F42	0F42
+pin-dw-class1p	variant	c1p-single-colour	1	8000	8000	8000	8000	8000	8000	8000	8000
+pin-dw-class1p	variant	c1p-single-colour	2	8000	8000	8000	8000	8000	8000	8000	8000
+pin-dw-class1p	variant	c1p-single-colour	3	8000	8000	8000	8000	8000	8000	8000	8000
+pin-dw-class1p	variant	c1p-none	1	8000	8000	8000	8000	8000	8000	8000	8000
+pin-dw-class1p	variant	c1p-none	2	8000	8000	8000	8000	8000	8000	8000	8000
+pin-dw-class1p	variant	c1p-none	3	8000	8000	8000	8000	8000	8000	8000	8000

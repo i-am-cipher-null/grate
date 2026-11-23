@@ -1,0 +1,74 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Two-packet group for the send/recv packet-boundary question.
+ *
+ * Notes 13 and 16 measured the markers inside one packet: `(this)` is recv and
+ * adds the previous slot's raw result, `(other)` is send, and the transfer pairs
+ * are (0,1) (1,0) (1,2) (2,0) (2,3) (3,0) (3,2). Notes 37 put the markers in a
+ * two-packet batch and found no transfer across the packet boundary, but every
+ * arrangement there placed the receiver in slot 0 of its packet, where notes 13
+ * and 16 say a recv has nothing to accumulate from anyway.
+ *
+ * This template asks the specific remaining pairing: a sender in packet 0 slot
+ * 0 and a receiver in packet 1 slot 1, the (0,1) pair that does transfer inside
+ * one packet.
+ *
+ *   batch 0  packet 0  slots 0..3  A0..A3   group A
+ *            packet 1  slots 4..7  A4..A7
+ *   batch 1  B0..B3                          group B, the store
+ *   batch 2  C0..C3                          group C
+ *
+ * At `alu_buffer_size` 1 every batch is its own group, so a row written in batch
+ * 0 is visible to batch 1's store and there is no group carry in the way.
+ *
+ * Values are chosen so the receiver's own operand, the previous slot of its own
+ * packet and the sender all name different numbers:
+ *
+ *   u0 = 0.0625 (0x10)  the receiver's own rA
+ *   u1 = 0.125  (0x20)  an unused filler
+ *   u2 = 0.25   (0x40)  what the receiver's previous slot writes
+ *   u3 = 0.375  (0x60)  the sender's value
+ *
+ * A recv result of 0x10 means it accumulated nothing, 0x50 means it added its
+ * own packet's previous slot, and 0x70 means the sender's value arrived across
+ * the packet boundary.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	ALU:
+		ALU0:	@A4@
+		ALU1:	@A5@
+		ALU2:	@A6@
+		ALU3:	@A7@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@C0@
+		ALU1:	@C1@
+		ALU2:	@C2@
+		ALU3:	@C3@
+	DW:	@D2@
+;

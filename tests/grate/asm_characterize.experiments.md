@@ -5581,6 +5581,397 @@ pinned rows exactly. Regenerate with
 `python3 tests/grate/asm/make_alu_pack4.py` (and `--set wrap|probe|probe2|size4`),
 and pin with `--results DIR`.
 
+## 39. M = 4 with 3 + 1 and 1 + 3 packet splitting
+
+Section 38 put four ALU packets in one size-2 group two ways: two packets in
+each of the group's two batches (2 + 2) and, at size 4, one packet per batch
+(1 + 1 + 1 + 1). The forward map held in both; the wrap 0 <- 3 held for latch 0
+only in the one-packet-per-batch shape, and in the 2 + 2 shape only through
+latch 3. Because 2 + 2 and 1 + 1 + 1 + 1 differ in buffer size, batch count and
+packing at once, this set changes only the packing inside the size-2 group:
+three packets in the first batch and one in the second (3 + 1), then one and
+three (1 + 3).
+
+Hypotheses:
+
+| hypothesis | prediction |
+|:--|:--|
+| the 2 + 2 restriction is what a four-packet group does | 3 + 1 and 1 + 3 also lose latches 0-2's wrap |
+| the batch boundary position decides | the shape with the last packet alone in the second batch (3 + 1) loses the wrap, or the 1 + 3 shape does |
+| only 2 + 2 is affected | both new packings have the full map |
+
+### Shape, manifests, words
+
+`asm/alu_pack43.in` and `asm/alu_pack13.in` are six batches each - three whole
+groups at `alu_buffer_size` 2 - with two `ALU:` blocks in one batch and three
+in the other of group A (batches 0 and 1). The assembler derives each batch's
+count from its blocks, so the 3 + 1 upload is
+
+    batch 0  0x00000003   count 3, packet address 0
+    batch 1  0x0000000D   count 1, packet address 3
+    batch 2  0x00000011   count 1, address 4
+    batch 3  0x00000015     ...    batch 4  0x00000019    batch 5  0x0000001D
+
+and 1 + 3 is `0x00000001` then `0x00000007` (count 3, address 1) followed by the
+same four words. Every one of the 996 `0x801` upload words in each manifest is
+paired with `0x806` = 0, and the `ref-*` variants produce their own templates'
+counts, which is what makes the comparison a comparison of the intended shapes
+rather than of one patched schedule word.
+
+Manifests `asm_characterize.alu_pack43.json` and
+`asm_characterize.alu_pack13.json` (55 variants each) from
+`make_alu_pack_dist.py --set 31|13`: the complete 4 x 3 forward matrix (every
+latch against every edge), the complete 4 x 4 wrap matrix (every latch against
+every reading slot), the negatives, the formats, and six same-run references.
+
+### The forward matrix holds in both packings
+
+| read | 3 + 1 | 1 + 3 |
+|:--|--:|--:|
+| `fwd-s0s1-al0` .. `al3` (packet 1 slot L reads aluL written by packet 0) | `0x10` | `0x10` |
+| `fwd-s1s2-al0` .. `al3` | `0x20` | `0x20` |
+| `fwd-s2s3-al0` .. `al3` | `0x40` | `0x40` |
+
+Twelve combinations per packing, all twelve correct: the forward edges are not
+latch-dependent and not packing-dependent.
+
+### The wrap matrix is complete in both packings
+
+| read | 3 + 1 | 1 + 3 |
+|:--|--:|--:|
+| `wrap-al0-r0` .. `-r3` | `0x60` | `0x60` |
+| `wrap-al1-r0` .. `-r3` | `0x60` | `0x60` |
+| `wrap-al2-r0` .. `-r3` | `0x60` | `0x60` |
+| `wrap-al3-r0` .. `-r3` | `0x60` | `0x60` |
+
+All sixteen latch/reading-slot combinations in each packing return the group's
+last packet's byte. Packet 3's slot L write reaches packet 0's aluL read for
+every L, and the reading slot does not matter - the same reading-slot
+independence section 38 saw for the one working latch, now for all four.
+
+| variant | 3 + 1 | 1 + 3 | reading |
+|:--|--:|--:|:--|
+| `own-p0` .. `own-p3` | `0x00` | `0x00` | a packet never sees its own result |
+| `two-p0p2`, `two-p1p3`, `two-p2p0`, `two-p3p1` | `0x00` | `0x00` | two apart is not the predecessor, in either direction |
+| `nonpred-p1-reads-p2`, `nonpred-p2-reads-p3` | `0x00` | `0x00` | a later packet does not serve an earlier one |
+| `both-p1p3-read0` | `0x60` | `0x60` | of two writers the group's predecessor supplies the read |
+| `both-p0p1-read2` | `0x20` | `0x20` | the immediate predecessor supplies it |
+| `wrap-nowrite` | `0x00` | `0x00` | no write, no value |
+| `wrap-write-only` | `0x60` | `0x60` | the slot-0 write itself lands |
+| `row-direct` | `0x60` | `0x60` | the last packet's row reaches the next group's store |
+| `lh-fwd` | `0x10` | `0x10` | the fp20 path forwards the one-hop source |
+| `lh-wrap` | `0x60` | `0x60` | and wraps |
+| `lh-write-l-read`, `bare-read` | `0x00` | `0x00` | the two format mismatches of section 28 |
+| `unmarked`, `none` | `0x00` | `0x00` | baselines |
+
+### The same-run references bracket the result
+
+| variant | word | reading |
+|:--|--:|:--|
+| `ref22-fwd01` | `0x10` | the 2 + 2 packing's forward edge, re-measured in this session |
+| `ref22-wrap-al0` | `0x00` | the 2 + 2 packing's latch-0 wrap, still missing |
+| `ref22-wrap-al3` | `0x60` | the 2 + 2 packing's latch-3 wrap, still present |
+| `ref11-wrap` | `0x60` | the 1 + 1 + 1 + 1 packing's latch-0 wrap |
+| `ref-rot2-ctl`, `ref-rot3-ctl` | `0x40`, `0x7F` | the known-good M = 2 and M = 3 rotations |
+
+So in one run the 2 + 2 shape reproduces its restricted wrap while both new
+four-packet packings have the complete map. The restriction therefore belongs
+to the 2 + 2 packing specifically, not to "four packets in one size-2 group",
+not to "the last packet in the second batch" (3 + 1 has that and works), and not
+to "three packets in the second batch" (1 + 3 has that and works).
+
+### What is measured, inferred and open
+
+* **Measured**: with `alu_buffer_size` 2 and four packets split 3 + 1 or 1 + 3,
+the cyclic map is complete - all four forward edges for all four latches, and
+all sixteen wrap combinations. The 2 + 2 shape's latch-0/1/2 wrap is absent in
+the same run.
+* **Inferred**: that the failing variable is the two-packets-in-each-batch
+shape. The tested shapes cover only four-packet groups, so "3 + 1 at other
+sizes" or "two packets per batch with a different group size" are untested.
+* **Open**: why 2 + 2 loses latches 0-2's wrap when 3 + 1, 1 + 3 and
+1 + 1 + 1 + 1 do not; whether the slot-3 specialness of 2 + 2 is the same
+mechanism seen from the other side; whether a group with two packets in a batch
+and a different packet count behaves like 2 + 2. The mechanism is still not
+measured.
+
+### Recorded runs
+
+`pin-alu-pack43` / `verify-alu-pack43` and `pin-alu-pack13` /
+`verify-alu-pack13` hold 169 rows each (55 variants, three repeats, controls),
+with `schedule-words.tsv` from the run itself. The pin runs were made on
+`1d440df1b497` with the new files untracked; the verify runs are the pinned
+manifests. Two independent runs of each set agree row for row, every variant's
+three repeats agree, and the controls pass before and after. Regenerate with
+`python3 tests/grate/asm/make_alu_pack_dist.py --set 31|13` and pin with
+`--results DIR`.
+
+## 40. Group-boundary carry at alu_buffer_size 4
+
+Notes 31 and 32 measured a carry from one group's last packet to the next
+group's slot 0 at `alu_buffer_size` 1; notes 36 and 38 found nothing at sizes 2,
+3 and 4 in one-packet-per-batch shapes, but the size-4 test read a group's
+values with the store in the *same* group's next batch and never tried a writer
+in each packet position.
+
+`asm/alu_buf_blocks12.in` is twelve batches, one ALU packet each with four
+slots, which is exactly three size-4 groups:
+
+    group A  batches 0..3   the writer
+    group B  batches 4..7   the reader
+    group C  batches 8..11  the store, in group C's first batch
+
+Every batch word is count 1 at packet address 0..11 (`0x01`, `0x05`, ... ,
+`0x2D`), with `0x806` = 0 for all 486 upload words. The store has to sit in the
+next group: a row written in a group is visible to the following group's first
+batch, and putting the reader and the store in the same instruction would let a
+zero mean either.
+
+Manifest `asm_characterize.alu_carry4.json` (14 variants) from
+`make_alu_carry4.py`.
+
+| variant | writer | reader | word |
+|:--|:--|:--|--:|
+| `carry-p3-l0-r0` | group A's last packet, alu0 | group B slot 0, alu0 | `0x00` |
+| `carry-p3-l0-r1` | the same write | group B slot 1, alu0 | `0x00` |
+| `carry-p0-l0` | group A's first packet | group B slot 0 | `0x00` |
+| `carry-p1-l0` | group A's second packet | group B slot 0 | `0x00` |
+| `carry-p2-l0` | group A's third packet | group B slot 0 | `0x00` |
+| `carry-p3-l1-r2` | group A's last packet slot 1 | group B slot 2, alu1 | `0x00` |
+| `carry-p3-l1-r0` | the same | group B slot 0, alu1 | `0x00` |
+| `carry-none` | none | group B slot 0 | `0x00` |
+| `row-direct` | group A's last packet writes r2 | stored from the row | `0x60` |
+| `fwd-within-s4` | batch 2 | batch 3, both in group A | `0x40` |
+| `back-within-s4` | batch 3 | batch 2 | `0x00` |
+| `carry-ref-s2`, `carry-ref-s3` | group A's last batch, same shape | next group | `0x00` |
+| `carry-ctl-s1` | size 1, batch 0 | batch 1 | `0x10` |
+
+No latch value crosses a size-4 group boundary: not from the last packet, not
+from any earlier packet, not through latch 0 and not through latch 1, and not
+from a second reading slot. The positive controls bracket the zeroes: the write
+itself lands (`row-direct` `0x60`), a within-group read is observable from the
+next group's store (`fwd-within-s4` `0x40`), the non-predecessor backward read
+inside the group is zero, and the size-1 arrangement carries (`carry-ctl-s1`
+`0x10`) in the same run.
+
+So the size-1 carry model does **not** extend to size 4, and the "previous
+group's last packet's slot-0 result" path is measured only for a group that is
+a single batch. The question "does the writer's position inside the group
+matter" is answered by the four writer positions all reading zero: it does not
+rescue the carry.
+
+### Recorded runs
+
+`pin-alu-carry4` / `verify-alu-carry4` hold 46 rows each (14 variants, three
+repeats, controls) with `schedule-words.tsv`. Two independent runs agree row for
+row and every repeat agrees. Regenerate with
+`python3 tests/grate/asm/make_alu_carry4.py`, pin with `--results DIR`.
+
+## 41. send/recv across a packet boundary, receiver in slot 1
+
+Notes 37 measured no send/recv transfer between the packets of a two-packet
+batch, but every receiver there sat in slot 0 of its packet, where the
+one-packet matrix says a recv has no earlier slot to add. This set asks the
+remaining specific pairing: sender packet 0 slot 0, receiver packet 1 slot 1 -
+the (0,1) pair that does accumulate inside one packet.
+
+`asm/alu_send_cross.in` is a size-1 program whose first batch holds two packets,
+so the group is the batch and the store in batch 1 is the next group. Upload
+words are `0x00000002` (batch 0: count 2, address 0), `0x00000009` (count 1,
+address 2) and `0x0000000D`; `0x806` = 0 for all 108 upload words.
+
+Payloads are chosen so three readings name three different words: the
+receiver's own rA is 0x10, its own packet's previous slot writes 0x40, and the
+sender's value is 0x60. A recv result of 0x10 accumulated nothing, 0x50 added
+its own packet's previous slot, 0x70 would mean the sender crossed.
+
+Manifest `asm_characterize.alu_send_cross.json` (12 variants) from
+`make_alu_send_cross.py`.
+
+| variant | word | reading |
+|:--|--:|:--|
+| `xfer-s0-s1` | `0x50` | send packet 0 slot 0, recv packet 1 slot 1, previous slot writing 0x40: only its own packet's previous slot arrived, not the sender |
+| `xfer-s0-s1-noprev` | `0x10` | the same with the previous slot NOP: nothing arrived at all |
+| `plain-s0-s1` | `0x10` | the unmarked twin: no accumulation |
+| `send-only` | `0x60` | the send marker does not change the sender's own write |
+| `recv-only` | `0x50` | recv does accumulate inside packet 1 |
+| `reverse-s0-s1` | `0x50` | send in packet 1, recv in packet 0: the same, own packet only |
+| `same-pkt-01` | `0x70` | the (0,1) pair inside one packet still transfers |
+| `alt-1-2` | `0x10` | send packet 0 slot 1, recv packet 1 slot 2: nothing |
+| `xfer-s3-s1` | `0x30` | send packet 0 slot 3, recv packet 1 slot 1: the receiver added packet 1 slot 0's 0x20, not the slot-3 sender's 0x60 |
+| `latch-read-alu0` | `0x60` | an ordinary alu0 read in packet 1 does see packet 0's slot-0 write |
+| `recv-plain-sender` | `0x50` | the marker on the sender removed: unchanged, the marker is what would have to carry a value |
+| `recv-alone-s1` | `0x10` | the bare receiver control |
+
+What this says:
+
+* the recv accumulator is the receiver's **own packet's** previous slot, and it
+  works in a packet that is not the batch's first (`recv-only` `0x50`);
+* the sender's value does not arrive from a different packet in either
+  direction, with the receiver in slot 1 (`xfer-s0-s1` `0x50`, `xfer-s0-s1-noprev`
+  `0x10`, `reverse-s0-s1` `0x50`);
+* `xfer-s3-s1` rules out the reading that a value forwarded by the ordinary
+  latch path is what a recv picks up: the slot-3 sender is invisible to a
+  slot-1 receiver, which added only its own packet's slot 0;
+* the latch path itself does cross packets (`latch-read-alu0` `0x60`), so the
+  absence of a transfer is a property of the marker path, not of packets being
+  unable to see each other;
+* the marker on the sender is necessary but not sufficient: with it removed the
+  result is the same 0x50, i.e. the receiver's own-packet accumulation.
+
+Open: whether any cross-packet send/recv pair exists (the (0,1) pair is the one
+most likely to work, and it does not); whether a recv in packet 1 slot 1 can
+see a send in packet 0 slot 1 through some other slot mapping; why the marker
+path is packet-scoped while the latch path is group-scoped.
+
+### Recorded runs
+
+`pin-alu-send-cross` / `verify-alu-send-cross` hold 40 rows each (12 variants,
+three repeats, controls) with `schedule-words.tsv`; two independent runs agree
+row for row. Regenerate with
+`python3 tests/grate/asm/make_alu_send_cross.py`.
+
+## 42. DW arbitration: three words, the position rule, and the depth class
+
+Notes 29 and 33 measured two DW words in one scheduling group on colour, spill
+and MRT targets and concluded that the first word's target is written with the
+group's final row and the second is dropped. This cycle closes three edges: how
+many DWs a batch can hold at all, what three words in one group do, and whether
+a class-1 (depth) word arbitrates differently from a class-2 (colour) word.
+
+### The encoding allows one DW per batch
+
+The grammar's exec-batch rule is
+`EXEC PSEQ MFU TEX ALU_INSTRUCTIONS ALU_COMPLEMENT DW_INSTRUCTION ';'`, so a
+batch has exactly one DW slot and its `ALU:` blocks divide it into packets
+without adding one. `asm/dw_two_per_batch.in` is the probe: one batch, two
+`ALU:` blocks, two `DW:` lines. The assembler rejects it -
+
+    fs: line 16: syntax error
+    .../dw_two_per_batch.in assembler parse failed
+    (exit status 1)
+
+- and the two controls separate the two changes: the same file with the second
+`DW:` removed parses and runs (exit 0), while the same file with the second
+`ALU:` block removed and both DWs kept fails (exit 1, `fs: line 14: syntax
+error`). Two DWs in one packet, and therefore a same-packet two-DW hardware
+result, **cannot be encoded on this assembler**; the nearest encodable
+arrangement is two words in one group, one per batch, which is notes 33 and the
+`three` set below.
+
+### Three words in one group
+
+`asm/dw_three.in` at `alu_buffer_size` 3: group A is batches 0-2 with one DW
+each, group B is batches 3-5 where batch 3 fetches a target and stores it to
+rt1. Each batch holds two `ALU:` blocks so two row pairs can hold different
+payloads: pair 0 gets A/B/C = `0x44332211`/`0x3D2C1B0A`/`0x7F6E5D4C` and pair 1
+gets D/E/F = `0x0F1E2D3C`/`0x3F4E5D6C`/`0x1F2A3B4C`. Upload words are count 2 at
+addresses 0, 2 and 4 for batches 0-2 and `0x00000000` for the readback batches,
+with `0x806` = 0 for all 324 words. `asm_characterize.dw_three.json` (18
+variants) from `make_dw_arb.py --set three`.
+
+| variant | rt1 | rt4 | rt5 | reading |
+|:--|--:|--:|--:|:--|
+| `three-1-5-4-read1/4/5` | `0x7F6E5D4C` | `0x00` | `0x00` | three words on rt1, rt5, rt4: only the first batch's target is written |
+| `three-4-5-1-read1/4/5` | `0x00` | `0x7F6E5D4C` | `0x00` | reversed order: the other target wins |
+| `same-1-5-1-read1` | `0x00` | - | - | words 0 and 2 both name rt1: nothing is written to it |
+| `same-1-5-1-read5` | - | - | `0x00` | and rt5 is untouched |
+| `single-1-read1`, `single-4-read4`, `single-5-read5` | `0x7F6E5D4C` | `0x7F6E5D4C` | `0x7F6E5D4C` | one word per group writes its target, whichever target it names |
+| `single-1-read5` | `0x00` | - | - | the rt1 program read at rt5: untouched |
+| `single-4-read1`, `single-5-read1` | `0x4C4C4C4C` | `-` | `-` | the rt4/rt5 programs read at rt1: the clear |
+| `pos-b1-1-read1` | `0x00` | - | - | the group's only word in batch 1 stores nothing |
+| `none-read1/4/5` | `0x4C4C4C4C` | `0x00` | `0x00` | baselines |
+
+`asm/dw_size3.in` repeats the three-word arrangement with **one packet per
+batch** (the shape notes 29 and 33 used), upload words count 1 at addresses
+0-2, `0x806` = 0:
+
+| variant | word | reading |
+|:--|--:|:--|
+| `s3-single-1-read1`, `s3-single-4-read4`, `s3-single-5-read5` | `0x7F6E5D4C` | a single word writes rt1, rt4 or rt5 at this size |
+| `s3-three-1-5-4-read1` | `0x7F6E5D4C` | only the first batch's target |
+| `s3-three-1-5-4-read4`, `-read5` | `0x00` | the second and third words' targets are untouched |
+| `s3-single-1-read5`, `s3-none-read1`, `s3-none-read5` | `0x00`, `0x4C4C4C4C`, `0x00` | controls and baselines |
+
+So three words behave exactly like two: the target named by the group's first
+batch is written with the group's final rows and the other targets are not, and
+two words on one target suppress the store entirely. The one-packet-per-batch
+control reproduces both statements with the row pairs of notes 29/33, so the
+three-word result does not depend on the second ALU block.
+
+**One correction to the earlier wording.** "First-DW-wins" and "only a word in
+the group's first batch stores" are not separated by any measurement in this
+section: `pos-b1-1-read1` shows a lone word in a later batch stores nothing, and
+no arrangement puts two words in one batch because the encoding forbids it. The
+measurements are consistent with either reading, and notes 33's conclusion
+should be read as "one observable store per group, from the word in its first
+batch" rather than as an arbitration between two executable words.
+
+### Depth class against colour class
+
+Two templates, both with group A priming r0/r1 and r2/r3 and issuing two DWs and
+group B fetching rt1 and storing it to rt1: `asm/dw_class.in` (two packets per
+batch, `alu_buffer_size` 2) and `asm/dw_two_target.in` (one packet per batch,
+which notes 33 used) with a class-1 word spelled `store rt0, r2, r3 class 1` so
+its payload comes from r1. `GRATE_DEPTH=1` binds a D16 depth surface, whose
+first words the assembler prints; the rasterizer's own z is `0x8000` across the
+quad, so a written depth value is distinguishable from an untouched surface,
+and the colour target's clear `0x4C4C4C4C` is distinguishable from a zero write.
+
+`asm_characterize.dw_class.json` and `asm_characterize.dw_class1p.json` (5
+variants each) from `make_dw_arb.py --set class|class1p`; `depth16.tsv` in each
+result directory is `dump_depth16.py`'s extraction of the printed surface.
+
+| variant | colour | depth16 | reading |
+|:--|--:|--:|:--|
+| `depth-then-colour` (2 pkt/batch) | `0x00000000` | `0x4000` | depth word first: depth gets its payload, colour is written with zero |
+| `colour-then-depth` (2 pkt/batch) | `0x3D2C1B0A` | `0x0000` | colour word first: colour gets the group's rows, depth is written with zero |
+| `single-depth` | `0x4C4C4C4C` | `0x4000` | depth word alone: payload written, colour keeps the clear |
+| `single-colour` | `0x3D2C1B0A` | `0x8000` | colour alone: rows written, depth keeps the rasterizer's z |
+| `none` | `0x4C4C4C4C` | `0x8000` | both baselines in one run |
+| `c1p-depth-then-colour` (1 pkt/batch) | `0x00000000` | `0x0F42` | the same, one packet per batch |
+| `c1p-colour-then-depth` | `0x3D2C1B0A` | `0x0000` | the same, reversed |
+| `c1p-single-depth` | `0x4C4C4C4C` | `0x0F42` | the payload here is the group's final r1 byte (0x3D) times 0x4000 |
+| `c1p-single-colour` | `0x3D2C1B0A` | `0x8000` | colour alone |
+| `c1p-none` | `0x4C4C4C4C` | `0x8000` | baselines |
+
+What this says:
+
+* **The class matters.** With one class-1 word and one class-2 word in a group,
+in either order and in both packings, the first word's surface receives the
+group's rows and the second word's surface receives `0x00000000`. On the colour
+side that is a measured write of zero, because the clear is `0x4C4C4C4C`; on
+the depth side it is a measured write of zero, because the rasterizer leaves
+`0x8000`.
+* **The class-2 pairs do not do that.** Notes 33's two-word colour/MRT and
+colour/spill pairs, re-run in this session, leave the losing target at its
+baseline (`mrt-a5-b1-read1` `0x4C4C4C4C`, not zero). So "first word wins, second
+is dropped" is the class-2 rule; a group containing a class-1 word has a
+second write that lands zeros.
+* The zero is not a surface artefact: a lone class-1 or class-2 word leaves the
+other surface at its baseline, and the readback fetch of an untouched target
+returns its clear or zero as notes 33 measured.
+
+**Open**: whether the class-1 word consumes the row registers (so the next word
+in the group reads zeros) or whether class-1 words bypass the first-wins
+arbitration and then read consumed rows - this set cannot tell the two apart.
+A three-word group with one class-1 word, and a class-1 word placed in a group
+whose rows are written by a later batch, would separate them. Also open: whether
+a class-1 word in a *later* batch of the group stores at all when it is alone
+(here it always shares the group with a class-2 word), and T114 (untested).
+
+### Recorded runs
+
+`pin-dw-three` / `verify-dw-three` 58 rows, `pin-dw-size3` / `verify-dw-size3`
+31 rows, `pin-dw-class` / `verify-dw-class` 19 rows and `pin-dw-class1p` /
+`verify-dw-class1p` 19 rows, three repeats each, with `schedule-words.tsv` for
+all four and `depth16.tsv` for the two class sets. Two independent runs of each
+set agree row for row and the depth16 rows are identical across repeats.
+Regenerate with `python3 tests/grate/asm/make_dw_arb.py --set
+three|size3|class|class1p` and pin with `--results DIR`. The encoding probe is
+`asm/dw_two_per_batch.in`; it is expected to fail and is not part of any
+manifest.
+
 ## What the runner cost
 
 Five things that produced wrong results first:

@@ -1,0 +1,94 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Four-packet group, 1 + 3 packing: one packet in group A's first batch and
+ * three in its second, at `alu_buffer_size` 2.
+ *
+ * The counterpart of `asm/alu_pack43.in`. Same four packets per group, same
+ * buffer size, so comparing the two separates "the group holds four packets"
+ * from "the batch boundary sits before the last packet".
+ *
+ *   batch 0  packet 0   slots 0..3    A0..A3    group A
+ *   batch 1  packet 1   slots 4..7    B0..B3
+ *            packet 2   slots 8..11   B4..B7
+ *            packet 3   slots 12..15  B8..B11
+ *   batch 2  C0..C3                  group B (store for group A's readers)
+ *   batch 3  E0..E3                  group B
+ *   batch 4  F0..F3                  group C (store for group B's readers)
+ *   batch 5  G0..G3                  group C
+ *
+ * Batch 0 emits count 1 at packet address 0 and batch 1 count 3 at address 1;
+ * the counts come from the block counts, not from a patched schedule word.
+ * Here the wrap 0 <- 3 crosses the batch boundary in the other direction from
+ * the 3 + 1 shape, and the forward edges 1 -> 2 and 2 -> 3 stay inside batch 1.
+ *
+ * Values: u0 = 0.0625 (0x10), u1 = 0.125 (0x20), u2 = 0.25 (0x40), u3 = 0.375
+ * (0x60) as fx10.
+ */
+
+.constants
+	[0] = 0.0625;
+	[1] = 0.125;
+	[2] = 0.25;
+	[3] = 0.375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@A0@
+		ALU1:	@A1@
+		ALU2:	@A2@
+		ALU3:	@A3@
+	DW:	@D0@
+;
+EXEC
+	ALU:
+		ALU0:	@B0@
+		ALU1:	@B1@
+		ALU2:	@B2@
+		ALU3:	@B3@
+	ALU:
+		ALU0:	@B4@
+		ALU1:	@B5@
+		ALU2:	@B6@
+		ALU3:	@B7@
+	ALU:
+		ALU0:	@B8@
+		ALU1:	@B9@
+		ALU2:	@B10@
+		ALU3:	@B11@
+	DW:	@D1@
+;
+EXEC
+	ALU:
+		ALU0:	@C0@
+		ALU1:	@C1@
+		ALU2:	@C2@
+		ALU3:	@C3@
+	DW:	@D2@
+;
+EXEC
+	ALU:
+		ALU0:	@E0@
+		ALU1:	@E1@
+		ALU2:	@E2@
+		ALU3:	@E3@
+	DW:	@D3@
+;
+EXEC
+	ALU:
+		ALU0:	@F0@
+		ALU1:	@F1@
+		ALU2:	@F2@
+		ALU3:	@F3@
+	DW:	@D4@
+;
+EXEC
+	ALU:
+		ALU0:	@G0@
+		ALU1:	@G1@
+		ALU2:	@G2@
+		ALU3:	@G3@
+	DW:	@D5@
+;

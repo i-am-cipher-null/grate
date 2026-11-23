@@ -1,0 +1,73 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Three DW words in one size-3 group with one packet per batch.
+ *
+ * `asm/dw_three.in` asks the three-word question at size 3 but gives each batch
+ * two `ALU:` blocks so the two row pairs can hold different payloads. The first
+ * run of that set found rt1 written and rt4/rt5 not, which the committed
+ * two-word set does not show at size 2 - so this template repeats the same
+ * three-word arrangement with one packet per batch, the shape notes 29 and 33
+ * used, to separate "size 3" from "two packets per batch" as the cause.
+ *
+ *   group A  batch 0  prime r0/r1 = A, DW slot 0
+ *            batch 1  prime r0/r1 = B, DW slot 1
+ *            batch 2  prime r0/r1 = C, DW slot 2
+ *   group B  batch 3  PSEQ fetch into r0/r1, DW stores it to rt1
+ *            batch 4  NOP
+ *            batch 5  NOP
+ *
+ * A = 0x44332211, B = 0x3D2C1B0A, C = 0x7F6E5D4C; the group's final pair
+ * content is C, so a target that was written reads 0x7F6E5D4C.
+ */
+
+.constants
+	[0] = 0.06640625;
+	[1] = 0.1328125;
+	[2] = 0.19921875;
+	[3] = 0.265625;
+	[4] = 0.0390625;
+	[5] = 0.10546875;
+	[6] = 0.171875;
+	[7] = 0.23828125;
+	[8] = 0.296875;
+	[9] = 0.36328125;
+	[10] = 0.4296875;
+	[11] = 0.49609375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@P0@
+		ALU1:	@P1@
+		ALU2:	@P2@
+		ALU3:	@P3@
+	DW:	@DW0@
+;
+EXEC
+	ALU:
+		ALU0:	@Q0@
+		ALU1:	@Q1@
+		ALU2:	@Q2@
+		ALU3:	@Q3@
+	DW:	@DW1@
+;
+EXEC
+	ALU:
+		ALU0:	@R0@
+		ALU1:	@R1@
+		ALU2:	@R2@
+		ALU3:	@R3@
+	DW:	@DW2@
+;
+EXEC
+	PSEQ:	@FETCH@
+	DW:	@STORE@
+;
+EXEC
+	DW:	NOP
+;
+EXEC
+	DW:	NOP
+;

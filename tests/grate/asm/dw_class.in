@@ -1,0 +1,84 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Depth-class against colour-class DW arbitration.
+ *
+ * Notes 33 measured first-DW-wins on colour, spill and MRT targets and left the
+ * depth class (bits 16..17 = 1) open. `store rt1, r0, r1` is a class-2 colour
+ * store; `store rt0, r0, r1 class 1` is the class-1 depth word (0x00010001).
+ * The two classes write different surfaces and the two are read back
+ * independently: the runner's `result` word is the colour target, and
+ * `GRATE_DEPTH=1` makes the assembler bind a D16 depth surface and print its
+ * first words as `depth16 row0: ...`.
+ *
+ *   group A  batch 0  prime r0/r1 = A and r2/r3 = D, DW slot 0
+ *            batch 1  prime r0/r1 = B and r2/r3 = E, DW slot 1
+ *   group B  batch 2  PSEQ fetch into r0/r1, DW stores it to rt1 (readback)
+ *            batch 3  NOP
+ *
+ * A class-1 store takes its payload from the register of the pair that bit 15
+ * does not select, and only from that pair's high register (documented in the
+ * hardware-testing note): `store rt0, r0, r1 class 1` reads r3, and r3.lo
+ * contributes value * 0x10 while r3.hi contributes value * 0x4000. So r3.hi is
+ * primed with 1.0 and r3.lo with 0.0, which encodes the depth payload 0x4000 -
+ * a value the rasterizer's own z does not produce (it writes 0x8000 across a
+ * full-screen quad at z = 0.5), so a dropped depth word is distinguishable from
+ * a written one.
+ *
+ * Payload A = 0x44332211, B = 0x3D2C1B0A: the colour readback names which row
+ * pair the surviving colour store saw.
+ */
+
+.constants
+	[0] = 0.06640625;
+	[1] = 0.1328125;
+	[2] = 0.19921875;
+	[3] = 0.265625;
+	[4] = 0.0390625;
+	[5] = 0.10546875;
+	[6] = 0.171875;
+	[7] = 0.23828125;
+	[8] = 0.0;
+	[9] = 0.0;
+	[10] = 0.0;
+	[11] = 0.0;
+	[12] = 0.0;
+	[13] = 0.0;
+	[14] = 0.0;
+	[15] = 1.0;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@P0@
+		ALU1:	@P1@
+		ALU2:	@P2@
+		ALU3:	@P3@
+	ALU:
+		ALU0:	@X0@
+		ALU1:	@X1@
+		ALU2:	@X2@
+		ALU3:	@X3@
+	DW:	@DW0@
+;
+EXEC
+	ALU:
+		ALU0:	@Q0@
+		ALU1:	@Q1@
+		ALU2:	@Q2@
+		ALU3:	@Q3@
+	ALU:
+		ALU0:	@Y0@
+		ALU1:	@Y1@
+		ALU2:	@Y2@
+		ALU3:	@Y3@
+	DW:	@DW1@
+;
+EXEC
+	PSEQ:	@FETCH@
+	DW:	@STORE@
+;
+EXEC
+	DW:	NOP
+;

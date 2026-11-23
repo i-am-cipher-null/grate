@@ -1,0 +1,115 @@
+alu_buffer_size = @ABUF@
+pseq_to_dw_exec_nb = 1
+
+/*
+ * Three DW words in one scheduling group, plus a readback group.
+ *
+ * Notes 29 and 33 measured two DWs in one group at `alu_buffer_size` 2: the
+ * first word's target is written with the group's final row and the second is
+ * dropped silently, on three kinds of target. Three words in one group needs a
+ * group of three batches, so this template runs at `alu_buffer_size` 3 and six
+ * batches is exactly two such groups:
+ *
+ *   group A  batch 0  prime r0/r1 = A and r2/r3 = D, DW slot 0
+ *            batch 1  prime r0/r1 = B and r2/r3 = E, DW slot 1
+ *            batch 2  prime r0/r1 = C and r2/r3 = F, DW slot 2
+ *   group B  batch 3  PSEQ fetch of one target into r0/r1, DW stores it to rt1
+ *            batch 4  NOP
+ *            batch 5  NOP
+ *
+ * The fetch is what the runner reads, so a variant is run once per target it
+ * needs to read and only the fetch word differs between those runs.
+ *
+ * Priming two row pairs needs eight ALU writes, so each batch holds two `ALU:`
+ * blocks: packet 0 writes r0.lo, r0.hi, r1.lo, r1.hi and packet 1 writes
+ * r2.lo, r2.hi, r3.lo, r3.hi. The group therefore holds six ALU packets as well
+ * as three DW words; the DW arbitration question is about the batches' DW
+ * words, and the second packet exists only so the `pair` variants can store a
+ * different row pair from each word.
+ *
+ * Payload bytes, so a stored word names the row it read:
+ *
+ *   A = 0x44332211   D = 0x0F1E2D3C
+ *   B = 0x3D2C1B0A   E = 0x3F4E5D6C
+ *   C = 0x7F6E5D4C   F = 0x1F2A3B4C
+ *
+ * All bytes are in the range that survives the fetch's 8-bit to fp20 conversion
+ * unchanged, which is how notes 29 and 33 read the targets back.
+ */
+
+.constants
+	[0] = 0.06640625;
+	[1] = 0.1328125;
+	[2] = 0.19921875;
+	[3] = 0.265625;
+	[4] = 0.0390625;
+	[5] = 0.10546875;
+	[6] = 0.171875;
+	[7] = 0.23828125;
+	[8] = 0.296875;
+	[9] = 0.36328125;
+	[10] = 0.4296875;
+	[11] = 0.49609375;
+	[12] = 0.234375;
+	[13] = 0.17578125;
+	[14] = 0.1171875;
+	[15] = 0.05859375;
+	[16] = 0.421875;
+	[17] = 0.36328125;
+	[18] = 0.3046875;
+	[19] = 0.24609375;
+	[20] = 0.296875;
+	[21] = 0.23046875;
+	[22] = 0.1640625;
+	[23] = 0.12109375;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@P0@
+		ALU1:	@P1@
+		ALU2:	@P2@
+		ALU3:	@P3@
+	ALU:
+		ALU0:	@T0@
+		ALU1:	@T1@
+		ALU2:	@T2@
+		ALU3:	@T3@
+	DW:	@DW0@
+;
+EXEC
+	ALU:
+		ALU0:	@Q0@
+		ALU1:	@Q1@
+		ALU2:	@Q2@
+		ALU3:	@Q3@
+	ALU:
+		ALU0:	@U0@
+		ALU1:	@U1@
+		ALU2:	@U2@
+		ALU3:	@U3@
+	DW:	@DW1@
+;
+EXEC
+	ALU:
+		ALU0:	@R0@
+		ALU1:	@R1@
+		ALU2:	@R2@
+		ALU3:	@R3@
+	ALU:
+		ALU0:	@V0@
+		ALU1:	@V1@
+		ALU2:	@V2@
+		ALU3:	@V3@
+	DW:	@DW2@
+;
+EXEC
+	PSEQ:	@FETCH@
+	DW:	@STORE@
+;
+EXEC
+	DW:	NOP
+;
+EXEC
+	DW:	NOP
+;

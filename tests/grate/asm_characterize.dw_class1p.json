@@ -1,0 +1,123 @@
+{
+	"name": "dw-class1p",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/dw_two_target.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"vs": "tests/grate/asm/vs_mov.txt",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"lnk": "tests/grate/asm/linker_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "c1p-depth-then-colour",
+			"fs": "tests/grate/asm/dw_two_target.in",
+			"replace": {
+				"fs": {
+					"@DW0@": "store rt0, r2, r3 class 1",
+					"@DW1@": "store rt1, r0, r1",
+					"@DW2@": "store rt1, r0, r1",
+					"@DW3@": "NOP",
+					"@FETCH@": "load rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_DEPTH": "1",
+				"GRATE_DUMP_RAW": "1"
+			},
+			"expected_note": "one packet per batch, notes 33's shape: a class-1 depth word (reading r1, payload 0x1103) in batch 0 and a class-2 colour word on rt1 in batch 1; colour 0x4C4C4C4C with depth 0x1103 if only the first word stores, colour 0 with depth 0x1103 if the second word stores zeros",
+			"expected": "0x00000000"
+		},
+		{
+			"name": "c1p-colour-then-depth",
+			"fs": "tests/grate/asm/dw_two_target.in",
+			"replace": {
+				"fs": {
+					"@DW0@": "store rt1, r0, r1",
+					"@DW1@": "store rt0, r2, r3 class 1",
+					"@DW2@": "store rt1, r0, r1",
+					"@DW3@": "NOP",
+					"@FETCH@": "load rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_DEPTH": "1",
+				"GRATE_DUMP_RAW": "1"
+			},
+			"expected_note": "the same two words with the batches swapped: colour 0x3D2C1B0A with depth 0x8000 if only the first word stores, depth 0x0000 if the second word stores zeros",
+			"expected": "0x3D2C1B0A"
+		},
+		{
+			"name": "c1p-single-depth",
+			"fs": "tests/grate/asm/dw_two_target.in",
+			"replace": {
+				"fs": {
+					"@DW0@": "store rt0, r2, r3 class 1",
+					"@DW1@": "NOP",
+					"@DW2@": "store rt1, r0, r1",
+					"@DW3@": "NOP",
+					"@FETCH@": "load rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_DEPTH": "1",
+				"GRATE_DUMP_RAW": "1"
+			},
+			"expected_note": "one class-1 word alone: the depth positive control",
+			"expected": "0x4C4C4C4C"
+		},
+		{
+			"name": "c1p-single-colour",
+			"fs": "tests/grate/asm/dw_two_target.in",
+			"replace": {
+				"fs": {
+					"@DW0@": "store rt1, r0, r1",
+					"@DW1@": "NOP",
+					"@DW2@": "store rt1, r0, r1",
+					"@DW3@": "NOP",
+					"@FETCH@": "load rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_DEPTH": "1",
+				"GRATE_DUMP_RAW": "1"
+			},
+			"expected_note": "one class-2 colour word alone: the colour positive control",
+			"expected": "0x3D2C1B0A"
+		},
+		{
+			"name": "c1p-none",
+			"fs": "tests/grate/asm/dw_two_target.in",
+			"replace": {
+				"fs": {
+					"@DW0@": "NOP",
+					"@DW1@": "NOP",
+					"@DW2@": "store rt1, r0, r1",
+					"@DW3@": "NOP",
+					"@FETCH@": "load rt1, r0, r1"
+				}
+			},
+			"environment": {
+				"GRATE_DEPTH": "1",
+				"GRATE_DUMP_RAW": "1"
+			},
+			"expected_note": "no DW: both baselines",
+			"expected": "0x4C4C4C4C"
+		}
+	]
+}
