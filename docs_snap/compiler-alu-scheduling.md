@@ -66,8 +66,9 @@ slot with that number, whatever its destination field said. "Row" means
 |:--|:--|--:|
 | same packet, batch has **one** packet | any latch, any reader slot, either order, own slot excluded | 28 |
 | same packet, batch has more than one packet | **no** | 32, 36 |
-| read in packet k of a multi-packet group in a complete tested rotation | packet (k-1) mod M's slot-N result, all four latches, any reader slot | 32, 36, 39 |
+| read in packet k of a multi-packet group, M=2 or M=3 | packet (k-1) mod M's slot-N result, all four latches, any reader slot | 32, 36 |
 | M=4, size 2, split 3+1 or 1+3 | full cycle, including all packet-3-to-packet-0 latch wraps | 39 |
+| M=4, size 4, one packet per batch | full cycle demonstrated for alu0; other latch indices were not exhaustively tested | 38 |
 | M=4, size 2, split 2+2 | three forward edges for all latches; wrap packet 3 to packet 0 only through latch 3 written in slot 3 | 38 |
 | two-packet batch, either direction | both packets see each other; a packet never sees its own results | 36 |
 | three-packet batch | forward one hop, and packet 0 reads packet 2 (the wrap); two packets apart is 0 | 32, 36 |
@@ -158,12 +159,13 @@ scheduler has to satisfy, in the order they bind:
 
 1. **Dependent ALU operations must be in packets that the measured rotation
    pairs.** M=2 and M=3 use the complete packet rotation in the tested shapes.
-   M=4 is packing-dependent: one packet per batch at size 4 and size-2 splits
-   3+1 or 1+3 have the full cycle; size-2 split 2+2 has the three forward
-   edges for every latch but only the packet-3-slot-3 to packet-0-alu3 wrap.
-   A scheduler must know the actual packet distribution before adding a wrap
-   dependency. Treat any edge not established for that packing as requiring
-   a row-register round trip.
+   M=4 is packing-dependent: size-2 splits 3+1 and 1+3 have the full
+   four-latch cycle; size-2 split 2+2 has the three forward edges for every
+   latch but only the packet-3-slot-3 to packet-0-alu3 wrap. With size 4 and
+   one packet per batch, the full cycle was demonstrated for alu0 only; the
+   other latch indices were not exhaustively tested. A scheduler must know
+   the actual packet distribution before adding a wrap dependency. Treat any
+   edge not established for that packing as requiring a row-register round trip.
 2. **A packet's slots must be mutually independent.** Inside a packet of a
    multi-packet batch there is no bypass at all - not even backwards - and a
    self-read is zero in every shape (notes 32, 36).
@@ -259,11 +261,12 @@ measured packet/group relation as universal beyond the tested packings.
   input/output relation; a rotating register file, a reordered issue and a
   double-buffered write bus all fit it, and nothing measured separates them.
 * What fixes M. It equals the group's packet count in the complete measured
-  rotations. M=4 is now tested with one packet per batch (size 4) and with
-  size-2 splits 3+1 and 1+3, all of which have the complete cycle; the size-2
-  2+2 split has the forward edges but only the slot-3 wrap. Why the 2+2
-  packing loses the other three wrap latches, and what other packet
-  distributions do, remain open.
+  rotations. M=4 is now tested with one packet per batch (size 4), with
+  size-2 splits 3+1 and 1+3, and with size-2 split 2+2. The 3+1 and 1+3
+  shapes have the complete four-latch cycle; size-4 one-packet-per-batch
+  demonstrated the cycle for alu0 only; 2+2 has the forward edges but only
+  the slot-3 wrap. Why 2+2 loses the other three wrap latches, and what other
+  packet distributions do, remain open.
 * Why the group flush carry exists at size 1 and not in the tested size-2,
   size-3 or size-4 combinations. The size-4 negative matrix covers alu0 from
   each packet and selected alu1/reader-slot cases, not all latch/slot pairs.
@@ -290,7 +293,7 @@ measurement but not isolated, **Open** = not established. All are AR20.
 |--:|:--|:--|:--|
 | 1 | In a one-packet batch, a latch read in slot S sees the packet's slot-N result from any slot, in either issue order, whichever slot wrote it. | **Measured** | notes 28 |
 | 2 | The reading slot's own result is 0, in a one-packet batch and in every multi-packet arrangement. | **Measured** | notes 28, 32, 36 |
-| 3 | In complete tested rotations, a read in packet k is served by packet (k-1) mod M. M=4 has full wrap at size 4 one-packet-per-batch and size 2 split 3+1/1+3; size 2 split 2+2 has only the slot-3 wrap. | **Measured**, with the listed packing qualifications | notes 32, 36, 38, 39 |
+| 3 | Complete tested rotations use packet (k-1) mod M. At M=4, size-2 split 3+1/1+3 has the full four-latch cycle; size-4 one-packet-per-batch demonstrated the cycle for alu0 only; size-2 split 2+2 has only the slot-3 wrap. | **Measured**, with the listed packing/latch qualifications | notes 32, 36, 38, 39 |
 | 4 | A two-packet batch forwards in both directions, so "packet 0 sees packet 1" is legal. Nothing in a multi-packet batch forwards two packets. | **Measured** | notes 36 |
 | 5 | A packet never sees its own results in a multi-packet batch, so its slots are independent and its chain must be one hop per packet. | **Measured** | notes 32, 36 |
 | 6 | `.l*` (fx10) and `.lh` (fp20) writes fill different latch views; a bare read sees only an `.lh` write, an `.l` read only a `.l*` one, a `.*h`-only write fills neither, at every measured distance and in both directions. | **Measured** | notes 28, 36 |
@@ -302,7 +305,7 @@ measurement but not isolated, **Open** = not established. All are AR20.
 | 12 | `recv`/`send` transfer between slots inside one packet. Packet-0 slot-0 send to packet-1 slot-1 recv, the reverse, and an alternate slot-3 sender showed no cross-packet transfer; other mappings remain open. | **Measured** / **Open** | notes 13, 16, 37, 41 |
 | 13 | A `send` on a producer does not disturb ordinary latch forwarding; the plain slot-0 group carry was preserved in the tested one-batch group case. | **Measured** | notes 37 |
 | 14 | Schedule bits 29 and 30 change nothing observable, on any of the three batches of the template, in five shapes. | **Measured** | notes 30, 34, 35 |
-| 15 | M=4 has a full cycle at size 4 one-packet-per-batch and size 2 split 3+1/1+3; size 2 split 2+2 keeps the forward edges but only latch 3 wraps. The reason is unknown. | **Measured** for these packings | notes 38, 39 |
+| 15 | M=4 size-2 split 3+1/1+3 has the full four-latch cycle; size-4 one-packet-per-batch demonstrated the cycle for alu0 only; size-2 split 2+2 keeps the forward edges but only latch 3 wraps. The 2+2 mechanism is unknown. | **Measured** for these packings and latch coverage | notes 38, 39 |
 | 16 | The rotation applies to MFU/TEX streams or to the bits 8..28 of the schedule word. | **Open** | - |
 | 17 | Anything about T114: the schedule word layout differs and its count field is `count[10:8]`. | **Open** | notes 30 |
 
