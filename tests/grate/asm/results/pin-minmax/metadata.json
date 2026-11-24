@@ -1,0 +1,162 @@
+{
+  "name": "alu-minmax",
+  "created_utc": "2026-11-24T16:08:36+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.alu_minmax.json",
+  "manifest_sha256": "46739e8e6ff9da63b322657376ab9d2a70c152920235b608955259bbc07e598e",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "c738239983fe8d6808aa9659e599ba2f3c83f7ad",
+  "git_status": "D tests/grate/asm/results/pin-minmax/metadata.json\n D tests/grate/asm/results/pin-minmax/results.tsv\n D tests/grate/asm/results/verify-minmax/metadata.json\n D tests/grate/asm/results/verify-minmax/results.tsv\n M tests/grate/asm_characterize.alu_minmax.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 20,
+  "manifest_data": {
+    "name": "alu-minmax",
+    "repeat": 3,
+    "timeout": 20,
+    "program": {
+      "vs": "tests/grate/asm/vs_mov.txt",
+      "fs": "tests/grate/asm/alu_minmax.in",
+      "lnk": "tests/grate/asm/linker_vs_tests.txt"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "expected": "0x000000FF"
+      },
+      {
+        "name": "varying-pipeline",
+        "fs": "tests/grate/asm/fs_vs_tests.txt",
+        "expected": "0xFF01FF00"
+      }
+    ],
+    "variants": [
+      {
+        "name": "min-products",
+        "replace": {
+          "fs": {
+            "@OP@": "MIN  r2.lh,  u0,  u0,  u2,  #1",
+            "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+          }
+        },
+        "expected": "0xE700E700"
+      },
+      {
+        "name": "max-products",
+        "replace": {
+          "fs": {
+            "@OP@": "MAX  r2.lh,  u0,  u4,  u2,  #1",
+            "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+          }
+        },
+        "expected": "0xF700F700"
+      },
+      {
+        "name": "min-plain",
+        "replace": {
+          "fs": {
+            "@OP@": "MIN  r2.lh,  u1,  u3,  u0,  #1",
+            "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+          }
+        },
+        "expected": "0xE700E700"
+      },
+      {
+        "name": "max-plain",
+        "replace": {
+          "fs": {
+            "@OP@": "MAX  r2.lh,  u1,  u3,  u0,  #1",
+            "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+          }
+        },
+        "expected": "0xEF00EF00"
+      },
+      {
+        "name": "min-negative",
+        "replace": {
+          "fs": {
+            "@OP@": "MIN  r2.lh,  -u2,  u3,  u0,  #1",
+            "@NORM@": "MAD  r3.lh,  -r2,  u3,  #0,  #1"
+          }
+        },
+        "expected": "0xF3000000"
+      },
+      {
+        "name": "max-negative",
+        "replace": {
+          "fs": {
+            "@OP@": "MAX  r2.lh,  -u2,  u3,  -u0,  #1",
+            "@NORM@": "MAD  r3.lh,  -r2,  u3,  #0,  #1"
+          }
+        },
+        "expected": "0xEF000000"
+      },
+      {
+        "name": "min-negative-sat",
+        "replace": {
+          "fs": {
+            "@OP@": "MIN  r2.lh,  -u2,  u3,  u0,  #1  (sat)",
+            "@NORM@": "MAD  r3.lh,  r2,  u3,  u3,  #1"
+          }
+        },
+        "expected": "0xF7000000"
+      },
+      {
+        "name": "min-x2",
+        "replace": {
+          "fs": {
+            "@OP@": "MIN  r2.lh,  u0,  u0,  u2,  #1  (x2)",
+            "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+          }
+        },
+        "expected": "0xEF00EF00"
+      },
+      {
+        "name": "min-rB",
+        "replace": {
+          "fs": {
+            "@OP@": "MIN  r2.lh,  u0,  u4,  u2,  #1",
+            "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+          }
+        },
+        "expected": "0xF300F300"
+      },
+      {
+        "name": "min-rB-product",
+        "replace": {
+          "fs": {
+            "@OP@": "MIN  r2.lh,  u1,  u4,  u2,  #1",
+            "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+          }
+        },
+        "expected": "0xEF00EF00"
+      },
+      {
+        "name": "min-rC-dominates",
+        "replace": {
+          "fs": {
+            "@OP@": "MIN  r2.lh,  u4,  u0,  u1,  #1",
+            "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+          }
+        },
+        "expected": "0xE700E700"
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 37,
+    "passed": 37,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

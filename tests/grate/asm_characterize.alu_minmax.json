@@ -1,0 +1,134 @@
+{
+ "name": "alu-minmax",
+ "repeat": 3,
+ "timeout": 20,
+ "program": {
+  "vs": "tests/grate/asm/vs_mov.txt",
+  "fs": "tests/grate/asm/alu_minmax.in",
+  "lnk": "tests/grate/asm/linker_vs_tests.txt"
+ },
+ "controls": [
+  {
+   "name": "immediate-operand",
+   "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+   "expected": "0x000000FF"
+  },
+  {
+   "name": "varying-pipeline",
+   "fs": "tests/grate/asm/fs_vs_tests.txt",
+   "expected": "0xFF01FF00"
+  }
+ ],
+ "variants": [
+  {
+   "name": "min-products",
+   "replace": {
+    "fs": {
+     "@OP@": "MIN  r2.lh,  u0,  u0,  u2,  #1",
+     "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+    }
+   },
+   "expected": "0xE700E700"
+  },
+  {
+   "name": "max-products",
+   "replace": {
+    "fs": {
+     "@OP@": "MAX  r2.lh,  u0,  u4,  u2,  #1",
+     "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+    }
+   },
+   "expected": "0xF700F700"
+  },
+  {
+   "name": "min-plain",
+   "replace": {
+    "fs": {
+     "@OP@": "MIN  r2.lh,  u1,  u3,  u0,  #1",
+     "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+    }
+   },
+   "expected": "0xE700E700"
+  },
+  {
+   "name": "max-plain",
+   "replace": {
+    "fs": {
+     "@OP@": "MAX  r2.lh,  u1,  u3,  u0,  #1",
+     "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+    }
+   },
+   "expected": "0xEF00EF00"
+  },
+  {
+   "name": "min-negative",
+   "replace": {
+    "fs": {
+     "@OP@": "MIN  r2.lh,  -u2,  u3,  u0,  #1",
+     "@NORM@": "MAD  r3.lh,  -r2,  u3,  #0,  #1"
+    }
+   },
+   "expected": "0xF3000000"
+  },
+  {
+   "name": "max-negative",
+   "replace": {
+    "fs": {
+     "@OP@": "MAX  r2.lh,  -u2,  u3,  -u0,  #1",
+     "@NORM@": "MAD  r3.lh,  -r2,  u3,  #0,  #1"
+    }
+   },
+   "expected": "0xEF000000"
+  },
+  {
+   "name": "min-negative-sat",
+   "replace": {
+    "fs": {
+     "@OP@": "MIN  r2.lh,  -u2,  u3,  u0,  #1  (sat)",
+     "@NORM@": "MAD  r3.lh,  r2,  u3,  u3,  #1"
+    }
+   },
+   "expected": "0xF7000000"
+  },
+  {
+   "name": "min-x2",
+   "replace": {
+    "fs": {
+     "@OP@": "MIN  r2.lh,  u0,  u0,  u2,  #1  (x2)",
+     "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+    }
+   },
+   "expected": "0xEF00EF00"
+  },
+  {
+   "name": "min-rB",
+   "replace": {
+    "fs": {
+     "@OP@": "MIN  r2.lh,  u0,  u4,  u2,  #1",
+     "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+    }
+   },
+   "expected": "0xF300F300"
+  },
+  {
+   "name": "min-rB-product",
+   "replace": {
+    "fs": {
+     "@OP@": "MIN  r2.lh,  u1,  u4,  u2,  #1",
+     "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+    }
+   },
+   "expected": "0xEF00EF00"
+  },
+  {
+   "name": "min-rC-dominates",
+   "replace": {
+    "fs": {
+     "@OP@": "MIN  r2.lh,  u4,  u0,  u1,  #1",
+     "@NORM@": "MAD  r3.lh,  r2,  u3,  #0,  #1"
+    }
+   },
+   "expected": "0xE700E700"
+  }
+ ]
+}

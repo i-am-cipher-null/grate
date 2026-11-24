@@ -1,0 +1,48 @@
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+/*
+ * MIN/MAX operand probe.
+ *
+ * The ALU reference describes MIN as min(rA*rB, rC*rD) and MAX as the
+ * maximum of the same two products, but that came from the encoder, not a
+ * measurement.  Each variant writes r2 as fp20 (`.lh`) and a normalising
+ * batch copies or shifts the result into r3.  The stored word is
+ * r2.hi, r2.lo, r3.hi, r3.lo (0x00CC00CC style), so both the raw fp20 code
+ * and the normalised value are visible.
+ *
+ * Values are exact in fp20: 0.25, 0.5, 0.75, 1.0, 1.5, 2.0.
+ * Batch 0 prefills r2 with 0.5 so an unwritten register is distinguishable.
+ */
+.constants
+	[0] = 0.5;	/* u0: operand */
+	[1] = 0.25;	/* u1: operand */
+	[2] = 0.75;	/* u2: operand, also negated */
+	[3] = 1.0;	/* u3: neutral multiplier / normaliser */
+	[4] = 2.0;	/* u4: operand above 1.0, also negated */
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r2.lh,  u0,  #1,  #0,  #1
+		ALU1:	NOP
+		ALU2:	NOP
+		ALU3:	NOP
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	@OP@
+		ALU1:	NOP
+		ALU2:	NOP
+		ALU3:	NOP
+	DW:	NOP
+;
+EXEC
+	ALU:
+		ALU0:	@NORM@
+		ALU1:	NOP
+		ALU2:	NOP
+		ALU3:	NOP
+	DW:	store rt1, r2, r3
+;
