@@ -614,10 +614,14 @@ The TEX instruction takes the texture coordinates and LOD bias from the first ro
 "Inert" is scoped to what the harness can bind: `RGBA8888`, `dxt1`, `etc1` and
 `d16` surfaces, all linear 2D. Setting bits 6, 7, 8, 9, 11, 15, 16, 20, 24, 28
 or 31 on a sample that demonstrably moves with bit 5, bit 4 and the coordinate
-leaves the result byte-identical (note 11). Cube maps and shadow samplers have
-no binding path in the test driver, so nothing here covers them. Bit 14 does not
-halve `s` when R is 2.0, so it is not the NV30 projective divide. R has no
-observable effect on these descriptors (note 19).
+leaves the result byte-identical (note 11). These results do **not** characterize
+cube-map sampling: cube maps are required by core GLES2, but the test driver has
+no cube-map binding path. The R-coordinate no-effect observation and inert-bit
+sweep therefore apply only to the tested 2D descriptors, not to cube-face
+selection or cube-map sampling. Shadow samplers are also unavailable in the
+harness and are outside base GLES2. Bit 14 does not halve `s` when R is 2.0, so
+it is not the NV30 projective divide. R has no observable effect on the tested
+2D descriptors (note 19).
 
 A `D16` descriptor samples as zero in every component rather than reading the
 surface's 16-bit texels; the RGBA path over the same coordinates and program
@@ -837,4 +841,5 @@ sections above.
 | polygon face | row register 75 | fx10 low half: +1.0 or 0.0 | ALU operand | fp20 and high-half reads are zero | **Confirmed** (note 8) |
 | `gl_FragCoord.z` | r3 fetch plus the VEC4.z link write | two fp20 halves recombined by `1/1000 + max(0,r3.lo)/4000 + max(0,r3.hi)/4` | MFU fetch, later ALU | needs a populated VEC4.z input that no tested link produced | **Unknown** (note 10) |
 | integer / bitwise / shift | - | - | - | outside GLES2 | **Not required** |
-| cube maps, shadow samplers, projective divide | - | - | - | no binding path, bit 14 not a divide | **Not required / Unknown** |
+| cube-map sampling | TEX | direction vector (S,T,R) | TEX | cube-face selection and cube-map coordinate handling not tested; harness only binds linear 2D descriptors | **Unknown; required for GLES2** |
+| shadow samplers / TEX projective divide | - | - | - | outside the base GLES2 sampler path; bit 14 is not the NV30 projective divide | **Not required** |
