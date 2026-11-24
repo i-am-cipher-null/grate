@@ -1,0 +1,30 @@
+/*
+ * Vertex shader with clip z = 0.5 and a uniform w = 2.
+ *
+ * The quad's own z is 0 and w is 1, so one ADDv of (0, 0, 0.5, 1) gives the
+ * wanted pair in a single plain export write; the vertex unit accepts only
+ * one masked write per export and a masked two-component write broadcast one
+ * source to both lanes. With w = 2 the quad covers NDC +-0.5, so the centre
+ * pixels are still drawn and readable through rt4. A fragment z already
+ * divided by w reads 0.25; a clip-space z lane reads 0.5.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+
+.constants
+	[100].x = 0.0;
+	[100].y = 0.0;
+	[100].z = 0.5;
+	[100].w = 1.0;
+
+.asm
+
+EXEC(export[0]=vector)
+	ADDv r63.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;

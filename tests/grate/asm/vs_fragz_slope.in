@@ -1,0 +1,41 @@
+/*
+ * Vertex shader with a depth that slopes across the quad: z = 0.5 + x/4.
+ *
+ * x runs -1..1 across the full-screen quad, so the clip z runs 0.25 at the
+ * left edge to 0.75 at the right. Reading the linked z lane at different
+ * pixels therefore distinguishes an interpolated position z from a value
+ * taken from one vertex or from a uniform.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.constants
+	[100].x = 0.25;
+	[100].z = 0.5;
+	[101].x = 0.5;
+	[101].y = 0.5;
+	[101].z = 0.25;
+	[101].w = 1.0;
+
+.asm
+
+EXEC(export[0]=vector)
+	MOVv r63.xyzw, a[0].xyzw
+	NOPs
+;
+
+EXEC(export[0]=vector)
+	MADv r63.**z*, a[0].xxxx, c[100].xxxx, c[100].zzzz
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r63.xyzw, c[101].xyzw
+	NOPs
+;

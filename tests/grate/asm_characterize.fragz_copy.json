@@ -1,0 +1,25 @@
+{
+	"name": "fragcoord-z-copy",
+	"repeat": 1,
+	"timeout": 10,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/fragz_fs.in",
+		"lnk": "tests/grate/asm/tram_linker.in"
+	},
+	"environment": {"GRATE_POKE": "0x520=0x20006004"},
+	"controls": [
+		{"name": "immediate-operand", "vs": "tests/grate/asm/vs_mov.txt",
+		 "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+		 "lnk": "tests/grate/asm/linker_vs_tests.txt",
+		 "environment": {"GRATE_POKE": null}, "expected": "0x000000FF"}
+	],
+	"variants": [
+		{"name": "copy-z", "replace": {
+			"fs": {"@IPL@": "NOP, NOP, t0.fp20, NOP", "@C0@": "NOP", "@C1@": "NOP", "@STORE@": "store rt1, r2, r3"},
+			"lnk": {"@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"}}},
+		{"name": "copy-w", "replace": {
+			"fs": {"@IPL@": "NOP, NOP, NOP, t0.fp20", "@C0@": "NOP", "@C1@": "NOP", "@STORE@": "store rt1, r2, r3"},
+			"lnk": {"@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"}}}
+	]
+}

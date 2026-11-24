@@ -1,0 +1,193 @@
+{
+  "name": "fragcoord-z-link",
+  "created_utc": "2026-11-24T22:11:20+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.fragz_pos.json",
+  "manifest_sha256": "ad9d98de8223a8f4b7ac45a7a6b454b87db0a9cdd7f8e9d5dee2540c67fe4852",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "9f87bb76ba8ada2f9f3328d73ab25898eb2f0633",
+  "git_status": "?? tests/grate/asm/results/observe6-fragz-depth/\n?? tests/grate/asm_characterize.fragz_depth.json\n?? tests/grate/asm_characterize.fragz_pos.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 10,
+  "manifest_data": {
+    "name": "fragcoord-z-link",
+    "repeat": 3,
+    "timeout": 10,
+    "program": {
+      "vs": "tests/grate/asm/vs_fragz.in",
+      "fs": "tests/grate/asm/fragz_fs.in",
+      "lnk": "tests/grate/asm/tram_linker.in"
+    },
+    "environment": {
+      "GRATE_POKE": "0x520=0x20006004",
+      "GRATE_DEPTH": "1"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "environment": {
+          "GRATE_POKE": null,
+          "GRATE_DEPTH": null
+        },
+        "expected": "0x000000FF"
+      }
+    ],
+    "variants": [
+      {
+        "name": "posz-z-0p25",
+        "replace": {
+          "vs": {
+            "@ZC@": "0.25"
+          },
+          "fs": {
+            "@IPL@": "NOP, NOP, t0.fp20, NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        }
+      },
+      {
+        "name": "posz-z-0p5",
+        "replace": {
+          "vs": {
+            "@ZC@": "0.5"
+          },
+          "fs": {
+            "@IPL@": "NOP, NOP, t0.fp20, NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        }
+      },
+      {
+        "name": "posz-z-0p75",
+        "replace": {
+          "vs": {
+            "@ZC@": "0.75"
+          },
+          "fs": {
+            "@IPL@": "NOP, NOP, t0.fp20, NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        }
+      },
+      {
+        "name": "posz-z-0p875",
+        "replace": {
+          "vs": {
+            "@ZC@": "0.875"
+          },
+          "fs": {
+            "@IPL@": "NOP, NOP, t0.fp20, NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        }
+      },
+      {
+        "name": "posz-z-1p0",
+        "replace": {
+          "vs": {
+            "@ZC@": "1.0"
+          },
+          "fs": {
+            "@IPL@": "NOP, NOP, t0.fp20, NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        }
+      },
+      {
+        "name": "posz-x-z0p75",
+        "replace": {
+          "vs": {
+            "@ZC@": "0.75"
+          },
+          "fs": {
+            "@IPL@": "t0.fp20, NOP, NOP, NOP",
+            "@C0@": "MAD  r2.lh,  r0,  #1,  #0",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        }
+      },
+      {
+        "name": "posz-y-z0p75",
+        "replace": {
+          "vs": {
+            "@ZC@": "0.75"
+          },
+          "fs": {
+            "@IPL@": "NOP, t0.fp20, NOP, NOP",
+            "@C0@": "MAD  r2.lh,  r1,  #1,  #0",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        }
+      },
+      {
+        "name": "posz-w-z0p75",
+        "replace": {
+          "vs": {
+            "@ZC@": "0.75"
+          },
+          "fs": {
+            "@IPL@": "NOP, NOP, NOP, t0.fp20",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt1, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        }
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 26,
+    "passed": 26,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}

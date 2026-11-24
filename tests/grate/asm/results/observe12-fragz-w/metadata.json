@@ -1,0 +1,129 @@
+{
+  "name": "fragcoord-z-w",
+  "created_utc": "2026-11-24T22:19:57+00:00",
+  "manifest": "/home/freebuff/src/grate-exp/tests/grate/asm_characterize.fragz_w.json",
+  "manifest_sha256": "1a863453afa6577e5411c33a20972417a1976b731709f2400ea0c1f25ba2410f",
+  "assembler": "/home/freebuff/build/grate-exp/tools/assembler",
+  "repository_root": "/home/freebuff/src/grate-exp",
+  "git_commit": "9f87bb76ba8ada2f9f3328d73ab25898eb2f0633",
+  "git_status": "?? tests/grate/asm/results/observe10-fragz-w/\n?? tests/grate/asm/results/observe11-fragz-w/\n?? tests/grate/asm/results/observe6-fragz-depth/\n?? tests/grate/asm/results/observe7-fragz-pos/\n?? tests/grate/asm/results/observe8-fragz-zpath/\n?? tests/grate/asm/results/observe9-fragz-slope/\n?? tests/grate/asm/vs_fragz_slope.in\n?? tests/grate/asm/vs_fragz_w.in\n?? tests/grate/asm_characterize.fragz_depth.json\n?? tests/grate/asm_characterize.fragz_pos.json\n?? tests/grate/asm_characterize.fragz_slope.json\n?? tests/grate/asm_characterize.fragz_w.json\n?? tests/grate/asm_characterize.fragz_zpath.json",
+  "uname": "Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l",
+  "device_model": "Toshiba AC100 / Dynabook AZ",
+  "inherited_environment": {
+    "GRATE_ASSEMBLER": "/home/freebuff/build/grate-exp/tools/assembler",
+    "XDG_RUNTIME_DIR": "/run/user/1001"
+  },
+  "repeat": 3,
+  "control_repeat": 1,
+  "timeout_seconds": 10,
+  "manifest_data": {
+    "name": "fragcoord-z-w",
+    "repeat": 3,
+    "timeout": 10,
+    "program": {
+      "vs": "tests/grate/asm/vs_fragz_w.in",
+      "fs": "tests/grate/asm/fragz_fs.in",
+      "lnk": "tests/grate/asm/tram_linker.in"
+    },
+    "environment": {
+      "GRATE_POKE": "0x520=0x20006004",
+      "GRATE_RT4": "1",
+      "GRATE_SIZE": "32",
+      "GRATE_DEPTH": "1"
+    },
+    "controls": [
+      {
+        "name": "immediate-operand",
+        "vs": "tests/grate/asm/vs_mov.txt",
+        "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+        "lnk": "tests/grate/asm/linker_vs_tests.txt",
+        "environment": {
+          "GRATE_POKE": null,
+          "GRATE_RT4": null,
+          "GRATE_SIZE": null,
+          "GRATE_DEPTH": null
+        },
+        "expected": "0x000000FF"
+      }
+    ],
+    "variants": [
+      {
+        "name": "wtest-z-left",
+        "replace": {
+          "fs": {
+            "@IPL@": "NOP, NOP, t0.fp20, NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt4, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        },
+        "environment": {
+          "GRATE_REGION": "15,15,2,1"
+        }
+      },
+      {
+        "name": "wtest-z-right",
+        "replace": {
+          "fs": {
+            "@IPL@": "NOP, NOP, t0.fp20, NOP",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt4, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        },
+        "environment": {
+          "GRATE_REGION": "15,15,2,1"
+        }
+      },
+      {
+        "name": "wtest-w-left",
+        "replace": {
+          "fs": {
+            "@IPL@": "NOP, NOP, NOP, t0.fp20",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt4, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        },
+        "environment": {
+          "GRATE_REGION": "15,15,2,1"
+        }
+      },
+      {
+        "name": "wtest-w-right",
+        "replace": {
+          "fs": {
+            "@IPL@": "NOP, NOP, NOP, t0.fp20",
+            "@C0@": "NOP",
+            "@C1@": "NOP",
+            "@STORE@": "store rt4, r2, r3"
+          },
+          "lnk": {
+            "@LINK@": "LINK fp20, fp20, fp20, fp20, tram0.xyzw, export0"
+          }
+        },
+        "environment": {
+          "GRATE_REGION": "15,15,2,1"
+        }
+      }
+    ]
+  },
+  "summary": {
+    "success": true,
+    "variants_started": true,
+    "runs": 14,
+    "passed": 14,
+    "failed": 0,
+    "results_file": "results.tsv",
+    "logs_directory": "logs/"
+  }
+}
