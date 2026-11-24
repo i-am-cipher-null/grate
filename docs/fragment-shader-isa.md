@@ -41,6 +41,16 @@ Instructions schedule specifies the number of MFU instructions or ALU instructio
 
 If the "number of instructions to execute" is 0, then the pipeline stage is NOP, however still takes 1 clock cycle. The "address" is the index of the first instruction or packet to execute.
 
+The address/count units are clarified by the assembler's schedule encoding:
+ALU addresses and counts use four-slot **packets**, while MFU scheduling uses
+MFU instruction **words**. The assembler's `instr_sched` path also schedules
+TEX as instruction words, one per `TEX:` line. This is the emitter-facing
+encoding model; it is not a separate measurement of the scheduler's internal
+hardware units. On AR20, schedule-word bits 8..28 remain unexplained, but the
+assembler emits zero there and setting the reachable high bits did not change
+the tested schedule shapes. An emitter using the assembler need not construct
+those fields manually (experiment notes 30, 34 and 35).
+
 ## Registers
 
 Registers / embedded constants can either be treated as one FP20 register, or two FX10 values. Their encoding is like so:
@@ -105,8 +115,8 @@ Unlike a regular ALU instruction, the ALU3 instruction words, constituting immed
 | opcode | Mnemonic | Meaning            | pseudo-code                    |
 |-------:|:--------:|:-------------------|:-------------------------------|
 |      0 |   MAD    | Multiply-Add       | rA * rB + rC * rD              |
-|      1 |   MIN    | Minimum            | min(rA * rB, rC * rD)          |
-|      2 |   MAX    | Maximum            | max(rA * rB, rC * rD)          |
+|      1 |   MIN    | Minimum            | min(rA * rB, rC)               |
+|      2 |   MAX    | Maximum            | max(rA * rB, rC)               |
 |      3 |   CSEL   | Conditional select | (rA * rB < 0) ? rB : (rC * rD) |
 
 Hardware tests confirm that CSEL tests the sign of `rA * rB`, returns the
@@ -114,6 +124,14 @@ unmultiplied `rB` when that product is negative, and returns `rC * rD`
 otherwise. A zero product takes the latter branch.
 Negative values in the `rC * rD` candidate and negative zero have not been
 tested.
+
+MIN and MAX were measured in the form emitted by the assembler, with the
+fourth source set to `#1`: `min/max(rA * rB, rC)`. Both terms participate;
+the first term is multiplied by `rB`, and the second term is `rC` because
+the fourth source is one. The assembler rejects `#0` in this operand
+position. Other fourth-source encodings were not established, so do not
+generalize the measured MIN/MAX semantics beyond this form (experiment
+[note 49](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md#L7048)).
 
 #### Scale result:
 
@@ -123,6 +141,27 @@ tested.
 |   1   |    x2    |
 |   2   |    x4    |
 |   3   |    / 2   |
+
+#### Result saturation
+
+ALU bit 56 (`sat`) clamps the result to the inclusive range 0.0..1.0.
+The measured result path is:
+
+`operation -> result scale -> saturation -> condition code -> write`
+
+The clamp is therefore applied after result scaling and before condition-code
+evaluation. A value of 2.0 becomes 1.0, -0.5 becomes 0.0, and an in-range
+value is unchanged. The behavior was measured for MAD, MUL and MAX in both
+FP20 (`.lh`) and FX10 (`.l*`) destinations, and for MIN in an FP20
+destination. MIN saturation was measured separately; it is not merely inferred
+from MAX (experiment [note 48](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md#L6972)
+and [note 49](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md#L7048)).
+
+Saturation combined with the accumulation path (`this`/`other`) or a
+condition-register destination was not tested. These combinations should
+remain unspecified.
+
+
 
 #### Condition code:
 
@@ -560,7 +599,9 @@ The z component comes in some form via r3. The fetch operation of the r3 should 
 
 	gl_FragCoord.z = 1/1000 + max(0.0, r3.low) * 1/4000 + max(0.0, r3.high) * 1/4
 
-A proposed linker dependency is the LINK `(z)` modifier, previously described as a "magic" write of VEC4.z to TRAM0.w. This behavior has not been confirmed. Hardware tests show that `(z)` sets bit 0 of the first LINK instruction word, but the tested programs read zero from every FP20 TRAM component when it is set. Changing the swizzle, enabled export or TRAM row did not change that result, and a control without a varying fetch still executed the draw normally. A two-LINK control also read the ordinary LINK values regardless of whether the `(z)` LINK came before or after it. The identity of the VEC4.z input and how it is populated remain unknown; the special linker write must not be treated as an established way to supply fragment Z.
+A proposed linker dependency is the LINK `(z)` modifier, previously described as a "magic" write of VEC4.z to TRAM0.w. The earlier all-zero tests used vertex shaders with `gl_Position.z = 0`, so they did not establish that the path was absent. In a follow-up, a vertex shader with nonzero position Z (`0.75`) changed the fetched value when the export was placed after the final position-Z write; an attempt that exported too early was discarded. This is a concrete lead that the special input depends on the final vertex position Z and its export ordering.
+
+The resulting readback could not be mapped unambiguously to FP20/FX10 components, and no isolated TRAM-component readout has confirmed the complete path. The value of VEC4.z, its transfer into the fragment rows, and the proposed reconstruction formula therefore remain unverified end to end. Keep `gl_FragCoord.z` marked unresolved until a controlled numeric readback confirms the path.
 
 ## TEX instruction word encoding
 
