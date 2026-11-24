@@ -589,11 +589,13 @@ The w component is stored in the r4 and available to the first instruction of th
 
 #### Fragment z component
 
-The z component comes in some form via r3. The fetch operation of the r3 should be set to NOP with "saturation" being enabled for r3. After the r3 has been populated, the following expansion should be performed:
+The rasterizer does have the window z. With a D16 depth surface bound and depth test and write enabled, a controlled clip z moves the depth buffer as z/2 + 0.5: clip z 0.25, 0.5, 0.75, 0.875 and 1.0 read `0x9FFF`, `0xBFFF`, `0xDFFF`, `0xEFFF` and `0xFFFF` (note 52). The fragment sees it through the ordinary link copy, not through a dedicated input: `LINK fp20, fp20, fp20, fp20, tramN.xyzw, export0` puts the interpolated clip z in the row's z lane and the interpolated clip w in its w lane. The fetched z high byte is `0xDF`, `0xE7`, `0xEB`, `0xEF`, `0xF1`, `0xF3`, `0xF5` and `0xF7` for clip z 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875 and 1.0; a sloped z (0.5 + x/4) tracks across the quad; and with clip z = 0.5 and w = 2 the two lanes read 0.5 and 2.0 while the depth buffer reads 0.625. Window z is therefore `(z/w)*scale + bias` in the shader, with the viewport scale and bias the driver already sets. The MFU's rcp supplies the divide (note 52).
+
+The r3 recipe is not the hardware path. `sat(NOP)` with the NOP fetch reads 0 for clip z = 0, 0.5, 0.75 and 1.0 even with depth test and write enabled, so the earlier reconstruction has no measured input:
 
 	gl_FragCoord.z = 1/1000 + max(0.0, r3.low) * 1/4000 + max(0.0, r3.high) * 1/4
 
-There is also dependency on the linker: it should perform the "magic" write to the TRAM0.w with "VEC4 select = VEC4.z". **Unknown:** what supplies that VEC4.z input, and whether it reaches TRAM at all. A controlled clip-z probe with a calibrated fp20 readback found that `(z)` does not write position z to any TRAM component: at z = 0.75 the row reads 0 in x and the non-z value `0x2000` in y, z and w, the w column does not track z across the sweep (0 at 0.5 and 0.8, `0x2000` at 0.75), and `sat(NOP)` reads 0 for every z (note 50). `gl_FragCoord.z` is not established end to end.
+The link word's `(z)` select does trigger a write to TRAM0.w, but the value written is a near-zero code (`0x2000`), not the position z, in the one-lane `NOP, NOP, NOP, fp20` form as well; it also replaces the normal copy, which would have delivered w = 1.0 from the same row. Do not use `(z)`. The high byte calibrates to `(fp20 >> 10) - 1`, so the raw store resolves only a few percent of the lane value and cannot show a negative z (note 52).
 
 ## TEX instruction word encoding
 
@@ -840,7 +842,7 @@ sections above.
 | fragment colour output | DW `store rt1, r0/r1 or r2/r3` | payload `r2.lo, r2.hi, r3.lo, r3.hi`; RGBA8888 conversion | DW | one DW position per batch; one DW per group for a predictable payload | **Confirmed** (notes 24, 29, 42) |
 | fragment position | row registers 72/73 | fx10 in the high half; `x + 8192`, `8192 + height - 1 - y` | ALU operand | offset not separable from the 8-bit conversion | **Confirmed** formula, **Inferred** offset (note 8) |
 | polygon face | row register 75 | fx10 low half: +1.0 or 0.0 | ALU operand | fp20 and high-half reads are zero | **Confirmed** (note 8) |
-| `gl_FragCoord.z` | r3 fetch plus the VEC4.z link write | `(z)` writes no position z into TRAM; `sat(NOP)` reads 0 for every tested z | MFU fetch, later ALU | no TRAM component carries the value, so the §6.6 expansion has no measured input | **Unknown** (note 50) |
+| `gl_FragCoord.z` | link copy of the position export into a TRAM row | clip z codes `0xDF`..`0xF7` follow the controlled z; a sloped z tracks across the quad; z = 0.5 with w = 2 reads 0.5 / 2.0 while depth reads 0.625 | MFU fetch, then ALU divide and viewport scale/bias | `(z)` writes a near-zero code to TRAM0.w and replaces the copy; `sat(NOP)` reads 0 at every z | **Confirmed** (note 52) |
 | integer / bitwise / shift | - | - | - | outside GLES2 | **Not required** |
 | cube-map sampling | TEX | direction vector (S,T,R) | TEX | no cube binding path and no dimension field in TEXTURE_DESC1/2; harness blocker, not a hardware result | **Unknown; required for GLES2** (note 51) |
 | shadow samplers / TEX projective divide | - | - | - | outside the base GLES2 sampler path; bit 14 is not the NV30 projective divide | **Not required** |

@@ -7223,6 +7223,11 @@ from the tables above. The retained runs are the observe directories
 `results/observe5-fragz` (20 rows); the first two 31-row attempts failed on a
 vertex-template parse error and are not evidence.
 
+Follow-up: note 52 ran the same probes with the depth pipeline enabled, which
+shows the rasterizer receives the clip z correctly, and found the actual fragment
+path in the ordinary link copy of the position export. The `0x1800`/`0x1C00`/
+`0x2000` family is the `(z)` magic write, not a z encoding.
+
 ## 51. Cube-map sampling: the harness has no cube binding path
 
 Cube maps are required by GLES2 and are still uncharacterized. The limitation
@@ -7256,3 +7261,111 @@ a harness tweak. Until it exists, cube-face selection, direction-vector use and
 the descriptor contract remain **Unknown**, and the 2D R-coordinate and
 inert-bit results stay scoped to the four linear formats they were measured
 with.
+
+## 52. `gl_FragCoord.z`: the position export's z lane is the fragment z
+
+Note 50 tested the `(z)` link select and found no z in TRAM, but every one of
+those runs had the depth pipeline disabled. The assembler can bind a D16 depth
+surface and enable depth test and write (`GRATE_DEPTH=1`), and it prints the
+depth buffer back (`depth16`). That is an independent witness for the value the
+rasterizer computed, and it changes the picture: the rasterizer receives the
+vertex position and computes the window z correctly, so the clip z is present
+and well defined, while the fragment side still has to be found.
+
+Setup on the AC100 (Tegra 20 / AR20, `kusma-ac100 7.2.0-gd1efa725955b`): the
+vertex template writes position with a controlled clip z, the fragment primes
+r0..r3, links gl_Position (`export0`) into `tram0.xyzw` with one fp20 per
+column, fetches one lane and stores r2/r3 raw. The same manifests run with and
+without `GRATE_DEPTH`. The standard controls (`immediate-operand`,
+`varying-pipeline`) pass before and after each sweep.
+
+Depth witness, clip z -> `depth16` (viewport scale 0.5, bias 0.5, so the
+window value is z/2 + 0.5):
+
+| clip z | 0.25 | 0.5 | 0.75 | 0.875 | 1.0 |
+|:--|--:|--:|--:|--:|--:|
+| depth16 | `9FFF` | `BFFF` | `DFFF` | `EFFF` | `FFFF` |
+| window z | 0.625 | 0.75 | 0.875 | 0.9375 | 1.0 |
+
+The depth value moves exactly as the controlled clip z does, so the probe is
+not writing into a dead position path and the z the driver would need exists.
+
+The plain link copy carries it. With `LINK fp20, fp20, fp20, fp20,
+tram0.xyzw, export0` (no `(z)`) and the z lane fetched into r2, the stored high
+byte is:
+
+| clip z | 0 | 0.125 | 0.25 | 0.375 | 0.5 | 0.625 | 0.75 | 0.875 | 1.0 | -0.5 |
+|:--|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| z lane | `00` | `DF` | `E7` | `EB` | `EF` | `F1` | `F3` | `F5` | `F7` | `00` |
+
+The w lane of the same row reads `F7` (1.0) at z = 0.75, and the x and y lanes
+read 0. The code is the calibrated one: the high byte equals `(fp20 >> 10) - 1`
+at every tested point (fp20(0.25) = 0x3A000 -> 0xE7, fp20(0.5) = 0x3C000 ->
+0xEF, fp20(1.0) = 0x3E000 -> 0xF7), and the low byte is 0 or `FF` depending on
+the pixel. The store path therefore keeps only the top bits of the fp20 lane:
+the readback resolves a few percent, not the full value, and a negative z is
+indistinguishable from zero (the -0.5 row stores 0). Within that resolution the
+lane is monotonic in clip z, and the same sweep run with the depth buffer off
+gives the same codes, so the lane is not a by-product of depth testing.
+
+That the lane is really the interpolated position z, not one vertex's value or
+a uniform echo, is shown by a sloped triangle. The vertex shader writes
+`z = 0.5 + x/4`, so clip z runs 0.25 at the left edge to 0.75 at the right.
+The fragment stores the z lane to linear `rt4` and `GRATE_REGION` dumps the
+rectangle, giving at x = 0, 15 and 30:
+
+| pixel | 0 | 15 | 30 |
+|:--|--:|--:|--:|
+| z lane | `E7` | `EE` | `F2` |
+
+The lane follows the slope across the quad. The depth buffer in the same run
+also varies, so the rasterizer and the fragment see the same interpolation.
+
+Perspective is separate from the lane. With clip z = 0.5 and a uniform w = 2
+(one `ADDv` of (0, 0, 0.5, 1); the quad shrinks to NDC +-0.5, so the centre
+pixel is read through `rt4`), the z lane reads `EF` (0.5, the clip z, not 0.25)
+and the w lane reads `FF` (2.0), while `depth16` reads `9FFF`, i.e. window
+z = 0.625 = (0.5/2)*0.5 + 0.5. So the lanes are clip-space z and w, and window
+z is the shader's `(z/w)*scale + bias` with the viewport scale and bias the
+driver already supplies. The MFU's rcp gives the reciprocal for the divide.
+
+The `(z)` select is not this path and should not be used. With the documented
+one-lane form, `LINK NOP, NOP, NOP, fp20, tram0.xyzw, export0 (z)`, reading the
+w lane returns `0x2000E700`: the w lane is a near-zero code (0x2000), whereas
+the same link without `(z)` returns `0xF700E700` (w = 1.0). Enabling the x lane
+instead of w does not help; w still reads 0x2000. So the select does trigger a
+write to TRAM0.w, as the linker description says, but the value written is not
+the position z on this hardware, and it replaces the normal copy. That also
+explains the `0x1800`/`0x1C00`/`0x2000` family in note 50: it is the `(z)`
+magic write, not a z encoding. Note 50's all-NOP `sat(NOP)` result is unchanged
+by the depth state: r3 reads 0 for z = 0, 0.5, 0.75 and 1.0 with depth test and
+write enabled, so the old r3 recipe has no input on this path.
+
+Contract for a driver, measured end to end:
+
+1. Vertex: write gl_Position normally (export 0).
+2. Linker: copy the position export into a TRAM row, one fp20 per column, with
+   no `(z)` select.
+3. Fragment: fetch the row's z and w lanes with `ipl` (`VAR1` fp20); the z lane
+   is the interpolated clip z and the w lane the interpolated clip w.
+4. Window z: divide z by w and apply the viewport scale and bias. The depth
+   buffer confirms the result (0.5/2 -> 0x9FFF with scale and bias 0.5).
+
+Not established: whether the interpolation is perspective-correct for a
+varying w (the w = 2 probe is uniform, and the vertex unit accepts only one
+masked write per export, so a per-vertex w probe needs a different vertex
+template); the exact fp20 code of the lane beyond the coarse readback; and
+whether a fragment can obtain window z without the divide (the depth buffer
+suggests the hardware computes it, but no register or fetch exposes it).
+
+Discarded runs, not evidence: two attempts to vary w per vertex failed to
+parse because the vertex assembler allows only one masked write per export and
+the `MADv`/`MULv` masked forms are rejected; those failed runs are not retained.
+One `MOVv r63.**zw` attempt parsed but broadcast w into both lanes (the depth
+buffer read 0xFFFF, i.e. z = w). The retained runs are `observe6-fragz-depth` (depth sweep, 25 runs), `observe7-fragz-pos`
+(plain-copy lanes, 26 runs), `observe8-fragz-zpath` (z sweep without depth, 35
+runs), `observe9-fragz-slope` (slope, rt4 region, 11 runs),
+`observe12-fragz-w` (the discarded `**zw` probe, kept as the negative result),
+`observe13-fragz-copy` (baseline z/w of the harness quad), `observe14-fragz-w`
+(ADDv z = 0.5 / w = 2, 14 runs) and `observe15-fragz-zone` (one-lane `(z)`,
+12 runs).

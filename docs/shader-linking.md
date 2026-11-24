@@ -32,7 +32,7 @@ VEC4.xyzw:
 
 VEC4.x = VEC4.z:
 
-- Vertex position.z coordinate will be set to the export.x component and propagated to the fragment shader (gl_FragCoord.z), export.x should be swizzled to TRAM.w (actual TRAM seems untouched).
+- Vertex position.z coordinate will be set to the export.x component and propagated to the fragment shader (gl_FragCoord.z), export.x should be swizzled to TRAM.w. Measured on the AR20 (note 52): the select does trigger a write to TRAM0.w, but the value is a near-zero code (`0x2000`), not the position z, and it replaces the normal copy; the same row linked without `(z)` reads w = 1.0. The fragment z is obtained from the ordinary `VEC4.xyzw` copy of the position export, not from this select.
 
 | Value  | Meaning                  |
 |-------:|:-------------------------|

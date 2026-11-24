@@ -1968,19 +1968,33 @@ step.
 
 ### 6.6 Fragment z component
 
-The z component comes in some form via r3. The fetch operation of the r3 should be set to NOP with "saturation" being enabled for r3. After the r3 has been populated, the following expansion should be performed:
+Documented recipe, superseded on the AR20: the z component was said to arrive
+via r3 with the fetch set to NOP and saturation, expanding to
 
 	gl_FragCoord.z = 1/1000 + max(0.0, r3.low) * 1/4000 + max(0.0, r3.high) * 1/4
 
-There is also dependency on the linker: it should perform the "magic" write to the TRAM0.w with "VEC4 select = VEC4.z".
+and to depend on a linker "magic" write of VEC4.z to TRAM0.w. The measurements
+below show that neither is the path the hardware uses.
 
-Measured on the AR20 (note 50): `(z)` does not put position z into TRAM. With a
-controlled clip z and an fp20-calibrated readback, z = 0.75 reads `0x0000` in x and
-`0x2000` in y, z and w; the w column reads 0 for z = 0.5, 0.8, 0.875 and 1.0 while it
-reads `0x1800`/`0x1C00`/`0x2000` for 0.25, 0.625, 0.7 and 0.75. That is not a
-monotonic function of z and does not match the calibrated fp20 codes (0.875 would be
-`0xF500`). The all-NOP link with `sat(NOP)` reads 0 for z = 0, 0.5, 0.75 and 1.0, so
-the reconstruction above still has no measured input.
+Measured on the AR20 (note 52): the rasterizer has the window z. With a D16 depth
+surface bound and depth test and write enabled, the depth buffer follows clip z as
+z/2 + 0.5 - `0x9FFF`, `0xBFFF`, `0xDFFF`, `0xEFFF` and `0xFFFF` for z = 0.25, 0.5,
+0.75, 0.875 and 1.0. The fragment obtains it from the ordinary link copy of the
+position export: `LINK fp20, fp20, fp20, fp20, tramN.xyzw, export0` places the
+interpolated clip z in the row's z lane and clip w in its w lane. The measured z
+codes are `0xDF`, `0xE7`, `0xEB`, `0xEF`, `0xF1`, `0xF3`, `0xF5` and `0xF7` for clip
+z 0.125 through 1.0, a sloped z tracks across the quad, and with z = 0.5 and w = 2 the
+lanes read 0.5 and 2.0 while the depth buffer reads 0.625. Window z is the shader's
+`(z/w)*scale + bias`, with the viewport scale and bias the driver sets and the MFU's
+rcp for the divide.
+
+The r3 recipe is not the hardware path: `sat(NOP)` reads 0 for z = 0, 0.5, 0.75 and
+1.0 even with depth enabled, so the reconstruction above has no measured input. The
+`(z)` select does write TRAM0.w, but writes a near-zero code (`0x2000`) rather than
+the position z and replaces the normal copy, which would have delivered w = 1.0 from
+the same row; the one-lane `NOP, NOP, NOP, fp20` form behaves the same. The raw
+readback high byte calibrates to `(fp20 >> 10) - 1`, so it resolves only a few
+percent of the lane value and cannot show a negative z.
 
 ## 7. TEX
 
