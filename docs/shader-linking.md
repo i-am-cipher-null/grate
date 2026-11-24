@@ -28,13 +28,22 @@ Prior to linking, the vertex export is being squeezed. For instance, if vertex p
 
 VEC4.xyzw:
 
-- Vertex attribute data will be fetched from VPE export to TRAM row.
+- The ordinary mode copies the selected vertex export into the TRAM row.
+  For position export 0, `LINK fp20, fp20, fp20, fp20, tramN.xyzw, export0`
+  copies the four position components. On AR20, the fragment can fetch the
+  interpolated clip-space z and w lanes from this row with ordinary FP20
+  `ipl` fetches. This is the measured `gl_FragCoord.z` input path (experiment
+  note 52); no `(z)` modifier is needed.
 
 VEC4.x = VEC4.z:
 
-- This selects the special position-Z input rather than the ordinary VEC4.xyzw export. The intended path is for vertex position.z to be supplied from the selected export.x component and made available to the fragment shader as `gl_FragCoord.z`; the ordinary TRAM mapping is not fully understood.
-
-The follow-up probe provides a lead: with `gl_Position.z = 0.75`, exporting after the final position-Z write changed the fetched value, whereas the earlier all-zero probes used `gl_Position.z = 0`. An attempt that exported before the final Z write was discarded. The changed readback could not be decoded unambiguously into the FP20/FX10 components, so this supports the position-Z/export-order dependency but does not confirm the complete `gl_FragCoord.z` path or its reconstruction formula.
+- This is a separate special select and is **not** the fragment-z path on
+  AR20. In the measured one-lane form
+  `LINK NOP, NOP, NOP, fp20, tram0.xyzw, export0 (z)`, the fragment readback
+  is `0x2000E700`: TRAM0.w contains the near-zero code `0x2000`, not the
+  position z or the ordinary position w. The same row linked without `(z)`
+  reads `0xF700E700` (w = 1.0). Thus the select replaces the ordinary copy
+  and should not be used to obtain `gl_FragCoord.z`.
 
 | Value  | Meaning                  |
 |-------:|:-------------------------|
