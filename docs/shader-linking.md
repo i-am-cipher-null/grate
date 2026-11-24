@@ -32,7 +32,9 @@ VEC4.xyzw:
 
 VEC4.x = VEC4.z:
 
-- Vertex position.z coordinate will be set to the export.x component and propagated to the fragment shader (gl_FragCoord.z), export.x should be swizzled to TRAM.w (actual TRAM seems untouched).
+- This selects the special position-Z input rather than the ordinary VEC4.xyzw export. The intended path is for vertex position.z to be supplied from the selected export.x component and made available to the fragment shader as `gl_FragCoord.z`; the ordinary TRAM mapping is not fully understood.
+
+The follow-up probe provides a lead: with `gl_Position.z = 0.75`, exporting after the final position-Z write changed the fetched value, whereas the earlier all-zero probes used `gl_Position.z = 0`. An attempt that exported before the final Z write was discarded. The changed readback could not be decoded unambiguously into the FP20/FX10 components, so this supports the position-Z/export-order dependency but does not confirm the complete `gl_FragCoord.z` path or its reconstruction formula.
 
 | Value  | Meaning                  |
 |-------:|:-------------------------|
