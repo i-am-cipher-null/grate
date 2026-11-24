@@ -7053,10 +7053,11 @@ field layout, never from a measurement. The operation matters directly for
 GLSL ES `min()` and `max()`, so it was run with the three-batch ALU harness:
 batch 0 prefills `r2` with 0.5, batch 1 runs the operation into `r2.lh`, batch 2
 copies the result into `r3` and `store rt1, r2, r3` reads both back. The stored
-word holds `r3` in byte 0 and `r2` in byte 2, which the asymmetric negative
-rows below show directly; note 48's template comment numbers those bytes the
-other way round, but its pinned words do not depend on the description. The
-fp20 codes are `0xE7` 0.25, `0xEF` 0.5, `0xF3` 0.75, `0xF7` 1.0.
+word puts each register's fp20 code in the high byte of its 16-bit half: r2's
+code in byte 1 and r3's in byte 3, as note 48 describes. The fp20 codes are
+`0xE7` 0.25, `0xEF` 0.5, `0xF3` 0.75, `0xF7` 1.0; the asymmetric negative rows
+below read `0xF3000000`, i.e. r3 = 0.75 in byte 3 and r2 = 0 because the sign
+is outside the bits the DW conversion shows.
 
 The template is `tests/grate/asm/alu_minmax.in` and the manifest is
 `tests/grate/asm_characterize.alu_minmax.json`
