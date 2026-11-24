@@ -2006,6 +2006,14 @@ would halve `s`. The sweep is `probe_tex_unknown.sh`.
 covers a cube map or a shadow sampler. Those two have no binding path in the test
 driver, which is a limit of the harness rather than a statement about the bits.
 
+**GLES2 scope correction:** cube-map sampling is required by core GLES2, so it is
+an outstanding ISA characterization item, not an excluded feature. The tests
+above establish only the behaviour of the available linear 2D descriptors.
+Neither the observed lack of an R-coordinate effect nor the inert-bit sweep can
+be generalized to cube-face selection or cube-map sampling. The current test
+driver has no cube-map binding path; this is a harness limitation, not evidence
+that AR20 lacks cube-map support.
+
 What *is* covered is the coordinate side of the question. Feeding R from the ALU
 so that it sweeps `0..1` across the frame - a different fragment programme, but
 the same descriptor, output and texture - gives a frame byte-identical to the
