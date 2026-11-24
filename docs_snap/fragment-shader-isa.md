@@ -1974,6 +1974,14 @@ The z component comes in some form via r3. The fetch operation of the r3 should 
 
 There is also dependency on the linker: it should perform the "magic" write to the TRAM0.w with "VEC4 select = VEC4.z".
 
+Measured on the AR20 (note 50): `(z)` does not put position z into TRAM. With a
+controlled clip z and an fp20-calibrated readback, z = 0.75 reads `0x0000` in x and
+`0x2000` in y, z and w; the w column reads 0 for z = 0.5, 0.8, 0.875 and 1.0 while it
+reads `0x1800`/`0x1C00`/`0x2000` for 0.25, 0.625, 0.7 and 0.75. That is not a
+monotonic function of z and does not match the calibrated fp20 codes (0.875 would be
+`0xF500`). The all-NOP link with `sat(NOP)` reads 0 for z = 0, 0.5, 0.75 and 1.0, so
+the reconstruction above still has no measured input.
+
 ## 7. TEX
 
 
@@ -2012,7 +2020,9 @@ above establish only the behaviour of the available linear 2D descriptors.
 Neither the observed lack of an R-coordinate effect nor the inert-bit sweep can
 be generalized to cube-face selection or cube-map sampling. The current test
 driver has no cube-map binding path; this is a harness limitation, not evidence
-that AR20 lacks cube-map support.
+that AR20 lacks cube-map support. Concretely, `TEXTURE_DESC1`/`TEXTURE_DESC2` have
+no dimension or face-enable field, `grate_create_texture` allocates one 2D surface,
+and there is no cube option in the assembler (note 51).
 
 What *is* covered is the coordinate side of the question. Feeding R from the ALU
 so that it sweeps `0..1` across the frame - a different fragment programme, but

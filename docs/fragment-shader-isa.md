@@ -593,7 +593,7 @@ The z component comes in some form via r3. The fetch operation of the r3 should 
 
 	gl_FragCoord.z = 1/1000 + max(0.0, r3.low) * 1/4000 + max(0.0, r3.high) * 1/4
 
-There is also dependency on the linker: it should perform the "magic" write to the TRAM0.w with "VEC4 select = VEC4.z". **Unknown:** what supplies that VEC4.z input. Every `(z)` link word tested (all columns fp20, different swizzles, exports and rows) read zero, while the same linker without `(z)` read the export, so the bit switches the link's source to an input these programs do not populate (note 10). `gl_FragCoord.z` depends on this and is not established end to end.
+There is also dependency on the linker: it should perform the "magic" write to the TRAM0.w with "VEC4 select = VEC4.z". **Unknown:** what supplies that VEC4.z input, and whether it reaches TRAM at all. A controlled clip-z probe with a calibrated fp20 readback found that `(z)` does not write position z to any TRAM component: at z = 0.75 the row reads 0 in x and the non-z value `0x2000` in y, z and w, the w column does not track z across the sweep (0 at 0.5 and 0.8, `0x2000` at 0.75), and `sat(NOP)` reads 0 for every z (note 50). `gl_FragCoord.z` is not established end to end.
 
 ## TEX instruction word encoding
 
@@ -616,7 +616,8 @@ The TEX instruction takes the texture coordinates and LOD bias from the first ro
 or 31 on a sample that demonstrably moves with bit 5, bit 4 and the coordinate
 leaves the result byte-identical (note 11). These results do **not** characterize
 cube-map sampling: cube maps are required by core GLES2, but the test driver has
-no cube-map binding path. The R-coordinate no-effect observation and inert-bit
+no cube-map binding path: the texture descriptor field set has no dimension or
+face-enable field and the constructor allocates one 2D surface (note 51). The R-coordinate no-effect observation and inert-bit
 sweep therefore apply only to the tested 2D descriptors, not to cube-face
 selection or cube-map sampling. Shadow samplers are also unavailable in the
 harness and are outside base GLES2. Bit 14 does not halve `s` when R is 2.0, so
@@ -839,7 +840,7 @@ sections above.
 | fragment colour output | DW `store rt1, r0/r1 or r2/r3` | payload `r2.lo, r2.hi, r3.lo, r3.hi`; RGBA8888 conversion | DW | one DW position per batch; one DW per group for a predictable payload | **Confirmed** (notes 24, 29, 42) |
 | fragment position | row registers 72/73 | fx10 in the high half; `x + 8192`, `8192 + height - 1 - y` | ALU operand | offset not separable from the 8-bit conversion | **Confirmed** formula, **Inferred** offset (note 8) |
 | polygon face | row register 75 | fx10 low half: +1.0 or 0.0 | ALU operand | fp20 and high-half reads are zero | **Confirmed** (note 8) |
-| `gl_FragCoord.z` | r3 fetch plus the VEC4.z link write | two fp20 halves recombined by `1/1000 + max(0,r3.lo)/4000 + max(0,r3.hi)/4` | MFU fetch, later ALU | needs a populated VEC4.z input that no tested link produced | **Unknown** (note 10) |
+| `gl_FragCoord.z` | r3 fetch plus the VEC4.z link write | `(z)` writes no position z into TRAM; `sat(NOP)` reads 0 for every tested z | MFU fetch, later ALU | no TRAM component carries the value, so the §6.6 expansion has no measured input | **Unknown** (note 50) |
 | integer / bitwise / shift | - | - | - | outside GLES2 | **Not required** |
-| cube-map sampling | TEX | direction vector (S,T,R) | TEX | cube-face selection and cube-map coordinate handling not tested; harness only binds linear 2D descriptors | **Unknown; required for GLES2** |
+| cube-map sampling | TEX | direction vector (S,T,R) | TEX | no cube binding path and no dimension field in TEXTURE_DESC1/2; harness blocker, not a hardware result | **Unknown; required for GLES2** (note 51) |
 | shadow samplers / TEX projective divide | - | - | - | outside the base GLES2 sampler path; bit 14 is not the NV30 projective divide | **Not required** |

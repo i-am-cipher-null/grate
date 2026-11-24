@@ -7158,3 +7158,101 @@ Five things that produced wrong results first:
   `0x000000FF`) and it is a control in all three manifests, next to the shipped
   varying case (`0xFF01FF00`), because a board that has lost the constant path
   returns a plausible `f(0)` instead of an error.
+
+## 50. `gl_FragCoord.z`: the `(z)` link does not populate TRAM
+
+The two documented halves of the z path are the linker's "magic write" of
+VEC4.z into TRAM0.w and the fragment-side reconstruction
+`1/1000 + max(0,r3.lo)/4000 + max(0,r3.hi)/4`. Note 10 could not see the write
+because every `(z)` test used position z = 0. This note repeats the test with a
+controlled clip-space z and a readback that is calibrated against known exports.
+
+The probe writes position as `(attribute.xy, c[100].z, 1)` in the vertex
+shader, with the z overwrite in its own EXEC because the assembler accepts only
+one masked vector write per EXEC. The fragment primes r0..r3, fetches one TRAM
+component with `ipl`, and stores r2/r3 unconverted. `tram0.w` is read for the
+z sweep, and x/y/z/w are each read once at z = 0.75. `GRATE_POKE` sets the
+`0x520` batch count as in the TRAM manifest, and the two standard controls run
+in the same manifest.
+
+Calibration through the ordinary (no `(z)`) link fixes the word layout and the
+fp20 codes: the stored word is `r3 << 16 | r2`, the fetched w lands in r3, and
+
+| value written to tram0.w | word | r3 |
+|:--|--:|--:|
+| 0.875 (`vs_tram.txt`, export1) | `0xF500E700` | `0xF500` |
+| 0.25 (`vs_tram_b.txt`, export1) | `0xE700E700` | `0xE700` |
+| position w = 1.0 (no `(z)`, z = 0.75) | `0xF700E700` | `0xF700` |
+| prime r3 = 0.375 | `0xEB00` (from `z-x-z075`) | `0xEB00` |
+
+With `(z)` and all four columns fp20, the components do **not** carry position
+z. At z = 0.75 the fetched x is `0x0000` and y, z and w are all `0x2000`; at
+other z values the w column reads:
+
+| clip z | 0.25 | 0.5 | 0.625 | 0.7 | 0.75 | 0.8 | 0.875 | 0.99 | 1.0 | -0.5 | -1.0 |
+|:--|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| tram0.w | `1800` | `0000` | `1800` | `1C00` | `2000` | `0000` | `0000` | `0000` | `0000` | `0000` | `0000` |
+
+The five repeats of each row are identical, so this is not sampling noise, but
+the sequence is not monotonic in z and does not match any calibrated fp20 code:
+window z 0.875 would be `0xF500`, not `0x0000` or `0x2000`. Whatever the
+`0x1800`/`0x1C00`/`0x2000` family is, it is not position z expressed in the
+format the TRAM fetch decodes.
+
+The all-NOP recipe from the extended record is decisive. With
+`LINK NOP, NOP, NOP, NOP, tram0.xyzw, export0 (z)` and `sat(NOP)` in the w slot,
+r3 reads `0x0000` for z = 0, 0.5, 0.75 and 1.0; without `(z)` it also reads 0.
+Reading tram0.w in the same all-NOP configuration returns `0xF700`, i.e. 1.0,
+the position's w. So `(z)` leaves the link writing position-derived data that
+is not z, and the dedicated `sat(NOP)` fetch does not receive a depth value
+either.
+
+Conclusion: the linker `(z)` modifier does not deliver position z through TRAM,
+and the §6.6 fragment reconstruction has no measured input on this path. That
+matches the parenthetical in `docs/shader-linking.md` ("actual TRAM seems
+untouched"). Earlier z = 0 probes reading zero are explained by the position
+value, but a non-zero z does not make the value usable. Whether the rasterizer
+supplies `gl_FragCoord.z` through some other register or side channel is still
+**Unknown**; no tested link produced a z-derived TRAM word.
+
+Two earlier attempts are discarded rather than fitted: one exported position
+before the z overwrite, and one packed a whole register pair through the
+fp20/fx10 conversion and could not be decoded byte-for-byte. Both are excluded
+from the tables above. The retained runs are the observe directories
+`results/observe3-fragz` (31 rows) and `results/observe4-fragz` (61 rows) plus
+`results/observe5-fragz` (20 rows); the first two 31-row attempts failed on a
+vertex-template parse error and are not evidence.
+
+## 51. Cube-map sampling: the harness has no cube binding path
+
+Cube maps are required by GLES2 and are still uncharacterized. The limitation
+is in the test driver, not an observation about AR20:
+
+* `tools/assembler.c` binds one 2D surface with `--texture`. The only
+  constructor is `grate_create_texture(grate, width, height, format, layout)`,
+  and `struct grate_texture` carries a width, height and pitch. There is no
+  six-face allocation and no cube flag.
+* The texture descriptor words are `TEXTURE_DESC1` at `0x720 + 2i` and
+  `TEXTURE_DESC2` at `0x721 + 2i`. The field set in `include/tgr_3d.xml.h` is
+  format, filters, wraps, mipmap disable, max LOD, width/height (log2) and
+  NOT_POW2_DIMENSIONS. There is no dimension, cube or face-enable field, and no
+  cube face pointer array.
+* `GRATE_TEX_FORMAT` accepts `RGBA8888`, `dxt1`, `etc1` and `d16`, all linear
+  2D surfaces; `GRATE_TEX_SIZE` is `WxH`. No assembler option selects a cube
+  target.
+* `src/libgrate` contains no cube texture code at all.
+
+`GRATE_POKE` can write arbitrary registers after texture setup, but the bit
+that would select cube behaviour is exactly what is unknown. Setting a guessed
+bit without six bound faces would sample the 2D surface and could not
+distinguish "AR20 ignores cube maps" from "the guess was wrong"; that is not a
+probe that separates the competing interpretations.
+
+The smallest credible test-only addition is therefore not small: allocate six
+face surfaces with distinct contents, teach the descriptor builder a cube
+dimension, and bind the face pointers. The descriptor field for that dimension
+is not documented here, so the change would itself be an ISA investigation, not
+a harness tweak. Until it exists, cube-face selection, direction-vector use and
+the descriptor contract remain **Unknown**, and the 2D R-coordinate and
+inert-bit results stay scoped to the four linear formats they were measured
+with.
