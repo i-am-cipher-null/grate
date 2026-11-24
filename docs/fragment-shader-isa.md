@@ -128,9 +128,11 @@ tested.
 MIN and MAX were measured in the form emitted by the assembler, with the
 fourth source set to `#1`: `min/max(rA * rB, rC)`. Both terms participate;
 the first term is multiplied by `rB`, and the second term is `rC` because
-the fourth source is one. The assembler rejects `#0` in this operand
-position. Other fourth-source encodings were not established, so do not
-generalize the measured MIN/MAX semantics beyond this form (experiment
+the fourth source is one. Tests with negative inputs showed signed-value
+selection for both operations, and a MIN result-scale probe confirmed that
+scaling follows the MIN/MAX selection. The assembler rejects `#0` in this
+operand position. Other fourth-source encodings were not established, so do
+not generalize the measured MIN/MAX semantics beyond this form (experiment
 [note 49](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md#L7048)).
 
 #### Scale result:
