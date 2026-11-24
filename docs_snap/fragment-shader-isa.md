@@ -388,6 +388,12 @@ Unlike a regular ALU instruction, the ALU3 instruction words, constituting immed
 |      2 |    MAX   | Maximum            | max(rA * rB, rC * rD)      |
 |      3 |    CMP   | Compare and select | (rA < 0) ? rB : (rC * rD)  |
 
+The `MIN` and `MAX` rows were measured with `rD` fixed to `#1`, the only form
+the assembler emits; both products multiply and the second term is `rC` in
+that form. See note 49 in
+`tests/grate/asm_characterize.experiments.md`. `rD` is a one-bit constant (`rD_reg_select:1`), not a register; `CMP` and `rD != 1` are not
+measured.
+
 ### 5.4 Result scaling
 
 | Value |  Meaning |

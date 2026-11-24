@@ -164,6 +164,11 @@ Unlike a regular ALU instruction, the ALU3 instruction words, constituting immed
 |      2 |    MAX   | Maximum            | max(rA * rB, rC * rD)      |
 |      3 |    CMP   | Compare and select | (rA < 0) ? rB : (rC * rD)  |
 
+`MIN` and `MAX` were measured in the only form the assembler emits, with the
+fourth source fixed to `#1` (note 49): `min/max(rA*rB, rC)`. The `rD` in the
+`MAD` and `CMP` rows is the same one-bit constant, not a general register, and
+those two rows remain the encoder's description.
+
 #### Scale result:
 
 | Value |  Meaning |
@@ -442,9 +447,9 @@ When bit "addition disable" is set, the Multiply-Add operation turns into two mu
 Bit 56 clamps the result to 0.0 .. 1.0. Measured on AR20 with `(sat)` (note 48):
 the clamp is applied after the result scale and before the condition code, on
 `MAD`, `MUL` and `MAX`, in both the fp20 (`.lh`) and fx10 (`.l*`) write formats.
-2.0 stores as 1.0, -0.5 as 0.0, and an in-range value is unchanged. `MIN` shares
-the path by inference only; the accumulate and condition-register write paths
-were not combined with the bit.
+2.0 stores as 1.0, -0.5 as 0.0, and an in-range value is unchanged. `MIN`
+also clamps (note 49); the accumulate and condition-register write paths were
+not combined with the bit.
 
 A backend can spell a clamp with `(sat)` instead of a `MIN`/`MAX` pair. GLES2
 has no saturate operation, so nothing in the required subset depends on the
@@ -816,7 +821,7 @@ sections above.
 | varying/constant read | MFU row source, ALU `uN`/`rN` | uniform 32..63, rows 0..15, row 4 = reciprocal w | MFU/ALU | rows rewritten by the same group read their old value | **Confirmed** (notes 4, 6) |
 | add / multiply / multiply-add | ALU `MAD` | `rA*rB + rC*rD`, four operand modifiers | ALU, any packet | result scale 0..3; write masks choose fp20 vs fx10 | **Confirmed** (note 1) |
 | multiply without addend | ALU `MUL` (bit 59) | same fields, addend dropped; two products in the two halves | ALU | `.l*`/`.*h` write both halves, `.lh` keeps one | **Confirmed** (note 1) |
-| min / max | ALU `MIN`/`MAX` | `min/max(rA*rB, rC*rD)` | ALU | operand behaviour not isolated from the encoder's description | **Inferred** |
+| min / max | ALU `MIN`/`MAX` | `min/max(rA*rB, rC)`: both products multiply, fourth source is the one-bit constant `#1` | ALU | result scale and `(sat)` apply after the selection; `rD != 1` unmeasured | **Confirmed** (note 49) |
 | compare / select | ALU condition codes plus `(eq)/(gt)/(ge)` | condition applies to the ALU result, 0.0 or 1.0 | ALU | condition register written in the same batch reads zero | **Confirmed** (notes 13, 18) |
 | clamp to 0..1 | ALU `(sat)` (bit 56) | after result scale, before condition | ALU | applies to fp20 and fx10 write formats | **Confirmed** (note 48) |
 | texture sample | TEX | coordinates S,T,R + LOD from the selected row pair; result two registers of four fx10 | TEX; coordinates from a prior group | bits 6..9, 11 and 15..31 inert on the tested 2D descriptors; sampler index in bits 0..3 | **Confirmed** (notes 2, 11, 15) |

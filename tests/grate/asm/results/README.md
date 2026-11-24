@@ -2186,3 +2186,30 @@ invalidate another; generate such a manifest with
 * created: 2026-11-23T23:30:09+00:00; 52 rows, repeat 3, timeout 20.0 s
 * summary: 52 passed, 0 failed of 52 - passed
 * logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory
+
+## pin-minmax
+
+* manifest: `asm_characterize.alu_minmax.json` (sha256 46739e8e6ff9)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: c738239983fe8d6808aa9659e599ba2f3c83f7ad with the manifest modified and the previous copy of these run directories deleted
+* created: 2026-11-24T16:08:36+00:00; 34 rows, repeat 3, timeout 20.0 s
+* summary: 34 passed, 0 failed of 34 - passed
+* logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory
+
+## verify-minmax
+
+* manifest: `asm_characterize.alu_minmax.json` (sha256 46739e8e6ff9)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: c738239983fe8d6808aa9659e599ba2f3c83f7ad with the manifest modified and the previous copy of these run directories deleted
+* created: 2026-11-24T16:08:42+00:00; 34 rows, repeat 3, timeout 20.0 s
+* summary: 34 passed, 0 failed of 34 - passed
+* logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory
+
+## clean-minmax
+
+* manifest: `asm_characterize.alu_minmax.json` (sha256 46739e8e6ff9)
+* device: Toshiba AC100 / Dynabook AZ; Linux kusma-ac100 7.2.0-gd1efa725955b #1 SMP PREEMPT Sun Aug 30 13:43:06 UTC 2026 armv7l
+* commit: 2e509e51b7a45f20b96569914de7929148f09363 with a clean tree (worktree in /home/freebuff/clean-2e509e5)
+* created: 2026-11-24T16:09:22+00:00; 34 rows, repeat 3, timeout 20.0 s
+* summary: 34 passed, 0 failed of 34 - passed
+* logs: `logs/` holds each row's stdout and stderr; it is present in the run directory but untracked by `results/.gitignore` (`*/logs/`), and `results.tsv` paths are relative to the run directory

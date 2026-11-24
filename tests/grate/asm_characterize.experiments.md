@@ -7020,8 +7020,8 @@ Reading it:
   `MAD`.** The fx10 row needs the normalised `r3` to show it: the raw low byte
   of `r2` reads `0xFF` for both 1.0 and 2.0 because the 8-bit conversion of an
   fx10 value saturates either way, while `r3` is 0.25 with the bit and 0.5
-  without. `MIN` was not run; it shares the clamp path with `MAX` by
-  inference, not measurement.
+  without. `MIN` was not run in that experiment; note 49 measures it separately and
+  confirms the clamp applies there too.
 * **the negative raw code is not visible in the readback.** `r2` reads zero for
   -0.5 with and without the bit, because the fp20 sign is outside the 10-bit
   field the DW conversion shows. The clamp at zero is established by the
@@ -7044,6 +7044,78 @@ all 52 rows; the controls (`immediate-operand` `0x000000FF`,
 directories are `results/pin-alu-saturate`, `results/verify-alu-saturate` and
 `results/clean-alu-saturate`; the per-row logs are untracked, as for every
 other run (`results/.gitignore`).
+
+## 49. ALU MIN and MAX operands
+
+The opcode table describes `MIN` as `min(rA*rB, rC*rD)` and `MAX` as the
+maximum of the same two products, but that wording came from the encoder's
+field layout, never from a measurement. The operation matters directly for
+GLSL ES `min()` and `max()`, so it was run with the three-batch ALU harness:
+batch 0 prefills `r2` with 0.5, batch 1 runs the operation into `r2.lh`, batch 2
+copies the result into `r3` and `store rt1, r2, r3` reads both back. The stored
+word holds `r3` in byte 0 and `r2` in byte 2, which the asymmetric negative
+rows below show directly; note 48's template comment numbers those bytes the
+other way round, but its pinned words do not depend on the description. The
+fp20 codes are `0xE7` 0.25, `0xEF` 0.5, `0xF3` 0.75, `0xF7` 1.0.
+
+The template is `tests/grate/asm/alu_minmax.in` and the manifest is
+`tests/grate/asm_characterize.alu_minmax.json`
+(sha256 `46739e8e6ff9da63b322657376ab9d2a70c152920235b608955259bbc07e598e`).
+Constants are exact in fp20: `u0` 0.5, `u1` 0.25, `u2` 0.75, `u3` 1.0,
+`u4` 2.0.
+
+**Both products are multiplied.** `MIN r2.lh, u0, u0, u2, #1` compares
+0.5\*0.5 = 0.25 with 0.75 and stores 0.25. A plain operand minimum would be
+min(0.5, 0.75) = 0.5. `MAX r2.lh, u0, u4, u2, #1` compares 1.0 with 0.75 and
+stores 1.0; a plain operand maximum would store 0.75. Both `rB` and `rC` are
+multipliers, not spare fields:
+
+| variant | operation | value |
+|:--|:--|:--|
+| `min-products` | min(0.5\*0.5, 0.75\*1) | 0.25 (`0xE7`) |
+| `max-products` | max(0.5\*2.0, 0.75\*1) | 1.0 (`0xF7`) |
+| `min-rB` | min(0.5\*2.0, 0.75\*1) | 0.75 (`0xF3`) |
+| `min-rB-product` | min(0.25\*2.0, 0.75\*1) | 0.5 (`0xEF`) |
+| `min-rC-dominates` | min(2.0\*0.5, 0.25\*1) | 0.25 (`0xE7`) |
+| `min-plain` | min(0.25\*1, 0.5\*1) | 0.25 (`0xE7`) |
+| `max-plain` | max(0.25\*1, 0.5\*1) | 0.5 (`0xEF`) |
+
+`min-rC-dominates` is the row that proves the second term is read at all: the
+first product is 1.0, so the 0.25 can only come from `rC`.
+
+**The fourth source is a one-bit constant, not a register.** The encoder's
+`rD_reg_select` field is one bit wide (`fragment_asm.h`), and the assembler
+accepts only `#1` in the fourth slot; `#0` fails with "Invalid src register".
+The committed template therefore spells the practical form
+`MIN dst, rA, rB, rC, #1`, which computes `min(rA*rB, rC)`. Hand-built words
+that moved the opcode or `rD` bits did not reproduce the symbolic instruction
+and are not reported as evidence; what the hardware does with `rD != 1` remains
+unmeasured.
+
+**Negative results and result scale.**
+`MIN r2.lh, -u2, u3, u0, #1` and `MAX r2.lh, -u2, u3, -u0, #1` both select a
+negative value. As in note 48 the raw `r2` code reads zero because the sign is
+outside the bits the readback shows, while the normalised `r3` (negate the
+result into batch 2) shows the magnitude: 0.75 and 0.5 respectively. Both
+operations therefore work on signed fp20 values. `MIN (x2)` on 0.25 stores
+0.5, so the result scale is applied after the selection.
+
+**Saturation applies to MIN.** `MIN r2.lh, -u2, u3, u0, #1 (sat)` stores zero,
+and the follow-up `r2 + 1` reads 1.0. This closes the "MIN shares the clamp path
+by inference" caveat in note 48: on this path the clamp is measured.
+
+**What this does not establish.** `rD` other than `#1`, `CSEL`, NaN/Inf
+operands, an fx10 destination, condition codes on `MIN`/`MAX`, and the
+accumulate path were not run. The absolute-value syntax was not accepted in the
+form tried, so source modifiers other than negate are untested here.
+
+**Reproducibility.** Pin and verify runs at the manifest sha256 above agree on
+all 34 rows (11 variants x 3 repeats plus four controls), and the clean run
+from a worktree checked out at the commit containing the manifest
+(`2e509e51b7a45f20b96569914de7929148f09363`) gives the same words with an empty
+`git_status`. Committed run directories are `results/pin-minmax`,
+`results/verify-minmax` and `results/clean-minmax`; the per-row logs are
+untracked as for every other run.
 
 ## What the runner cost
 
