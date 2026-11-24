@@ -7193,7 +7193,7 @@ other z values the w column reads:
 |:--|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
 | tram0.w | `1800` | `0000` | `1800` | `1C00` | `2000` | `0000` | `0000` | `0000` | `0000` | `0000` | `0000` |
 
-The five repeats of each row are identical, so this is not sampling noise, but
+The three repeats of each row are identical, so this is not sampling noise, but
 the sequence is not monotonic in z and does not match any calibrated fp20 code:
 window z 0.875 would be `0xF500`, not `0x0000` or `0x2000`. Whatever the
 `0x1800`/`0x1C00`/`0x2000` family is, it is not position z expressed in the
