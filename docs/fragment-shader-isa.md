@@ -597,13 +597,49 @@ factor used with selectors 11 and 12.
 
 #### Fragment z component
 
-The z component comes in some form via r3. The fetch operation of the r3 should be set to NOP with "saturation" being enabled for r3. After the r3 has been populated, the following expansion should be performed:
+**Measured AR20 path (experiment note 52):** `gl_FragCoord.z` is derived from
+the ordinary link copy of the vertex position export, not from the LINK
+`(z)` modifier or the earlier `sat(NOP)` / r3 recipe.
 
-	gl_FragCoord.z = 1/1000 + max(0.0, r3.low) * 1/4000 + max(0.0, r3.high) * 1/4
+The vertex shader writes `gl_Position` to export 0. The linker copies that
+export into a TRAM row with an ordinary four-lane instruction such as
+`LINK fp20, fp20, fp20, fp20, tramN.xyzw, export0` (no `(z)`). The fragment
+shader fetches the row's z and w lanes as ordinary FP20 interpolants with
+`ipl`. The z lane follows controlled clip-space z values and changes across
+the framebuffer when position z slopes across the primitive.
 
-A proposed linker dependency is the LINK `(z)` modifier, previously described as a "magic" write of VEC4.z to TRAM0.w. The earlier all-zero tests used vertex shaders with `gl_Position.z = 0`, so they did not establish that the path was absent. In a follow-up, a vertex shader with nonzero position Z (`0.75`) changed the fetched value when the export was placed after the final position-Z write; an attempt that exported too early was discarded. This is a concrete lead that the special input depends on the final vertex position Z and its export ordering.
+The raw store keeps only a coarse part of the FP20 value. Its high byte was
+calibrated for positive normal values as `(fp20 >> 10) - 1`:
 
-The resulting readback could not be mapped unambiguously to FP20/FX10 components, and no isolated TRAM-component readout has confirmed the complete path. The value of VEC4.z, its transfer into the fragment rows, and the proposed reconstruction formula therefore remain unverified end to end. Keep `gl_FragCoord.z` marked unresolved until a controlled numeric readback confirms the path.
+| clip-space z | 0.125 | 0.25 | 0.375 | 0.5 | 0.625 | 0.75 | 0.875 | 1.0 |
+|:--|--:|--:|--:|--:|--:|--:|--:|--:|
+| fetched z high byte | `DF` | `E7` | `EB` | `EF` | `F1` | `F3` | `F5` | `F7` |
+
+With clip z = 0.5 and uniform clip w = 2, the ordinary link fetch reads z =
+0.5 and w = 2.0. The D16 depth surface reads `0x9FFF`, corresponding to
+window z = 0.625 with the tested viewport scale and bias of 0.5. This supports
+the reconstruction:
+
+`window_z = (clip_z / clip_w) * viewport_scale + viewport_bias`
+
+The viewport scale and bias are render state supplied by the driver. The
+fragment shader obtains the clip-space inputs from the normal TRAM link and
+performs the divide and viewport transform; these values are not supplied by
+the LINK `(z)` select. The `r4` perspective-interpolation denominator
+described above is a separate value, not the raw clip-w lane of the position
+export.
+
+The old r3 expansion is not the measured path: `sat(NOP)` reads zero at the
+tested z values, including with the depth pipeline enabled. The one-lane
+`(z)` form writes a near-zero code (`0x2000`) to TRAM0.w rather than the
+position z, and replaces the ordinary position copy. Do not use it to obtain
+fragment z.
+
+The raw readback resolves only a few percent of the FP20 value; it cannot
+recover exact lane values or distinguish negative z from zero. The w = 2
+measurement used uniform w, so varying-w interpolation is not characterized
+here. See the [fragment hardware experiment notes](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md),
+note 52, for the probe setup and results.
 
 ## TEX instruction word encoding
 
