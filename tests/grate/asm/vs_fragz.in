@@ -1,0 +1,44 @@
+/*
+ * Vertex shader that writes a controlled clip-space z before exporting position.
+ *
+ * The first EXEC copies the quad position, the second overwrites z with the
+ * clip-space constant and exports the result. The assembler accepts only one
+ * masked vector write per EXEC, so the two writes cannot share a batch. The
+ * colour export uses its own constant vector so the varying cannot pick up the
+ * position-z value.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.constants
+	[100].x = 0.5;
+	[100].y = 0.5;
+	[100].z = @ZC@;
+	[100].w = 1.0;
+	[101].x = 0.5;
+	[101].y = 0.5;
+	[101].z = 0.25;
+	[101].w = 1.0;
+
+.asm
+
+EXEC(export[0]=vector)
+	MOVv r63.xyzw, a[0].xyzw
+	NOPs
+;
+
+EXEC(export[0]=vector)
+	MOVv r63.**z*, c[100].zzzz
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r63.xyzw, c[101].xyzw
+	NOPs
+;
