@@ -72,7 +72,10 @@ The emitter needs the following rules; all are **Confirmed** unless marked.
   fourth packet is refused by the assembler (note 32).
 * The address fields are unit-local: the ALU address counts **packets** and the
   MFU address counts MFU words, not batches. An MFU batch is up to three words
-  in series; an ALU batch is up to three packets.
+  in series; an ALU batch is up to three packets. The MFU/TEX side is the
+  assembler's `instr_sched` encoding (one word per `MFU:`/`TEX:` line) rather
+  than a separately measured hardware fact; an emitter that goes through the
+  assembler never constructs these fields by hand.
 * One DW position exists per batch; additional ALU packets do not add DW slots
   (note 42). Two DWs in one batch cannot be encoded with this assembler.
 * Stage order is PSEQ, MFU, TEX, ALU, DW. An ALU result written in a batch is
@@ -92,9 +95,10 @@ The emitter needs the following rules; all are **Confirmed** unless marked.
 * The `alu_buffer_size` group size is driver state, not encoded in the program.
   Cross-group visibility therefore cannot be chosen by the compiler; it is
   fixed by the draw state the program ships with.
-* **Unknown:** whether the MFU/TEX per-batch counts use the same packet unit as
-  ALU, and what schedule-word bits 8..28 mean. **Not required for GLES2:** MRT,
-  multi-chunk execution and render-target formats beyond colour.
+* **Unknown:** what schedule-word bits 8..28 mean. They are not required for
+  AR20: the assembler emits zero there, and setting the reachable high bits
+  changes nothing in the tested shapes (notes 30, 34, 35). **Not required for
+  GLES2:** MRT, multi-chunk execution and render-target formats beyond colour.
 
 ## Registers
 
