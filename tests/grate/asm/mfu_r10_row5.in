@@ -1,0 +1,48 @@
+/*
+ * Does a row above r3 take part in the special SFU source?
+ *
+ * Batch 0 seeds the three coordinate candidates and the r3 marker, and batch 1
+ * seeds r5 from a fifth constant, so the selector sees one high row that no
+ * coordinate hypothesis includes. Batch 2 runs one sfu rcp and copies the
+ * result into r0 and r1 through the two multipliers, and batch 3 stores that
+ * pair, so both lanes carry the reciprocal and no seeded row is read back.
+ *
+ * With r0 = 4.0, r1 = 2.0, r2 = 1.0 and r3 = 0.25 the reciprocal of the
+ * coordinate maximum is 0.25 (`E7`). A result of `D7` (1/16 = 0.0625) means r5
+ * took part with its 16.0 seed.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 4.0;
+	[1] = 2.0;
+	[2] = 1.0;
+	[3] = 0.25;
+	[4] = @V4@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	MAD  r3.lh,  u3,  #1,  #0
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r5.lh,  u4,  #1,  #0
+		ALU1:	NOP
+		ALU2:	NOP
+		ALU3:	NOP
+;
+EXEC
+	MFU:	sfu: @SFU@
+		mul0: r0, sfu, #1
+		mul1: r1, sfu, #1
+		ipl: NOP, NOP, NOP, NOP
+;
+EXEC
+	DW:	store rt1, r0, r1
+;

@@ -1,0 +1,134 @@
+{
+	"name": "hyp-b",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_r10_bias.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "b-842",
+			"replace": {
+				"fs": {
+					"@V0@": "8.0",
+					"@V1@": "4.0",
+					"@V2@": "2.0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "b-neg8-4-2",
+			"replace": {
+				"fs": {
+					"@V0@": "-8.0",
+					"@V1@": "4.0",
+					"@V2@": "2.0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "b-4-neg8-2",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "-8.0",
+					"@V2@": "2.0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "b-4-2-neg8",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "2.0",
+					"@V2@": "-8.0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "b-allneg",
+			"replace": {
+				"fs": {
+					"@V0@": "-8.0",
+					"@V1@": "-4.0",
+					"@V2@": "-2.0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "b-neg2-neg8-neg4",
+			"replace": {
+				"fs": {
+					"@V0@": "-2.0",
+					"@V1@": "-8.0",
+					"@V2@": "-4.0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "b-neg4-neg2-neg8",
+			"replace": {
+				"fs": {
+					"@V0@": "-4.0",
+					"@V1@": "-2.0",
+					"@V2@": "-8.0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "b-rcp-r0-neg4",
+			"replace": {
+				"fs": {
+					"@V0@": "-4.0",
+					"@V1@": "2.0",
+					"@V2@": "1.0",
+					"@SFU@": "rcp r0"
+				}
+			}
+		},
+		{
+			"name": "b-rcp-r0-pos4",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "2.0",
+					"@V2@": "1.0",
+					"@SFU@": "rcp r0"
+				}
+			}
+		},
+		{
+			"name": "b-nop",
+			"replace": {
+				"fs": {
+					"@V0@": "8.0",
+					"@V1@": "4.0",
+					"@V2@": "2.0",
+					"@SFU@": "nop r0"
+				}
+			}
+		}
+	]
+}

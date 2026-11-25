@@ -1,0 +1,150 @@
+{
+	"name": "hyp-pair",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/calib_pair.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "p-05-4",
+			"replace": {
+				"fs": {
+					"@V0@": "0.5",
+					"@V1@": "4.0"
+				}
+			}
+		},
+		{
+			"name": "p-05-8",
+			"replace": {
+				"fs": {
+					"@V0@": "0.5",
+					"@V1@": "8.0"
+				}
+			}
+		},
+		{
+			"name": "p-05-16",
+			"replace": {
+				"fs": {
+					"@V0@": "0.5",
+					"@V1@": "16.0"
+				}
+			}
+		},
+		{
+			"name": "p-05-2",
+			"replace": {
+				"fs": {
+					"@V0@": "0.5",
+					"@V1@": "2.0"
+				}
+			}
+		},
+		{
+			"name": "p-4-05",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "0.5"
+				}
+			}
+		},
+		{
+			"name": "p-8-05",
+			"replace": {
+				"fs": {
+					"@V0@": "8.0",
+					"@V1@": "0.5"
+				}
+			}
+		},
+		{
+			"name": "p-16-05",
+			"replace": {
+				"fs": {
+					"@V0@": "16.0",
+					"@V1@": "0.5"
+				}
+			}
+		},
+		{
+			"name": "p-0125-4",
+			"replace": {
+				"fs": {
+					"@V0@": "0.125",
+					"@V1@": "4.0"
+				}
+			}
+		},
+		{
+			"name": "p-00625-16",
+			"replace": {
+				"fs": {
+					"@V0@": "0.0625",
+					"@V1@": "16.0"
+				}
+			}
+		},
+		{
+			"name": "p-025-4",
+			"replace": {
+				"fs": {
+					"@V0@": "0.25",
+					"@V1@": "4.0"
+				}
+			}
+		},
+		{
+			"name": "p-2-2",
+			"replace": {
+				"fs": {
+					"@V0@": "2.0",
+					"@V1@": "2.0"
+				}
+			}
+		},
+		{
+			"name": "p-1-1",
+			"replace": {
+				"fs": {
+					"@V0@": "1.0",
+					"@V1@": "1.0"
+				}
+			}
+		},
+		{
+			"name": "p-0-0",
+			"replace": {
+				"fs": {
+					"@V0@": "0.0",
+					"@V1@": "0.0"
+				}
+			}
+		},
+		{
+			"name": "p-16-16",
+			"replace": {
+				"fs": {
+					"@V0@": "16.0",
+					"@V1@": "16.0"
+				}
+			}
+		}
+	]
+}

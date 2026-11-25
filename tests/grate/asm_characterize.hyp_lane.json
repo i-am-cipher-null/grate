@@ -1,0 +1,80 @@
+{
+	"name": "hyp-lane",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/calib_lane.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "lane-same-01",
+			"fs": "tests/grate/asm/calib_lane_same.in",
+			"replace": {
+				"fs": {
+					"@V0@": "0.125",
+					"@V1@": "0.5",
+					"@V2@": "4.0",
+					"@V3@": "0.25",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "lane-late-01",
+			"fs": "tests/grate/asm/calib_lane.in",
+			"replace": {
+				"fs": {
+					"@V0@": "0.125",
+					"@V1@": "0.5",
+					"@V2@": "4.0",
+					"@V3@": "0.25",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "lane-same-23",
+			"fs": "tests/grate/asm/calib_lane_same.in",
+			"replace": {
+				"fs": {
+					"@V0@": "0.125",
+					"@V1@": "0.5",
+					"@V2@": "4.0",
+					"@V3@": "0.25",
+					"@LO@": "r2",
+					"@HI@": "r3"
+				}
+			}
+		},
+		{
+			"name": "lane-late-23",
+			"fs": "tests/grate/asm/calib_lane.in",
+			"replace": {
+				"fs": {
+					"@V0@": "0.125",
+					"@V1@": "0.5",
+					"@V2@": "4.0",
+					"@V3@": "0.25",
+					"@LO@": "r2",
+					"@HI@": "r3"
+				}
+			}
+		}
+	]
+}

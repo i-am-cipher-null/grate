@@ -1,0 +1,168 @@
+{
+	"name": "hyp-mul",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_r10_mul.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "both-r10",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "both-r4",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r4",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "both-nosfu",
+			"replace": {
+				"fs": {
+					"@SFU@": "nop r0",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mul0-only-r10",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mul1-only-r10",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "sfusrc-r10",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, sfu, #1",
+					"@MUL1@": "mul1: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "sfusrc-r4",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r4",
+					"@MUL0@": "mul0: r0, sfu, #1",
+					"@MUL1@": "mul1: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "both-r15",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r15",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "both-r8",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r8",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "both-r9",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r9",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "both-r3",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r3",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "both-r10-dst3",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r3, r2, r1",
+					"@LO@": "r2",
+					"@HI@": "r3"
+				}
+			}
+		}
+	]
+}

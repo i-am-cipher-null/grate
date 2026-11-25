@@ -1,0 +1,27 @@
+/*
+ * Lane order of a store that shares the ALU packet.
+ *
+ * Same four distinct values and the same selectable store pair as the
+ * later-batch version, but the store sits in the ALU batch itself. The two
+ * shapes disagree about which lane the first operand lands in, and this pair
+ * of programs is the control for that.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @V0@;
+	[1] = @V1@;
+	[2] = @V2@;
+	[3] = @V3@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	MAD  r3.lh,  u3,  #1,  #0
+	DW:	store rt1, @LO@, @HI@
+;

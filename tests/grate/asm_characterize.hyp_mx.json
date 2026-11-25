@@ -1,0 +1,264 @@
+{
+	"name": "hyp-mx",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_r10_xyz.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "acc-rcp-3",
+			"replace": {
+				"fs": {
+					"@V0@": "3.0",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r0",
+					"@MUL0@": "mul0: r0, sfu, #1",
+					"@MUL1@": "mul1: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "acc-rcp-6",
+			"replace": {
+				"fs": {
+					"@V0@": "6.0",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r0",
+					"@MUL0@": "mul0: r0, sfu, #1",
+					"@MUL1@": "mul1: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "acc-rcp-05",
+			"replace": {
+				"fs": {
+					"@V0@": "0.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r0",
+					"@MUL0@": "mul0: r0, sfu, #1",
+					"@MUL1@": "mul1: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "acc-rcp-025",
+			"replace": {
+				"fs": {
+					"@V0@": "0.25",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r0",
+					"@MUL0@": "mul0: r0, sfu, #1",
+					"@MUL1@": "mul1: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r10-sfu-both",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, sfu, #1",
+					"@MUL1@": "mul1: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r10-sfu-mul0",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, sfu, #1",
+					"@MUL1@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r10-sfu-mul1",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "mul1: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r10-mul0",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r10-mul0-src1",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, r2, r1",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r10-mul0-const",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, r2, #1",
+					"@MUL1@": "mul1: r1, r2, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r10-mul0-only",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r10-mul1-only",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r3-sfu-both",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r3",
+					"@MUL0@": "mul0: r0, sfu, #1",
+					"@MUL1@": "mul1: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r3-mul0",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r3",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "mx-r3-mul0-only",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "3.0",
+					"@V2@": "0.5",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r3",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		}
+	]
+}

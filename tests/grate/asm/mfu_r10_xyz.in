@@ -1,0 +1,43 @@
+/*
+ * What does the special SFU source select from the row registers?
+ *
+ * Batch 0 seeds r0, r1, r2 and r3 from four fragment constants, so the three
+ * coordinate candidates and a small marker are all in row registers. Batch 1
+ * runs one sfu rcp and copies the SFU result into r0 and r1 through the two
+ * multipliers, which is the only way to read the special source back. Batch 2
+ * stores the r0/r1 pair, so both store lanes carry the same SFU result and no
+ * seeded row is read back: the special index clears the row it selects, which
+ * makes a seeded lane unreadable whenever that row held the maximum.
+ *
+ * Readback is the calibrated store byte: `code = 0xF7 + 8*log2(value)`, so a
+ * reciprocal at or above 2.0 clips to `FF`, 1/2 = 0.5 is `EF`, 1/4 = 0.25 is
+ * `E7`, 1/8 = 0.125 is `DF` and 1/16 = 0.0625 is `D7`. `store rt1, X, Y` puts
+ * code(X) in byte 1 and code(Y) in byte 3, and 0.0 is `00`.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @V0@;
+	[1] = @V1@;
+	[2] = @V2@;
+	[3] = @V3@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	MAD  r3.lh,  u3,  #1,  #0
+;
+EXEC
+	MFU:	sfu: @SFU@
+		@MUL0@
+		@MUL1@
+		ipl: NOP, NOP, NOP, NOP
+;
+EXEC
+	DW:	store rt1, @LO@, @HI@
+;

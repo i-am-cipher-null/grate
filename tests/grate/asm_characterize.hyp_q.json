@@ -1,0 +1,159 @@
+{
+	"name": "hyp-q",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_r10_xyz.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "q-nop-24",
+			"replace": {
+				"fs": {
+					"@V0@": "2.0",
+					"@V1@": "4.0",
+					"@V2@": "0.0",
+					"@V3@": "0.0",
+					"@SFU@": "nop r0",
+					"@MUL@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q-sfu-24",
+			"replace": {
+				"fs": {
+					"@V0@": "2.0",
+					"@V1@": "4.0",
+					"@V2@": "0.0",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q-sfu-42",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "2.0",
+					"@V2@": "0.0",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q-sfu-168",
+			"replace": {
+				"fs": {
+					"@V0@": "16.0",
+					"@V1@": "8.0",
+					"@V2@": "0.0",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q-sfu-816",
+			"replace": {
+				"fs": {
+					"@V0@": "8.0",
+					"@V1@": "16.0",
+					"@V2@": "0.0",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q-mulr0-24",
+			"replace": {
+				"fs": {
+					"@V0@": "2.0",
+					"@V1@": "4.0",
+					"@V2@": "0.0",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL@": "mul0: r0, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q-mulr0-42",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "2.0",
+					"@V2@": "0.0",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL@": "mul0: r0, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q-mulr1-24",
+			"replace": {
+				"fs": {
+					"@V0@": "2.0",
+					"@V1@": "4.0",
+					"@V2@": "0.0",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL@": "mul0: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q-mulr1-42",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "2.0",
+					"@V2@": "0.0",
+					"@V3@": "0.0",
+					"@SFU@": "rcp r10",
+					"@MUL@": "mul0: r1, sfu, #1",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		}
+	]
+}

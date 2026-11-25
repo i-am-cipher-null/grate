@@ -1,0 +1,37 @@
+/*
+ * The compiler's multiplier word, with the sfu source and the multiplies
+ * varied independently.
+ *
+ * Batch 0 seeds r0 = 1.5, r1 = 3.0 and r2 = 0.5 from fragment constants.
+ * Batch 1 is one MFU word built from the sfu placeholder and the two multiply
+ * placeholders, and it stores two rows, so a multiply that writes r0 and r1
+ * can be read back in the same word.
+ *
+ * Readback: `store rt1, X, Y` is `code(Y) << 24 | code(X) << 8` with
+ * `code = 0xF7 + 8*log2(value)`, 0.75 = `F3`, 1.5 = `FB`. If each multiply is
+ * r2 times its own row the word reads `FB00F300`.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 1.5;
+	[1] = 3.0;
+	[2] = 0.5;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	NOP
+;
+EXEC
+	MFU:	sfu: @SFU@
+		@MUL0@
+		@MUL1@
+		ipl: NOP, NOP, NOP, NOP
+	DW:	store rt1, @LO@, @HI@
+;

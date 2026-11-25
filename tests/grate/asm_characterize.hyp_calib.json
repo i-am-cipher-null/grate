@@ -1,0 +1,120 @@
+{
+	"name": "hyp-calib",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/calib_store.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "calib-n0625",
+			"replace": {
+				"fs": {
+					"@V@": "-0.0625"
+				}
+			}
+		},
+		{
+			"name": "calib-n25",
+			"replace": {
+				"fs": {
+					"@V@": "-0.25"
+				}
+			}
+		},
+		{
+			"name": "calib-n5",
+			"replace": {
+				"fs": {
+					"@V@": "-0.5"
+				}
+			}
+		},
+		{
+			"name": "calib-n1",
+			"replace": {
+				"fs": {
+					"@V@": "-1.0"
+				}
+			}
+		},
+		{
+			"name": "calib-n2",
+			"replace": {
+				"fs": {
+					"@V@": "-2.0"
+				}
+			}
+		},
+		{
+			"name": "calib-0875",
+			"replace": {
+				"fs": {
+					"@V@": "0.875"
+				}
+			}
+		},
+		{
+			"name": "calib-1125",
+			"replace": {
+				"fs": {
+					"@V@": "1.125"
+				}
+			}
+		},
+		{
+			"name": "calib-125",
+			"replace": {
+				"fs": {
+					"@V@": "1.25"
+				}
+			}
+		},
+		{
+			"name": "calib-15",
+			"replace": {
+				"fs": {
+					"@V@": "1.5"
+				}
+			}
+		},
+		{
+			"name": "calib-0375",
+			"replace": {
+				"fs": {
+					"@V@": "0.375"
+				}
+			}
+		},
+		{
+			"name": "calib-zero",
+			"replace": {
+				"fs": {
+					"@V@": "0.0"
+				}
+			}
+		},
+		{
+			"name": "calib-one",
+			"replace": {
+				"fs": {
+					"@V@": "1.0"
+				}
+			}
+		}
+	]
+}

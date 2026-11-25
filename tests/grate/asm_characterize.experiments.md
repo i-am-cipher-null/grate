@@ -7461,6 +7461,10 @@ seed alike, while `rcp r0` of a seeded 4.0 returns `0xEF00E700` and `rcp r4`
 returns `0xEF007800`. Both shapes are deterministic over three repeats and they
 disagree with each other.
 
+**Corrected by note 54.** They do not disagree: this program never seeds r0 or
+r1, so the selector reads 0 and the 0.5 marker, and `rcp(0.5) = 2.0` prints
+`FF`. With the same seeds the two shapes return identical words (54.2).
+
 - Confirmed: indices 0..3 are the row registers, and the unit computes on the
   `.lh` (fp20) value they hold; a write to r10 through the ALU is invisible to
   `sfu: rcp r10`; the value behind indices at or above 8 is not a row.
@@ -7469,6 +7473,8 @@ disagree with each other.
 - Unknown: what the value behind indices at or above 8 actually is, and why it
   tracks the larger seeded temp in one shape and saturates in another. It is
   deterministic, so it is unit state and not stale register content.
+  **Resolved by note 54:** it is `max(|r0|, |r1|, |r2|)`, the cube major-axis
+  reciprocal; r3 and r5 are excluded.
 - Not required for GLES2: which TEX field would select a cube face; the harness
   cannot bind a cube map (note 51), so that path stays unmeasured.
 
@@ -7536,7 +7542,9 @@ all the same two multiplies are exact.
   hardware does not provide as a row register, or needs driver state this
   harness never sets. The row it names is not one the shader can write, and the
   unit's own state behind that index changes with the shape of the surrounding
-  program, so no shader-side value can be the intended operand.
+  program, so no shader-side value can be the intended operand. **Retracted by
+  note 54.** The index is not a missing row: it is the major-axis selector over
+  r0, r1 and r2. What note 54 leaves unresolved is the word's two multipliers.
 - Unknown: whether the real blob's driver writes anything into that index
   before the word runs. The harness drives its own fragment state, so a
   driver-side initialisation outside the shader would not appear here.
@@ -7575,3 +7583,357 @@ all the same two multiplies are exact.
 `mfu-word-x-20261125T064727Z` (5, 19),
 `r10-clean-20261125T064818Z` (5, 19). Every manifest carries the two standard
 controls; no run in this note failed or timed out.
+
+## 54. The special SFU source is the absolute maximum of r0, r1 and r2 - the cube major-axis reciprocal
+
+Note 53 found that the SFU source indices at or above 8 do not name rows and that
+the compiler's uniform cube word behaves unexpectedly with `sfu: rcp r10`. This
+note tests the reading those observations suggested: that the special index
+selects the largest absolute component of a cube-map direction, so
+`sfu: rcp r10` computes `1 / max(|x|, |y|, |z|)`, the major-axis reciprocal a
+cube-map projection needs.
+
+Verdict: **the maximum-absolute-component reading is confirmed** for positive and
+negative inputs, for r0, r1 and r2, with the sign dropped, and with r3 and rows
+above it excluded. The multiplier interaction in the compiler's own word stays
+**unresolved**: with an ordinary row as the sfu source the same multiplies are
+exact, with an index at or above 8 they are not, and this note does not find the
+rule behind that.
+
+Measured on the Toshiba AC100 (`7.2.0-gd1efa725955b`, Tegra 20, AR20 fragment
+path) with `~/build/grate-exp`, three repeats per variant, controls before and
+after every manifest (`immediate-operand` `0x000000FF`, `varying-pipeline`
+`0xFF01FF00`). Fifteen manifests, 144 variants, 492 runs, no failures. All
+inputs are loaded through ALU `.lh` writes, so every row holds fp20, and the raw
+words, generated `.asm`, stdout and stderr are under `characterization/` as
+named in 54.9.
+
+### 54.1 The probe shape, and why the result is copied twice
+
+`tests/grate/asm/mfu_r10_xyz.in`: batch 0 seeds r0, r1, r2 and r3 from four
+fragment constants, batch 1 runs `sfu: rcp <index>` and copies the SFU result
+into r0 and r1 through both multipliers (`mul0: r0, sfu, #1` and
+`mul1: r1, sfu, #1`), and batch 2 stores the r0/r1 pair. Both store lanes then
+carry the same SFU result and no seeded row is read back, which matters because
+the special source disturbs the row it selects (54.6). The readback is the store
+byte calibrated in 53.1: `code = 0xF7 + 8*log2(value)`, so 0.5 is `EF`, 0.25 is
+`E7`, 0.125 is `DF`, 0.0625 is `D7`, anything at or above 2.0 clips to `FF`, and
+`00` is zero.
+
+The store pair is also constrained: the assembler accepts only `r0,r1` or
+`r2,r3` (`DW source registers should be either "r0,r1" or "r2,r3"`), which is
+why every probe here stores one of those two pairs.
+
+### 54.2 Which components participate
+
+`hyp-a-20261125T072948Z`, nine permutations, with the expected result under each
+reading (H1 = `1/max(|r0|,|r1|,|r2|)`, H4 = r2 ignored):
+
+| r0 | r1 | r2 | word | result | H1 | H4 |
+|--:|--:|--:|:--|:--|:--|:--|
+| 8 | 4 | 2 | `0xDF00DF00` | 0.125 | 0.125 | 0.125 |
+| 4 | 8 | 2 | `0xDF00DF00` | 0.125 | 0.125 | 0.125 |
+| 4 | 2 | 8 | `0xDF00DF00` | 0.125 | 0.125 | **0.25** |
+| 4 | 2 | 1 | `0xE700E700` | 0.25 | 0.25 | 0.25 |
+| 2 | 4 | 1 | `0xE700E700` | 0.25 | 0.25 | 0.25 |
+| 2 | 1 | 4 | `0xE700E700` | 0.25 | 0.25 | **0.5** |
+| 16 | 8 | 4 | `0xD700D700` | 0.0625 | 0.0625 | 0.0625 |
+| 8 | 16 | 4 | `0xD700D700` | 0.0625 | 0.0625 | 0.0625 |
+| 8 | 4 | 16 | `0xD700D700` | 0.0625 | 0.0625 | **0.125** |
+
+Every row is the reciprocal of the largest of the three values, wherever it
+sits, and the two rows that only H1 predicts (`4,2,8` and `2,1,4`) are the
+reciprocal of r2. r2 participates.
+
+Controls in the same manifest, with 8, 4, 2 as the seeds:
+
+| sfu | word | reading |
+|:--|:--|:--|
+| `rcp r0` | `0xDF00DF00` | 1/8 - the ordinary row read works |
+| `rcp r1` | `0xE700E700` | 1/4 |
+| `rcp r2` | `0xEF00EF00` | 1/2 |
+| `rcp r4` | `0x78007800` | the pipeline value (note 53) |
+| `nop r0` | `0x00000000` | no SFU result |
+
+The same four seedings with the store in the multiplier's batch
+(`mfu_r10_xyz_same.in`, `hyp-a2-20261125T073007Z`) return the identical words
+(`0xDF00DF00`, `0xDF00DF00`, `0xE700E700`, `0xD700D700`), so the store position
+does not change the selected value. That also settles the shape difference note
+53 left open: the earlier `r10_clean` program returned `FF` because its rows were
+unseeded (0) apart from a 0.5 marker, and `rcp(0.5) = 2.0` prints `FF` - the two
+shapes never disagreed.
+
+- Confirmed: the special index selects the largest of r0, r1 and r2, not the row
+  the index names, and not "the larger of r0 and r1".
+- Inferred: the selection is over the three coordinate components rather than
+  over "all row registers", since r3 (54.4) and r5 (54.5) do not participate.
+
+### 54.3 Sign: magnitudes, and the result is positive
+
+A negative result cannot be read back through the store: the pure-store
+calibration (`hyp-calib-20261125T072121Z`) sends every negative value to `00`
+while `0.875`, `1.125`, `1.25` and `1.5` print `F5`, `F8`, `F9` and `FB`. The
+sign probe therefore stores the result twice, raw in r0 and `2*result + 1` in r1,
+in the ALU packet that also stores (`mfu_r10_bias.in`), so the first lane names
+the magnitude and the second its sign.
+
+`hyp-b-20261125T073011Z`:
+
+| r0 | r1 | r2 | raw lane | bias lane | result |
+|--:|--:|--:|:--|:--|:--|
+| 8 | 4 | 2 | `DF` | `F9` | +0.125 |
+| -8 | 4 | 2 | `DF` | `F9` | +0.125 |
+| 4 | -8 | 2 | `DF` | `F9` | +0.125 |
+| 4 | 2 | -8 | `DF` | `F9` | +0.125 |
+| -8 | -4 | -2 | `DF` | `F9` | +0.125 |
+| -2 | -8 | -4 | `DF` | `F9` | +0.125 |
+| -4 | -2 | -8 | `DF` | `F9` | +0.125 |
+
+Every negative seeding gives the same positive 0.125 that the positive seeding
+gives, including the all-negative vectors and the permutations that put the
+largest magnitude in r1 or r2. Two controls:
+
+| variant | raw | bias | reading |
+|:--|:--|:--|:--|
+| `rcp r0` with r0 = -4 | `00` | `EF` | -0.25: the SFU result really is negative, and 2(-0.25)+1 = 0.5 |
+| `rcp r0` with r0 = +4 | `E7` | `FB` | +0.25 and 1.5: the bias lane is the calibrated one |
+| `nop r0` | `00` | `F7` | 0 and 2(0)+1 = 1.0 |
+
+So the selector takes absolute values before the reciprocal - a signed maximum
+(`-8,4,2` -> 4 -> 0.25) would have printed `E7`/`FB`, and a "largest positive,
+ignoring negative magnitudes" reading (`4,-8,2` -> 4) the same. Neither happens.
+
+- Confirmed: the magnitude is selected, the sign is dropped, and the result is
+  the positive reciprocal.
+- Confirmed: a negative sfu result exists and is visible in the bias lane; the
+  store alone cannot show it.
+
+### 54.4 r3 does not participate
+
+`hyp-c-20261125T073016Z` holds r0 = 4, r1 = 2, r2 = 1 and sweeps r3:
+
+| r3 | word | result |
+|:--|:--|:--|
+| 0 | `0xE700E700` | 0.25 |
+| 0.25 | `0xE700E700` | 0.25 |
+| 0.5 | `0xE700E700` | 0.25 |
+| 2 | `0xE700E700` | 0.25 |
+| 8 | `0xE700E700` | 0.25 |
+| 16 | `0xE700E700` | 0.25 |
+| -16 | `0xE700E700` | 0.25 |
+
+A result of 0.25 is `1/4`, the reciprocal of r0, for every r3 including the two
+values that would win a maximum (8, 16) and the negative one. The control
+`rcp r0` in the same shape also returns `0xE700E700`. r3 is outside the
+selection, both in magnitude and in sign.
+
+One cross-check did not behave: the two variants that redirect the copy into r3
+(`mul0: r3, sfu, #1`, store `r2,r3`) returned `0xE7000000` - the result shows up
+in the r2 lane and the r3 lane reads zero - while the same redirect with
+`rcp r0` as the source puts the result in r3 correctly (`dst3-r0`,
+`hyp-dst-20261125T073749Z`, `0xE700F700`). That is a property of the special
+source's interaction with the multipliers (54.8), not of the selection, and the
+r3 sweep above does not depend on it: its result is read from two lanes that the
+multipliers both write.
+
+### 54.5 Rows above r3, and the boundaries
+
+`hyp-e2-20261125T073356Z`, with r0 = 4, r1 = 2, r2 = 1, r3 = 0.25 and r5 seeded
+from a fifth constant (`mfu_r10_row5.in`):
+
+| r5 | word | result |
+|:--|:--|:--|
+| 16 | `0xE700E700` | 0.25 - r5 ignored |
+| 0.0625 | `0xE700E700` | 0.25 |
+| (`rcp r0` control) | `0xE700E700` | 1/4 |
+
+`hyp-e-20261125T073349Z`, with 8, 4, 2 as the seeds:
+
+| variant | word | result |
+|:--|:--|:--|
+| `rcp r8`, `r9`, `r10`, `r11`, `r12`, `r15`, `rcp r63` | `0xDF00DF00` | 0.125 each - the whole high-index group selects alike |
+| `rcp r0` | `0xDF00DF00` | 1/8 |
+| `rcp r4` | `0x78007800` | the pipeline value |
+| 4, 4, 2 | `0xE700E700` | 0.25 - two equal maxima are fine |
+| 4, 8, 8 | `0xDF00DF00` | 0.125 |
+| 0, 0, 0 | `0xFF00FF00` | `rcp(0)` = +maximum, as a zero row operand does |
+| 0, 4, 2 | `0xE700E700` | 0.25 |
+| 0, 0, 2 | `0xEF00EF00` | 0.5 |
+
+So every index from 8 to 15 (and 63) implements the same selection, equal maxima
+tie without changing the result, a zero component is ignored while a selected
+zero returns +maximum, and a row that no coordinate hypothesis includes does not
+take part.
+
+### 54.6 The row the selector picks reads back `00` when nothing copies the result
+
+`hyp-q2-20261125T073406Z` runs the special index with both multipliers removed,
+so the store reads the seeded rows themselves.
+
+| seeds | store pair | word | reading |
+|:--|:--|:--|:--|
+| 8, 4, 2, 0.25 | `r0,r1` | `0xFF000000` | r0 (the maximum) reads 0, r1 reads 4 |
+| 4, 8, 2, 0.25 | `r0,r1` | `0x0000FF00` | r0 reads 4, r1 (the maximum) reads 0 |
+| 4, 2, 8, 0.25 | `r0,r1` | `0xFF00FF00` | both read their seeds (the maximum was r2) |
+| 4, 2, 0.5, 0.25 | `r0,r1` | `0xFF000000` | r0 (the maximum) reads 0 |
+| 8, 4, 2, 0.25, `nop r0` | `r0,r1` | `0xFF00FF00` | without the sfu everything reads |
+
+For the r0/r1 pair this is consistent in every run: the row that held the maximum
+reads `00` afterwards. The r2/r3 pair does not follow the same rule - `8,4,2`
+reads r2 as `00` although the maximum is r0, `4,2,8` reads r2 as `FF`, and
+`4,2,0.5` reads r2 as `00` - so the r2 lane of that pair is not reliable in this
+shape.
+
+- Confirmed: with no multiplier copying it, the selected row of the r0/r1 pair
+  reads back as zero after the special sfu runs, and without the sfu it does
+  not.
+- Unknown: whether that is a destructive read, a write of a value whose high byte
+  is zero, or a store-path effect, and why the r2/r3 pair disagrees. Every
+  measurement in 54.2 to 54.5 avoids the question by copying the SFU result into
+  both stored lanes.
+
+### 54.7 The magnitude relationship is a reciprocal
+
+`hyp-d-20261125T073344Z`, store pair `r2,r3` so the r2 lane names a coordinate
+and the r3 lane the result (the reciprocal is therefore in byte 3):
+
+| r0 | r1 | r2 | word | result |
+|--:|--:|--:|:--|:--|
+| 2 | 1 | 0.5 | `0xEF00EF00` | 0.5 |
+| 4 | 2 | 1 | `0xE700E700` | 0.25 |
+| 8 | 4 | 2 | `0xDF00DF00` | 0.125 |
+| 1 | 0.5 | 2 | `0xEF00EF00` | 0.5 |
+| 0.5 | 2 | 1 | `0xEF00EF00` | 0.5 |
+| 6 | 1 | 0.5 | `0xE100E100` | 1/6 |
+| 3 | 3 | 0.5 | `0xE900E900` | 1/3 |
+| 0.5 | 6 | 1 | `0xE100E100` | 1/6 |
+
+The powers of two land on their exact codes and the unequal ratios select the
+same component wherever it sits. The two non-power-of-two cases read `E1` and
+`E9`; the same program with `rcp r0` of a 6.0 and a 3.0 row returns `E1` and
+`E9` (`hyp-mx-20261125T073545Z`, `acc-rcp-6`, `acc-rcp-3`), so the selector
+computes the same reciprocal those ordinary reads compute, one readback code
+below the true 1/6 and 1/3 (a code is 9% on this conversion).
+
+- Confirmed: the output is the reciprocal of the selected magnitude, not merely a
+  monotonic function of it.
+
+### 54.8 The compiler's word: the multipliers
+
+The row-based multiplies are exact whenever the word does not name an index at or
+above 8 as the sfu source. With seeds r0 = 1.5, r1 = 3.0, r2 = 0.5 the two
+multiplies `mul0: r0, r2, r0` and `mul1: r1, r2, r1` should produce 0.75 (`F3`)
+and 1.5 (`FB`):
+
+| sfu source | word | r0 lane | r1 lane |
+|:--|:--|:--|:--|
+| none (`nop r0`) | `0xFB00F300` | 0.75 | 1.5 |
+| `rcp r4` | `0xFB00F300` | 0.75 | 1.5 |
+| `rcp r3` | `0xFB00F300` | 0.75 | 1.5 |
+| `rcp r8` | `0xF6000000` | 0.92 | 0 |
+| `rcp r9` | `0xFF00F600` | >=2.0 | 0.92 |
+| `rcp r10` | `0xEE000000` | 0.5 | 0 |
+| `rcp r15` | `0xFF000000` | >=2.0 | 0 |
+
+`hyp-mul-20261125T073400Z` again reproduces note 53's `F1000000` for its own
+seeding (`both-r10`), and `mul0-only-r10` reproduces it too while
+`mul1-only-r10` returns `0xFB000000`: only the lane the surviving multiply writes
+changes.
+
+Feeding the special result to the multipliers in the separate-store shape
+(`hyp-mx-20261125T073545Z`) shows the units do receive it - `mul0: r0, sfu, #1`
+and `mul1: r1, sfu, #1` give `0xE900E900`, the 1/3 code - but a row-times-row
+multiply in the same word does not compute its operands:
+
+| word | word as stored | r0 lane | r1 lane | expected |
+|:--|:--|:--|:--|:--|
+| `mul0: r0, r2, r0` both muls | `0xEE000000` | 0.5 | 0 | 0.75, 1.5 |
+| `mul0: r0, r2, #1` both muls | `0xE900E900` | 1/3 | 1/3 | 0.5, 0.5 |
+| `mul0: r0, r2, r1` both muls | `0x00000000` | 0 | 0 | 1.5, 1.5 |
+| `mul0: r0, sfu, #1` only | `0xE9000000` | 1/3 | - | - |
+| `rcp r3` + both row muls | `0xFB00F300` | 0.75 | 1.5 | 0.75, 1.5 |
+| `rcp r3` + `mul0` only | `0xFF00F300` | 0.75 | 3.0 | 0.75 |
+
+The 1/3 code appears where a multiply by `#1` should have produced 0.5, and the
+0.5 that a `r2 * r0` should have produced also appears, so the perturbation is not
+"the multipliers are dead" or "the muls always pass the SFU result"; it is some
+interaction between the special source, the row operands and the destination
+that this note does not identify.
+
+- Confirmed: the same two multiplies are exact with `nop`, `rcp r3` or `rcp r4`
+  as the sfu source and are not exact with `rcp r8`, `r9`, `r10` or `r15`.
+- Confirmed: the special SFU result itself is readable by a multiply
+  (`mul0: ..., sfu, #1` returns the 1/3 code) and the perturbation is confined to
+  words that use a high index as the sfu source.
+- Unknown: the rule. The smallest next experiment is a sweep of one multiply's
+  `src0`, `src1` and `dst` fields over rows 0..3, `sfu` and `#1` with
+  `sfu: rcp r10` fixed, storing the pair the destination lands in.
+
+### 54.9 What this means for the cube path
+
+`1 / max(|x|, |y|, |z|)` is exactly the major-axis reciprocal a cube-map
+projection needs: the face coordinates are `(x/M, y/M)`, and the blob's uniform
+coordinate path scales the two components by that factor instead of dividing.
+The measurements here confirm the selector's arithmetic and therefore the
+intended meaning of `sfu: rcp r10` in the compiler's word: it names the
+major-axis reciprocal, not a row.
+
+What remains unexplained is the other half of that word. Its two multiplies read
+`r2` and the rows, not the SFU result, and on this hardware they do not compute
+their operands while the special source is in the word (54.8). So the word is
+consistent with "compute 1/M, then scale x and y by it" only if the multiply's
+`r2` operand is what the special mode substitutes, which the measurements neither
+confirm nor exclude.
+
+- Confirmed: `rcp r10` selects the largest absolute component of r0, r1 and r2
+  and returns its reciprocal, with the sign dropped and r3 and r5 excluded.
+- Confirmed: with a high index as the sfu source the row-based multiplies in the
+  same word are not exact; with a row source or no sfu they are.
+- Unknown: the multiply rule, and whether the selector reads the same rows when
+  an `ipl` fills them instead of the ALU (the harness writes them through the
+  ALU here). The smallest experiment for the latter is one `ipl` of a varying
+  into r0..r2 with the same probe shape.
+- Not required for GLES2: which TEX field selects a cube face; the harness still
+  has no cube binding path (note 51).
+
+### 54.10 Runs and method notes
+
+`hyp-calib-20261125T072121Z` (12 variants, 40 runs),
+`hyp-pair-20261125T072446Z` (14, 46),
+`hyp-q-20261125T072706Z` (9, 31),
+`hyp-lane-20261125T073209Z` (4, 16),
+`hyp-a-20261125T072948Z` (14, 46),
+`hyp-a2-20261125T073007Z` (4, 16),
+`hyp-b-20261125T073011Z` (10, 34),
+`hyp-c-20261125T073016Z` (10, 34),
+`hyp-d-20261125T073344Z` (8, 28),
+`hyp-e-20261125T073349Z` (14, 46),
+`hyp-e2-20261125T073356Z` (3, 13),
+`hyp-mul-20261125T073400Z` (12, 40),
+`hyp-q2-20261125T073406Z` (9, 31),
+`hyp-mx-20261125T073545Z` (15, 49),
+`hyp-dst-20261125T073749Z` (6, 22). Every manifest carries the two standard
+controls; no run in these fifteen failed or timed out.
+
+Two runs are not evidence: `hyp-a-20261125T072149Z` was rejected by the
+assembler (42 of 46 runs failed to parse because its store named the pair
+`r3,r3`, which the DW does not accept), and `hyp-a-20261125T072306Z` used a
+single-multiply capture that read a seeded lane back and showed the disturbance
+of 54.6; the two-multiplier capture replaced it.
+
+Method notes:
+
+- `store rt1, r2, r3` reads `[r3.hi][r3.lo][r2.hi][r2.lo]`: byte 1 is the first
+  operand and byte 3 the second, in both the same-batch and later-batch shapes
+  (`hyp-lane-20261125T073209Z`: `0.125, 0.5` in r0/r1 reads `0xEF00DF00` and
+  `4.0, 0.25` in r2/r3 reads `0xE700FF00`). An earlier template here stored two
+  rows and read its lanes in the other order; that reading was wrong and is not
+  used.
+- The store conversion maps negative values to `00`; `2*result + 1` in a second
+  lane is what makes a sign visible, and the bias lane is calibrated
+  (`0.875` `F5`, `1.125` `F8`, `1.25` `F9`, `1.5` `FB`).
+- `sfu: nop` needs its row operand (`nop r0`), and an empty multiply line is
+  legal inside the MFU block; a bare `mul1: NOP` is not.
+- The readback is quantised to 8 codes per octave, so a non-power-of-two
+  reciprocal is only compared against the code an ordinary `rcp` of the same
+  value produces, never against the real number.

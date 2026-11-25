@@ -1,0 +1,26 @@
+/*
+ * Two different constants in one store, to calibrate lane identity and the
+ * upper end of the store conversion.
+ *
+ * One batch, no MFU word: r0 gets the first constant and r1 the second, and
+ * the store writes the r0/r1 pair. With two different values in one run the
+ * word shows which byte belongs to which row and what the conversion does to
+ * values at and above 2.0, which the single-value calibration could not show.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @V0@;
+	[1] = @V1@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	NOP
+		ALU3:	NOP
+	DW:	store rt1, r0, r1
+;

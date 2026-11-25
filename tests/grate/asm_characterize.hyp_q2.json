@@ -1,0 +1,177 @@
+{
+	"name": "hyp-q2",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_r10_xyz.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "q2-a",
+			"fs": "tests/grate/asm/mfu_r10_xyz.in",
+			"replace": {
+				"fs": {
+					"@V0@": "8.0",
+					"@V1@": "4.0",
+					"@V2@": "2.0",
+					"@V3@": "0.25",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q2-b",
+			"fs": "tests/grate/asm/mfu_r10_xyz.in",
+			"replace": {
+				"fs": {
+					"@V0@": "8.0",
+					"@V1@": "4.0",
+					"@V2@": "2.0",
+					"@V3@": "0.25",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "",
+					"@LO@": "r2",
+					"@HI@": "r3"
+				}
+			}
+		},
+		{
+			"name": "q2-c",
+			"fs": "tests/grate/asm/mfu_r10_xyz.in",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "8.0",
+					"@V2@": "2.0",
+					"@V3@": "0.25",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q2-d",
+			"fs": "tests/grate/asm/mfu_r10_xyz.in",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "8.0",
+					"@V2@": "2.0",
+					"@V3@": "0.25",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "",
+					"@LO@": "r2",
+					"@HI@": "r3"
+				}
+			}
+		},
+		{
+			"name": "q2-e",
+			"fs": "tests/grate/asm/mfu_r10_xyz.in",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "2.0",
+					"@V2@": "8.0",
+					"@V3@": "0.25",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q2-f",
+			"fs": "tests/grate/asm/mfu_r10_xyz.in",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "2.0",
+					"@V2@": "8.0",
+					"@V3@": "0.25",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "",
+					"@LO@": "r2",
+					"@HI@": "r3"
+				}
+			}
+		},
+		{
+			"name": "q2-g",
+			"fs": "tests/grate/asm/mfu_r10_xyz.in",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "2.0",
+					"@V2@": "0.5",
+					"@V3@": "0.25",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		},
+		{
+			"name": "q2-h",
+			"fs": "tests/grate/asm/mfu_r10_xyz.in",
+			"replace": {
+				"fs": {
+					"@V0@": "4.0",
+					"@V1@": "2.0",
+					"@V2@": "0.5",
+					"@V3@": "0.25",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "",
+					"@MUL1@": "",
+					"@LO@": "r2",
+					"@HI@": "r3"
+				}
+			}
+		},
+		{
+			"name": "q2-nop",
+			"fs": "tests/grate/asm/mfu_r10_xyz.in",
+			"replace": {
+				"fs": {
+					"@V0@": "8.0",
+					"@V1@": "4.0",
+					"@V2@": "2.0",
+					"@V3@": "0.25",
+					"@SFU@": "nop r0",
+					"@MUL0@": "",
+					"@MUL1@": "",
+					"@LO@": "r0",
+					"@HI@": "r1"
+				}
+			}
+		}
+	]
+}

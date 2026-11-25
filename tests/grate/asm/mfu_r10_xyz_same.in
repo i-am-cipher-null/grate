@@ -1,0 +1,33 @@
+/*
+ * The coordinate-selection probe with the store in the multiplier's batch.
+ *
+ * Same seeds and the same two-multiplier capture as the separate-store
+ * version, but the store shares the MFU batch, which is the shape the earlier
+ * source map used. Running both shapes with the same seeds shows whether the
+ * store position changes the value the special SFU source selects.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @V0@;
+	[1] = @V1@;
+	[2] = @V2@;
+	[3] = @V3@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	MAD  r3.lh,  u3,  #1,  #0
+;
+EXEC
+	MFU:	sfu: @SFU@
+		@MUL0@
+		@MUL1@
+		ipl: NOP, NOP, NOP, NOP
+	DW:	store rt1, @LO@, @HI@
+;

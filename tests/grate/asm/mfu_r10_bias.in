@@ -1,0 +1,47 @@
+/*
+ * Sign-sensitive readback of one sfu rcp result.
+ *
+ * Batch 0 seeds r0, r1 and r2 with the coordinate candidates and r3 with zero.
+ * Batch 1 runs one sfu rcp and multiplies the result into r3. Batch 2 reads r3
+ * in the ALU and writes it twice: r0 gets the result unchanged, r1 gets
+ * `2 * result + 1`, which maps a positive reciprocal onto 1.0..2.0 and a
+ * negative one onto 0.0..1.0, so the sign survives the unsigned store
+ * conversion. The store shares that ALU packet, which is the store distance
+ * measured to work.
+ *
+ * With `code = 0xF7 + 8*log2(value)` a value of +0.125 prints `DF` raw and
+ * 1.25 (`F9`) biased, -0.125 prints `00` raw and 0.75 (`F3`) biased, +0.25
+ * prints `E7` and 1.5 (`FB`), and -0.5 prints `00` and 0.0 (`00`), so the two
+ * lanes together name both magnitude and sign.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @V0@;
+	[1] = @V1@;
+	[2] = @V2@;
+	[3] = 2.0;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	MAD  r3.lh,  #0,  #1,  #0
+;
+EXEC
+	MFU:	sfu: @SFU@
+		mul0: r3, sfu, #1
+		ipl: NOP, NOP, NOP, NOP
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  r3,  #1,  #0
+		ALU1:	MAD  r1.lh,  r3,  u3,  #1
+		ALU2:	NOP
+		ALU3:	NOP
+	DW:	store rt1, r0, r1
+;
