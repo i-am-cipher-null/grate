@@ -1,0 +1,1928 @@
+{
+  "name": "s58-selw",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/mfu_s58_read.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "selw-below-w1-rcp4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w1-rsq4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w1-rcp5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w1-rsq5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w1-rcp6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w1-rsq6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w1-rcp7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w1-rsq7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w025-rcp4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-below-w025-rsq4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-below-w025-rcp5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-below-w025-rsq5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-below-w025-rcp6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-below-w025-rsq6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-below-w025-rcp7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-below-w025-rsq7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-below-w4-rcp4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w4-rsq4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w4-rcp5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w4-rsq5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w4-rcp6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w4-rsq6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w4-rcp7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-below-w4-rsq7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "1.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w1-rcp4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w1-rsq4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w1-rcp5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w1-rsq5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w1-rcp6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w1-rsq6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w1-rcp7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w1-rsq7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(1.0,1.0,1.0,1.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w025-rcp4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-above-w025-rsq4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-above-w025-rcp5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-above-w025-rsq5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-above-w025-rcp6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-above-w025-rsq6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-above-w025-rcp7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-above-w025-rsq7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-above-w4-rcp4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w4-rsq4",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w4-rcp5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w4-rsq5",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w4-rcp6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w4-rsq6",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w4-rcp7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-above-w4-rsq7",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-rows-w025-r0",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-rows-w025-r1",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, #1, #0",
+          "@PR1@": "MAD r1.lh, r1, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-rows-w025-r2",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, #1, #0",
+          "@PR1@": "MAD r1.lh, r2, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-rows-w025-r3",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(0.25,0.25,0.25,0.25)"
+      ]
+    },
+    {
+      "name": "selw-rows-w4-r0",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-rows-w4-r1",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, #1, #0",
+          "@PR1@": "MAD r1.lh, r1, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-rows-w4-r2",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, #1, #0",
+          "@PR1@": "MAD r1.lh, r2, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    },
+    {
+      "name": "selw-rows-w4-r3",
+      "fs": "tests/grate/asm/mfu_s58_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.25",
+          "@V1@": "2.0",
+          "@V2@": "0.25",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@PRE@": "",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_scale_w.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"clip_scale\"]=(4.0,4.0,4.0,4.0)"
+      ]
+    }
+  ]
+}

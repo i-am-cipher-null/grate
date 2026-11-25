@@ -9042,7 +9042,9 @@ Facts first, all with three repeats:
   `rcp r4` .. `rcp r7` on the `4, 2, 1, 0.5` vector: every row is the seed
   (row 0 = 4.0, row 1 = 2.0, row 2 = 1.0, row 3 = 0.5), whereas the same reads
   after 8..15 show the descriptor and the operand.
-- **`rcp r4` is a constant.** 20 row vectors (one row at a time set to 0.5, 1.0,
+- **`rcp r4` is a constant** *(rerun with a moved clip `w` in 58.4: it is
+  `2^16 / w`, and it was constant here only because the harness draws one
+  fixed quad with `w = 1`)*. 20 row vectors (one row at a time set to 0.5, 1.0,
   1.5, 2.0 or 4.0 with the others at 1.0) and the three axis vectors all give
   `78`; `rsq r4` gives `B7` in all 23, i.e. a source of exactly 2^16. Constants
   `u0..u4`, the `ipl` operands, preceding sfu words and 1..2 delay words do not
@@ -9074,9 +9076,16 @@ codes, and `r4` is `78`/`B7` for every row and every magnitude.)
 What they are is **unresolved**, and this note deliberately does not name them.
 The dependence is not the row value: the source is 2^16 for a row at 2.0 or
 above and about 2^32 below that, so a row of 1.5 gives a *larger* source than a
-row of 4.0, and `rcp` and `rsq` disagree about the sign for the same cell
-(`rcp r5` on `Z4` stores `00`, `rsq r5` stores `78`). A single scalar operand
-visible to both opcodes would not do that. Selector 4's flat 2^16 with no
+row of 4.0.
+
+*(Resolved by 58.5 and 58.6: the operand is `sign(v) * m * 2^K` with `m` the
+row's significand and `K` = 32 below `|v| = 2` and 16 at or above it, so the
+row value is not what the selector passes. The sign "disagreement" in the
+next sentence is not one: `rcp` of a 2^32 source is `2^-32`, whose code clamps
+to `00` as 58.3 measures, while `rsq` of the same source is `2^-16` and stores
+`78`.)* `rcp` and `rsq` do not disagree about the sign for the same cell
+(`rcp r5` on `Z4` stores `00`, `rsq r5` stores `78`); the two codes are the
+reciprocal and the inverse root of one and the same operand. Selector 4's flat 2^16 with no
 row-0 counterpart at any magnitude is the same kind of thing: real state that is
 not the seeded register file. A constant, a position or a hidden register cannot
 be assigned without a probe that moves the suspected state, and none of the
@@ -9116,10 +9125,11 @@ Established by measurement:
   out reading the row value.
 
 Not established: the mechanism of the descriptor/operand pair; why `d = 2`
-differs in *source row* from `d = 0`/`d = 1`; the identity of selectors 4..7;
-why `M` is visible at slot 2 rather than at a slot of its own; and anything
-about cube or face selection, which remains blocked exactly as 56.11 left it
-(no compiler blob, no cube binding path).
+differs in *source row* from `d = 0`/`d = 1`; the identity of selectors 4..7
+(note 58 measures their transfer function and still does not identify the
+storage they read); why `M` is visible at slot 2 rather than at a slot of its
+own; and anything about cube or face selection, which remains blocked exactly
+as 56.11 left it (no compiler blob, no cube binding path).
 
 **Documentation.** No change is proposed to the stable ISA text. The encoded
 field is six bits and stays six bits; what this note adds is decode behaviour
@@ -9194,3 +9204,388 @@ cells that the prose called invariant), 56.5 (the source table is `M` and `1/M`,
 not a crossed port), and 56.7 (the dominant-Z prose rule is `sign(r2) * old
 row 0`). The note 56.7 measurement matrix itself is preserved unchanged and
 agrees with note 57.
+
+## 58. Selectors 4..7 pass the row's significand under a fixed exponent, and the row-write sources are positional
+
+Runs on the AC100 (Toshiba AC100, Tegra 20 / AR20, `armv7l`, kernel
+`7.2.0-gd1efa725955b`) at experiment-branch head `4dc1336`, equal to
+`github/code/fragment-isa-experiments` at the first manifest. Notes 56 and 57 are
+the baseline and are not repeated: the field width, the bits 5:4 alias, the
+dominant-axis and tie matrix and the multiplier slot crossover are all taken as
+established. The docs branch was left alone. Every manifest declared `repeat: 3`,
+`timeout: 20`, and the two standard controls before and after the variants
+(`immediate-operand` expecting `0x000000FF`, `varying-pipeline` expecting
+`0xFF01FF00`).
+
+### 58.1 Verdicts
+
+Fixed by measurement in this note:
+
+- **Selectors 5, 6 and 7 read rows 1, 2 and 3 through a transfer function, not
+  as values.** The operand the unit sees is `sign(v) * m * 2^K` where `m` is the
+  row's significand (`1 <= m < 2`, i.e. `|v| / 2^floor(log2|v|)`) and `K` is 32
+  for `|v| < 2` and 16 for `|v| >= 2`. All 134 cells of the sweep land within
+  one code step of that model, and the same-mantissa pairs (`0.75`/`1.5`,
+  `0.625`/`1.25`, `0.875`/`1.75`, `3.0`/`6.0`, `0.1`/`0.2`) give byte-identical
+  codes. **The exponent of the row is discarded; only its significand and the
+  single bit `|v| >= 2` survive.**
+- **Selector 4 is the fragment's pipeline reciprocal, `2^16 / w`**, not a
+  constant: moving the clip `w` through the scaling vertex shader moves it by
+  exactly two octaves per fourfold `w`, and the packet rows do not move (58.4).
+  This is note 53's `r4` result seen through the sfu operand field.
+- **Rows 4..7 are not what selectors 4..7 read.** Writing `8.0, 0.125, 3.0,
+  0.75` into rows 4..7 after the template's own copy leaves all eight codes
+  unchanged, while direct reads of rows 4..7 show the writes landed (58.7).
+- **The row-write sources are positional and exact.** For a dominant X the
+  written row 0 is `-sign(r0)` times the pre-word row 2, for a dominant Y row 1
+  is `-sign(r1)` times the pre-word row 2, and for a dominant Z row 0 is
+  `sign(r2)` times the pre-word row 0. Swept over 15 row-2 values (including
+  `0.2578125` and `3.5`) and 11 row-0 values on both signs: 82 cells, every one
+  within 0.68 code steps of the rule, i.e. inside the readback's own
+  quantisation (58.8).
+- **The source row is read live.** A preceding sfu word that writes the
+  descriptor into row 2 becomes the source of the next word's operand write, so
+  the operand is taken from the row file at the word, not from a snapshot at
+  the batch start (58.9).
+- **`rsq` of a negative operand at selectors 5..7 stores `FF`**, where a
+  negative *value* stores `00`. The invalid result is a separate code, so a
+  `FF` at these selectors is not evidence of a large operand (58.6).
+
+Corrected in note 57:
+
+- 57.7's "`rcp r4` is a constant" and 56.3's "the pipeline value": 4 is
+  `2^16 / w` and was constant only because the harness's clip `w` is 1.
+- 57.7's "`rcp` and `rsq` disagree about the sign for the same cell": they
+  agree. `rcp` of a source of `2^32` is `2^-32`, whose code is below the map's
+  bottom and clamps to `00`; `rsq` of the same source is `2^-16`, which stores
+  `78`. The calibration in 58.3 measures that clamp directly.
+- 57.7's "the source is 2^16 for a row at 2.0 or above and about 2^32 below
+  that" is right as far as it goes, and 58.5 replaces it with the significand
+  rule: the two values are the two fixed exponents of one function.
+
+Still open: *why* the exponent is replaced by a fixed one, why the fixed
+exponent changes by 16 at `|v| = 2.0`, and why the `d = 2` write sources its own
+row instead of row 2 (58.11).
+
+### 58.2 Probe shapes and read paths
+
+`tests/grate/asm/mfu_s58_read.in` is the note 57 read template with one
+placeholder added: `@PRE@` is a stretch of arbitrary text between the row copy
+and the MFU word, so a variant can write rows 4..7 *before* the sfu word or run a
+whole first MFU word there. Everything else (the seed batch, the copy batch, the
+0.25 scale in uniform 9, the `store rt1, r0, r1` readback) is note 57's, so the
+codes are comparable across the two notes.
+
+The MFU instruction is a 64-bit encoding (`src/libgrate/fragment_asm.h`): the sfu
+`reg` field is bits [31:26] of the high word (6 bits, which is why `r50` was
+legal in 56.3) and the sfu opcode is bits [25:22] (`MFU_RCP` = 1, `MFU_RSQ` = 2).
+The dumped anchors from note 57 read back exactly as that layout says: `rcp r0`
+= `0x004007D0`, `rcp r8` = `0x204007D0`, `rcp r9` = `0x244007D0`, `rcp r10` =
+`0x284007D0`, so `rcp r4` = `0x104007D0`, `rcp r5` = `0x144007D0`, `rcp r6` =
+`0x184007D0`, `rcp r7` = `0x1C4007D0` and `rsq r5` = `0x148007D0` differ from
+those only in the field under test (the low 22 bits are the two multipliers and
+the four `ipl` operands and differ per variant).
+
+Read paths: a row is read with the 0.25 scale (`MAD r0.lh, rN, u9, #0`, positive
+values only), with the negated 0.25 scale (`-rN`, positive values only), with
+`abs`, and with a second ALU step after an extra batch. An sfu result is
+captured through the explicit `sfu` multiplier token (`mul0: r3, sfu, #1`) and
+read plainly, which is the only path that can see a value above 2.0 or below
+2^-15.9.
+
+### 58.3 The store-code map below 2^-14
+
+Note 57's claims about `2^31`..`2^33` sources rest entirely on the bytes `78` and
+`75`, so the map was calibrated before it was used. The unit makes the value
+(`rcp` of a `65 504` row is `2^-15.999`), the multiplier scales it further, and
+one more MFU word squares the result, which reaches `2^-32` without a constant
+the fp20 file cannot hold.
+
+| variant | how the value is made | word | code | reading |
+|:--|:--|--:|:--|:--|
+| `cal-anchor-rcp2` | `rcp(2.0)` | `EF` | 0.5 | anchor |
+| `cal-anchor-rcp4` | `rcp(4.0)` | `E7` | 0.25 | anchor |
+| `cal-rcp65504` | `rcp(65 504) = 2^-16` | `78` | 2^-16 | one step above 2^-16 |
+| `cal-rcp65504-x2^-7` | `rcp(65 504) * 2^-7 = 2^-23` | `40` | 2^-23 | linear, one step above |
+| `cal-rcp65504-x2^-10` | `* 2^-10 = 2^-26` | `28` | 2^-26 | linear, one step above |
+| `cal-rcp65504-sq` | `(2^-16)^2 = 2^-32` | `00` | clamp | **`00`, not a wrap |
+| `cal-rcp65504-sq4` | `(2^-32)^2 = 2^-64` | `00` | clamp | still `00` |
+| `cal-top-below` | `1.96875` | `FE` | 1.96875 | one step below the clip |
+| `cal-top-at` | `2.0` | `FF` | clipped | clip point |
+| `cal-neg` | `-1.5` through the negating read | `EB` | 0.375 | sign comes out |
+
+So the map is `0xF7 + 8*log2(v)` from `2^-16` down to about `2^-31`, the code
+clamps at `00` below that instead of wrapping to the top of the byte, `00` is
+also what a zero or a negative stores, and the clip is exactly 2.0. Note 57's
+`2^32` reading is therefore sound, and its `rcp = 00` cells are a real
+underflow, not "zero or negative" as 57.7 read them.
+
+### 58.4 Selector 4 is the clip w's reciprocal
+
+Rows `(0.25, 2.0, 0.25, 0.25)` so the packet is fixed, and the vertex shader
+`vs_scale_w.txt` scales clip x, y, z and w by one uniform, which leaves `x/w` on
+screen unchanged and moves only the fragment's `w`:
+
+| `w` | `rcp r4` | source from the code | `rsq r4` |
+|:--|:--|:--|:--|
+| 1.0 | `78` | 2^16 | `B7` (2^-8, source 2^16) |
+| 0.25 | `68` | 2^18 | `AF` (source 2^18) |
+| 4.0 | `87` | 2^14 | `BF` (source 2^14) |
+
+Two octaves per fourfold `w`, so the operand is `2^16 / w`, which is note 53's
+`16.16` reciprocal of the clip `w` arriving through the sfu operand field. The
+packet rows read back unchanged in the same runs (`E7`, `FF`, `E7`, `E7` at both
+non-unit `w`), so the movement is the pipeline value and not the seeds.
+
+### 58.5 Selectors 5..7: the transfer function
+
+Rows `(0.25, v, 0.25, 0.25)` put the probed row alone in the dominant position,
+so the descriptor and the dominant index stay put while `v` moves; the code is
+the capture of `rcp r5` and `rsq r5` through the `sfu` token.
+
+| row 1 `v` | `rcp r5` | `rsq r5` | source from `rsq` | model `m * 2^32` |
+|:--|:--|:--|:--|:--|
+| 0.5 | `00` | `78` | 2^32.00 | 2^32.00 |
+| 0.625 | `00` | `76` | 2^32.25 | 2^32.32 |
+| 0.75 | `00` | `75` | 2^32.50 | 2^32.58 |
+| 0.875 | `00` | `74` | 2^32.75 | 2^32.81 |
+| 1.0 | `00` | `78` | 2^32.00 | 2^32.00 |
+| 1.125 | `00` | `77` | 2^31.75 | 2^32.17 |
+| 1.25 | `00` | `76` | 2^32.25 | 2^32.32 |
+| 1.375 | `00` | `75` | 2^32.50 | 2^32.46 |
+| 1.5 | `00` | `75` | 2^32.50 | 2^32.58 |
+| 1.625 | `00` | `74` | 2^32.75 | 2^32.70 |
+| 1.75 | `00` | `74` | 2^32.75 | 2^32.81 |
+| 1.875 | `00` | `73` | 2^33.00 | 2^32.91 |
+| 1.9375 .. 1.99609375 | `00` | `73` | 2^33.00 | 2^32.96 .. 2^33.00 |
+| **2.0** | `78` | **`B7`** | **2^16.00** | 2^16.00 |
+| 2.0009765625 .. 2.0625 | `77` | `B6` | 2^16.25 | 2^16.00 .. 2^16.04 |
+| 2.125 | `77` | `B6` | 2^16.25 | 2^16.09 |
+| 2.25 | `76` | `B6` | 2^16.25 | 2^16.17 |
+| 2.5 | `74` | `B5` | 2^16.75 | 2^16.32 |
+| 3.0 | `72` | `B4` | 2^17.00 | 2^16.58 |
+| **4.0** | `78` | **`B7`** | **2^16.00** | 2^16.00 |
+| 6.0 | `72` | `B4` | 2^17.00 | 2^16.58 |
+| **8.0** | `78` | **`B7`** | **2^16.00** | 2^16.00 |
+
+(the quoted source is `1/result^2` of the `rsq` code, which resolves one quarter
+of an octave; the model column is the significand rule of 58.1. The `rcp` codes
+in the upper branch are the same function read at the coarser rate, `rcp(2^16)`
+being `2^-16`.)
+
+Four independent readings of the same function:
+
+1. **Same mantissa, same code.** `0.5`/`1.0` both `78`, `0.625`/`1.25` both
+   `76`, `0.75`/`1.5` both `75`, `0.875`/`1.75` both `74`, `0.1`/`0.2` both
+   `74`, and in the upper branch `3.0`/`6.0` both `B4`. Only the significand
+   and the `|v| >= 2` bit are left in the operand, so two rows with the same
+   significand in the same branch are indistinguishable.
+2. **The byte is not the row.** For `v` in `[1, 2)` the source is `2^32*v`,
+   which is not `v` by 32 octaves; a plain row read of the same value gives
+   `F7`-family codes, not `78`.
+3. **`tests/grate/asm/model_s58.py` scores the model against the whole
+   manifest**: 94 of 134 cells exact, all 134 within one code step, with the
+   one-step residual being the store's truncation (58.3 measures the same
+   upward step on the calibration cells).
+4. **The dominant index does not matter.** `1.9921875` gives `73`/`00` with row
+   0 at 0.25 (dominant row 1) and with row 0 at 4.0 (dominant row 0); `2.0`
+   gives `B7`/`78` in both. The function follows the row, not the descriptor or
+   the tie order.
+
+Selectors 6 and 7 give the same codes for the same values on their own rows
+(`0.5` `78`, `1.0` `78`, `1.5` `75`, `1.875` `73`, `1.9921875` `73`, `2.0`
+`B7`, `2.0078125` `B6`, `2.5` `B5`, `4.0` `B7`, `8.0` `B7`, `-1.5` `FF`), so
+the three selectors are one function of three rows.
+
+### 58.6 The boundary and the sign
+
+The boundary is the row's **exponent bit**, not a value threshold in a
+calculation: `1.99609375` still sits in the 2^32 branch (`73`) and `2.0` is in
+the 2^16 branch (`B7`), a one-code-step grid apart, and `2.0009765625` is
+already in the 2^16 branch. Between 4.0 and 8.0 the branch does not move again,
+so it is a single bit and not a per-octave ladder.
+
+Signs: the negative rows `-0.75`, `-1.5`, `-2.5` and `-4.0` give `00` for `rcp`
+(the result is negative, so the store's `00`) and `FF` for `rsq`. `FF` is not
+the code a negative value stores (`00`); it is what the unit stores for the
+invalid `rsq` result, so a `FF` here says "invalid", not "2.0 or more".
+
+Below `|v| = 2` a negative row's magnitude cannot be read at all in this
+harness: `rcp` of a `-2^32` source is `-2^-32`, its negated read is still far
+below the map, and the multiplier's `2^12` gain (row 3 = `4096`, negating read)
+lands at `2^-20`, which the store clamps to `00`. At `|v| >= 2` the same gain
+does resolve the magnitude and the digits follow the model: `-2.0` gives
+`0.0625 = 2^-4` (= `2^-16 * 2^12`, read negated), `-2.5` gives `2^-4.5`,
+`-3.0` and `-6.0` give `2^-4.75` — the same-mantissa pair again, in the
+negative direction.
+
+### 58.7 What selectors 4..7 are not
+
+- **Not rows 4..7.** With rows `(4, 2, 1, 0.5)` the template's copy leaves rows
+  4..7 reading `FF`, `FF`, `F7`, `EF` through the plain path (i.e. 4.0, 2.0, 1.0,
+  0.5 as expected), and selectors 4..7 read `78`/`B7`, `78`/`B7`, `00`/`78`,
+  `00`/`78`. Overwriting rows 4..7 with `8.0, 0.125, 3.0, 0.75` (direct reads
+  `FF`, `DF`, `FF`, `F3`, so the write lands) changes **none** of the eight
+  codes; a second overwrite with `0.25, 1.5, 6.0, 1.75` changes them only when
+  the *packet* rows change in the same variant. Selectors 4..7 do not alias the
+  ALU's rows 4..7.
+- **Not row 0 for selector 4.** Selector 4 keeps `78` with row 0 at 4.0 and with
+  row 0 at 0.5, and moves with `w` instead (58.4).
+- **Not writers.** Reading rows 0, 1 and 2 after `rcp r5`, `rsq r5`, `rcp r7`
+  and `rsq r7` returns the seeds (`F7`, `EF`, `E7` for `0.25 * (4, 2, 1)`), which
+  re-confirms 57.7's no-write result for two selectors without repeating its
+  16-selector matrix.
+- **Not the multiplier's source table.** The multiplier source field has its own
+  4..7, measured in `docs_snap/fragment-shader-isa.md` 6.3.2 as `0x7F56`,
+  `0x0089`, `0x00A9` and zero, while the sfu operand field's 4 is `2^16/w`; the
+  two fields select from different tables even when they name the same number.
+
+### 58.8 The row-write sources, swept
+
+`rcp r8` (dominant X), `rcp r9` (dominant Y) and `rcp r10` (dominant Z) are the
+bit-3 selectors, the only ones that write the descriptor and the operand; the
+round 1 arms that used `rcp r0` were in-place reciprocals and are kept as
+superseded runs (58.10).
+
+With rows `(8.0, 1.0, X, 1.0)` and `rcp r8`, row 0 comes back as `-X` for
+positive `X` and `+|X|` for negative `X`, with `X` running over `0.125`,
+`0.2578125`, `0.5`, `0.75`, `1.0`, `1.25`, `1.5`, `2.0`, `3.0`, `3.5`, `6.0`,
+`-0.75`, `-1.5`, `-3.0`, `-6.0`. Examples from the raw words: `X = 0.2578125`
+reads `D7` in the negated quarter lane (0.0625, i.e. `0.2578125 / 4`), `X =
+3.5` reads `F5` (0.841 against 0.875), `X = -6.0` reads `FB` in the positive
+lane (1.414 against 1.5). The same sweep with rows `(1.0, 8.0, X, 1.0)` and
+`rcp r9` gives row 1 = `-X` with the same codes.
+
+With rows `(X, 1.0, 8.0, 1.0)` and `rcp r10`, row 0 comes back as `+X` for
+positive and `-|X|` for negative `X` over `0.125`, `0.5`, `0.75`, `1.0`, `2.0`,
+`3.0`, `4.0`, `6.0`, `-0.75`, `-2.0`, `-6.0`, and the same cells read the same
+magnitudes after an extra batch with the two-step `abs` path at `X = 0.5, 2.0,
+4.0` with both signs of the dominant Z.
+
+Residuals: fitting the three rules to the 82 swept cells leaves every cell
+within 0.68 code steps (the largest is 0.68 in every arm), i.e. inside the
+readback's own truncation. The value transferred is the pre-word row 2 itself,
+including non-power-of-two values, so the source is not `1/row2`, not the
+descriptor, not `M`, and not row 2 rounded to a grid the readback could not
+distinguish.
+
+Rows that are not the source, with a dominant X of 8.0 and row 2 = 2.0: row 1 =
+0.5 and 3.0, row 3 = 4.0 and 0.5, and row 0 itself at 6.0 all give row 0 =
+-2.0 (`qn` = `EF`), so neither the magnitude of the written row nor the other
+coordinate rows enter the source.
+
+The descriptor written in the same word is independent of the source: rows
+`(8, 1, 2, 1)` read row 2 = 0.0, `(-8, 1, 2, 1)` read 1.0 and `(2, 1, 8, 1)`
+read 4.0, i.e. `2*d + (s < 0)` as 56.1 left it, while the operand is
+`-sign(r_d) * row2` or `sign(r2) * row0` in the same cells.
+
+### 58.9 The live source row
+
+Word 1 is `rcp r8` on `(-8.0, 6.0, X, 1.0)`: dominant row 0, negative, so it
+writes row 2 = descriptor 1.0 and row 0 = `+X`, leaving row 1 at 6.0. Word 2 is
+`rcp r9`: dominant row 1 (6.0), positive, so it writes row 1 = `-row2`. The
+readback gives row 1 = `-1.0` (`qn` = `E7`, both lanes) for `X = 0.25` and for
+`X = 2.0`, so word 2 negated the descriptor word 1 had just written, not the
+`0.25` or `2.0` it would have found in a snapshot. The operand source is the
+live row file, which also means the descriptor and the operand of a word
+interact across batch boundaries exactly as they do within one.
+
+The multiplier copy is **not** an independent path for the rows a bit-3 selector
+writes. Under `rcp r9`, slot `r1` carries the sfu result (57.5), so
+`mul0: r3, r1, #1` returns `rcp(8.0) = 0.125`, not row 1: the cell reads `CF`.
+The independent readbacks for the written rows are therefore the ALU lanes
+(plain, scaled, negated, `abs`, two-step, and after a later batch), and 58.8's
+residuals are computed from those.
+
+### 58.10 Superseded arms and wrong turns
+
+- **The round 1 d=0 arm used `rcp r0`.** `reg`-era `wsrc-d0-x*` cells all read
+  `CF` (0.125 = `1/8`) whatever `X` was, because selector 0 is the in-place
+  reciprocal of row 0 = 8.0, not the bit-3 mode. The arm and its
+  `wsrc-nosrc-*` companion are kept as runs; `wsrc2` repeats both with `rcp r8`
+  and those are the cells 58.8 reports.
+- **The round 1 w arm is contaminated.** `reg-w4-*` disagreed with itself
+  between repeats (`78` and `87`, `B7` and `BF`, `00` and `87`), so scaling the
+  clip coordinates by four moved something other than `w` — most plausibly the
+  sampled quad's sub-pixel position. `selw` shows selectors 6 and 7 landing on
+  the same code at `w = 0.25` and at `w = 4` (both `2^30` for a `0.25` row,
+  which is neither the model's `2^32` nor a clean `1/w`), and selector 5
+  matching selector 4 exactly at `w = 0.25` and `w = 4` when its row is 2.0.
+  Those movements are recorded, not explained, and no conclusion about 5..7 is
+  drawn from them; selector 4's `1/w` rests on three `w` values and on note
+  53's independent measurement.
+- **The 2^32 source is a code reading, not a hypothesis.** Before 58.3 the code
+  `78` could have been a floor; the calibration's `2^-23` and `2^-26` cells and
+  the `2^-32` clamp rule it out.
+
+### 58.11 What this note establishes, and what it does not
+
+Established by measurement:
+
+- selectors 5, 6 and 7 pass `sign(v) * m * 2^K` of rows 1, 2 and 3 with `m` the
+  significand and `K` = 32 below `|v| = 2`, 16 at or above it — 134 cells inside
+  one code step, the same-mantissa pairs byte-identical, the dominant index and
+  the descriptor irrelevant, no row written;
+- selector 4 is `2^16 / w`, the clip `w`'s 16.16 reciprocal, and neither the
+  packet rows nor rows 4..7;
+- the two row-write sources, swept independently on both signs and on
+  non-power-of-two values: `-sign(r_d) * pre-word row 2` for `d = 0, 1` and
+  `sign(r2) * pre-word row 0` for `d = 2`, 82 cells inside the readback's
+  quantisation, with the source read live from the row file;
+- `rsq` of a negative operand at 5..7 stores `FF`, and the store code clamps to
+  `00` below about `2^-31`.
+
+Not established, and not to be promoted without a discriminating probe:
+
+- **why** the significand survives with a fixed exponent and the exponent does
+  not. A saturating one-bit exponent field, a shift ladder, or a fixed-point
+  conversion with a clamped shift would all produce what is measured; this note
+  cannot tell them apart, and no value here identifies the storage the selector
+  reads.
+- **why** `K` is 32 below 2.0 and 16 at or above it. The measured fact is the
+  single bit; the 16-octave step is not derived from anything else measured.
+- **why** `d = 2` sources its own row while `d = 0` and `d = 1` source row 2, and
+  why the written row is `d` for `d < 2` and row 0 for `d = 2`. The rules are
+  exact; the addressing that produces them is not observable with a bit-3 word
+  alone.
+- whether the `w`-arm movement of selectors 5..7 is a property of the unit or of
+  the moved sample point.
+- the magnitude of a negative row below 2.0 at selectors 5..7: the readback
+  cannot see it.
+
+**Documentation.** No change is proposed to the stable ISA text, and the docs
+branch was not touched. The one cross-reference worth recording is that
+`docs_snap/fragment-shader-isa.md` 6.3.2's "4..7 not row registers" table is
+about the *multiplier source* field; the *sfu operand* field's 4..7 is a
+different table, and 58.4/58.5 are its first measurements.
+
+### 58.12 Runs and method notes
+
+Device: Toshiba AC100, Tegra 20 / AR20, `armv7l`, kernel
+`7.2.0-gd1efa725955b`, repository `i-am-cipher-null/grate`, branch
+`code/fragment-isa-experiments`, head `4dc1336` at the first manifest (equal to
+`github/code/fragment-isa-experiments`).
+
+| manifest | variants | runs | directory |
+|:--|--:|--:|:--|
+| `s58_cal` | 11 | 37 | `characterization/s58-cal-20261125T200942Z` |
+| `s58_reg` | 76 | 232 | `characterization/s58-reg-20261125T200949Z` |
+| `s58_wsrc` | 112 | 340 | `characterization/s58-wsrc-20261125T201012Z` |
+| `s58_selmap` | 134 | 406 | `characterization/s58-selmap-20261125T201435Z` |
+| `s58_selw` | 56 | 172 | `characterization/s58-selw-20261125T201515Z` |
+| `s58_wsrc2` | 52 | 160 | `characterization/s58-wsrc2-20261125T201535Z` |
+| `s58_tail` | 64 | 196 | `characterization/s58-tail-20261125T201927Z` |
+
+1543 runs, all passed, no timeouts, no rejected variants, both controls in every
+manifest. Every variant was parse-checked with the tree's assembler before the
+runs (`check_all.py`: 505 variants, 0 failed across the seven manifests), and
+the seven manifests regenerate byte-identically from `make_s58.py`
+(`make_s58.py <out> <section>`). `model_s58.py <results.tsv> <manifest.json>`
+re-scores the significand model; `check_s58.py <results.tsv>` prints the same
+codes and nominal values as note 57's decoder.
+
+The same generator and template are used for every section, so the seeds,
+readback and controls are identical across the seven manifests and comparable
+with note 57. The two superseded round 1 arms (58.10) were re-run rather than
+rewritten; their run directories are listed above and their cells are the
+`wsrc-*` entries.
