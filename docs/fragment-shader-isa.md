@@ -512,10 +512,13 @@ For RCP, the low-nibble classes are:
 | 8..15 | Normalization-family operand; returns `1/M`, where `M = max(|r0|, |r1|, |r2|)`. |
 
 For the other tested single-step SFU opcodes (`RSQ`, `SQRT`, `LG2` and
-`FRC`), indices 8..15 behave like indices 0..7 respectively: the tested
-decode is `reg & 7`, and the normalization-family interpretation is RCP-only.
-The paired operations (`PREEX2/EX2`, `PRESIN/SIN` and `PRECOS/COS`) were not
-included in this selector sweep.
+`FRC`), the SFU operand/result calculation uses the low three bits
+(`reg & 7`): for example, `rsq r10` computes the same SFU value as
+`rsq r2`. However, the whole MFU word is **not** equivalent to the index-2
+word: bit 3 remains set and triggers additional row writes and multiplier
+source-slot injections described below. The `1/M` result is specific to RCP;
+the bit-3 side effects are not. The paired operations (`PREEX2/EX2`,
+`PRESIN/SIN` and `PRECOS/COS`) were not included in this selector sweep.
 
 **MFU multiplier input selector (separate four-bit field).** The source token
 in a `mul0` or `mul1` operand selects an input through a different mux.
@@ -556,10 +559,15 @@ second, in the triangle's index/draw order. They do not require a varying
 fetch; omitting the interpolation operation leaves the selector readback
 unchanged.
 
+The explicit multiplier input token `sfu` remains distinct from the
+bit-3-controlled routing into the multiplier's row-source slots described
+below. Selecting `sfu` directly reads the SFU result; selecting `r0`..`r3`
+reads one of the four multiplier row-source slots.
+
 ##### Normalization-family reciprocal: RCP selectors 8..15
 
 On Tegra 20 / AR20, every low-nibble selector from 8 through 15 invokes the
-same normalization-family operation when the SFU opcode is RCP:
+same normalization-family reciprocal when the SFU opcode is RCP:
 
 $$
 M = \max(|r0|, |r1|, |r2|), \qquad \mathrm{SFU} = \frac{1}{M}.
@@ -567,46 +575,70 @@ $$
 
 The result is positive: the maximum is selected by absolute magnitude and
 the selected component's sign is discarded. Axis permutations, mixed signs,
-ties, zero and several magnitudes were tested. The operand selector does not
-read one of the sixteen row registers in this mode. Changing the other row
-entries does not change the measured reciprocal.
+ties, zero and several magnitudes were tested. The RCP operand selector does
+not read one of the sixteen row registers in this mode.
 
-Ordinary RCP selectors 0..3 read a row and write its reciprocal back into that
-same row. Selectors 4..7 instead use internal sources whose values have not
-been identified. For RCP selector 4, the captured result was at the low end
-of the readback range; selectors 5..7 produced zero readback in the tested
-path. Those codes do not identify the internal sources.
+The bit-3 effect is broader than the RCP reciprocal. For the other tested
+single-step SFU opcodes (`RSQ`, `SQRT`, `LG2` and `FRC`), the low three
+bits select the ordinary SFU operand: for example, `rsq r10` computes the
+same SFU value as `rsq r2`. But bit 3 still triggers the row writes and
+multiplier source-slot routing below. The `1/M` result is RCP-specific;
+the side effects are not. The paired operations
+(`PREEX2/EX2`, `PRESIN/SIN` and `PRECOS/COS`) have not been tested for
+these bit-3 effects.
 
-The normalization-family interpretation is specific to RCP. For example,
-`rsq r10`, `sqrt r10`, `lg2 r10` and `frc r10` operate on row 2 just as
-their index-2 forms do. Do not interpret `r10` as an ordinary row 10 in an
-RCP normalization word, or assume that the RCP behavior applies to other
-SFU opcodes.
+Ordinary RCP selectors 0..3 read a row and write their reciprocal back into
+that same row. Selectors 4..7 use internal sources that are still unidentified.
+The bounded follow-up in note 57 found that selector 4 is independent of the
+seeded rows and has a constant source corresponding to (2^{16}), while
+selectors 5..7 depend on rows 1..3 in a non-monotone way that is not explained
+by reading those row values. They do not write rows 0..3. The source identity
+for all four selectors remains unresolved.
 
-##### Multiplier sources during a normalization-family RCP
+##### Multiplier row-source slots when SFU operand bit 3 is set
 
-The multiplier source mux has a selector-dependent interaction with the
-normalization-family RCP. The table describes the measured sources in the same
-MFU word as the RCP:
+The multiplier has four row-source inputs, named `r0`..`r3`. When SFU
+operand bit 3 is set (selectors 8..15 in the tested low-nibble family), two
+values are injected into these source slots in addition to the row-file
+readback:
 
-| MFU multiplier input token | SFU operand selector 10 | SFU operand selectors 8, 9, 11..15 |
-|:------------------|:----------------|:-----------------------------|
-| `r0` | The written, post-RCP row 0 | Row 2's pre-word value |
-| `r1` | Row 1's pre-word value | Row 1's pre-word value |
-| `r2` | **`1/M`** | Row 0's pre-word value |
-| `r3` | Row 3's pre-word value | Row 3's pre-word value |
-| `sfu` | `1/M` | `1/M` |
-| `#1` | 1.0 | 1.0 |
+- The major magnitude `M = max(|r0|, |r1|, |r2|)` is injected into source
+  slot `r2`.
+- The SFU result is injected into source slot `reg & 7`, when that slot is
+  one of the multiplier's four slots (0..3).
+- If both injections target slot `r2` (SFU operand selector 10), the SFU
+  result wins and `M` is not visible in that slot.
+- The underlying row-source slots read the row file **after** the SFU
+  operation's row writes. The injected values then override the corresponding
+  slots.
 
-Thus the row-2 source substitution measured in the compiler's word is
-specific to **SFU operand selector 10**. For the other seven
-normalization-family SFU operand selectors,
-the multiplier's `r0` and `r2` sources cross over: `r0` reads the
-pre-word row 2 and `r2` reads the pre-word row 0. Rows 1 and 3 retain their
-ordinary pre-word values. The multiplier source `sfu` provides `1/M` for
-all selectors 8..15 and is distinct from the row-source mux.
+The observed routing is:
 
-This distinction matters for the captured compiler word:
+| SFU operand selector | SFU-result slot | value in multiplier source slot `r2` |
+|---:|:--:|:--|
+| 8 | `r0` | `M` |
+| 9 | `r1` | `M` |
+| 10 | `r2` | SFU result (collision; result wins over `M`) |
+| 11 | `r3` | `M` |
+| 12..15 | `r4`..`r7` (not addressable by the multiplier's row-source inputs) | `M` |
+
+The numerical value injected as the SFU result depends on the opcode and the
+low three operand bits. For RCP in the normalization family it is `1/M`;
+for the other tested single-step operations it is the corresponding SFU
+operation on row `reg & 7`. This slot injection is separate from the explicit
+multiplier input token `sfu` (selector value 10 in the multiplier's own
+four-bit source field), which directly selects the SFU result rather than a
+row-source slot.
+
+For example, with selector 8 and the vector `(r0,r1,r2,r3) = (1.5,4.0,0.75,0.5)`,
+the SFU result `1/M = 0.25` appears in source slot `r0`, `M = 4.0` appears
+in source slot `r2`, and the written row 1 value `-0.75` is visible in
+source slot `r1`. With selector 10 the SFU result is instead injected into
+slot `r2`, replacing `M`. For selectors 12..15 the SFU-result slot is outside
+the four multiplier row-source inputs, but `M` remains visible through
+source `r2`.
+
+This explains the captured compiler word:
 
 ~~~text
 sfu:  rcp r10
@@ -615,32 +647,38 @@ mul1: r1, r2, r1
 ipl:  nop, nop, nop, nop
 ~~~
 
-With **SFU operand selector 10**, the `r2` multiplier source supplies
-`1/M`, but the
-`r0` multiplier source sees row 0 **after** the RCP's row write, not the
-original x coordinate. For the tested vector `(r0,r1,r2) = (4,2,0.5)`,
-the RCP leaves row 0 at -0.5, so the first product is
-`-0.5 * 0.25 = -0.125`; the second product is
+With selector 10, the multiplier's `r2` source supplies `1/M`. Its `r0`
+source reads the post-write row 0, not the original coordinate. For the tested
+vector `(r0,r1,r2) = (4,2,0.5)`, the RCP row write leaves row 0 at -0.5, so
+the first product is `-0.5 * 0.25 = -0.125`; the second is
 `2 * 0.25 = 0.5`. A plain positive-only store readback can show the first
-result as zero, but it is a negative value, not a zeroed multiplier.
+result as zero, but it is negative, not a zeroed multiplier.
 
-##### Row writes from the normalization-family RCP
+##### Row writes triggered by SFU operand bit 3
 
-The operation writes a descriptor into row 2 and modifies one coordinate
-row. Let `d = argmax(|r0|, |r1|, |r2|)`, with ties going to the highest
-component index, and let `s = sign(r_d)`. The measured row-2 descriptor is
-the floating-point integer `2*d + (s < 0)`, in the range 0..5.
+For the tested single-step SFU opcodes (`RCP`, `RSQ`, `SQRT`, `LG2` and
+`FRC`), operand bit 3 triggers the same row-write operation. This is not
+RCP-specific: the row writes were reproduced with `RSQ`, `SQRT`, `LG2`
+and `FRC` as well as `RCP`. The paired operations
+(`PREEX2/EX2`, `PRESIN/SIN` and `PRECOS/COS`) have not been tested for
+this behavior.
 
-For `d = 0` or `d = 1`, the corresponding row is written with
-`-s * (row 2 before the word)`; the other of rows 0 and 1 retains its
-pre-word value. Rows 3..15 retain their values. For `d = 2`, note 56.7's
-prose rule says that row 0 is negated. However, the same note's measured
-matrix reports row 0 as +2.0 for a positive-z vector with pre-word row 0
-equal to +2.0, and -2.0 for a negative-z vector with pre-word row 0 equal
-to +2.0. Those observations imply that row 0 takes the sign of the dominant
-z component, rather than being unconditionally negated. The prose equation
-and measured matrix therefore disagree; the exact d=2 write equation is
-left provisional pending a targeted reconciliation.
+Let `d = argmax(|r0|, |r1|, |r2|)`, with ties going to the highest
+component index, and let `s = sign(r_d)`. Row 2 receives the floating-point
+integer descriptor `2*d + (s < 0)`, in the range 0..5. The measured
+coordinate-row writes are:
+
+1. **If `d = 0` or `d = 1`:** row `d` is written with
+   `-s * (row 2 before the word)`; the other of rows 0 and 1 retains its
+   pre-word value.
+2. **If `d = 2`:** row 0 is written with
+   `s * (row 0 before the word)`; row 1 retains its pre-word value.
+
+Rows 3..15 retain their values. The all-zero vector is a stable special case:
+it produces descriptor 4 and leaves rows 0 and 1 at zero. The `d = 2` rule
+is genuinely asymmetric with the `d = 0/1` rules: it uses the old value of
+row 0 rather than the old value of row 2. The reason for this asymmetry is
+unresolved.
 
 The row writes are register contents, not a read-port or render-target
 artifact. They remain stable through the tested intervening MFU NOP words
@@ -651,11 +689,13 @@ read expose +0.5. Eleven calibrated read forms agreed once the sign was
 accounted for. Do not treat the old `abs()` observation as evidence of a
 special read path.
 
-Avoid relying on rows 0..2 as the original input coordinates after a
-normalization-family RCP: row 2 holds the descriptor and a coordinate row is
-modified. The RCP result itself is available through multiplier source
-`sfu` for all selectors 8..15, or through multiplier source `r2` only
-with selector 10.
+Avoid relying on rows 0..2 as the original input coordinates after an
+SFU instruction with operand bit 3 set: row 2 holds the descriptor and one
+coordinate row is modified. The major magnitude `M` is injected into
+multiplier source slot `r2`, while the SFU result is injected into slot
+`reg & 7` when that maps to `r0`..`r3`; the result wins if both target
+slot `r2`. The direct multiplier source token `sfu` remains a separate
+way to obtain the SFU result.
 
 ##### Cube/TEX status of the compiler word
 
@@ -669,8 +709,8 @@ The tested TEX instruction and 2D sampler descriptors expose no demonstrated
 dimension or face selector. Face selection therefore remains unresolved;
 these measurements do not show whether it is fixed-function or shader-side.
 
-See [experiment note 56](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md)
-for the selector sweep, multiplier-source matrix, row-write measurements,
+See [experiment notes 56 and 57](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md)
+for the selector sweep, multiplier source-slot routing, row-write measurements,
 read-path calibration and bounded cube/TEX reconnaissance.
 
 ##### Multiplier execution and interpolation-weight state:
