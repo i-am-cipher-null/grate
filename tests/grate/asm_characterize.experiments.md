@@ -8499,16 +8499,16 @@ but row 0 and row 2 are not:
 
 So the source substitution note 55 found on row 2 is real and is *specific to
 index 10*; the other seven members of the family route the row-0 and row-2
-sources across each other instead.
+sources across each other instead. This is the one place where the eight values
+are not interchangeable, and it is the reason the compiler's word works:
+`mul0: r0, r2, r0` / `mul1: r1, r2, r1` with `rcp r10` gets `1/M` from the `r2`
+field in both multiplier slots.
 
 *(Corrected by 57.5: there is no crossed row port. Slot `r2` carries `M` and
 slot `reg & 7` carries the sfu result (`1/M` for `rcp`), with the result
 winning at slot 2, i.e. selector 10. The vectors used here all had `M = |r0|`
 and row 2 = `1/M`, so the two readings coincided; the raw `X8` capture in this
-note's own data is `DF` (0.125), i.e. `1/M`, not the 0.5 the table lists for it.)* This is the one place where the eight values
-are not interchangeable, and it is the reason the compiler's word works:
-`mul0: r0, r2, r0` / `mul1: r1, r2, r1` with `rcp r10` gets `1/M` from the `r2`
-field in both multiplier slots.
+note's own data is `DF` (0.125), i.e. `1/M`, not the 0.5 the table lists for it.)*
 
 ### 56.6 Other opcodes
 
