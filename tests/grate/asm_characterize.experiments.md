@@ -9006,6 +9006,12 @@ descriptor 2.0 (`EF`). Those two cells are the ones note 56.5 could not see.
 `cross` and 16 of `cross2`), and the destination matters not at all: `r0`, `r1`
 and `r3` give identical codes for the same sfu and source (`cpos`, 24 variants).
 
+Source position does not matter either: `mul0: r3, #1, r0` under `rcp r10`
+gives `00` and `#1, r2` gives `EF` (0.5 = 1/M), the same codes as putting
+those sources first, and `rcp r8` gives `EF` and `FF` (2.0 = M) in both
+positions (`cross`, 8 variants, both units). The injection is per source
+slot, not per operand position.
+
 ### 57.6 The other opcodes use the same slots and the same row writes
 
 `cross3` (160 variants) and `post2` (30) repeat the slot matrix and the row
