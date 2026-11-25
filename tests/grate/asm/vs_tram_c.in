@@ -1,0 +1,35 @@
+/*
+ * Vertex shader that exports a known constant vector as the varying, with the
+ * components taken from the manifest.
+ *
+ * export register 7 is the second enabled export and the linker addresses it as
+ * export1 (the enabled-export slot, not the register number). Every vertex
+ * exports the same vector, so the interpolated varying is that vector at any
+ * sample point and the fetch result cannot depend on the pixel.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vcolor";
+
+.constants
+	[100].x = @X@;
+	[100].y = @Y@;
+	[100].z = @Z@;
+	[100].w = @W@;
+
+.asm
+
+EXEC(export[0]=vector)
+	MOVv r63.xyzw, a[0].xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MOVv r63.xyzw, c[100].xyzw
+	NOPs
+;

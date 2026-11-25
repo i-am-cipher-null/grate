@@ -7790,7 +7790,10 @@ shape.
 - Unknown: whether that is a destructive read, a write of a value whose high byte
   is zero, or a store-path effect, and why the r2/r3 pair disagrees. Every
   measurement in 54.2 to 54.5 avoids the question by copying the SFU result into
-  both stored lanes.
+  both stored lanes. **Addressed by note 55.6:** the rows really are disturbed
+  (the store, an ALU copy and a later MFU word all agree), the r2 lane of the
+  r2/r3 pair is reading that disturbed row 2, and the value's encoding is still
+  unresolved.
 
 ### 54.7 The magnitude relationship is a reciprocal
 
@@ -7869,6 +7872,12 @@ that this note does not identify.
   `src0`, `src1` and `dst` fields over rows 0..3, `sfu` and `#1` with
   `sfu: rcp r10` fixed, storing the pair the destination lands in.
 
+**Resolved by note 55.** That sweep was run: the multipliers are ordinary, a
+source field naming row 2 delivers `1/M`, and the row holding the maximum of
+r0..r2 delivers 0. The compiler's word therefore computes `r0/M` and `r1/M`
+with the major axis zeroed, which re-decodes the `0xF1000000` above. See note
+55.3 to 55.5.
+
 ### 54.9 What this means for the cube path
 
 `1 / max(|x|, |y|, |z|)` is exactly the major-axis reciprocal a cube-map
@@ -7937,3 +7946,350 @@ Method notes:
 - The readback is quantised to 8 codes per octave, so a non-power-of-two
   reciprocal is only compared against the code an ordinary `rcp` of the same
   value produces, never against the real number.
+
+## 55. The cube-coordinate word: the multipliers work, row 2 carries 1/M, and the major axis reads zero
+
+Note 54 left the compiler's cube word half explained: `sfu: rcp r10` is the
+maximum-absolute-component reciprocal, but the two multipliers in the same word
+did not compute their own operands. This note separates the multiplier from the
+store, sweeps its source fields, destinations and slots, and finds that the
+multipliers are ordinary - the word's `r2` operand is the reciprocal, not row 2 -
+but that the row holding the selected maximum delivers zero to the multiplier.
+It then feeds the selector from the interpolator instead of the ALU and finds the
+same arithmetic, with the fetch of a bundle invisible to the sfu in that bundle.
+The cube-face question is still unmeasured, and the reasons are hardware and
+tooling here, not silence: the blob compiler is absent from this device and
+libgrate has no cube-map binding path.
+
+Measured on the Toshiba AC100 (`7.2.0-gd1efa725955b`, Tegra 20, AR20 fragment
+path), branch `code/fragment-isa-experiments` at `6ad1e92` (fetched from
+`i-am-cipher-null/grate` at measurement time, identical to the local head).
+Three repeats per variant, controls before and after every manifest
+(`immediate-operand` `0x000000FF`, `varying-pipeline` `0xFF01FF00`). Sixteen
+manifests, 815 runs, **no failed, timed-out or rejected run**. Raw words,
+generated `.asm`, stdout and stderr are in the run directories listed in 55.10.
+
+### 55.1 Verdicts
+
+- **Priority 1 (multipliers with `rcp r10`): resolved for the source, destination
+  and slot fields.** A multiplier source field that names row 2 delivers the
+  special reciprocal `1/M` instead of the row's value; the fields `sfu` and `#1`
+  deliver `1/M` and `1.0`; rows 0, 1 and 3 deliver their contents; the order of
+  the two fields, the destination row, and the multiplier slot do not change any
+  of this. Note 53's and note 54's "the multipliers do not compute their
+  operands" is **disproved**: they do, with a substituted operand.
+- **Priority 1 (selected-row side effect): confirmed as a register effect, with
+  an unresolved encoding.** After a special-index word the rows holding the
+  maximum read back as values that are not their inputs, in the DW store, in an
+  ALU copy, and still after another MFU word, while shadow copies of the same
+  seeds in rows 4..7 stay intact. What the rows contain is *not* determined.
+- **Priority 2 (IPL): confirmed.** IPL operand slot *k* fetches component *k* of
+  the varying into row *k*, and the selector computes the same
+  `1/max(|x|,|y|,|z|)` over interpolated rows as over ALU-written ones, including
+  the sign drop and the `r2`-operand substitution. An IPL fetch in the same MFU
+  word as the sfu is **not** visible to that word's sfu; a fetch in an earlier
+  word is.
+- **Priority 3 (where face selection happens): unresolved, and not measurable in
+  this tree.** The blob compiler is unavailable (`CgDrv_Create: BLOB compiler is
+  unavailable`, no `libcgdrv.so` on the device), so the `textureCube` variants
+  cannot be compiled, and libgrate has no cube-map binding, so no cube sample can
+  be taken. The one available compiler word is decoded in 55.8 and its arithmetic
+  matches Mesa's `nir_normalize_cubemap_coords` lowering, but the TEX word of
+  that dump is not in this checkout and no face selection was observed.
+
+### 55.2 The probe shape
+
+`tests/grate/asm/mfu_p1.in`: batch 0 seeds r0..r3 from fragment constants
+(`.lh`, fp20), batch 1 is the MFU word under test and stores nothing, batch 2
+copies one row into r0/r1 through the ALU, batch 3 stores the r0/r1 pair. Keeping
+the store out of the MFU batch removes the store-timing confound, and always
+storing r0/r1 means no result depends on the r2/r3 pair, whose r2 lane turned out
+to be unreliable (55.6).
+
+Readback is the calibrated store byte of note 53: `store rt1, X, Y` writes
+`code(X)` in byte 1 and `code(Y)` in byte 3, `code = 0xF7 + 8*log2(value)`, `0.0`
+is `00`, and 2.0 or more clips to `FF`.
+
+Two calibration results make the rest readable:
+
+| variant | word | reading |
+|:--|:--|:--|
+| `calib-copy-lo` (`MAD r0.lh, r2, #1, #0`, r2 = 0.5) | `0xEF00EF00` | a bare row source preserves the fp20 code |
+| `calib-copy-h` (`r2.h`) | `0xF600F600` | the `.h` half does **not** hold the value |
+| `calib-mfu-copy` (`rcp r3` then `mul0: r3, sfu, #1`, r3 = 1.0) | `0xF700F700` | MFU to ALU to store is exact |
+
+The seed patterns keep the selected maximum out of the operands wherever the
+question allows it: A = 4.0, 0.25, 0.5, 1.0 (maximum in r0), B = 0.25, 4.0, 0.5,
+1.0 (in r1), C = 0.25, 0.5, 4.0, 1.0 (in r2), so `1/M = 0.25` in every pattern and
+the ordinary product `r2 * #1` is a clean `0.5`.
+
+### 55.3 The source sweep
+
+`p1_sweep0`/`p1_sweep1`, 36 ordered source pairs in each multiplier slot,
+destination r3 (byte 3) or r2 (byte 1) when the pair itself contains r3. The grid
+is the measured result byte; every cell was checked against the model in
+`check_p1.py` and all 72 cells match (0 mismatches, both slots):
+
+| src0 \ src1 | r0 | r1 | r2 | r3 | sfu | #1 |
+|:--|:--|:--|:--|:--|:--|:--|
+| **r0** | `D7` | `DF` | `D7` | `E7` | `D7` | `E7` |
+| **r1** | `DF` | `D7` | `D7` | `E7` | `D7` | `E7` |
+| **r2** | `D7` | `D7` | `D7` | `E7` | `D7` | `E7` |
+| **r3** | `E7` | `E7` | `E7` | `F7` | `E7` | `F7` |
+| **sfu** | `D7` | `D7` | `D7` | `E7` | `D7` | `E7` |
+| **#1** | `E7` | `E7` | `E7` | `F7` | `E7` | `F7` |
+
+With `1/M = 0.25` (`E7`), 0.0625 = `D7`, 0.125 = `DF` and 1.0 = `F7`, the grid
+reads as: any field naming row 2 gives `1/M`, the field `sfu` gives `1/M`, `#1`
+gives 1.0, row 3 gives 1.0, and rows 0/1 give the pattern's value for that row.
+The multiplier slot does not matter: the `mul1` grid is byte-identical to the
+`mul0` grid in all 36 cells.
+
+### 55.4 Destinations
+
+`hyp-p1dst`, 54 variants: six diagnostic pairs in each destination row r0..r3 and
+each slot, with pattern C (maximum in r2), plus six pattern-A cases where r0 or r2
+holds the maximum. Store pair r0/r1 for destinations r0/r1 and r2/r3 for r2/r3.
+
+| case | expected | r0 | r1 | r2 | r3 | mul1 |
+|:--|:--|:--|:--|:--|:--|:--|
+| `sfu * #1` | `E7` | `E7` | `E7` | `E7` | `E7` | same |
+| `#1 * sfu` | `E7` | `E7` | `E7` | `E7` | `E7` | same |
+| `r0 * r1` | `DF` | `DF` | `DF` | `DF` | `DF` | same |
+| `r2 * r0` | `D7` | `D7` | `D7` | `D7` | `D7` | same |
+| `r2 * r1` | `DF` | `DF` | `DF` | `DF` | `DF` | same |
+| `r3 * #1` | `F7` | `F7` | `F7` | `F7` | `F7` | same |
+
+Every cell matched its prediction in all three repeats. Writing a row that holds
+the maximum is not special (`da-r0-r0-c1` `0xE7000000`: the result lane is `00`
+because the *operand* r0 was cleared, the untouched lane keeps `E7`), and the
+slot-symmetric cells are byte-identical.
+
+### 55.5 The compiler's word, and what it computes
+
+`hyp-p1word` and `hyp-p1rows`, store r0/r1 so byte 1 is r0 and byte 3 is r1:
+
+| variant | word | r0 lane | r1 lane | reading |
+|:--|:--|:--|:--|:--|
+| `w-both` = `rcp r10`, `r0 = r2*r0`, `r1 = r2*r1` | `0xD7000000` | `00` | `D7` | 0.25 x 0 = 0, 0.25 x 0.25 = 0.0625 |
+| `w-both-c` (same, maximum in r2) | `0xDF00D700` | `D7` | `DF` | 0.25 x 0.25, 0.25 x 0.5 |
+| `w-both-f` (maximum in r0, r2 = 0.25) | `0xDF000000` | `00` | `DF` | 0.25 x 0, 0.25 x 0.5 |
+| `w-mul0only` | `0xE7000000` | `00` | `E7` | the untouched r1 lane keeps 0.25 |
+| `w-mul1only` | `0xD7000000` | `00` | `D7` | r0 reads 0 although nothing wrote it |
+| `w-swapsrc` (`r0*r2`, `r1*r2`) | `0xD7000000` | `00` | `D7` | operand order is irrelevant |
+| `w-swapdst` | `0x0000D700` | `D7` | `00` | destinations follow the field |
+| `w-sfusrc` (`sfu*r0`, `sfu*r1`) | `0xD7000000` | `00` | `D7` | an explicit `sfu` equals the `r2` field |
+| `w-const` (``#1`*r0`, `#1*r1`) | `0xE7000000` | `00` | `E7` | the clear is independent of the sources |
+| `w-both-nosfu` | `0xDF00FF00` | `FF` | `DF` | 0.5 x 4 = 2.0 and 0.5 x 0.25 |
+| `w-both-r4` (`rcp r4`) | `0xDF00FF00` | `FF` | `DF` | an ordinary source keeps the products |
+
+So the compiler's word computes `r0 = r0/M` and `r1 = r1/M` where `M = max(|r0|,
+|r1|, |r2|)`, with one exception: the lane whose coordinate *is* the maximum comes
+out zero. This also re-decodes note 53's `0xF1000000` (seeds 1.5, 1.0, 0.5: r0 =
+max, `1/M = 0.667`, so r0 = 0 and r1 = 0.667 = `F1`) and note 54's `0xEE000000`
+(seeds 1.5, 3.0, 0.5: r1 = max, so r0 = 0.5 = `EE` and r1 = 0). Both were
+previously read as evidence that the multipliers were broken; they are not.
+
+- Confirmed: the multiplier source naming row 2 delivers `1/M`; the other rows,
+  `sfu` and `#1` deliver their ordinary values; order, destination and slot are
+  irrelevant.
+- Confirmed: the compiler's word computes the two projected coordinates with the
+  major axis zeroed, on this hardware and in these shapes.
+- Disproved: notes 53 and 54's reading that the multipliers stop computing their
+  operands in a special-index word.
+
+### 55.6 The row that held the maximum
+
+Rows 0..2 do not keep their values across a special-index word. The evidence, all
+three repeats identical:
+
+| probe | word | reading |
+|:--|:--|:--|
+| `rd-r0-a`: maximum in r0, no multipliers, read r0 | `0x00000000` | r0 = 0 in the store lane **and** in the ALU copy |
+| `rd-r1-b`: maximum in r1, read r1 | `0x00000000` | the same for r1 |
+| `rd-r0-b`, `rd-r1-a`: those rows not the maximum | `0xE700E700` | 0.25, untouched |
+| `rd-r3-a`: read r3 | `0xF700F700` | 1.0, untouched |
+| `rd-r2-a` (maximum in r0) | `0x00000000` | r2 = 0 |
+| `rd-r2-b` (maximum in r1) | `0xFF00FF00` | r2 >= 2.0 |
+| `r2-c/d/e/g/h` (maximum in r2, all equal, 2.0 maximum) | `0xFF00FF00` | r2 >= 2.0 |
+| `r2-f` (maximum in r0, r2 = 0.25) | `0x00000000` | r2 = 0 |
+| `dl-r0-a` (row read after another MFU word) | `0x00000000` | the disturbance persists |
+| `dl-sh01-a` (shadow rows 4 and 5 = seeds 4.0 and 0.25) | `0xE700FF00` | the seeds themselves are intact |
+| `dl-r0-r3` (same shape, `rcp r3`) | `0xFF00FF00` | without a special index r0 keeps 4.0 |
+
+`r2`'s content is not the reciprocal, not its seed, and depends on which row held
+the maximum (`00` when that is r0, `FF` otherwise) and, with interpolated inputs,
+on the sign: `n-negx8-read-r0` reads `0.5` (`0xEF00EF00`) for x = -8 where
+`n-pos8-…` reads `00`. The multiplier operand for that row follows the same sign
+split: `n-pos-mul-r0` and `n-pos8-mul-r0` give `00`, `n-negx-mul-r0` and
+`n-negx8-mul-r0` give `0.5`, independent of the magnitude (4 and 8 both `0.5`).
+
+One probe disagrees with the others and is reported rather than smoothed: reading
+r0 through `abs()` after a special word returns `0.5` (`n-pos8-abs-r0`
+`0xFF00EF00`) where the plain copy of the same row returns `0`
+(`n-pos8-mul-r0`). `abs()` itself is faithful on an ordinary row (`abs-plain`:
+`abs(0.5)` reads `0xE700EF00`), so the discrepancy is in the special-index read
+path, not in the ALU instruction.
+
+- Confirmed: the disturbance is a register-level effect, not a store artifact -
+  two independent read paths agree in the plain cases, it survives a following MFU
+  word, and shadow rows are untouched.
+- Confirmed: the row holding a *positive* maximum delivers 0 to a multiplier, so
+  the compiler's major-axis lane is 0.
+- Unresolved: what the disturbed rows contain. The `abs()` contradiction and the
+  sign dependence of the value are not explained by "the row is cleared".
+- Operationally: a shader must not read rows 0..2 after a word with a
+  special-index sfu source; the reciprocal is only reachable through the
+  multiplier's `r2` or `sfu` field.
+
+### 55.7 Interpolated inputs
+
+`tests/grate/asm/mfu_p2.in` fetches with one MFU word and runs the sfu in the
+next; `vs_tram_c.in` exports four constants as the varying and
+`tram_linker.in`/`LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1` binds them to
+TRAM0.
+
+| variant | word | reading |
+|:--|:--|:--|
+| `m-r0` (x, y, z = 1.0, 0.5, 0.25) | `0xEF00F700` | r0 = 1.0, r1 = 0.5 |
+| `m-r1` | `0x0000E700` | r2 = 0.25, r3 unfed = 0 |
+| `m-rcp-r0` / `m-rcp-r1` / `m-rcp-r2` | `0xF700E700` / `0xFF00E700` / `0xFF00FF00` | 1/x = 1.0, 1/y = 2.0, 1/z = 4.0 |
+| `ctl-unfed-rows` (no fetch) | `0x00000000` | rows are zero, so nothing is stale |
+
+IPL operand slot *k* writes row *k* with varying component *k*: `ipl: t0.fp20,
+t0.fp20, t0.fp20, NOP` puts x, y and z in r0, r1 and r2.
+
+The selector over interpolated coordinates, `1/M = 0.25` in every case:
+
+| variant | coordinates | word | reading |
+|:--|:--|:--|:--|
+| `sel-maxx` | 4.0, 2.0, 0.5 | `0xE7000000` | `E7` |
+| `sel-maxy` | 2.0, 4.0, 0.5 | `0xE700FF00` | `E7` |
+| `sel-maxz` | 2.0, 0.5, 4.0 | `0xE700FF00` | `E7` |
+| `sel-negx` | -4.0, 2.0, 0.5 | `0xE700F700` | `E7` - sign dropped |
+| `n-negy` / `n-negz` | -4.0 in y / z | `0xE700FF00` | `E7` |
+| `n-negx-mag` | -2.0, 1.0, 0.5 | `0xEF00F700` | `EF` - 1/2 |
+| `sel-mul-r2` | 4.0, 2.0, 0.5, `r2 * #1` | `0xE7000000` | `0.25`, not the fetched 0.5: row 2 is substituted here too |
+| `sel-read-r0` | 4.0, 2.0, 0.5, read r0 | `0x00000000` | the maximum row is cleared with interpolated inputs as well |
+
+Same-bundle ordering, with the rows pre-seeded by the ALU to 1.0, 2.0, 0.5, 1.0
+(`1/M = 0.5`) and the fetch carrying 4.0, 2.0, 0.5 (`1/M = 0.25`):
+
+| variant | word | reading |
+|:--|:--|:--|
+| `b-same-sel` (fetch and `rcp r10` in one word) | `0xEF00EF00` | `0.5` - the sfu used the **pre-fetch** rows |
+| `b-same-mul-r2` | `0xEF00EF00` | the substituted operand is the same pre-fetch value |
+| `b-same-read-r0` / `b-same-read-r1` | `0xFF00FF00` | after the word the rows hold the fetched 4.0 and 2.0 |
+| `b-fetch-nosfu` | `0xF700EF00` | the fetch did write r2 = 0.5 |
+| `b-prev-sel` (no fetch at all) | `0xEF00FF00` | `0.5` - the pre-word seeds |
+| `sel-same` in the p2 shape (nothing seeded, fetch + `rcp r10`) | `0xFF00EF00` | `rcp(0)` = `FF` while r2 shows the fetched 0.5 |
+| `sel-same-mul-r2` | `0xFF00EF00` | the substituted value is `rcp` of the *old* rows |
+
+- Confirmed: the selector reads interpolated rows and returns the same
+  major-axis reciprocal, with the sign dropped and row 2 substituted.
+- Confirmed: an IPL fetch in the same MFU word is not visible to that word's sfu;
+  the fetch's writes are visible to following words.
+- Inferred: the sfu reads its operand set at the start of the word, before the
+  fetch writes rows.
+
+### 55.8 The compiler word, decoded, and the cube path
+
+`0x28689402 0x00000000` is the whole MFU word the proprietary compiler emits for a
+uniform `vec3` samplerCube coordinate. The two halves are `[muls, opcode, reg]`
+then `[var0..var3]`, and decoding the bits with `fragment_asm.h` gives:
+
+| field | bits | value |
+|:--|:--|:--|
+| `mul0_src0`, `mul0_src1`, `mul0_dst` | 0..3, 4..7, 8..10 | 2, 0, 4 = row 2 x row 0 into row 0 |
+| `mul1_src0`, `mul1_src1`, `mul1_dst` | 11..14, 15..18, 19..21 | 2, 1, 5 = row 2 x row 1 into row 1 |
+| `opcode`, `reg` | 22..25, 26..31 | 1, 10 = `rcp r10` |
+| `var0..var3` | other half | 0, so `ipl: NOP, NOP, NOP, NOP` |
+
+So the word is exactly `sfu: rcp r10`, `mul0: r0, r2, r0`, `mul1: r1, r2, r1`,
+with no varying fetch - which fits a *uniform* coordinate (the varying version of
+the same operation appears in `tests/grate/asm/cube2_fs.txt` as `sfu: rcp r4` with
+`ipl: t0.fp20, t0.fp20, NOP, NOP`, the perspective-correction word, not a
+major-axis one).
+
+The arithmetic matches Mesa's NIR lowering for cube sampling
+(`src/compiler/nir/nir_normalize_cubemap_coords.c`), which computes
+`norm = fmax_abs_vec_comp(xyz)` and `normalized = coord * frcp(norm)`, leaving
+face selection to the texture unit. zink takes the other route
+(`zink_lower_cubemap_to_array.c`, rewriting the sampler to a 2D array), which
+would put the face index in the shader. AR20's word matches the first: scale by
+the reciprocal of the major axis and hand the result to TEX.
+
+What cannot be settled here:
+
+- **No compiler.** `~/build/grate-exp/tools/cgc` prints `CgDrv_Create: BLOB
+  compiler is unavailable`; `src/libcgc/dummy.c` is the fallback and no
+  `libcgdrv.so` exists on the device (`find / -maxdepth 4 -name 'libcgdrv*'` is
+  empty). `textureCube(dir)`, `textureCube(dir * 2.0)`, `textureCube(normalize(dir))`
+  and the colour-output variant cannot be compiled, so their words cannot be
+  compared. The single word above comes from an earlier dump and is not
+  reproducible on this device.
+- **No cube binding.** `GL_TEXTURE_CUBE_MAP` appears nowhere in `src/`, `include/`
+  or `tests/`; `TEXTURE_DESC1` carries only filters, format, compression and the
+  two wrap modes, and `TEXTURE_DESC2` only width, height, the log2 encodings, LOD
+  and mipmap flags, with no dimension or face field. A cube sample would first
+  need a texture-target path in libgrate, which is the subsystem the brief says
+  not to build here.
+- **No TEX word for the cube shader.** The dump this word came from is not in the
+  checkout, so the TEX instruction, coordinate registers and sampler bits of the
+  real cube shader are unknown.
+
+Nothing above shows that face selection is fixed-function. It shows that the
+shader-side half of the operation (the major-axis reciprocal and the two scaled
+coordinates) matches a normalizing lowering, and that the remaining half is
+unmeasured.
+
+### 55.9 Open questions and the smallest experiments
+
+1. What do the disturbed rows contain, and why does `abs()` disagree with the
+   plain copy in the positive case? Next: repeat `rd-r0-a` with the read two and
+   three MFU words later, and with the value read through a negation and through
+   a multiply by `#1` in the same run, to separate "the row is written" from "the
+   read port returns another register".
+2. Is the major-axis zero also what the blob's own shader produces, or is it a
+   property of this harness's row seeding? Next: the same word with the
+   coordinates arriving from IPL *and* the maximum in each component, read from a
+   second row that a multiplier copies (partly done here: `sel-read-r0` reads 0
+   for interpolated input too, so the ALU is not the cause).
+3. Which TEX fields carry the face? Next: a cube-map binding path in libgrate (a
+   real subsystem, out of scope here), then the descriptor bit sweep of note 51
+   repeated with a cube sampler bound.
+4. Which words does the compiler emit for the four `textureCube` variants? Next:
+   run `tools/cgc` where `libcgdrv.so` is available and diff the two halves.
+
+### 55.10 Runs and method notes
+
+Evidence: `p1-pilot-20261125T171546Z` (30 variants, 94 runs),
+`p1-rows-20261125T171852Z` (17, 55), `p1-rows2-20261125T172049Z` (14, 46),
+`p1-word-20261125T172131Z` (12, 40), `p1-sweep0-20261125T172251Z` (36, 112),
+`p1-sweep1-20261125T172304Z` (36, 112), `p1-dst-20261125T172453Z` (54, 166),
+`p1-delay-20261125T172605Z` (15, 49), `p1-rows-20261125T173419Z` (1, 7, the
+`abs-plain` calibration), `p2-ipl-20261125T173338Z` (36, 112),
+`p2-same-bundle-20261125T173042Z` (6, 22). Every manifest keeps the two standard
+controls; all runs pass.
+
+Superseded, not evidence: `p2-ipl-20261125T172814Z`, `…173030Z`, `…173156Z`,
+`…173247Z` (the negative-varying variants were progressively added, and the first
+set had `ipl: NOP` with a single MFU word, so it never fetched; 0 failures but no
+usable negative data), and `p2-same-bundle-20261125T172938Z` (its seeds happened
+to equal the fetched values, so the same-bundle ordering was not discriminated).
+
+Method notes:
+
+- Directions: `store rt1, X, Y` is byte 1 = X and byte 3 = Y; the byte 3 code is
+  the two leading hex digits of the printed word. Three readings in this note were
+  corrected after reading the wrong byte first, and the note 54 lane calibration
+  was re-checked against it.
+- A bare row source (`MAD r0.lh, r2, #1, #0`) preserves the fp20 code; `r2.h` does
+  not, so every row copy here uses a bare source.
+- An MFU block may hold `sfu:` and `ipl:` alone; an empty multiplier line leaves
+  the line blank, which is legal, while `mul1: NOP` is a parse error.
+- The ALU's `abs()` form (`abs(r0)`) is accepted by the ALU grammar and is faithful
+  on ordinary rows.
+- The two probe shapes differ only in where the store sits (55.2), and the same
+  operands return the same codes in both, so no read-after-write correction is
+  applied anywhere.

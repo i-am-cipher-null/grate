@@ -1,0 +1,41 @@
+/*
+ * Same-bundle fetch ordering with known prior row values, and the negative
+ * varying readback.
+ *
+ * Batch 0 seeds r0..r3 from constants, so the rows hold known values before the
+ * MFU word. Batch 1 fetches varying components into rows and runs the sfu in the
+ * same word, so the sfu either sees the seeded rows (pre-fetch) or the fetched
+ * ones. Batch 2 copies, batch 3 stores.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @V0@;
+	[1] = @V1@;
+	[2] = @V2@;
+	[3] = @V3@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	MAD  r3.lh,  u3,  #1,  #0
+;
+EXEC
+	MFU:	sfu: @SFU@
+		@MUL0@
+		@MUL1@
+		ipl: @IPL@
+;
+EXEC
+	ALU:
+		ALU0:	@POST0@
+		ALU1:	@POST1@
+;
+EXEC
+	DW:	store rt1, @LO@, @HI@
+;

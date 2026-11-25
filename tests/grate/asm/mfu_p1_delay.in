@@ -1,0 +1,57 @@
+/*
+ * Is the row disturbance of the special sfu source a register effect, and does
+ * it survive another MFU word?
+ *
+ * Batch 0 seeds r0..r3 from constants. Batch 1 copies the seeds into r4..r7
+ * through the ALU, so the pre-word values exist in rows the special source does
+ * not touch (a row read in the same ALU packet that wrote it returns 0, so the
+ * shadow write has its own batch). Batch 2 is the word under test, batch 3 a
+ * second MFU word with no multiplier, batch 4 copies the rows worth reading into
+ * the store pair, batch 5 stores it.
+ *
+ * Readback: `store rt1, X, Y` puts code(X) in byte 1 and code(Y) in byte 3,
+ * code = 0xF7 + 8*log2(value), 0.0 = 00, at or above 2.0 clips to FF.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @V0@;
+	[1] = @V1@;
+	[2] = @V2@;
+	[3] = @V3@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	MAD  r3.lh,  u3,  #1,  #0
+;
+EXEC
+	ALU:
+		ALU0:	@SH0@
+		ALU1:	@SH1@
+		ALU2:	@SH2@
+		ALU3:	@SH3@
+;
+EXEC
+	MFU:	sfu: @SFU@
+		@MUL0@
+		@MUL1@
+		ipl: NOP, NOP, NOP, NOP
+;
+EXEC
+	MFU:	sfu: nop r0
+		ipl: NOP, NOP, NOP, NOP
+;
+EXEC
+	ALU:
+		ALU0:	@POST0@
+		ALU1:	@POST1@
+;
+EXEC
+	DW:	store rt1, @LO@, @HI@
+;
