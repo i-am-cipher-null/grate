@@ -1,0 +1,864 @@
+{
+  "name": "s56-diag2",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/mfu_s56_read.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "diag2-nop-u9-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u9, #1, #0",
+          "@PR1@": "MAD r1.lh, u9, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-u9-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u9, #1, #0",
+          "@PR1@": "MAD r1.lh, u9, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-u4-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u4, #1, #0",
+          "@PR1@": "MAD r1.lh, u4, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-u4-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u4, #1, #0",
+          "@PR1@": "MAD r1.lh, u4, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-u5-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u5, #1, #0",
+          "@PR1@": "MAD r1.lh, u5, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-u5-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u5, #1, #0",
+          "@PR1@": "MAD r1.lh, u5, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-r0u9-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-r0u9-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-r0r1-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, r1, #0",
+          "@PR1@": "MAD r1.lh, r0, r1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-r0r1-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, r1, #0",
+          "@PR1@": "MAD r1.lh, r0, r1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-r0one-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-nop-r0one-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-u9-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u9, #1, #0",
+          "@PR1@": "MAD r1.lh, u9, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-u9-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u9, #1, #0",
+          "@PR1@": "MAD r1.lh, u9, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-u4-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u4, #1, #0",
+          "@PR1@": "MAD r1.lh, u4, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-u4-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u4, #1, #0",
+          "@PR1@": "MAD r1.lh, u4, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-u5-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u5, #1, #0",
+          "@PR1@": "MAD r1.lh, u5, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-u5-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u5, #1, #0",
+          "@PR1@": "MAD r1.lh, u5, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-r0u9-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-r0u9-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-r0r1-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, r1, #0",
+          "@PR1@": "MAD r1.lh, r0, r1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-r0r1-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, r1, #0",
+          "@PR1@": "MAD r1.lh, r0, r1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-r0one-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp0-r0one-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-u9-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u9, #1, #0",
+          "@PR1@": "MAD r1.lh, u9, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-u9-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u9, #1, #0",
+          "@PR1@": "MAD r1.lh, u9, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-u4-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u4, #1, #0",
+          "@PR1@": "MAD r1.lh, u4, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-u4-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u4, #1, #0",
+          "@PR1@": "MAD r1.lh, u4, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-u5-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u5, #1, #0",
+          "@PR1@": "MAD r1.lh, u5, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-u5-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u5, #1, #0",
+          "@PR1@": "MAD r1.lh, u5, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-r0u9-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-r0u9-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-r0r1-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, r1, #0",
+          "@PR1@": "MAD r1.lh, r0, r1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-r0r1-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, r1, #0",
+          "@PR1@": "MAD r1.lh, r0, r1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-r0one-l0",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-r0one-l1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-delay-u9",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u9, #1, #0",
+          "@PR1@": "MAD r1.lh, u9, #1, #0",
+          "@DELAY@": "EXEC\n\tMFU:\tsfu: nop r0\n\t\tipl:  NOP, NOP, NOP, NOP\n;\n",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-delay-u4",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u4, #1, #0",
+          "@PR1@": "MAD r1.lh, u4, #1, #0",
+          "@DELAY@": "EXEC\n\tMFU:\tsfu: nop r0\n\t\tipl:  NOP, NOP, NOP, NOP\n;\n",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-delay-u5",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, u5, #1, #0",
+          "@PR1@": "MAD r1.lh, u5, #1, #0",
+          "@DELAY@": "EXEC\n\tMFU:\tsfu: nop r0\n\t\tipl:  NOP, NOP, NOP, NOP\n;\n",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-delay-r0u9",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@DELAY@": "EXEC\n\tMFU:\tsfu: nop r0\n\t\tipl:  NOP, NOP, NOP, NOP\n;\n",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-delay-r0r1",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, r1, #0",
+          "@PR1@": "MAD r1.lh, r0, r1, #0",
+          "@DELAY@": "EXEC\n\tMFU:\tsfu: nop r0\n\t\tipl:  NOP, NOP, NOP, NOP\n;\n",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "diag2-rcp10-delay-r0one",
+      "fs": "tests/grate/asm/mfu_s56_read.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0",
+          "@V2@": "0.5",
+          "@V3@": "1.0",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@DELAY@": "EXEC\n\tMFU:\tsfu: nop r0\n\t\tipl:  NOP, NOP, NOP, NOP\n;\n",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    }
+  ]
+}

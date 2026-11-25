@@ -1,0 +1,25 @@
+/*
+ * Readback code calibration for note 56: `store rt1, r0, r1` writes code(u0)
+ * in byte 1 and code(u1) in byte 3, with nothing else in the shader. Used to
+ * extend the note 55 code table (0.0625 .. 2.0) down to the smallest values
+ * the store can report, and to check two values per run.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @V0@;
+	[1] = @V1@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	NOP
+		ALU3:	NOP
+;
+EXEC
+	DW:	store rt1, r0, r1
+;

@@ -1,0 +1,420 @@
+{
+  "name": "s56-rows",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/mfu_s56_rows.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "rowidx-sel0",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel1",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r1",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel2",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r2",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel3",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r3",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel4",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel5",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel6",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel7",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel8",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel9",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r9",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel10",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel11",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r11",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel12",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r12",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel13",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r13",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel14",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r14",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-sel15",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r15",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "rowidx-nop",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r15, #1, #0",
+          "@PR1@": "MAD r1.lh, r15, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r0",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r0, u16, #0",
+          "@PR1@": "MAD r1.lh, r0, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r1",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r1, u16, #0",
+          "@PR1@": "MAD r1.lh, r1, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r2",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r2, u16, #0",
+          "@PR1@": "MAD r1.lh, r2, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r3",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r3, u16, #0",
+          "@PR1@": "MAD r1.lh, r3, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r4",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r4, u16, #0",
+          "@PR1@": "MAD r1.lh, r4, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r5",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r5, u16, #0",
+          "@PR1@": "MAD r1.lh, r5, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r6",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r6, u16, #0",
+          "@PR1@": "MAD r1.lh, r6, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r7",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r7, u16, #0",
+          "@PR1@": "MAD r1.lh, r7, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r8",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r8, u16, #0",
+          "@PR1@": "MAD r1.lh, r8, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r9",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r9, u16, #0",
+          "@PR1@": "MAD r1.lh, r9, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r10",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r10, u16, #0",
+          "@PR1@": "MAD r1.lh, r10, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r11",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r11, u16, #0",
+          "@PR1@": "MAD r1.lh, r11, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r12",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r12, u16, #0",
+          "@PR1@": "MAD r1.lh, r12, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r13",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r13, u16, #0",
+          "@PR1@": "MAD r1.lh, r13, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r14",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r14, u16, #0",
+          "@PR1@": "MAD r1.lh, r14, u16, #0"
+        }
+      }
+    },
+    {
+      "name": "seed-r15",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@PR0@": "MAD r0.lh, r15, u16, #0",
+          "@PR1@": "MAD r1.lh, r15, u16, #0"
+        }
+      }
+    }
+  ]
+}

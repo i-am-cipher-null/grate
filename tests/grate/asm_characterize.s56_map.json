@@ -1,0 +1,600 @@
+{
+  "name": "s56-map",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/mfu_s56_rows.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "map-rcp-0",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-1",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r1",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-2",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r2",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-3",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r3",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-4",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-5",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-6",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-7",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-8",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-9",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r9",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-10",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-11",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r11",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-12",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r12",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-13",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r13",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-14",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r14",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rcp-15",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rcp r15",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-0",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r0",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-1",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r1",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-2",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r2",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-3",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r3",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-4",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-5",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-6",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-7",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-8",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r8",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-9",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r9",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-10",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r10",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-11",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r11",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-12",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r12",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-13",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r13",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-14",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r14",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-rsq-15",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "rsq r15",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-0",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r0",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-1",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r1",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-2",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r2",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-3",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r3",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-4",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-5",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r5",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-6",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r6",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-7",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r7",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-8",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r8",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-9",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r9",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-10",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r10",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-11",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r11",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-12",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r12",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-13",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r13",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-14",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r14",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    },
+    {
+      "name": "map-frc-15",
+      "fs": "tests/grate/asm/mfu_s56_rows.in",
+      "replace": {
+        "fs": {
+          "@SFU@": "frc r15",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0"
+        }
+      }
+    }
+  ]
+}

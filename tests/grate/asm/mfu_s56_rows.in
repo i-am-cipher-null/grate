@@ -1,0 +1,85 @@
+/*
+ * Note 56: does the sfu operand index select a row's contents?
+ *
+ * Rows 0..15 are seeded with sixteen distinct values from uniforms 0..15, so a
+ * selector that reads row i returns 1/value(i) while a selector that ignores
+ * row contents returns the same code for every index. Rows 0..2 hold 2.0, 1.0
+ * and 0.75, so a major-axis reciprocal is 0.5 (`EF`).
+ *
+ * The sfu result is captured through mul0 into r15 and read back with a plain
+ * ALU copy; row 15's own value (24.0) is destroyed by that store, so the
+ * selector that names r15 is captured into r3 instead. Separate variants read
+ * each row through a 0.0625 scaling without any sfu operation to verify the
+ * seeds. No multiplier is active in the verification variants.
+ *
+ * Readback: `store rt1, X, Y` puts code(X) in byte 1 and code(Y) in byte 3,
+ * code = 0xF7 + 8*log2(value), 00 for zero and negatives, FF clips at 2.0, and
+ * the smallest reportable code is 78 (about 2^-15.9).
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 2.0;
+	[1] = 1.0;
+	[2] = 0.75;
+	[3] = 1.25;
+	[4] = 1.5;
+	[5] = 2.5;
+	[6] = 3.0;
+	[7] = 4.0;
+	[8] = 5.0;
+	[9] = 6.0;
+	[10] = 8.0;
+	[11] = 10.0;
+	[12] = 12.0;
+	[13] = 16.0;
+	[14] = 20.0;
+	[15] = 24.0;
+	[16] = 0.0625;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	MAD  r3.lh,  u3,  #1,  #0
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r4.lh,  u4,  #1,  #0
+		ALU1:	MAD  r5.lh,  u5,  #1,  #0
+		ALU2:	MAD  r6.lh,  u6,  #1,  #0
+		ALU3:	MAD  r7.lh,  u7,  #1,  #0
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r8.lh,  u8,  #1,  #0
+		ALU1:	MAD  r9.lh,  u9,  #1,  #0
+		ALU2:	MAD  r10.lh, u10, #1,  #0
+		ALU3:	MAD  r11.lh, u11, #1,  #0
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r12.lh, u12, #1,  #0
+		ALU1:	MAD  r13.lh, u13, #1,  #0
+		ALU2:	MAD  r14.lh, u14, #1,  #0
+		ALU3:	MAD  r15.lh, u15, #1,  #0
+;
+EXEC
+	MFU:	sfu: @SFU@
+		@MUL0@
+		ipl:  NOP, NOP, NOP, NOP
+;
+EXEC
+	ALU:
+		ALU0:	@PR0@
+		ALU1:	@PR1@
+		ALU2:	NOP
+		ALU3:	NOP
+;
+EXEC
+	DW:	store rt1, r0, r1
+;

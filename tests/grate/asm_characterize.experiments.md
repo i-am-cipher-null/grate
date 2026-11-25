@@ -7977,12 +7977,19 @@ generated `.asm`, stdout and stderr are in the run directories listed in 55.10.
   deliver `1/M` and `1.0`; rows 0, 1 and 3 deliver their contents; the order of
   the two fields, the destination row, and the multiplier slot do not change any
   of this. Note 53's and note 54's "the multipliers do not compute their
-  operands" is **disproved**: they do, with a substituted operand.
+  operands" is **disproved**: they do, with a substituted operand. *(Refined in
+  56.5: the substitution is specific to index 10; 8..15 are otherwise equivalent
+  for the reciprocal itself, and under every other member of the family the `r0`
+  and `r2` fields carry each other's row.)*
 - **Priority 1 (selected-row side effect): confirmed as a register effect, with
   an unresolved encoding.** After a special-index word the rows holding the
   maximum read back as values that are not their inputs, in the DW store, in an
   ALU copy, and still after another MFU word, while shadow copies of the same
-  seeds in rows 4..7 stay intact. What the rows contain is *not* determined.
+  seeds in rows 4..7 stay intact. What the rows contain is *not* determined
+  here. *(Resolved in 56.1, 56.3 and 56.7: bits 5:4 of the operand field are
+  ignored by the decode, low nibble 8..15 selects the normalization family, and
+  rows 0..2 receive a descriptor plus a negated operand by a measured rule that
+  holds across 30 vectors.)*
 - **Priority 2 (IPL): confirmed.** IPL operand slot *k* fetches component *k* of
   the varying into row *k*, and the selector computes the same
   `1/max(|x|,|y|,|z|)` over interpolated rows as over ALU-written ones, including
@@ -8092,7 +8099,9 @@ previously read as evidence that the multipliers were broken; they are not.
 
 - Confirmed: the multiplier source naming row 2 delivers `1/M`; the other rows,
   `sfu` and `#1` deliver their ordinary values; order, destination and slot are
-  irrelevant.
+  irrelevant. *(Refined in 56.5: `r2` carries `1/M` only under index 10; under 8,
+  9 and 11..15 it carries row 0's pre-word value, and the `r0` field carries row
+  2's.)*
 - Confirmed: the compiler's word computes the two projected coordinates with the
   major axis zeroed, on this hardware and in these shapes.
 - Disproved: notes 53 and 54's reading that the multipliers stop computing their
@@ -8129,18 +8138,29 @@ r0 through `abs()` after a special word returns `0.5` (`n-pos8-abs-r0`
 `0xFF00EF00`) where the plain copy of the same row returns `0`
 (`n-pos8-mul-r0`). `abs()` itself is faithful on an ordinary row (`abs-plain`:
 `abs(0.5)` reads `0xE700EF00`), so the discrepancy is in the special-index read
-path, not in the ALU instruction.
+path, not in the ALU instruction. *(Resolved in 56.8: the row holds a negative
+value, -0.5 in this case. The plain copy and the store code cannot show a
+negative number, `abs()` and a negated read show the magnitude, and all eleven
+calibrated read forms agree once the sign is accounted for. It is not a read
+path anomaly.)*
 
 - Confirmed: the disturbance is a register-level effect, not a store artifact -
   two independent read paths agree in the plain cases, it survives a following MFU
   word, and shadow rows are untouched.
 - Confirmed: the row holding a *positive* maximum delivers 0 to a multiplier, so
-  the compiler's major-axis lane is 0.
-- Unresolved: what the disturbed rows contain. The `abs()` contradiction and the
-  sign dependence of the value are not explained by "the row is cleared".
+  the compiler's major-axis lane is 0. *(Refined in 56.7 and 56.9: the row holds
+  the negated operand, so that lane is `-sign(x) * 1/M`. It reads `00` because the
+  store code hides the sign; the compiler word's `r0` lane is genuinely negative
+  (-0.125 for x = 4, M = 4), not zero.)*
+- Unresolved *(answered in 56.7 and 56.8 for the family 8..15)*: what the
+  disturbed rows contain. The `abs()` contradiction and the sign dependence of
+  the value are not explained by "the row is cleared". 56.7 gives the rule (row 2
+  <- `2d + (s < 0)`, one coordinate row <- `-s * its pre-word value`) and 56.8
+  shows the sign that `abs()` exposed.
 - Operationally: a shader must not read rows 0..2 after a word with a
   special-index sfu source; the reciprocal is only reachable through the
-  multiplier's `r2` or `sfu` field.
+  multiplier's `r2` or `sfu` field. *(Refined in 56.10: `r2` only under index 10;
+  `sfu` under all of 8..15.)*
 
 ### 55.7 Interpolated inputs
 
@@ -8249,12 +8269,17 @@ unmeasured.
    plain copy in the positive case? Next: repeat `rd-r0-a` with the read two and
    three MFU words later, and with the value read through a negation and through
    a multiply by `#1` in the same run, to separate "the row is written" from "the
-   read port returns another register".
+   read port returns another register". *(Answered in 56.8: the row is written,
+   the read port is faithful, the value is negative. The delay half of the
+   experiment is `s56_delay`.)*
 2. Is the major-axis zero also what the blob's own shader produces, or is it a
    property of this harness's row seeding? Next: the same word with the
    coordinates arriving from IPL *and* the maximum in each component, read from a
    second row that a multiplier copies (partly done here: `sel-read-r0` reads 0
-   for interpolated input too, so the ALU is not the cause).
+   for interpolated input too, so the ALU is not the cause). *(Partly answered in
+   56.9: with ALU-seeded rows the compiler word's major-axis lane is `-0.125`,
+   i.e. `1/M` times the negated operand, so the zero is the store code's sign
+   loss. The blob's own words remain unmeasured.)*
 3. Which TEX fields carry the face? Next: a cube-map binding path in libgrate (a
    real subsystem, out of scope here), then the descriptor bit sweep of note 51
    repeated with a cube sampler bound.
@@ -8293,3 +8318,449 @@ Method notes:
 - The two probe shapes differ only in where the store sits (55.2), and the same
   operands return the same codes in both, so no read-after-write correction is
   applied anywhere.
+
+## 56. The sfu operand field: 8..15 are one normalization family, index 10 is the one a multiplier can use, and the row writes are a descriptor plus a negated operand
+
+Runs on the AC100 (Toshiba AC100, Tegra 20 / AR20, `armv7l`, kernel
+`7.2.0-gd1efa725955b`) at experiment-branch head
+`a7775c453522f6f6de201199c2cc463d2e76b4d3`, which is also
+`github/code/fragment-isa-experiments` at the time of the first manifest. Note 55
+is the baseline throughout; this note only adds to it.
+
+### 56.1 Verdicts
+
+- **Confirmed:** the six-bit `reg` operand field is decoded with bits 5:4
+  ignored. Every one of the 16 low-nibble values gives the *same 32-bit store
+  word* at `r`, `r+16`, `r+32` and `r+48`, for all three axis permutations
+  (48 groups, 0 mismatches). This is a hardware decode property, not an
+  assembler truncation: Grate's own disassembler round-trips the generated word
+  as `sfu: rcp r50` when the source says `rcp r50` (56.11).
+- **Confirmed:** low nibble `0..3` reads rows 0..3, and `rcp` **writes the
+  reciprocal back into the row it read** (row 0 = 0.25 after `rcp r0` with
+  r0 = 4.0; the write is visible to a later ALU read, a later word's multiplier
+  and a later word's sfu).
+- **Confirmed:** low nibble `8..15` returns `1/M`, `M = max(|r0|,|r1|,|r2|)`, for
+  all eight values, and **does not read a row at all**: with every row set to 1.0
+  and the matching row alone set to 0.5 or 4.0 (`s56_idx`), all eight return the
+  same code for both.
+- **Confirmed:** low nibble `4..7` does not read the seeded rows either, and its
+  result does not change with row content (`idx-4`: `0x78` for both tests;
+  `idx-5..7`: `00` for both).
+- **Confirmed:** for opcodes other than `rcp`, the index is decoded as
+  `reg & 7`: `rsq r10` equals `rsq r2` byte-for-byte, `rsq r12` equals
+  `rsq r4`, and so on (56.6). Bit 3 changes the behaviour of `rcp` only.
+- **Confirmed:** inside the same MFU word, the multiplier source `r2` delivers
+  `1/M` for index **10 only**; for 8, 9 and 11..15 it delivers row 0's pre-word
+  value. The source `sfu` delivers `1/M` for all eight.
+- **Confirmed:** after a normalization-family `rcp`, the ALU-visible rows 0..2
+  hold a *descriptor* and a *negated operand* (the rule is in 56.7); rows 3..15
+  keep their values, and the written rows stay unchanged across up to two later
+  MFU words and across later ALU batch boundaries.
+- **Disproved:** "the special selector is 10". For `rcp`, 8..15 are equivalent
+  in the reciprocal and in the row writes; 10 is distinguished only by what a
+  multiplier reads from row 2. Note 55's statement that a multiplier source
+  naming row 2 supplies `1/M` is true for the compiler's word, which uses 10,
+  but is not a property of the family.
+- **Disproved:** the note 55 report that reading through `abs()` disagrees with a
+  plain read. The row holds a **negative** value (r0 = -0.5 in the positive-x
+  case); the plain read and the store code cannot show a negative number, while
+  `abs()` shows 0.5 and a negating read shows +0.5. Every read path agrees once
+  the sign is accounted for (56.8).
+- **Unresolved:** what low nibble 4..7 actually reads (a large positive value for
+  4, negative or zero for 5..7, independent of the row table); why bits 5:4 are
+  ignored by the hardware; why the multiplier operand fetch sees the written row
+  0 but the pre-word row 2; and the mechanism that produces the negated operand
+  and the axis/sign code (the rule is reproducible, the reason is not measured).
+
+### 56.2 Probe shapes
+
+All new probes keep the note 55 readback: `store rt1, r0, r1` puts code(r0) in
+byte 1 and code(r3/r1-style second operand) in byte 3, with
+`code = 0xF7 + 8*log2(value)` for positive values, `00` for zero and negative
+values, `FF` at 2.0 and above, and `78` as the smallest reportable code (about
+2^-15.875). `s56_codes` re-calibrated that table down to the floor with twelve
+runs and confirmed it (2^-15 -> `7F`, 2^-16 -> `78`, so 2^-16 and below all read
+`78`; 0.0 and -1.0 both read `00`).
+
+Four templates, all in `tests/grate/asm/`:
+
+| template | shape |
+|:--|:--|
+| `mfu_s56_read.in` | seeds rows 0..3 from uniforms 5..8, copies them to shadow rows 4..7 in their own batch, one MFU word, zero or more intervening MFU words, an ALU read batch (plus optional second batch and extra batches), store |
+| `mfu_s56_codes.in` | stores two constants, for the code table |
+| `mfu_s56_rows.in` | seeds all sixteen rows from sixteen distinct values, one MFU word with a capture into r3, read r3 |
+| `mfu_s56_idx.in` | like `mfu_s56_rows.in` but every row value comes from the manifest |
+
+Two details matter for reading the numbers below. First, the seed vector is
+written from uniforms 5..8 and uniforms 0..4 hold fixed distinct values
+(8.0, 0.125, 3.0, 0.75, 1.0), so a row never holds the value of the uniform with
+the same number; the earlier pilot used uniforms 0..3 as seeds and could not tell
+index 0 from a source that reads uniform 0. Second, the plain read clips a 4.0
+seed at `FF` and cannot show a negative at all, so the sign-and-axis work uses a
+0.25-scaled read (`MAD r0.lh, rN, u9, #0`, u9 = 0.25) plus a negated variant of it.
+
+### 56.3 The selector screen
+
+Every value 0..63 of the operand field, three vectors with the same maximum
+magnitude and the dominant axis moving (X4 = 4, 2, 1, 0.5; Y4 = 2, 4, 1, 0.5;
+Z4 = 2, 1, 4, 0.5; `1/M` = 0.25 = `E7`). The result is the sfu output captured
+through `mul0: r3, sfu, #1`, so the measurement is the multiplier's copy of the
+sfu result and never a row that the operation may have written. Three repeats
+each; the two standard controls before and after every chunk.
+
+| residue | X4 | Y4 | Z4 |
+|---:|:--|:--|:--|
+| 0 | `E7` | `EF` | `EF` |
+| 1 | `EF` | `E7` | `F7` |
+| 2 | `F7` | `F7` | `E7` |
+| 3 | `FF` | `FF` | `FF` |
+| 4 | `78` | `78` | `78` |
+| 5 | `78` | `78` | `00` |
+| 6 | `00` | `00` | `78` |
+| 7 | `00` | `00` | `00` |
+| 8..15 | `E7` | `E7` | `E7` |
+
+(The same word at `+16`, `+32` and `+48`; "residue" is `reg & 15`.)
+
+Reading it:
+
+- `0..3`: `1/r0`, `1/r1`, `1/r2`, `1/r3` -- X4 gives 0.25, 0.5, 1.0, 2.0 for
+  those seeds and Y4/Z4 track the seeds as they move. Ordinary reciprocal.
+- `4..7`: constant across the three axes (`78`; `78/78/00`; `00/00/78`;
+  `00/00/00`), so not a function of the dominant axis. `s56_idx` shows they do not
+  change when the matching row is set to 0.5 or 4.0 either.
+- `8..15`: 0.25 for all three axes, i.e. `1/M`, and unchanged when every row is
+  1.0 (`idx`: `F7` = 1.0 for both content tests), so the operand is ignored.
+
+`s56_scale` repeated 8..15 with M = 2, 4 and 8 on all three axes and with a
+negative dominant component: every cell followed `1/M` (`EF`, `E7`, `DF`) and
+stayed positive for negative dominant components, exactly as note 55 recorded
+for 10. The `rcp r0` control in the same manifest repeats the same codes -- in
+those vectors r0 *is* the dominant component -- so the discriminating checks are
+the axis permutations, where a row operand would change code as the axis moves,
+and the all-rows-1.0 table of 56.4, where a row operand would return 1.0 rather
+than `1/M`.
+
+One caution about reading these codes: the code is eight steps per octave and
+truncates, so the reciprocal of a non-power-of-two lands up to a step low (1/0.75
+reads `F9`, one step below the exact 1.333, and 1/1.25 reads `F3`). Every claim
+below compares codes measured in the same run rather than codes against a
+computed value, and the 0.25-scaled reads move the values into a range where a
+step is easy to see.
+
+### 56.4 What each residue reads
+
+`s56_map` seeds rows 0..15 with 2.0, 1.0, 0.75, 1.25, 1.5, 2.5, 3.0, 4.0, 5.0,
+6.0, 8.0, 10.0, 12.0, 16.0, 20.0 and 24.0, runs one opcode/index, and captures
+through `mul0`. The interesting part is that the eight codes of indices 8..15 are
+*byte-identical* to those of 0..7 for `rsq` and for `frc`:
+
+| index | `rsq` | `frc` | `rcp` |
+|---:|:--|:--|:--|
+| 0 | `F2FF` (1/sqrt 2.0) | `00` (frac 2.0) | `EF` (1/2.0) |
+| 1 | `F700` (1/sqrt 1.0) | `00` (frac 1.0) | `F7` (1/1.0) |
+| 2 | `F8F2` (1/sqrt 0.75) | `F3` (frac 0.75) | `F9` (1/0.75) |
+| 3 | `F5FF` (1/sqrt 1.25) | `E7` (frac 1.25) | `F3` (1/1.25) |
+| 4 | `B700` | `00` | `78` |
+| 5 | `7800` | `00` | `00` |
+| 6 | `7541` | `00` | `00` |
+| 7 | `76FF` | `00` | `00` |
+| 8..15 | same as 0..7 | same as 0..7 | `EF` for all eight |
+
+The `frc` column of 4..7 reads `00`, i.e. those sources are integral-valued; the
+`rsq` column shows their reciprocals of the square root are between 2^-16 and
+2^-8, so the sources are large (or, for 5..7, negative). They are not connected to
+the sixteen-row table: `s56_idx` sets one row at a time to 0.5 and then to 4.0
+with all others at 1.0 and gets the same code for both in every case.
+
+`s56_idx` also confirms the positive side: indices 0..3 give `FF`/`E7` for
+0.5/4.0, and 8..15 give `F7` (1/M of the untouched 1.0 rows) for both.
+
+### 56.5 Multiplier sources in a normalization word
+
+`mulmap` ran all six multiplier sources under each of 8..15 with three vectors;
+`mulmap2` repeated the row sources with M = 2 and M = 8; `mulmap3` scaled the
+capture by 0.25 in the reading batch so a value at or above 2.0 becomes
+resolvable. The seeds are the row vector; row 1 and row 3 are read as seeded,
+but row 0 and row 2 are not:
+
+| source | index 10 | index 8 / 9 / 11..15 |
+|:--|:--|:--|
+| `r0` | the *written* row 0, i.e. the negated operand (-0.5 for a 0.5 row-2 seed) | row 2's pre-word value (0.5 for X2 and X8, 4.0 for the z vector) |
+| `r1` | row 1's pre-word value | row 1's pre-word value |
+| `r2` | **`1/M`** (0.5, 0.25, 0.125 for M = 2, 4, 8) | row 0's pre-word value (2.0 for X2, 8.0 for X8) |
+| `r3` | row 3's pre-word value | row 3's pre-word value |
+| `sfu` | `1/M` | `1/M` |
+| `#1` | 1.0 | 1.0 |
+
+So the source substitution note 55 found on row 2 is real and is *specific to
+index 10*; the other seven members of the family route the row-0 and row-2
+sources across each other instead. This is the one place where the eight values
+are not interchangeable, and it is the reason the compiler's word works:
+`mul0: r0, r2, r0` / `mul1: r1, r2, r1` with `rcp r10` gets `1/M` from the `r2`
+field in both multiplier slots.
+
+### 56.6 Other opcodes
+
+`s56_ops` ran `rsq`, `sqrt`, `lg2` and `frc` on indices 8..15 with the same axis
+permutations, plus ordinary row operands as controls. For every opcode, index 10
+behaves exactly like index 2, and 11 like 3, 12 like 4, 13 like 5, 14 like 6 and
+15 like 7:
+
+| probe | result | reads |
+|:--|:--|:--|
+| `rsq r10` on X2/Y2/Z2 (row 2 = 0.5, 0.5, 2.0) | `FAFF`/`FAFF`/`F2FF` | 1/sqrt(row 2): 1.414, 1.414, 0.707 |
+| `rsq r11` on X2 (row 3 = 0.25) | `FF` | 1/sqrt(0.25) = 2.0 |
+| `sqrt r10` on X2/Z2 (row 2 = 0.5, 2.0) | `F2FF` / `FAFF` | sqrt(0.5), sqrt(2.0) |
+| `lg2 r10` on X4/Y4/Z4 (row 2 = 1, 1, 4) | `00`/`00`/`FF` | 0, 0, 2 |
+| `frc r10` on fX/fY/fZ (row 2 = 0.25, 0.25, 1.125) | `E7`/`E7`/`DF` | 0.25, 0.25, 0.125 |
+
+**Confirmed:** the major-axis operand is an `rcp`-only interpretation. Feeding
+index 10 to `rsq`, `sqrt`, `lg2` or `frc` gives the ordinary operation applied to
+row 2, not `1/M` and not anything derived from the dominant axis. So the
+hardware does not "make index 10 mean the maximum" for all SFU operations; it
+has a normalizing reciprocal that the same field selects, and the other
+single-step operations ignore bit 3 entirely.
+
+Paired operations (`PREEX2`/`EX2`, `PRESIN`/`SIN`, `PRECOS`/`COS`) were not run:
+their two-word setup is not implemented in these probes and a wrong pairing would
+produce a meaningless result rather than a bounded one.
+
+### 56.7 The row writes: a descriptor and a negated operand
+
+Rows 0..2 are written by a normalization-family `rcp`. With
+`d = argmax(|r0|,|r1|,|r2|)` (ties go to the highest index) and `s = sign(r_d)`:
+
+1. **row 2 <- the descriptor** `2d + (s < 0)`, as a floating-point number 0..5.
+2. **if d is 0 or 1: row d <- -s * (row 2 before the word)**, and the other of
+   rows 0/1 keeps its value.
+3. **if d is 2: row 0 <- -(row 0 before the word)**, and row 1 keeps its value.
+4. rows 3..15 keep their values.
+
+Measured matrix, maximum 4.0, using the 0.25-scaled and the negated-scaled read
+(three repeats, identical; `q`/`qn` are the two raw store words of the second
+lane unless noted):
+
+| vector r0,r1,r2 | row 0 | row 1 | row 2 | d, s |
+|:--|:--|:--|:--|:--|
+| 4, 2, 0.5 | -0.5 (`00`/`DF`) | 2.0 (`EF`) | 0 (`00`) | 0, + |
+| -4, 2, 0.5 | +0.5 (`DF`) | 2.0 | 1 (`E7`) | 0, - |
+| 2, 4, 0.5 | 2.0 | -0.5 (`00`/`DF`) | 2 (`EF`) | 1, + |
+| 2, -4, 0.5 | 2.0 | +0.5 (`DF`) | 3 (`F3`) | 1, - |
+| 2, 0.5, 4 | 2.0 | 0.5 | 4 (`F7`) | 2, + |
+| 2, 0.5, -4 | -2.0 (`00`/`EF`) | 0.5 | 5 (`F9`) | 2, - |
+| 4, -4, 0.5 | 4.0 (`F7`) | +0.5 (`DF`) | 3 (`F3`) | 1, - (tie 0/1) |
+| 4, 0.5, -4 | -4.0 (`00`/`F7`) | 0.5 | 5 | 2, - (tie 0/2) |
+| 0.5, 4, -4 | -0.5 (`00`/`DF`) | 4.0 | 5 | 2, - (tie 1/2) |
+| -4, -4, -4 | +4.0 (`F7`) | -4.0 (`00`/`F7`) | 5 | 2, - (three-way tie) |
+
+(`row 3` read 1.0 -- its seed -- in every cell of the matrix.)
+
+The rule was checked against 24 more vectors with distinct seed magnitudes and
+signs (`sweep`, 30 vectors; `sign2`, 13; `sign3`, 14), including a case where row
+2 itself is negative (the negated operand then has a plus sign: r2 = -0.75 with a
+positive dominant row 1 gives row 1 = +0.75). Two independent readings agree on
+each cell: the multiplier's copy of a written row (56.5, `r0` column for index
+10) and the ALU copy, with `abs()` and the negated read supplying the sign that
+the plain read cannot show.
+
+**Inferred, not measured:** the descriptor's two parts (`2d` and the sign bit) and
+the negated operand look like staging for a normalizing lowering -- the
+descriptor is exactly what a face-selection step would need, and `-s * coordinate`
+is the operand whose reciprocal has the dominant sign. Nothing here shows what
+consumes them; a shader that does not read rows 0..2 after the word does not care.
+
+**Edge case, unresolved:** with all three coordinate rows at 0.0 the descriptor
+reads 4 (0.5 via the 0.25 read is impossible here; the raw code is `F7`), i.e. it
+reports axis 2 positive for a degenerate vector, and rows 0/1 read 0. One run,
+three repeats.
+
+### 56.8 Read paths, signs and delays
+
+`s56_path` calibrated eleven read forms on unmodified rows (word `nop r0`) and
+then applied them to the written rows for the four sign/axis combinations. All
+forms agree; the differences are exactly the ones the store format forces:
+
+| form | reads | positive-x case, row 0 |
+|:--|:--|:--|
+| `MAD r0.lh, rN, #1, #0` (plain) | the row, clipped at 2.0, `00` for <= 0 | `00` |
+| `abs(rN)` then copy | magnitude | `EF` (0.5) |
+| `-rN` then copy | negated; `00` unless the row was negative | `EF` (0.5) |
+| times 0.25 from uniform 9 | four times the resolution | `00` |
+| `abs(rN)` times 0.25 | magnitude, scaled | `DF` (0.125) |
+| `-rN` times 0.25 | negated, scaled | `DF` (0.125) |
+| times 1.0 from uniform 4 | the row through a real multiply | `00` |
+| copy into r8, then copy r8 (two batches) | the row, two steps later | `00` |
+| `abs` into r8, then copy | magnitude, two steps later | `EF` |
+| row as the rC operand instead of rB | the row | `00` |
+
+So the note 55 "`abs()` contradiction" is explained by the sign, not by a read
+path: the row holds -0.5, the plain read stores `00` (negative), `abs()` stores
+0.5. `abs()` is faithful on ordinary rows in the same manifest, and the rB/rC
+positions agree, which is why the earlier note could not reconcile them.
+
+`s56_reread` asked the write-versus-read question directly: after the word, a
+second MFU word read the row through its sfu (`rcp r0`, captured through the
+multiplier) and through a multiplier source (`mul0: r3, r0, #1`); both agree with
+the ALU copy, and the values are unchanged after one and two empty ALU batches.
+`s56_delay` repeated the four sign/axis cases with zero, one and two intervening
+MFU NOP words and with and without a later batch boundary: identical in all 12
+combinations per case, while the shadow row 4 stayed at its seed in every one.
+**Confirmed:** the writes are register contents, not a read-port or store-path
+effect, and they do not decay.
+
+### 56.9 Multiplier shapes and the compiler's word
+
+`s56_shape` ran six multiplier shapes over the ten-vector matrix, reading rows
+0..3 with the 0.25 path after the word. For the positive-x vector (4, 2, 0.5, 1,
+M = 4, 1/M = 0.25):
+
+| shape | row 0 | row 1 | row 2 | row 3 |
+|:--|:--|:--|:--|:--|
+| `rcp r10`, no multipliers | `00` (-0.5) | `EF` (2.0) | `00` (0) | `E7` (1.0) |
+| `mul0: r3, sfu, #1` | `00` | `EF` | `00` | `D7` (0.25) |
+| `mul1: r3, sfu, #1` | `00` | `EF` | `00` | `D7` (0.25) |
+| `mul0: r1, sfu, #1` | `00` | `D7` (0.25) | `00` | `E7` (1.0) |
+| `mul1: r0, sfu, #1` | `D7` (0.25) | `EF` | `00` | `E7` |
+| compiler: `mul0: r0, r2, r0`, `mul1: r1, r2, r1` | `00` | `DF` (0.5) | `00` | `E7` |
+
+Two things follow. First, activating a multiplier does not change the descriptor
+or the negated operand: the row writes of the sfu part are the same in every
+shape, and the multiplier only adds its own destination. Second, the compiler's
+word computes `r1 = 1/M * r1 = 0.5` correctly but its `r0` lane is the product of
+`1/M` with the *written* row 0 (-0.5), i.e. -0.125, not with x. For a fragment
+where x is the dominant coordinate this makes the r0 lane zero or negative --
+which is what note 55 measured as `0xD7000000`, and what a real cube-normalizing
+shader would have to compensate for by not relying on the r0 product.
+
+### 56.10 What this note establishes, and what it does not
+
+Established by measurement: the operand-field decode (bits 5:4 ignored; low
+nibble 0..3 rows, 4..7 internal, 8..15 normalization); that 8..15 are the
+normalization family for `rcp` and only `rcp`; that the family writes a
+descriptor into row 2 and a negated operand into one coordinate row by the rule
+above; that the family's row 2 is the only multiplier source that carries `1/M`
+and only for index 10; that ordinary `rcp` writes its result back into the row it
+reads; that the writes are stable; and that the note 55 `abs()` discrepancy was a
+sign effect.
+
+Not established: the mechanism behind the writes; what low nibble 4..7 are; why
+the multiplier's row-0 and row-2 operands are crossed for indices other than 10;
+what the descriptor is consumed by; and anything about face selection, which
+remains blocked (56.11).
+
+Practical rules for a shader: `rcp r10` through `rcp r15` are interchangeable if
+the reciprocal is taken from the `sfu` multiplier source; if a multiplier must
+read the reciprocal from the `r2` field, use index 10; do not read rows 0..2
+after the word; do not expect the multiplier's `r0` field to hold the coordinate
+it named.
+
+### 56.11 Cube / TEX reconnaissance
+
+Bounded, and it found nothing new:
+
+- The proprietary compiler is still absent: `/home/freebuff/build/grate-exp/tools/cgc`
+  prints `CgDrv_Create: BLOB compiler is unavailable` and falls back to reading
+  stdin; there is no `libcgdrv.so` in `/usr/lib` or
+  `/usr/lib/arm-linux-gnueabihf`. `tools/cgc` is the `dummy.c` fallback.
+- No raw cube shader dump exists. `git log --all -S'textureCube'` matches only
+  the note-55 commit, and the only files mentioning a cube map in the checkout are
+  the notes themselves. `tests/grate/cube-textured*.c` and `cube.c` are textured
+  *cube* demos: they bind one 2D surface (`data/tegra.png`), and their shader files
+  (`tests/grate/asm/cube2_fs.txt` and friends) do not exist in the tree.
+- The TEX instruction has no dimension or face field:
+  `tex_instr` is `sampler_index:4, src_regs_select, sample_dst_regs_select,
+  unk_6_9:4, enable, unk_11, enable_bias, explicit_lod, unk_14_31:18`, and the
+  disassembler prints only the sampler index, the coordinate source pair
+  (`r0..r3` or `r2, r3, r0`) and the destination pair. There is nowhere in the
+  instruction for a face or target selector, so any face selection would have to
+  live in sampler or target state.
+- The sampler-descriptor investigation recorded in
+  `docs_snap/fragment-shader-isa.md` (commit `0ff925b`) stands: `TEXTURE_DESC1`
+  and `TEXTURE_DESC2` have no dimension or face field, the driver allocates one
+  2D surface, and the 32-bit descriptor sweep plus the R-sweep found no field
+  that enables face selection. That is a statement about the harness's 2D
+  binding, not about the hardware, and this note adds nothing to it.
+
+Conclusion: face selection and face-coordinate orientation remain **unresolved**,
+blocked on a compiler that can emit a cube shader and on a binding path for a
+cube target. Neither was created here. Mesa's normalizing lowerings remain an
+algorithmic reference only.
+
+### 56.12 Runs and method notes
+
+Device: Toshiba AC100, Tegra 20 / AR20, `armv7l`, kernel
+`7.2.0-gd1efa725955b`. Repository `i-am-cipher-null/grate`, branch
+`code/fragment-isa-experiments`, head
+`a7775c453522f6f6de201199c2cc463d2e76b4d3` at the first manifest (equal to
+`github/code/fragment-isa-experiments`; the docs branch was left alone at
+`0ff925b`).
+
+Every manifest declared `repeat: 3`, `timeout: 20`, and the two standard controls
+(`immediate-operand` expecting `0x000000FF`, `varying-pipeline` expecting
+`0xFF01FF00`) run once before and once after the variants. Run data is under the
+git-ignored `characterization/`:
+
+| manifest | variants | runs | directory |
+|:--|--:|--:|:--|
+| `s56_pilot` | 45 | 139 | `s56-pilot-20261125T180717Z` |
+| `s56_codes` | 12 | 40 | `s56-codes-20261125T181107Z` |
+| `s56_pilot2` | 87 | 265 | `s56-pilot2-20261125T181113Z` |
+| `s56_sel_0_15` | 51 | 157 | `s56-sel-0-15-20261125T181408Z` |
+| `s56_sel_16_31` | 51 | 157 | `s56-sel-16-31-20261125T181428Z` |
+| `s56_sel_32_47` | 51 | 157 | `s56-sel-32-47-20261125T181446Z` |
+| `s56_sel_48_63` | 51 | 157 | `s56-sel-48-63-20261125T181502Z` |
+| `s56_scale_8_15` | 176 | 532 | `s56-scale-8-9-10-11-12-13-14-15-20261125T181521Z` |
+| `s56_rows` | 33 | 103 | `s56-rows-20261125T181733Z` |
+| `s56_rows` (superseded) | 33 | 103 | `s56-rows-20261125T181357Z` |
+| `s56_each` | 432 | 1300 | `s56-each-20261125T181745Z` |
+| `s56_diag` | 16 | 52 | `s56-diag-20261125T182059Z` |
+| `s56_diag2` | 42 | 130 | `s56-diag2-20261125T182152Z` |
+| `s56_row` | 240 | 724 | `s56-row-20261125T182353Z` |
+| `s56_reread` | 96 | 292 | `s56-reread-20261125T182504Z` |
+| `s56_sweep` | 180 | 544 | `s56-sweep-20261125T182731Z` |
+| `s56_sign2` | 234 | 706 | `s56-sign2-20261125T183055Z` |
+| `s56_sign3` | 84 | 256 | `s56-sign3-20261125T183407Z` |
+| `s56_ops_8_15` | 208 | 628 | `s56-ops-8-9-10-11-12-13-14-15-20261125T183432Z` |
+| `s56_map` | 48 | 148 | `s56-map-20261125T183823Z` |
+| `s56_idx` | 32 | 100 | `s56-idx-20261125T183951Z` |
+| `s56_mulmap` | 144 | 436 | `s56-mulmap-20261125T184035Z` |
+| `s56_mulmap2` | 72 | 220 | `s56-mulmap2-20261125T184514Z` |
+| `s56_mulmap3` | 24 | 76 | `s56-mulmap3-20261125T184615Z` |
+| `s56_shape` | 240 | 724 | `s56-shape-20261125T184117Z` |
+| `s56_path` | 264 | 796 | `s56-path-20261125T184231Z` |
+| `s56_delay` | 120 | 364 | `s56-delay-20261125T184350Z` |
+
+9308 runs in total, 9263 passed. The 45 failures are the superseded first
+`s56_rows` attempt (`s56-rows-20261125T181357Z`): it captured the sfu result into
+r15, which the assembler rejects with `Invalid row register number, r3 max`
+because a multiplier destination is a 3-bit field for rows 0..3. The manifest was
+regenerated with the capture in r3 and the whole run repeated; the superseded
+directory is kept, not deleted. No timeouts, no rejected variants and no other
+non-passing runs occurred. Two harness-side mistakes were found and corrected
+before they reached the note: the first pilot seeded rows from uniforms 0..3
+(making index 0, 16 and 32 indistinguishable) and the first `each` analysis
+script collapsed `quarter` and `quarter-neg` names; the rows were reseeded from
+uniforms 5..8 and the analysis script was fixed, and both runs above are rerun
+data, not edited data.
+
+The encoded words were cross-checked with Grate's own disassembler rather than
+`cgc`: a small helper (`tests/grate/asm/disasm_fs.c`, built against the tree's
+`libgrate.so`) parses a generated fragment file and prints
+`fragment_pipeline_disassemble` output. It reports `sfu: rcp r50` for the file
+generated from `rcp r50`, so the 6-bit field survives assembly and the ignored
+high bits are a decode property of the part.
+
+The probe sources are committed with the note: `tests/grate/asm/mfu_s56_read.in`
+with `mfu_s56_codes.in`, `mfu_s56_rows.in` and `mfu_s56_idx.in`, the 26
+manifests `tests/grate/asm_characterize.s56_*.json` (`s56_pilot.json` is the
+superseded seeding, kept as the run input it was), the generator
+`tests/grate/asm/make_s56.py`, which reproduces every other manifest from its
+section name, the screen checker `tests/grate/asm/check_s56.py`, and the
+disassembler helper `tests/grate/asm/disasm_fs.c`.
+
+Note 55 references updated where this note resolves them: 55.6's `abs()`
+discrepancy (a negative row, not a read path), 55.6's "row holding a positive
+maximum delivers 0" (it delivers a negative operand; the store code hides the
+sign), and 55.3/55.4's "special index 10" (8..15 for the reciprocal, 10 only for
+the multiplier's r2 field).

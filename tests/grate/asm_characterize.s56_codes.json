@@ -1,0 +1,144 @@
+{
+  "name": "s56-codes",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/mfu_s56_codes.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "code-4p0-2p0",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "4.0",
+          "@V1@": "2.0"
+        }
+      }
+    },
+    {
+      "name": "code-1p0-0p5",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "1.0",
+          "@V1@": "0.5"
+        }
+      }
+    },
+    {
+      "name": "code-0p25-0p125",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "0.25",
+          "@V1@": "0.125"
+        }
+      }
+    },
+    {
+      "name": "code-0p0625-0p03125",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "0.0625",
+          "@V1@": "0.03125"
+        }
+      }
+    },
+    {
+      "name": "code-0p015625-0p0078125",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "0.015625",
+          "@V1@": "0.0078125"
+        }
+      }
+    },
+    {
+      "name": "code-0p00390625-0p001953125",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "0.00390625",
+          "@V1@": "0.001953125"
+        }
+      }
+    },
+    {
+      "name": "code-0p00048828125-0p000244140625",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "0.00048828125",
+          "@V1@": "0.000244140625"
+        }
+      }
+    },
+    {
+      "name": "code-0p0001220703125-0p00006103515625",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "0.0001220703125",
+          "@V1@": "0.00006103515625"
+        }
+      }
+    },
+    {
+      "name": "code-0p000030517578125-0p0000152587890625",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "0.000030517578125",
+          "@V1@": "0.0000152587890625"
+        }
+      }
+    },
+    {
+      "name": "code-0p0-n1p0",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "0.0",
+          "@V1@": "-1.0"
+        }
+      }
+    },
+    {
+      "name": "code-3p0-0p75",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "3.0",
+          "@V1@": "0.75"
+        }
+      }
+    },
+    {
+      "name": "code-1p5-0p0625",
+      "fs": "tests/grate/asm/mfu_s56_codes.in",
+      "replace": {
+        "fs": {
+          "@V0@": "1.5",
+          "@V1@": "0.0625"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+/*
+ * Note 56: which register does sfu operand index N read, when every row can be
+ * set from the manifest?
+ *
+ * Rows 0..15 are seeded from sixteen constants that the manifest chooses, so a
+ * selector that reads a row returns that row's reciprocal while a selector that
+ * reads an internal source ignores the whole table. The sfu result is captured
+ * through mul0 into r3 and read with a plain ALU copy.
+ *
+ * Readback: `store rt1, X, Y` puts code(X) in byte 1 and code(Y) in byte 3,
+ * code = 0xF7 + 8*log2(value), 00 for zero and negatives, FF clips at 2.0, and
+ * the smallest reportable code is 78 (about 2^-15.9).
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @W0@;
+	[1] = @W1@;
+	[2] = @W2@;
+	[3] = @W3@;
+	[4] = @W4@;
+	[5] = @W5@;
+	[6] = @W6@;
+	[7] = @W7@;
+	[8] = @W8@;
+	[9] = @W9@;
+	[10] = @W10@;
+	[11] = @W11@;
+	[12] = @W12@;
+	[13] = @W13@;
+	[14] = @W14@;
+	[15] = @W15@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	MAD  r3.lh,  u3,  #1,  #0
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r4.lh,  u4,  #1,  #0
+		ALU1:	MAD  r5.lh,  u5,  #1,  #0
+		ALU2:	MAD  r6.lh,  u6,  #1,  #0
+		ALU3:	MAD  r7.lh,  u7,  #1,  #0
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r8.lh,  u8,  #1,  #0
+		ALU1:	MAD  r9.lh,  u9,  #1,  #0
+		ALU2:	MAD  r10.lh, u10, #1,  #0
+		ALU3:	MAD  r11.lh, u11, #1,  #0
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r12.lh, u12, #1,  #0
+		ALU1:	MAD  r13.lh, u13, #1,  #0
+		ALU2:	MAD  r14.lh, u14, #1,  #0
+		ALU3:	MAD  r15.lh, u15, #1,  #0
+;
+EXEC
+	MFU:	sfu: @SFU@
+		mul0: r3, sfu, #1
+		ipl:  NOP, NOP, NOP, NOP
+;
+EXEC
+	ALU:
+		ALU0:	MAD r0.lh, r3, #1, #0
+		ALU1:	MAD r1.lh, r3, #1, #0
+		ALU2:	NOP
+		ALU3:	NOP
+;
+EXEC
+	DW:	store rt1, r0, r1
+;

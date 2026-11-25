@@ -1,0 +1,73 @@
+/*
+ * Note 56: reads of the row registers around a word that has an sfu source, and
+ * the selector screen for that sfu source.
+ *
+ * The seed vector is written into rows 0..3 from uniforms 5..8, so a row never
+ * holds the same value as uniform 0..4; those uniforms stay at fixed, distinct
+ * values (8.0, 0.125, 3.0, 0.75, 1.0) and uniform 9 holds 0.25 for the scaled
+ * read paths. Batch 1 copies the seeds into the shadow rows 4..7 in their own
+ * batch, because a row read in the same ALU packet that wrote it returns 0.
+ * Batch 2 is the MFU word under test. The delay placeholder holds zero or more
+ * intervening MFU words. Batch 3 reads rows through the ALU into the store
+ * pair; the mid placeholder adds a second ALU batch for the two-step read paths
+ * and the late placeholder adds empty ALU batches so the same read can be
+ * placed after a later batch boundary. The last batch stores r0/r1.
+ *
+ * `store rt1, X, Y` puts code(X) in byte 1 and code(Y) in byte 3, so a plain
+ * read of row N writes the same instruction into both r0 and r1 and both lanes
+ * must agree. code = 0xF7 + 8*log2(value) for positive values, 0.0 and negative
+ * values are 00, and 2.0 and above clip to FF. A negative row value is
+ * therefore invisible through a plain copy and needs the negating path; a 4.0
+ * seed clips, so the scaled (`u9` = 0.25) read paths give four times the
+ * resolution over the seed range.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 8.0;
+	[1] = 0.125;
+	[2] = 3.0;
+	[3] = 0.75;
+	[4] = 1.0;
+	[5] = @V0@;
+	[6] = @V1@;
+	[7] = @V2@;
+	[8] = @V3@;
+	[9] = 0.25;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u5,  #1,  #0
+		ALU1:	MAD  r1.lh,  u6,  #1,  #0
+		ALU2:	MAD  r2.lh,  u7,  #1,  #0
+		ALU3:	MAD  r3.lh,  u8,  #1,  #0
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r4.lh,  r0,  #1,  #0
+		ALU1:	MAD  r5.lh,  r1,  #1,  #0
+		ALU2:	MAD  r6.lh,  r2,  #1,  #0
+		ALU3:	MAD  r7.lh,  r3,  #1,  #0
+;
+EXEC
+	MFU:	sfu: @SFU@
+		@MUL0@
+		@MUL1@
+		ipl:  NOP, NOP, NOP, NOP
+;
+@DELAY@
+EXEC
+	ALU:
+		ALU0:	@PR0@
+		ALU1:	@PR1@
+		ALU2:	NOP
+		ALU3:	NOP
+;
+@MID@
+@LATE@
+EXEC
+	DW:	store rt1, r0, r1
+;
