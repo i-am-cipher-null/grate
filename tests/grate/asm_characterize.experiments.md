@@ -9932,3 +9932,282 @@ table, which is itself a fit to the same geometry with an uncertainty of about
 0.05 in the largest weight; every "cell" is one fragment at one sample point,
 with the harness quantising the store to `0xF7 + 8*log2(value)` (0.125 octave,
 and a value quoted at a code is the top of a one-step band).
+
+## 60. Clip-w state, interpolator rows, and the selector-4 bound
+
+Note 59 left three things open: whether the clip-`w` state (as opposed to the
+sample position) reaches selectors 5..7, whether the perspective-interpolator
+discrepancy is a row representation or a clip-`w`-dependent source, and how
+tight the `selector 4 = 65536 D` bound really is once the weights come from
+something other than note 55's fitted table. This note answers all three, and
+one of the answers is that the clip-`w` dependence is in the sfu's *input path*,
+not in the row value.
+
+### 60.1 Geometry, sample and read paths
+
+The harness renders one quad as two triangles at clip corners `(-1, 1)`,
+`(-1, -1)`, `(1, 1)`, `(1, -1)` with vertex colours red, green, blue, red, and
+reads back the framebuffer's first pixel. Nothing in this note changes that: the
+sample is always that pixel, and `offset` moves the quad under it.
+
+* `vs_persp_col.txt` puts `w = 1 + wdelta` on the blue vertex (v2) and
+  premultiplies the clip position, so the projected quad does not move.
+* `vs_persp_wgreen.txt` and `vs_persp_wred.txt` are the same shader with the `w`
+  source moved to `a[1].yyyy` (green, v1) and `a[1].xxxx` (red, v0 and v3).
+* `vs_scale_w.txt` scales the whole clip position: the projection is unchanged
+  and `w` is uniform, so `D = 1/w` with no unknown weight.
+
+With `w` on one vertex and 1 at the other two, the fragment's denominator at a
+sample with weights `lambda` is `D = (1 - b) + b/w` with `b` that vertex's
+weight, which is the one-parameter curve the selector-4 sweeps fit.
+
+Read paths are note 59's: lane 1 is an ALU row readback (`MAD r0.lh, rN, u9`),
+lane 2 is the sfu result captured through the explicit multiplier token
+(`mul0: r3, sfu, #1`) and read scaled. Selector words are unchanged from 59.1 —
+`rcp r4` = `0x104007D0`, `rsq r5` = `0x148007D0`, `rsq r6` = `0x188007D0`,
+`rsq r7` = `0x1C8007D0` — and the low 22 bits are still the two multiplier slots
+and the four `ipl` operands, so only the high word is quoted.
+
+Two arms are new in this note and both matter:
+
+* **A word with no sfu and no multipliers** (`sfu: nop r0`) reads two rows side
+  by side, so "the rows did not change" is measured without the capture path in
+  the same word.
+* **A constant varying** (`ar = ag = ab`): every corner of the varying holds the
+  same number, so the perspective-corrected row is that number for *every* clip
+  `w` (`A * sum lambda/W / D = A`). Any movement with `w` in that arm is
+  therefore not a movement of the row value.
+
+### 60.2 Selector 4: the weights fitted from the curve
+
+`prec` puts one word shape at one sample and moves only `w`: `rcp r4`, the result
+captured into lane 2 with the 0.5 scale, i.e. `2^-17/D`. The model is
+`code = 0x70 + 8*log2(1/D) + o`, with `0x70` the code of `0.5 * 2^-16` and one
+global offset `o` fitted with the weights (note 58.3's calibration put a positive
+value one step *above* its code at `2^-16` magnitudes; at the `2^-17` decade this
+arm uses, the joint fit wants `o = -0.7` steps). `fit_s60.py <results.tsv>` does
+the grid search.
+
+| arm | cells | free parameter | result | worst residual |
+|:--|--:|:--|:--|--:|
+| uniform `w` = 0.5, 1, 2, 4, 8 | 6 | none (`D = 1/w`) | prediction | 0.70 steps |
+| `w` on blue at q1, `w` = 2, 4, 8, 16 | 4 | `b_blue` | 0.70 | 0.38 steps |
+| `w` on green at q1, `w` = 1/2 .. 1/16 | 5 | `b_green` | 0.13 | 0.70 steps |
+| `w` on red at q1, `w` = 1/2 .. 1/16 | 5 | `b_red` | 0.15 | 0.70 steps |
+| `w` on blue at (0.9, 0.7), `w` = 1 .. 32 | 7 | `b_blue` | 0.83 | 0.75 steps |
+
+The raw codes, with the model's prediction in code units:
+
+| cell | `w` | code | predicted | residual |
+|:--|--:|:--|--:|--:|
+| `prec-uni-w0p5` | 0.5 | `68` | 103.3 | +0.7 |
+| `prec-uni-w1` | 1 | `70` | 111.3 | +0.7 |
+| `prec-uni-w2` | 2 | `78` | 119.3 | +0.7 |
+| `prec-uni-w4` | 4 | `7F` | 127.3 | −0.3 |
+| `prec-uni-w8` | 8 | `87` | 135.3 | −0.3 |
+| `prec-blueq1-w2` | 2 | `74` | 116.3 | −0.3 |
+| `prec-blueq1-w4` | 4 | `78` | 119.9 | +0.1 |
+| `prec-blueq1-w8` | 8 | `7A` | 122.2 | −0.2 |
+| `prec-blueq1-w16` | 16 | `7C` | 123.6 | +0.4 |
+| `prec-green-w0p5` | 0.5 | `6E` | 109.9 | +0.1 |
+| `prec-green-w0p0625` | 1/16 | `63` | 98.8 | +0.2 |
+| `prec-red-w0p5` | 0.5 | `6D` | 109.7 | −0.7 |
+| `prec-red-w0p0625` | 1/16 | `61` | 97.7 | −0.7 |
+| `prec-blue-w2` | 2 | `75` | 117.5 | −0.5 |
+| `prec-blue-w32` | 32 | `82` | 130.1 | −0.1 |
+
+Four readings:
+
+1. **The identity needs no table.** The three weights are fitted from the
+   selector-4 curve itself, and they close: blue 0.70 + green 0.13 + red 0.15 =
+   **0.98** at q1. Note 55's table (0.725, 0.125, 0.15) is within 0.03 on each
+   weight — the curve reproduces the table rather than depending on it — and the
+   *sum* is the statement that does not trade off against the global offset.
+2. **Wide range, under one step.** The uniform arm is a pure prediction with no
+   free parameter at all and holds over `D` from 2.0 down to 0.125 (four
+   octaves); the single-vertex sweeps add `D` from 0.125 up to about 3.3 and the
+   far sample down to 0.21. Over that 4.7 octave span every fitted cell is
+   within 0.75 code steps.
+3. **The operand survives `D > 1`.** `w = 0.5` puts `65536 D` at `2^17`, which
+   the field still carries (note 58.4 saw the same at `w = 0.25`), so the
+   identity is not limited to `D <= 1`.
+4. **It repeats and it is not the row.** Both repeated cells are byte-identical
+   to their first runs, and lane 1 reads `7F` (row 1 = 1.0, unchanged) in every
+   cell of the arm.
+
+The one blue cell at a different sample (`prec-blue-w8-q2`) is deliberately not
+in the fit — a weight belongs to one sample point — and it is consistent with
+q2's own table entry: `D = 0.65 + 0.35/8 = 0.694` predicts a code 1.4 steps above
+the measured `73`.
+
+The numerical bound is therefore under one code step (0.125 octave, i.e. 9%) over
+4.7 octaves, against note 59's two steps over 1.45 octaves. It is still a readback
+bound and not an exact identity: `D` is reconstructed from `w` and the fitted
+weights, so a systematic error in the weights is absorbed by the fit. What the
+fit does exclude is any *value* dependence beyond the one-parameter form.
+
+### 60.3 Clip-`w` state with the rows held fixed
+
+`wstate` seeds rows 1..3 from uniforms (1.0, 3.0, 0.75) and then runs `rsq r5`,
+`rsq r6`, `rsq r7` in a later word. Lane 1 is row 1 (`7F`, unchanged), lane 2 is
+the capture with 2^12 for the low branch and 2^4 for the high one.
+
+| condition | selector 5 | selector 6 | selector 7 |
+|:--|:--|:--|:--|
+| uniform `w` = 0.25 | `D7` | `D4` | `D4` |
+| uniform `w` = 0.5 | `D7` | `D4` | `D4` |
+| uniform `w` = 1 | `D7` | `D4` | `D4` |
+| uniform `w` = 2 | `D7` | `D4` | `D4` |
+| uniform `w` = 4 | `D7` | `D4` | `D4` |
+| blue `w` = 2, 4, 16 | `D7` | `D4` | `D4` |
+| green `w` = 2, 4, 16 | `D7` | `D4` | `D4` |
+
+All 39 selector cells: the three selectors have **one code each**. The rows were
+re-measured with a word that has neither an sfu nor a multiplier (`sfu: nop r0`)
+in six of those geometries — uniform `w` = 0.25, 1, 4, blue `w` = 2 and 16, green
+`w` = 4 — and read `8B`/`7C` in every one (`8B` = 3.0, `7C` = 0.75, both one
+store step above the seed). The repeated cell agrees, and `rcp r5` on the same row gives `00` —
+the underflow of note 58.6, distinct from the `FF` invalid result.
+
+Three consequences:
+
+1. The clip-`w` state does not reach selectors 5..7 by itself: neither the
+   absolute `w`, nor the `w`   ratios (blue vs green vs uniform), nor the resulting
+   `D` (0.32 to 4 across these conditions) changes a single code. Whatever moved
+   in note 58's `w` arms was the *row*, not the clip state.
+2. The transport still keeps the significand and replaces the exponent under
+   varying `w`: rows `(1, 3, 0.75)` and `(1, 6, 1.5)` give the same selector
+   codes (`D4`/`D4`) at `w = 4`, exactly as they do at `w = 1`.
+3. So the only `w` dependence selectors 5..7 have is the row value — which is
+   what the interpolator feeds them. That is the subject of the next section.
+
+### 60.4 The perspective-interpolator discrepancy, path by path
+
+Four input paths at the same sample point and the same word: the interpolator
+writes row 1 (`ipl`), the interpolator writes it and an ALU batch rewrites it
+unchanged (`MAD r1.lh, r1, u0, #0` with `u0 = 1.0`, in a word of its own between
+the fetch and the test), the ALU seeds the nearest fp20 to the measured
+interpolated value, and an affine control (same value, every vertex `w = 1`).
+
+| cell | row (lane 1) | `ipl` | `+ rewrite` | ALU-seeded | affine |
+|:--|--:|:--|:--|:--|:--|
+| q1-a `w = 4` | 0.595 | `D2` | `D2` | `D6` | `D5` |
+| q1-a `w = 1` | 0.386 | `D3` | `D3` | `D4` | — |
+| q2-a `w = 4` | 0.707 | `D8` | `D8` | `D4` | `D4` |
+| q2-a `w = 1` | 0.595 | `D5` | `D5` | `D6` | — |
+
+(rows are quoted as the ALU reads them; they sit one store step above the true
+value, so 0.595 is 0.545.)
+
+Three measurements follow, and together they settle the question the brief asked:
+
+1. **The identity rewrite is a no-op.** Every `ipl` cell and its `rewrite` twin
+   are byte-identical, including the two discrepant ones (`D2`/`D2`,
+   `D8`/`D8`), and the `pth2` sweep repeats that at `w = 2` and `w = 8`. A row
+   representation that an ALU read-modify-write could normalise would have moved
+   here; none does. The discrepancy is therefore *not* a row representation
+   difference that the ALU path can see.
+2. **An ALU-seeded row with the same measured value follows the model.** At
+   `w = 4` the seeded stand-in gives `D6`/`D4` where the interpolator path gives
+   `D2`/`D8`; at `w = 1` all four paths agree within one step. So the difference
+   is not the value the ALU reads either — it appears only when the row comes
+   from the interpolator *and* `w` is not 1.
+3. **The constant-varying control puts the dependence in the sfu path.** With
+   every corner of the varying at 0.5 the corrected row is 0.5 for every `w`, and
+   lane 1 confirms it (`78` in all twelve cells). The selector codes are still
+
+   | sample | `w = 1` | `w = 2` | `w = 4` | `w = 8` |
+   |:--|:--|:--|:--|:--|
+   | q1 (`lambda_blue` 0.725) | `D7` | `D9` | `D2` | `D4` |
+   | q2 (`lambda_blue` 0.325) | `D7` | `D7` | `D8` | `D8` |
+   | q3 (`lambda_blue` 0.1) | `D7` | `D7` | `D7` | `D7` |
+
+   The row is provably constant, so this movement is not the row value: the sfu's
+   operand in the interpolator context carries clip-`w`-dependent state. It
+   scales with `lambda_blue` (largest at q1, absent at q3), i.e. with the
+   perspective correction's strength, and it is the same with and without the
+   rewrite (`pth3-q1-c-w4-rewrite` = `D2`, identical to the direct path).
+
+What is *not* settled is which quantity the sfu reads there. At q1 with the
+constant varying, `w = 2` gives `D9` = 0.0743, which needs `m^-1/2 = 1.19`, i.e.
+a significand of 0.71 — outside the `[1, 2)` range the transport can produce for
+any positive operand, one store step either way. So the operand is not a scaled
+copy of the row at all, and the code sequence is not even monotone in `w`
+(`D7`, `D9`, `D2`, `D4`). A per-quad latch of the interpolator's own state would
+explain that, and so would the operand field selecting an interpolator slot
+rather than row 1 when the interpolator is running; no measurement in this note
+separates those, and the brief's rule is to record the fact rather than promote
+an explanation.
+
+The practical consequence for the harness is worth stating: an ALU readback of
+an interpolator-written row is **not** evidence that the sfu sees the same bits,
+and the `--set w` arms of notes 55/58/59 that read selectors from interpolated
+rows were comparing two different inputs without knowing it.
+
+### 60.5 Superseded arms and wrong turns
+
+- **`wstate` round 1** formatted the selector as `rsq r%d % sel` with `sel` in
+  1,2,3, i.e. `rsq r1/r2/r3` — three selectors nobody has characterised — and
+  every cell read `FF`. Corrected to `r5/r6/r7` (run `…T211421Z`, superseded).
+- **`wstate` round 2** captured the sfu result into the same row the cell read
+  back, so row 3's readback was the capture (`00`) and row 2's was not, which
+  looked like an inconsistency between the two rows. Lane 1 now always reads row
+  1 and the row-integrity cells use a word with no sfu at all.
+- **`prec` round 1** used a 0.25 read scale that put the selector-4 lane in the
+  `2^-18` decade and a `(0.9, 0.7)`-style geometry before `hit` had measured
+  where the sample was; both were replaced. `hit` itself now carries the 0.5
+  scale and was re-run so the committed manifest matches the generator.
+- **`hit`'s three far offsets** (`-2.0/-1.6`, `-2.1/-1.75`, `-2.2/-1.9`) put the
+  first pixel outside the quad: both lanes read the constant `4C`, which is the
+  clear value, not a measurement. They are kept in the manifest as the boundary
+  marker and are not used as data.
+- **The one-step store bias is not constant.** Note 58.3's calibration ("one step
+  above") holds at `2^-16` magnitudes; at the `2^-17` decade this note's fit
+  wants +0.2 steps. Both `fit_s60.py` and the `prec` tables treat the offset as
+  one fitted global constant rather than a per-cell correction.
+
+### 60.6 What this note establishes
+
+| claim | status |
+|:--|:--|
+| `selector 4 = 65536 * D`, `D = sum lambda_i/W_i` | **confirmed** to 0.75 code steps over 4.7 octaves of `D` (0.125 .. 3.3) |
+| the weights can be taken from the selector-4 curve itself | **confirmed** — 0.70 + 0.13 + 0.15 = 0.98 at q1, no table used |
+| the identity needs `D <= 1` | **disproved** — `w = 0.5` (`D = 2`) follows the same model |
+| the clip-`w` state moves selectors 5..7 with the rows held | **disproved** — 13 `w` conditions, three selectors, one code each |
+| the clip-`w` state reaches 5..7 through the interpolated row value | **confirmed** as the only path (60.3 plus 60.4) |
+| the interpolator discrepancy is a row representation the ALU can rewrite | **disproved** — the identity rewrite is byte-identical |
+| the interpolator discrepancy is the value the ALU reads | **disproved** — ALU-seeded equals follow the model, and the constant-varying arm moves with the row constant |
+| the discrepancy is a clip-`w`-dependent sfu input path | **confirmed** by the constant-varying control |
+| which `w`-dependent quantity the sfu reads, or whether it reads an interpolator slot | **unresolved** — the operand is not a scaled copy of the row (`m < 1` at q1/`w = 2`) and the sequence is not monotone in `w` |
+| the row value is what selectors 5..7 see when the ALU writes the row | **confirmed** (63/63 in note 59, unchanged here and now under varying `w`) |
+
+### 60.7 Runs and method notes
+
+| manifest | variants | runs | directory |
+|:--|--:|--:|:--|
+| `asm_characterize.s60_hit.json` | 5 | 9 | `s60-hit-20261125T212036Z` |
+| `asm_characterize.s60_prec.json` | 28 | 88 | `s60-prec-20261125T211535Z` |
+| `asm_characterize.s60_wstate.json` | 45 | 90 | `s60-wstate-20261125T212159Z` |
+| `asm_characterize.s60_pth.json` | 22 | 48 | `s60-pth-20261125T211430Z` |
+| `asm_characterize.s60_pth2.json` | 15 | 49 | `s60-pth2-20261125T211734Z` |
+| `asm_characterize.s60_pth3.json` | 14 | 42 | `s60-pth3-20261125T211819Z` |
+
+129 variants, 326 runs, none failed, all on `kusma-ac100` with the same command
+as notes 53..59. Superseded runs (`s60-prec-…T211411Z`, `s60-wstate-…T211421Z`,
+`…T211545Z`, `s60-hit-…T211324Z`) are kept; the tables above quote only the final
+ones. Every manifest was parse-checked with the tree's assembler before it ran
+(`check_all.py`: 129 variants, 0 failed across the six manifests) and all six
+regenerate byte-identically from `make_s60.py <out> <section>`.
+
+`fit_s60.py <results.tsv>` reproduces the 60.2 fit (grid search over the three
+weights and one global store offset); `check_s58.py <results.tsv>` decodes any
+of the six runs as codes and nominal values. The two new shaders,
+`vs_persp_wgreen.txt` and `vs_persp_wred.txt`, differ from `vs_persp_col.txt`
+only in the `a[1]` component that feeds `wdelta`.
+
+Geometry facts this note relies on and that the reader can re-check: the sample
+is the framebuffer's first pixel, `offset` translates the quad in clip space, and
+the note 55/59 sample point is `offset = (-1.75, -1.45)` — i.e. the harness
+uniform `["offset"] = (-1.75, -1.45, 0, 0)`, which the generator writes as
+`x = 0.75, y = 0.45`. Offsets at or beyond `(-2.0, -1.6)` move the first pixel
+out of the quad.

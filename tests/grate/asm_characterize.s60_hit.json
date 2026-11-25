@@ -1,0 +1,254 @@
+{
+  "name": "s60-hit",
+  "repeat": 1,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/mfu_s59_read.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "hit-blue-w16-n1p75_n1p45",
+      "fs": "tests/grate/asm/mfu_s59_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "1.0",
+          "@C1@": "1.0",
+          "@C2@": "1.0",
+          "@C3@": "1.0",
+          "@C4@": "0.5",
+          "@V0@": "1.0",
+          "@V1@": "1.0",
+          "@V2@": "3.0",
+          "@V3@": "0.75",
+          "@U9@": "0.000030517578125",
+          "@S0@": "MAD  r0.lh,  u5,  #1,  #0",
+          "@S1@": "MAD  r1.lh,  u6,  #1,  #0",
+          "@S2@": "MAD  r2.lh,  u7,  #1,  #0",
+          "@S3@": "MAD  r3.lh,  u8,  #1,  #0",
+          "@PRE@": "",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r3, u4, #0",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_persp_col.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"offset\"]=(-1.75,-1.45,0.0,0.0)",
+        "--vs_uniform",
+        "[\"wdelta\"]=(15.0,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ab\"]=(0.25,0.0,0.0,0.0)"
+      ]
+    },
+    {
+      "name": "hit-blue-w16-n2_n1p6",
+      "fs": "tests/grate/asm/mfu_s59_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "1.0",
+          "@C1@": "1.0",
+          "@C2@": "1.0",
+          "@C3@": "1.0",
+          "@C4@": "0.5",
+          "@V0@": "1.0",
+          "@V1@": "1.0",
+          "@V2@": "3.0",
+          "@V3@": "0.75",
+          "@U9@": "0.000030517578125",
+          "@S0@": "MAD  r0.lh,  u5,  #1,  #0",
+          "@S1@": "MAD  r1.lh,  u6,  #1,  #0",
+          "@S2@": "MAD  r2.lh,  u7,  #1,  #0",
+          "@S3@": "MAD  r3.lh,  u8,  #1,  #0",
+          "@PRE@": "",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r3, u4, #0",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_persp_col.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"offset\"]=(-2.0,-1.6,0.0,0.0)",
+        "--vs_uniform",
+        "[\"wdelta\"]=(15.0,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ab\"]=(0.25,0.0,0.0,0.0)"
+      ]
+    },
+    {
+      "name": "hit-blue-w16-n2p1_n1p75",
+      "fs": "tests/grate/asm/mfu_s59_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "1.0",
+          "@C1@": "1.0",
+          "@C2@": "1.0",
+          "@C3@": "1.0",
+          "@C4@": "0.5",
+          "@V0@": "1.0",
+          "@V1@": "1.0",
+          "@V2@": "3.0",
+          "@V3@": "0.75",
+          "@U9@": "0.000030517578125",
+          "@S0@": "MAD  r0.lh,  u5,  #1,  #0",
+          "@S1@": "MAD  r1.lh,  u6,  #1,  #0",
+          "@S2@": "MAD  r2.lh,  u7,  #1,  #0",
+          "@S3@": "MAD  r3.lh,  u8,  #1,  #0",
+          "@PRE@": "",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r3, u4, #0",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_persp_col.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"offset\"]=(-2.1,-1.75,0.0,0.0)",
+        "--vs_uniform",
+        "[\"wdelta\"]=(15.0,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ab\"]=(0.25,0.0,0.0,0.0)"
+      ]
+    },
+    {
+      "name": "hit-blue-w16-n1p9_n1p7",
+      "fs": "tests/grate/asm/mfu_s59_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "1.0",
+          "@C1@": "1.0",
+          "@C2@": "1.0",
+          "@C3@": "1.0",
+          "@C4@": "0.5",
+          "@V0@": "1.0",
+          "@V1@": "1.0",
+          "@V2@": "3.0",
+          "@V3@": "0.75",
+          "@U9@": "0.000030517578125",
+          "@S0@": "MAD  r0.lh,  u5,  #1,  #0",
+          "@S1@": "MAD  r1.lh,  u6,  #1,  #0",
+          "@S2@": "MAD  r2.lh,  u7,  #1,  #0",
+          "@S3@": "MAD  r3.lh,  u8,  #1,  #0",
+          "@PRE@": "",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r3, u4, #0",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_persp_col.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"offset\"]=(-1.9,-1.7,0.0,0.0)",
+        "--vs_uniform",
+        "[\"wdelta\"]=(15.0,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ab\"]=(0.25,0.0,0.0,0.0)"
+      ]
+    },
+    {
+      "name": "hit-blue-w16-n2p2_n1p9",
+      "fs": "tests/grate/asm/mfu_s59_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "1.0",
+          "@C1@": "1.0",
+          "@C2@": "1.0",
+          "@C3@": "1.0",
+          "@C4@": "0.5",
+          "@V0@": "1.0",
+          "@V1@": "1.0",
+          "@V2@": "3.0",
+          "@V3@": "0.75",
+          "@U9@": "0.000030517578125",
+          "@S0@": "MAD  r0.lh,  u5,  #1,  #0",
+          "@S1@": "MAD  r1.lh,  u6,  #1,  #0",
+          "@S2@": "MAD  r2.lh,  u7,  #1,  #0",
+          "@S3@": "MAD  r3.lh,  u8,  #1,  #0",
+          "@PRE@": "",
+          "@SFU@": "rcp r4",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r3, u4, #0",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      },
+      "vs": "tests/grate/asm/vs_persp_col.txt",
+      "args": [
+        "--vs_uniform",
+        "[\"offset\"]=(-2.2,-1.9,0.0,0.0)",
+        "--vs_uniform",
+        "[\"wdelta\"]=(15.0,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ar\"]=(1.0,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ag\"]=(0.5,0.0,0.0,0.0)",
+        "--vs_uniform",
+        "[\"ab\"]=(0.25,0.0,0.0,0.0)"
+      ]
+    }
+  ]
+}
