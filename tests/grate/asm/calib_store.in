@@ -1,0 +1,24 @@
+/*
+ * Pure-store readback calibration.
+ *
+ * One batch, no MFU word at all: both rows are seeded with the same fragment
+ * constant and stored. Both lanes therefore carry the same code, so the word
+ * reads the same whichever store half is which, and the byte is a property of
+ * the value alone.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @V@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u0,  #1,  #0
+		ALU2:	NOP
+		ALU3:	NOP
+	DW:	store rt1, r0, r1
+;

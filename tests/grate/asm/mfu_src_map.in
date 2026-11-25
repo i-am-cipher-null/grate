@@ -1,0 +1,38 @@
+/*
+ * SFU source map with distinct seed values.
+ *
+ * Batch 0 seeds r0 with 2.0, r1 with 16.0 and r3 with 0.25 through the ALU.
+ * Batch 1 runs one sfu rcp of the row under test, multiplies it by 1.0 into r2
+ * and stores r2 with the r3 marker. Every row therefore has its own code:
+ *
+ *   rcp(2.0)  = 0.5     `EF`   (the r0 seed)
+ *   rcp(16.0) = 0.0625  `D7`   (the r1 seed)
+ *   rcp(0.25) = 4.0     `FF`   (the r3 seed, clipped)
+ *   code(0.25) = `E7`          (the high-lane marker)
+ *
+ * An index that reads its own row reproduces that row's code; an index that
+ * reads some other row or some pipeline value shows that value's code instead.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 2.0;
+	[1] = 16.0;
+	[2] = 0.25;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r3.lh,  u2,  #1,  #0
+		ALU3:	NOP
+;
+EXEC
+	MFU:	sfu: @SFU@
+		mul0: r2, sfu, #1
+		ipl: NOP, NOP, NOP, NOP
+	DW:	store rt1, r2, r3
+;

@@ -1,0 +1,88 @@
+{
+	"name": "mfu-row-src",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_row_src.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "rcp-r0",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r0"
+				}
+			}
+		},
+		{
+			"name": "rcp-r1",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r1"
+				}
+			}
+		},
+		{
+			"name": "rcp-r2",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r2"
+				}
+			}
+		},
+		{
+			"name": "rcp-r3",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r3"
+				}
+			}
+		},
+		{
+			"name": "rcp-r4",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r4"
+				}
+			}
+		},
+		{
+			"name": "rcp-r10",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "rcp-r11",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r11"
+				}
+			}
+		},
+		{
+			"name": "rcp-r15",
+			"replace": {
+				"fs": {
+					"@SFU@": "rcp r15"
+				}
+			}
+		}
+	]
+}

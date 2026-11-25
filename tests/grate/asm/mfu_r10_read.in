@@ -1,0 +1,40 @@
+/*
+ * What does `sfu: rcp rN` leave behind, read back through a separate batch?
+ *
+ * Batch 0 seeds a row from a fragment constant, batch 1 runs one sfu operation,
+ * batch 2 copies the named row into r0 through the ALU and stores r0 with a
+ * 0.5 marker in r1, so a row the SFU wrote is read two batches later and never
+ * in the multiplier's own packet.
+ *
+ * Marker: r1 = 0.5 stores as `EF`. Row values: 4.0 stores as `FF` and its
+ * reciprocal 0.25 as `E7`; 1.0 stores as `F7` and its reciprocal 1.0 as `F7`;
+ * the pipeline reciprocal w at this quad's w = 1 is `0x78`.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 4.0;
+	[1] = 1.0;
+	[2] = 0.5;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@SEED@
+		ALU1:	NOP
+		ALU2:	NOP
+		ALU3:	NOP
+;
+EXEC
+	MFU:	sfu: @SFU@
+;
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  @SRC@,  #1,  #0
+		ALU1:	MAD  r1.lh,  u2,  #1,  #0
+		ALU2:	NOP
+		ALU3:	NOP
+	DW:	store rt1, r0, r1
+;

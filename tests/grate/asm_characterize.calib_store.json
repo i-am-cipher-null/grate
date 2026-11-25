@@ -1,0 +1,120 @@
+{
+	"name": "calib-store",
+	"repeat": 2,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/calib_store.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "v0.0625",
+			"replace": {
+				"fs": {
+					"@V@": "0.0625"
+				}
+			}
+		},
+		{
+			"name": "v0.125",
+			"replace": {
+				"fs": {
+					"@V@": "0.125"
+				}
+			}
+		},
+		{
+			"name": "v0.25",
+			"replace": {
+				"fs": {
+					"@V@": "0.25"
+				}
+			}
+		},
+		{
+			"name": "v0.375",
+			"replace": {
+				"fs": {
+					"@V@": "0.375"
+				}
+			}
+		},
+		{
+			"name": "v0.5",
+			"replace": {
+				"fs": {
+					"@V@": "0.5"
+				}
+			}
+		},
+		{
+			"name": "v0.75",
+			"replace": {
+				"fs": {
+					"@V@": "0.75"
+				}
+			}
+		},
+		{
+			"name": "v1.0",
+			"replace": {
+				"fs": {
+					"@V@": "1.0"
+				}
+			}
+		},
+		{
+			"name": "v1.5",
+			"replace": {
+				"fs": {
+					"@V@": "1.5"
+				}
+			}
+		},
+		{
+			"name": "v2.0",
+			"replace": {
+				"fs": {
+					"@V@": "2.0"
+				}
+			}
+		},
+		{
+			"name": "v3.0",
+			"replace": {
+				"fs": {
+					"@V@": "3.0"
+				}
+			}
+		},
+		{
+			"name": "v4.0",
+			"replace": {
+				"fs": {
+					"@V@": "4.0"
+				}
+			}
+		},
+		{
+			"name": "v0.0",
+			"replace": {
+				"fs": {
+					"@V@": "0.0"
+				}
+			}
+		}
+	]
+}

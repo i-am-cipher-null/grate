@@ -1,0 +1,44 @@
+/*
+ * The proprietary compiler's uniform samplerCube coordinate word, measured
+ * without a same-packet store.
+ *
+ * Batch 0 seeds r0, r1 and r2 from fragment constants. Batch 1 is the word the
+ * compiler emits for a uniform vec3 cube coordinate (`0x28689402 0x00000000`
+ * in the cgc dump): `sfu: rcp r10` with `mul0: r0, r2, r0` and
+ * `mul1: r1, r2, r1`. Batch 2 stores r0 and r1 one batch after the
+ * multipliers, so nothing about the result depends on a same-packet
+ * read-after-write.
+ *
+ * Readback is the calibrated store byte, `code = 0xF7 + 8*log2(value)`, so
+ * 0.25 = `E7`, 0.5 = `EF`, 0.75 = `F3`, 1.0 = `F7`, 1.5 = `FB`, 2.0 and above
+ * clip to `FF`, and zero is `00`.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 1.5;
+	[1] = 1.0;
+	[2] = 0.5;
+	[3] = 0.25;
+	[4] = -0.5;
+	[5] = 2.0;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	@SEED2@
+		ALU3:	NOP
+;
+EXEC
+	MFU:	sfu: @SFU@
+		@MUL0@
+		@MUL1@
+		ipl: NOP, NOP, NOP, NOP
+;
+EXEC
+	DW:	store rt1, r0, r1
+;

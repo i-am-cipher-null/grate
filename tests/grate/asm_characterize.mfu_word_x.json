@@ -1,0 +1,79 @@
+{
+	"name": "mfu-word-x",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_uniform_mul3.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "order-ab",
+			"replace": {
+				"fs": {
+					"@SEED2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@SFU@": "nop r3",
+					"@MUL0@": "mul0: r0, r0, r2",
+					"@MUL1@": "mul1: r1, r1, r2"
+				}
+			}
+		},
+		{
+			"name": "word-r4",
+			"replace": {
+				"fs": {
+					"@SEED2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@SFU@": "rcp r4",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1"
+				}
+			}
+		},
+		{
+			"name": "word-r10",
+			"replace": {
+				"fs": {
+					"@SEED2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1"
+				}
+			}
+		},
+		{
+			"name": "word-nosfu",
+			"replace": {
+				"fs": {
+					"@SEED2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@SFU@": "nop r3",
+					"@MUL0@": "mul0: r0, r2, r0",
+					"@MUL1@": "mul1: r1, r2, r1"
+				}
+			}
+		},
+		{
+			"name": "word-r10-order-ab",
+			"replace": {
+				"fs": {
+					"@SEED2@": "MAD  r2.lh,  u2,  #1,  #0",
+					"@SFU@": "rcp r10",
+					"@MUL0@": "mul0: r0, r0, r2",
+					"@MUL1@": "mul1: r1, r1, r2"
+				}
+			}
+		}
+	]
+}

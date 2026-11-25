@@ -1,0 +1,38 @@
+/*
+ * The numeric result of `sfu: rcp rN`, stored one batch later.
+ *
+ * Batch 0 seeds a row and a 0.5 marker in r3, batch 1 runs the sfu operation
+ * and multiplies its result into r2, batch 2 stores r2 with the marker. The
+ * multiplier is `mul0: r2, sfu, #1`, which reproduces the SFU result unchanged
+ * and writes it as fp20, and the separate store batch avoids the one-octave
+ * read-after-write seen when the store shares the multiplier's batch.
+ *
+ * The high lane is always `EF` (the 0.5 marker). The low lane is the
+ * reciprocal: 0.25 = `E7` for an operand of 4.0, 1.0 = `F7`, and 2.0 or more
+ * clips to `FF`.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 4.0;
+	[1] = 0.5;
+	[2] = 1.0;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@SEED@
+		ALU1:	MAD  r3.lh,  u1,  #1,  #0
+		ALU2:	NOP
+		ALU3:	NOP
+;
+EXEC
+	MFU:	sfu: @SFU@
+		mul0: r2, sfu, #1
+		ipl: NOP, NOP, NOP, NOP
+;
+EXEC
+	DW:	store rt1, r2, r3
+;

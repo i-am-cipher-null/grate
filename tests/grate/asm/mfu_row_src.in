@@ -1,0 +1,37 @@
+/*
+ * Which row does the SFU read?
+ *
+ * Batch 0 seeds r0 with 4.0 and r3 with 1.0 through the ALU. Batch 1 runs one
+ * `sfu: rcp rN`, multiplies the result by 1.0 into r2 and stores r2 and r3.
+ *
+ * The word answers two questions at once. The low lane is rcp of row N: `E7`
+ * (0.25) when N = 0 read the seeded 4.0, `F7` when N = 3 read the seeded 1.0,
+ * and `FF` (2.0 or more, i.e. a tiny or zero input) when the row was not there.
+ * The high lane is the r3 marker, `F7` if the seeded row survived the batch
+ * boundary and `00` if the boundary cleared it.
+ *
+ * `rcp r4` is the pipeline control: on the program's first MFU word it reads
+ * the supplied reciprocal w and stores `0x78` at this quad's w = 1.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 4.0;
+	[1] = 1.0;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r3.lh,  u1,  #1,  #0
+		ALU2:	NOP
+		ALU3:	NOP
+;
+EXEC
+	MFU:	sfu: @SFU@
+		mul0: r2, sfu, #1
+		ipl: NOP, NOP, NOP, NOP
+	DW:	store rt1, r2, r3
+;

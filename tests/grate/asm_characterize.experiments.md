@@ -7369,3 +7369,209 @@ runs), `observe9-fragz-slope` (slope, rt4 region, 11 runs),
 `observe13-fragz-copy` (baseline z/w of the harness quad), `observe14-fragz-w`
 (ADDv z = 0.5 / w = 2, 14 runs) and `observe15-fragz-zone` (one-lane `(z)`,
 12 runs).
+
+## 53. `sfu: rcp r10`: the index is not a row, and the cube-coordinate word does not compute its disassembly
+
+The proprietary compiler emits `0x28689402 0x00000000` for a uniform `vec3`
+samplerCube coordinate. Decoded with `fragment_asm.h` it is one MFU word:
+`sfu: rcp r10`, `mul0: r0, r2, r0`, `mul1: r1, r2, r1`. Read as ordinary rows
+that means "r10 = 1/coordinate, then scale r0 and r1 by r10". This note measures
+the word on hardware and finds that reading unsupported: the fragment unit does
+not read the row the word names, and the word's two multipliers do not compute
+their operands at all while that sfu sub-instruction is in the word.
+
+Measured on the Toshiba AC100 (`7.2.0-gd1efa725955b`, Tegra 20, AR20 fragment
+path) with `~/build/grate-exp`, three repeats per row, controls before and after
+every manifest (`immediate-operand` `0x000000FF`, `varying-pipeline`
+`0xFF01FF00`). All runs below report `success: true`; the raw words, generated
+`.asm`, stdout and stderr are under `characterization/` as named.
+
+### 53.1 The store readback, calibrated
+
+`store rt1, r0, r1` writes `code(r0)` in byte 1 and `code(r1)` in byte 3 with
+the residue byte 0. `tests/grate/asm/calib_store.in` seeds both rows with the
+same constant, so the word reads the same whichever half is which
+(`calib-store-20261125T064321Z`):
+
+| value | word | value | word |
+|:--|:--|:--|:--|
+| 0.0 | `0x00000000` | 0.5 | `0xEF00EF00` |
+| 0.0625 | `0xD700D700` | 0.75 | `0xF300F300` |
+| 0.125 | `0xDF00DF00` | 1.0 | `0xF700F700` |
+| 0.25 | `0xE700E700` | 1.5 | `0xFB00FB00` |
+| 0.375 | `0xEB00EB00` | 2.0, 3.0, 4.0 | `0xFF00FF00` |
+
+So `code = 0xF7 + 8*log2(value)` and anything at or above 2.0 clips to `FF`.
+The residue byte is zero for every value an ALU `.lh` write produces; the
+`0x10`..`0x60` bytes in the earlier multiplier sweeps came from `.l*` (fx10)
+writes, which put the payload in the other half of the row.
+
+### 53.2 What the sfu index reads
+
+`tests/grate/asm/mfu_src_map.in`: batch 0 seeds r0 = 2.0, r1 = 16.0 and r3 =
+0.25, batch 1 runs one `sfu: rcp rN` and multiplies it by 1.0 into r2, and the
+same batch stores r2 with the r3 marker (`E7`). `mfu-src-map-20261125T063712Z`:
+
+| index | low lane | reading |
+|--:|:--|:--|
+| 0 | `EF` | r0, 1/2.0 = 0.5 - its own row |
+| 1 | `D7` | r1, 1/16.0 = 0.0625 - its own row |
+| 3 | `FF` | r3, 1/0.25 = 4.0 clipped - its own row |
+| 4, 5, 6 | `78` | the pipeline reciprocal w, `0x78` at this quad's w = 1 ([[Fragment Shader ISA]], 6.3.2) |
+| 7 | `00` | zero |
+| 8..15, 63 | `D7` | the r1 value |
+| 16 | `EF` | the r0 value (16 reads what 0 reads) |
+| 20 | `78` | the r4 value (20 reads what 4 reads) |
+
+The same sweep with r0 = 4.0, r1 empty and r3 = 1.0 (`mfu-src-sweep-...063356Z`,
+22 variants, 70 runs) returns `E7`, the r0 value, for 8..16 and 63, and `78` for
+5, 6 and 20. So indices at or above 8 do not name r8..r15: they read whichever
+seeded value is larger, and with only one row seeded they read that row.
+
+`tests/grate/asm/mfu_high_group.in` pins that down with `rcp r10` at three
+seedings (`mfu-high-group-20261125T063822Z`, marker `E7` in the high lane):
+
+| variant | r0 | r1 | word | low lane |
+|:--|:--|:--|:--|:--|
+| `both` | 4.0 | 16.0 | `0xE700D700` | 16.0 |
+| `swap` | 16.0 | 4.0 | `0xE700D700` | 16.0 |
+| `only-r0` | 4.0 | - | `0xE700E700` | 4.0 |
+| `only-r1` | - | 16.0 | `0xE700D700` | 16.0 |
+
+The value follows the number, not the row: moving 16.0 from r1 to r0 leaves the
+result at `D7`. A write to r10 itself never reaches it. `mfu_r10_seed.in` seeds
+r10 with 4.0, 1.0, 0.5, and not at all, then runs `sfu: rcp r10` with
+`mul0: r0, sfu, #1` and `mul1: r1, sfu, #1` (`mfu-r10-seed-...063935Z`):
+
+| variant | word |
+|:--|:--|
+| `seed4-rcp-r10`, `seed1-rcp-r10`, `seed-half-rcp-r10`, `unseeded-rcp-r10` | `0xFF00FF00` |
+| `seed4-rcp-r4` | `0x78007800` |
+| `seed4-sfu-nop` (`sfu: nop r0`) | `0x00000000` |
+
+Four different seeds give the same saturated word, while the same program with
+`rcp r4` returns the documented `0x78` in both lanes and the no-sfu control
+returns zero in both lanes, so the lanes really are reading the SFU result and
+the write to r10 is simply not visible to it.
+
+The value is also not stable across program shapes. With the store moved one
+batch later (`r10_clean.in`, `mul0: r2, sfu, #1`, store of r2 with a 0.5 marker,
+`r10-clean-...`), `rcp r10` returns `0xFF` for the 4.0 seed, the 1.0 seed and no
+seed alike, while `rcp r0` of a seeded 4.0 returns `0xEF00E700` and `rcp r4`
+returns `0xEF007800`. Both shapes are deterministic over three repeats and they
+disagree with each other.
+
+- Confirmed: indices 0..3 are the row registers, and the unit computes on the
+  `.lh` (fp20) value they hold; a write to r10 through the ALU is invisible to
+  `sfu: rcp r10`; the value behind indices at or above 8 is not a row.
+- Confirmed: index 4, 5, 6 and 20 return the pipeline value (`0x78` at this
+  quad's w = 1), 7 returns zero, 16 reads what 0 reads.
+- Unknown: what the value behind indices at or above 8 actually is, and why it
+  tracks the larger seeded temp in one shape and saturates in another. It is
+  deterministic, so it is unit state and not stale register content.
+- Not required for GLES2: which TEX field would select a cube face; the harness
+  cannot bind a cube map (note 51), so that path stays unmeasured.
+
+### 53.3 The two multipliers in the same word
+
+`tests/grate/asm/mul_probe.in` seeds rows, runs one MFU word, and stores one
+batch later (`mul-probe-...064727Z`):
+
+| variant | word | reading |
+|:--|:--|:--|
+| `id-1.0` | `0xF700F700` | multiplying by `#1` keeps 1.0 |
+| `id-1.5` | `0xFB00FB00` | keeps 1.5 |
+| `id-1.5-rcp` (with `sfu: rcp r3`) | `0xFB00FB00` | kept with an sfu present |
+| `muls-only` | `0xFB00FB00` | kept with no sfu sub-instruction at all |
+| `rowxrow` (0.75 x 0.5, 0.5 x 0.5) | `0xE700EB00` | 0.375 and 0.25, exact |
+
+So a row operand multiplies correctly, operand order does not matter, and the
+multiplier writes an exact fp20 code. Now the compiler's own word. Seeds
+r0 = 1.5, r1 = 1.0, r2 = 0.5; expected r0 = 0.75 (`F3`) and r1 = 0.5 (`EF`)
+(`mfu-word-x-20261125T064727Z`, and the same word in
+`mfu-uniform-mul-...063940Z`):
+
+| variant | word | reading |
+|:--|:--|:--|
+| `word-nosfu` (`mul0: r0, r2, r0`) | `0xEF00F300` | 0.75, 0.5 - the disassembly is right |
+| `order-ab` (`mul0: r0, r0, r2`) | `0xEF00F300` | operand order irrelevant |
+| `word-r4` (`sfu: rcp r4` + the same two muls) | `0xEF00F300` | a valid sfu source does not disturb them |
+| `word-r10` (`sfu: rcp r10` + the same two muls) | `0xF1000000` | not the products |
+| `word-r10-order-ab` | `0xF1000000` | same word again |
+
+`mfu_uniform_mul3.in` confirms the last two rows are not an artifact of one
+seeding (`mfu-uniform-mul3-...064610Z`):
+
+| r2 | word | reading |
+|:--|:--|:--|
+| 0.5 | `0xF1000000` | not 0.75, 0.5 |
+| 0.25 | `0xF1000000` | identical to the 0.5 case |
+| -0.5 | `0xF100E900` | not -0.75, -0.5 |
+| 2.0 | `0xEF00F300` | the 0.5 case's products |
+| `seed-echo` (multiply by `#1`, `sfu: nop r3`) | `0xF700FB00` | the seeds, exact |
+
+With `sfu: rcp r10` in the word the multipliers stop depending on r2 in any
+proportional way - 0.5 and 0.25 return the same word - and r2 = 2.0 reproduces
+what r2 = 0.5 returns in a word with no sfu. With `sfu: rcp r4` or no sfu at
+all the same two multiplies are exact.
+
+- Confirmed: the multipliers read and write rows correctly; the compiler's
+  operand order is fine.
+- Confirmed: the identical two multiplies return `0xF1000000` when the word's
+  sfu sub-instruction names r10, and the predicted `0xEF00F300` when it names r4
+  or when there is no sfu sub-instruction.
+- Unknown: the mechanism. The `reg` field is six bits and 10 encodes cleanly
+  (`fragment_asm.h`: `opcode:4; reg:6`), so this is not an overlap with the mul
+  fields in the encoder, and the two shapes in 53.2 show the same index is not a
+  row either.
+
+### 53.4 What this means for the compiler's cube-coordinate word
+
+- Confirmed by measurement: `0x28689402 0x00000000` cannot be computing
+  "r0 = r2 * (1/r10), r1 = r2 * (1/r10)" on this hardware. The word with r10 as
+  the sfu source returns `0xF1000000` where its own disassembly predicts
+  `0xEF00F300`, and changing the uniform it is supposed to scale changes
+  nothing.
+- Inferred: the cgc uniform cube-coordinate path needs a row that the fragment
+  hardware does not provide as a row register, or needs driver state this
+  harness never sets. The row it names is not one the shader can write, and the
+  unit's own state behind that index changes with the shape of the surrounding
+  program, so no shader-side value can be the intended operand.
+- Unknown: whether the real blob's driver writes anything into that index
+  before the word runs. The harness drives its own fragment state, so a
+  driver-side initialisation outside the shader would not appear here.
+- Unchanged from notes 51 and 52: the TEX word itself has no cube field in
+  these dumps and the harness has no cube binding path, so which face gets
+  sampled is still unmeasured.
+
+### 53.5 Method notes
+
+- An ALU read of a row written earlier in the same packet returns 0
+  (`mfu_alu_rows.in`: `echo-r2` and `echo-r3` both `0xF7000000` with the marker
+  intact, and `echo-r4`..`echo-r12` `0xF700FF00`), so every row read here
+  crosses a batch boundary.
+- `sfu: nop` needs its row operand (`nop r0`); without it the assembler reports
+  `fs: line 21: syntax error`. A bare `mul1: NOP` is not an MFU function either
+  and fails the same way.
+- Storing in the same packet as the multipliers needs no correction: the
+  2-batch `mfu_uniform_mul` manifest and the 3-batch shape return the same code
+  for the same operands (`product-nosfu` `0xFB00F300` is 0.75 and 1.5,
+  `word-nosfu` `0xEF00F300` is 0.75 and 0.5; only the seeded second row differs
+  between those two programs), so no read-after-write correction is applied
+  anywhere in this note.
+
+### 53.6 Runs
+
+`calib-store-20261125T064321Z` (12 variants, 28 runs),
+`mfu-r10-seed-20261125T063935Z` (6, 22),
+`mfu-alu-rows-20261124T234441Z` (6, 22),
+`mfu-row-src-20261124T234542Z` (8, 28),
+`mfu-src-sweep-20261125T063356Z` (22, 70),
+`mfu-src-map-20261125T063712Z` (18, 58),
+`mfu-high-group-20261125T063822Z` (5, 19),
+`mul-probe-20261125T064447Z` (5, 19),
+`mfu-uniform-mul-20261125T063940Z` (4, 16),
+`mfu-uniform-mul3-20261125T064610Z` (5, 19),
+`mfu-word-x-20261125T064727Z` (5, 19),
+`r10-clean-20261125T064818Z` (5, 19). Every manifest carries the two standard
+controls; no run in this note failed or timed out.

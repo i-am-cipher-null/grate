@@ -1,0 +1,35 @@
+/*
+ * What does one MFU multiplier word compute, with the store kept out of the
+ * multiplier's batch?
+ *
+ * Batch 0 seeds r0, r1 and r2 through the ALU, batch 1 is a single MFU word
+ * placeholder, batch 2 stores r0 and r1. Separating the store from the
+ * multiplier removes any same-packet read-after-write question.
+ *
+ * Readback is the calibrated store byte: `code = 0xF7 + 8*log2(value)`, so
+ * 0.375 = `EB`, 0.5 = `EF`, 0.75 = `F3`, 1.0 = `F7`, 1.5 = `FB` and 2.0 or
+ * more clips to `FF`.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @V0@;
+	[1] = @V1@;
+	[2] = @V2@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	MAD  r0.lh,  u0,  #1,  #0
+		ALU1:	MAD  r1.lh,  u1,  #1,  #0
+		ALU2:	MAD  r2.lh,  u2,  #1,  #0
+		ALU3:	NOP
+;
+EXEC
+	MFU:	@MFU@
+;
+EXEC
+	DW:	store rt1, r0, r1
+;

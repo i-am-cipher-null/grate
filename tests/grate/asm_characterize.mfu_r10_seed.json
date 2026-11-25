@@ -1,0 +1,78 @@
+{
+	"name": "mfu-r10-seed",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_r10_seed.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "seed4-rcp-r10",
+			"replace": {
+				"fs": {
+					"@SEED@": "MAD  r10.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "seed1-rcp-r10",
+			"replace": {
+				"fs": {
+					"@SEED@": "MAD  r10.lh,  u1,  #1,  #0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "seed-half-rcp-r10",
+			"replace": {
+				"fs": {
+					"@SEED@": "MAD  r10.lh,  u2,  #1,  #0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "unseeded-rcp-r10",
+			"replace": {
+				"fs": {
+					"@SEED@": "NOP",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "seed4-sfu-nop",
+			"replace": {
+				"fs": {
+					"@SEED@": "MAD  r10.lh,  u0,  #1,  #0",
+					"@SFU@": "nop r0"
+				}
+			}
+		},
+		{
+			"name": "seed4-rcp-r4",
+			"replace": {
+				"fs": {
+					"@SEED@": "MAD  r10.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r4"
+				}
+			}
+		}
+	]
+}

@@ -1,0 +1,35 @@
+/*
+ * What do SFU source indices above 7 read?
+ *
+ * Batch 0 seeds r0 and r1 from two placeholders (4.0 gives the code `E7`,
+ * 16.0 gives `D7`) and r3 with 0.25 so the high lane is the marker `E7`.
+ * Batch 1 runs one sfu rcp of a high index and multiplies it into r2.
+ *
+ * The low lane then names the value that index read: `E7` is the r0 seed,
+ * `D7` the r1 seed, `FF` a zero input, `78` the pipeline value. Seeding only
+ * one of the two rows separates "reads r0" from "reads r1" from "reads the
+ * largest seed".
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 4.0;
+	[1] = 16.0;
+	[2] = 0.25;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@SEED0@
+		ALU1:	@SEED1@
+		ALU2:	MAD  r3.lh,  u2,  #1,  #0
+		ALU3:	NOP
+;
+EXEC
+	MFU:	sfu: @SFU@
+		mul0: r2, sfu, #1
+		ipl: NOP, NOP, NOP, NOP
+	DW:	store rt1, r2, r3
+;

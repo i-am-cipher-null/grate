@@ -1,0 +1,39 @@
+/*
+ * Does the SFU read row 10 as an ordinary row register?
+ *
+ * Batch 0 seeds row 10 from a fragment constant through the ALU. Batch 1 runs
+ * `sfu: <op>` and multiplies the SFU result by 1.0 into r0 and r1, and the same
+ * batch stores them, so the stored word is the SFU result converted back with
+ * no arithmetic.
+ *
+ * Values: 1/4 of 4.0 is 1.0, 1/1.0 is 1.0, 1/0.5 is 2.0. The readback is
+ * `store rt1, r0, r1` -> `code(r1) << 24 | code(r0) << 8`, where a lane prints
+ * about `0xF7 + 8*log2(value)` and clips at `0xFF` (notes 24, 29, 42, 50), so
+ * the seeds are chosen to keep the reciprocals in range: 4.0 -> 0.25 (`E7`),
+ * 1.0 -> 1.0 (`F7`), 0.5 -> 2.0 (`FF`). The 4.0 seed gives the largest
+ * distance from "the row was not read", which prints 0 or clips.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 4.0;
+	[1] = 1.0;
+	[2] = 0.5;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@SEED@
+		ALU1:	NOP
+		ALU2:	NOP
+		ALU3:	NOP
+;
+EXEC
+	MFU:	sfu: @SFU@
+		mul0: r0, sfu, #1
+		mul1: r1, sfu, #1
+		ipl: NOP, NOP, NOP, NOP
+	DW:	store rt1, r0, r1
+;

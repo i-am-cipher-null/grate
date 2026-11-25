@@ -1,0 +1,79 @@
+{
+	"name": "mul-probe",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mul_probe.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "id-1.5",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "1.5",
+					"@V2@": "1.5",
+					"@MFU@": "sfu: nop r3\n\t\tmul0: r0, r0, #1\n\t\tmul1: r1, r1, #1"
+				}
+			}
+		},
+		{
+			"name": "id-1.0",
+			"replace": {
+				"fs": {
+					"@V0@": "1.0",
+					"@V1@": "1.0",
+					"@V2@": "1.0",
+					"@MFU@": "sfu: nop r3\n\t\tmul0: r0, r0, #1\n\t\tmul1: r1, r1, #1"
+				}
+			}
+		},
+		{
+			"name": "rowxrow",
+			"replace": {
+				"fs": {
+					"@V0@": "0.75",
+					"@V1@": "0.5",
+					"@V2@": "0.5",
+					"@MFU@": "sfu: nop r3\n\t\tmul0: r0, r0, r2\n\t\tmul1: r1, r1, r2"
+				}
+			}
+		},
+		{
+			"name": "id-1.5-rcp",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "1.5",
+					"@V2@": "1.5",
+					"@MFU@": "sfu: rcp r3\n\t\tmul0: r0, r0, #1\n\t\tmul1: r1, r1, #1"
+				}
+			}
+		},
+		{
+			"name": "muls-only",
+			"replace": {
+				"fs": {
+					"@V0@": "1.5",
+					"@V1@": "1.5",
+					"@V2@": "1.5",
+					"@MFU@": "mul0: r0, r0, #1\n\t\tmul1: r1, r1, #1"
+				}
+			}
+		}
+	]
+}

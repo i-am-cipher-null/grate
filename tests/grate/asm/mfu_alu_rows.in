@@ -1,0 +1,30 @@
+/*
+ * Can the ALU write and read rows above r3?
+ *
+ * One batch: write a row from a constant, read it back into r0, mark r1 with
+ * 1.0, and store both. A row that works reads back as 4.0 (`E7`) with the
+ * marker `F7` in the high byte; a row whose write is dropped reads back as 0
+ * (`00`) or as whatever the hardware drives there. The same program with r2 or
+ * r3 is the known-good control, and r4/r8/r12/r10 map how far the row index
+ * reaches.
+ *
+ * Readback: `code(r1) << 24 | code(r0) << 8`, a lane about
+ * `0xF7 + 8*log2(value)` and clipping at `0xFF`.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 4.0;
+	[1] = 1.0;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@WRITE@
+		ALU1:	@READ@
+		ALU2:	MAD  r1.lh,  u1,  #1,  #0
+		ALU3:	NOP
+	DW:	store rt1, r0, r1
+;

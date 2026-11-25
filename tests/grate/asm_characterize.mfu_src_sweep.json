@@ -1,0 +1,222 @@
+{
+	"name": "mfu-src-sweep",
+	"repeat": 3,
+	"timeout": 20,
+	"program": {
+		"vs": "tests/grate/asm/vs_mov.txt",
+		"fs": "tests/grate/asm/mfu_src_sweep.in",
+		"lnk": "tests/grate/asm/linker_vs_tests.txt"
+	},
+	"controls": [
+		{
+			"name": "immediate-operand",
+			"fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+			"expected": "0x000000FF"
+		},
+		{
+			"name": "varying-pipeline",
+			"fs": "tests/grate/asm/fs_vs_tests.txt",
+			"expected": "0xFF01FF00"
+		}
+	],
+	"variants": [
+		{
+			"name": "rcp-r0",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r0"
+				}
+			}
+		},
+		{
+			"name": "rcp-r1",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r1"
+				}
+			}
+		},
+		{
+			"name": "rcp-r2",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r2"
+				}
+			}
+		},
+		{
+			"name": "rcp-r3",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r3"
+				}
+			}
+		},
+		{
+			"name": "rcp-r4",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r4"
+				}
+			}
+		},
+		{
+			"name": "rcp-r5",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r5"
+				}
+			}
+		},
+		{
+			"name": "rcp-r6",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r6"
+				}
+			}
+		},
+		{
+			"name": "rcp-r7",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r7"
+				}
+			}
+		},
+		{
+			"name": "rcp-r8",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r8"
+				}
+			}
+		},
+		{
+			"name": "rcp-r9",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r9"
+				}
+			}
+		},
+		{
+			"name": "rcp-r10",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "rcp-r11",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r11"
+				}
+			}
+		},
+		{
+			"name": "rcp-r12",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r12"
+				}
+			}
+		},
+		{
+			"name": "rcp-r13",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r13"
+				}
+			}
+		},
+		{
+			"name": "rcp-r14",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r14"
+				}
+			}
+		},
+		{
+			"name": "rcp-r15",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r15"
+				}
+			}
+		},
+		{
+			"name": "rcp-r16",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r16"
+				}
+			}
+		},
+		{
+			"name": "rcp-r20",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r20"
+				}
+			}
+		},
+		{
+			"name": "rcp-r63",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u0,  #1,  #0",
+					"@SFU@": "rcp r63"
+				}
+			}
+		},
+		{
+			"name": "r10-seed-half",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u2,  #1,  #0",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "r10-unseeded",
+			"replace": {
+				"fs": {
+					"@SEED0@": "NOP",
+					"@SFU@": "rcp r10"
+				}
+			}
+		},
+		{
+			"name": "r0-seed-half",
+			"replace": {
+				"fs": {
+					"@SEED0@": "MAD  r0.lh,  u2,  #1,  #0",
+					"@SFU@": "rcp r0"
+				}
+			}
+		}
+	]
+}

@@ -1,0 +1,35 @@
+/*
+ * SFU source-index sweep.
+ *
+ * Batch 0 seeds r0 from the seed placeholder and r3 with 1.0. Batch 1 runs one
+ * sfu op, multiplies by 1.0 into r2 and stores r2 and r3, so the low
+ * lane is rcp(row N) and the high lane is the r3 marker (`F7` = 1.0 when the
+ * seeded row survived, `00` when it did not).
+ *
+ * Readback: a lane prints about `0xF7 + 8*log2(value)`, so 0.25 is `E7`,
+ * 1.0 is `F7`, 0.5 is `EF`, 2.0 and above clip to `FF`, and 0 prints `00`.
+ * `0x78` is the pipeline reciprocal w at this quad's w = 1.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = 4.0;
+	[1] = 1.0;
+	[2] = 0.5;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@SEED0@
+		ALU1:	MAD  r3.lh,  u1,  #1,  #0
+		ALU2:	NOP
+		ALU3:	NOP
+;
+EXEC
+	MFU:	sfu: @SFU@
+		mul0: r2, sfu, #1
+		ipl: NOP, NOP, NOP, NOP
+	DW:	store rt1, r2, r3
+;
