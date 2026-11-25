@@ -1,0 +1,64 @@
+/*
+ * Note 59: what selector 4 carries against the interpolated perspective
+ * denominator, the exact significand transform of 5..7, and whether the sample
+ * point moves them.
+ *
+ * Note 58's read template with the seed batch promoted to four placeholders, so
+ * a variant can seed rows 0..3 from uniforms or leave them to an interpolator
+ * word in the "pre" slot. The pre slot also carries whole MFU words, which is
+ * how the interpolator-filled arms get their rows before the sfu word under
+ * test.
+ *
+ * Uniforms 0..4 and 9 are free (the read scales live there), uniforms 5..8 seed
+ * rows 0..3 by default, and uniform 9 is the first read scale. The delay
+ * placeholder holds zero or more intervening MFU words, the mid placeholder a
+ * second ALU batch, the late placeholder empty ALU batches, and the last batch
+ * stores r0/r1: `store rt1, X, Y` puts code(X) in byte 1 and code(Y) in byte 3.
+ * code = 0xF7 + 8*log2(value) for positive values, 00 for zero, negatives and
+ * anything below about 2^-31, and 2.0 and above clips to FF.
+ */
+
+alu_buffer_size = 1
+pseq_to_dw_exec_nb = 1
+
+.constants
+	[0] = @C0@;
+	[1] = @C1@;
+	[2] = @C2@;
+	[3] = @C3@;
+	[4] = @C4@;
+	[5] = @V0@;
+	[6] = @V1@;
+	[7] = @V2@;
+	[8] = @V3@;
+	[9] = @U9@;
+
+.asm
+EXEC
+	ALU:
+		ALU0:	@S0@
+		ALU1:	@S1@
+		ALU2:	@S2@
+		ALU3:	@S3@
+;
+@PRE@
+EXEC
+	MFU:	sfu: @SFU@
+		@MUL0@
+		@MUL1@
+		ipl: @IPL@
+;
+@EXTRA@
+@DELAY@
+EXEC
+	ALU:
+		ALU0:	@PR0@
+		ALU1:	@PR1@
+		ALU2:	NOP
+		ALU3:	NOP
+;
+@MID@
+@LATE@
+EXEC
+	DW:	store rt1, r0, r1
+;

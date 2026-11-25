@@ -9589,3 +9589,346 @@ readback and controls are identical across the seven manifests and comparable
 with note 57. The two superseded round 1 arms (58.10) were re-run rather than
 rewritten; their run directories are listed above and their cells are the
 `wsrc-*` entries.
+
+## 59. Correlating sfu selectors 4..7 with the fragment's interpolation state
+
+Note 58 left three things open about the sfu operand field: *what* selector 4
+carries when the clip `w` differs per vertex, whether the significand rule of
+58.5 is one implementation among several that the data cannot tell apart, and
+whether the `w = 4` movement it saw in selectors 5..7 came from the clip `w` or
+from the sample point having moved with the geometry. This note answers those
+with the perspective shader of note 55, whose premultiplied clip position keeps
+the projected triangle and the sample points fixed while `w` changes.
+
+### 59.1 The probe shape
+
+`tests/grate/asm/mfu_s59_read.in` is note 58's read template with one change:
+the seed batch that writes rows 0..3 from uniforms 5..8 is promoted to four
+placeholders `@S0@`..`@S3@`, so a variant can seed the rows from uniforms *or*
+leave them to an interpolator word in the `@PRE@` slot. The store is still
+`store rt1, r0, r1` (code(x) in byte 1, code(y) in byte 3), the read scales
+still live in uniforms 0..4 and 9, and `@DELAY@`/`@MID@`/`@LATE@` are unchanged.
+Promoting the seed batch rather than editing note 58's template keeps the s58
+manifests regenerating byte-identically.
+
+`make_s59.py <out.json> <section>` builds eight manifests (`wsel`, `fams`,
+`posdep`, `ipl`, `wsel2`, `ipl2`, `ipl3`, `ipl4`); `model_s59.py <results.tsv>`
+re-scores the three model sections; `check_s58.py <results.tsv>` prints any of
+them as codes and nominal values. Every variant was parse-checked with the
+tree's own assembler before it ran (`LD_LIBRARY_PATH=…/src/libgrate python3` on
+`grate_shader_parse_fragment_asm_from_file`), every manifest carries both
+standard controls, and all eight regenerate byte-identically.
+
+The scale constants make both lanes land in the middle of the store map: uniform
+0 holds 2^-15 (the multiplier scale on the pipeline lane), uniform 4 holds 2^15
+(the scale on the `rcp` lane), and the sfu capture arms use 2^12 and 2^4 (58.2's
+capture path), so `mul0: r3, sfu, #1` plus one scaled plain read covers
+2^-32..2^4 without a second MFU word.
+
+Selector words for the representative cases, from 57.7's field table (sfu
+operand = high-word bits [31:26], opcode [25:22], `MFU_RCP` = 1, `MFU_RSQ` = 2,
+anchors `rcp r0` = `0x004007D0`, `rcp r8` = `0x204007D0`): `rcp r4` =
+`0x104007D0`, `rcp r5` = `0x144007D0`, `rcp r6` = `0x184007D0`, `rsq r5` =
+`0x148007D0`. Only the high 32 bits are quoted: the low 22 bits are the two
+multiplier slots and the four `ipl` operands and differ per variant.
+
+### 59.2 Selector 4 is the interpolated perspective denominator
+
+`vs_persp_col.txt` draws the same projected triangle for every `w` (the clip
+position is premultiplied by a per-vertex `w`, so `x/w` is unchanged) with `w =
+1` at every vertex except the blue one, which is `1 + wdelta`. The fragment's
+perspective denominator at a sample with weights `lambda` is
+
+    D = sum lambda_i / W_i
+
+and `65536 * D` is what 58.4 measured for a single constant `w` (`2^16/w`,
+i.e. `D = 1/w`). Three sample points from note 55, whose `-pos` readback puts
+them within one code step of (0.756, 0.354), (0.242, -0.379) and (-0.631,
+-0.799) in quad coordinates:
+
+| point | `lambda` (v1, v2=blue, v3) | `D` at `w` = 1, 2, 4, 8 |
+|:--|:--|:--|
+| q1 | 0.125, 0.725, 0.15 | 1.0, 0.6375, 0.456, 0.365625 |
+| q2 | 0.325, 0.325, 0.35 | 1.0, 0.8375, 0.756, 0.715625 |
+| q3 | 0.8, 0.1, 0.1 | 1.0, 0.95, 0.925, 0.9125 |
+
+The word is `rcp r4` with the result captured by `mul1: r3, sfu, #1` and read
+with the 2^15 scale, so lane 2 reads `0.5/D` directly. Lane 1 is the multiplier's
+`src4` slot scaled by row 0 = 2^-15, which is the second handle on the pipeline
+value (`src4` is supposed to be `65536 D`; see 59.3 for why it reads `08`).
+
+| point | `w` | `D` | model `0.5/D` | model code | measured | residual |
+|:--|--:|--:|--:|--:|:--|--:|
+| q1 | 1 | 1.0 | 0.5 | `EF` | `EF` | 0 |
+| q1 | 2 | 0.6375 | 0.784 | `F4` | `F3` | −1 |
+| q1 | 4 | 0.456 | 1.096 | `F8` | `F7` | −1 |
+| q1 | 8 | 0.365625 | 1.368 | `FB` | `F9` | **−2** |
+| q2 | 1 | 1.0 | 0.5 | `EF` | `EF` | 0 |
+| q2 | 2 | 0.8375 | 0.597 | `F1` | `F0` | −1 |
+| q2 | 4 | 0.756 | 0.661 | `F2` | `F1` | −1 |
+| q2 | 8 | 0.715625 | 0.699 | `F3` | `F2` | −1 |
+| q3 | 1 | 1.0 | 0.5 | `EF` | `EF` | 0 |
+| q3 | 2 | 0.95 | 0.526 | `F0` | `EF` | −1 |
+| q3 | 4 | 0.925 | 0.541 | `F0` | `EF` | −1 |
+| q3 | 8 | 0.9125 | 0.548 | `F0` | `EF` | −1 |
+
+Four independent readings:
+
+1. **It is per fragment, not per vertex or per primitive.** At `w = 4` the same
+   word at the three sample points reads `F7`, `F1`, `EF` — eight code steps,
+   exactly one octave — while every vertex `w`, the descriptor, the row seeds
+   and the program are identical. A vertex- or primitive-level quantity would
+   not move at all.
+2. **It is `1/D`, not `1/w`.** `1/w` at the blue vertex would be constant across
+   sample points (`2^-16/4` for `w = 4` everywhere); the measured value instead
+   sits between `2^16/1` and `2^16/4` and tracks the `lambda`-weighted
+   reciprocal. At `q3`, where `lambda_blue` is 0.1, `D` moves only 0.0875 over
+   the whole sweep and the code does not move, which is the same statement from
+   the other side.
+3. **It matches `65536 D` to the readback.** 15 of 16 cells are within one code
+   step, the worst is two, and every non-zero residual is negative (measured
+   lower than the model) by the same one step that the λ table's own position
+   uncertainty (`±0.1` in quad units at q1) can produce. Constant-`w` control at
+   `w = 1` gives `D = 1` at all three points and all three read `EF`
+   (`0.5 = 2^15/2^16`), reproducing 58.4 without changing anything else.
+4. **It repeats.** The two repeated cells (`wsel-q1-w4-again`,
+   `wsel-q3-w4-again`) are byte-identical to their first runs, and the control
+   lane reads `7F` (= `2^-15`) in all sixteen cells.
+
+**What is not established.** An *exact* identity: two steps (0.25 octave) is the
+current bound, and it is the λ table's precision rather than the readback's
+0.125-octave grid that limits it. The independent capture the reviewer asked
+for also did not materialise — see 59.3 — so "selector 4 is another access path
+to `65536 D`" is confirmed on the value side only, by comparing against a
+geometrically computed `D`.
+
+### 59.3 There is no ALU row 4 to compare against
+
+The brief asked to capture "the ordinary ALU-visible row `r4`" and the selector-4
+result independently, and to not assume the sfu operand is directly readable.
+Three measurements say the premise does not hold:
+
+- **The assembler rejects row 4 as a target.** `MAD r4.lh, u0, #1, #0` inside an
+  ALU batch fails with `Invalid row register number, r3 max`, and
+  `mul1: r3, r4, r0` fails the same way: the packet rows are `r0..r3` only, for
+  both ALU writes and multiplier sources.
+- **Reading `r4` in the ALU returns a stale row, not the pipeline value.** With
+  no copy batch in this template, `MAD r0.lh, r4, u9, #0` reads `CF`, `8F`, `CF`
+  at q1, q2, q3 (`2^10`, `2^2`, `2^10`) and does not move at all when `w` goes
+  from 1 to 8, while selector 4 moves eight steps over the same sweep. It also
+  differs between sample points at constant `w`, where `D` is the same, so it is
+  neither the pipeline value nor a function of it. This is consistent with
+  58.7's "selectors 4..7 do not alias the ALU's rows 4..7".
+- **The multiplier's `src4` slot is empty here.** `mul0: r2, src4, r0` reads
+  `08` (≈`2^-30`) in every cell. 58.7 notes the multiplier source field has its
+  own table (`0x7F56`, `0x0089`, `0x00A9`, zero in the ISA doc's dump), so
+  "source slot 4" is a different thing again and is not a probe of selector 4.
+
+So the only readable handle on the pipeline reciprocal is the sfu field itself,
+and the independent side of the comparison has to be the computed `D`. The two
+rounds of this arm (the first one measured `r4` as its lane 1 and is kept as a
+superseded run) are exactly the "assume the operand is directly readable"
+mistake the brief warned about.
+
+### 59.4 Selectors 5..7: the transform on new values
+
+Note 58 fitted `sign(v) * m * 2^K` (m the normalized significand, `K = 32` below
+`|v| = 2`, `K = 16` at or above). Four candidate implementations were left open.
+The discriminating experiment is not a denser sweep but *matched significands
+across exponents far apart*: a rule that keeps the significand predicts one code
+for the whole family, a rule that keeps the value predicts a different code for
+each member, and a per-octave ladder predicts a code that moves by one step per
+octave.
+
+Rows `(0.0625, v, 0.0625, 0.0625)`, so the probed row is alone in the dominant
+position and only `v` moves. `rsq` is the readable opcode in both branches (lane
+1 = result × 2^12, lane 2 = result × 2^4); `rcp` is the other branch's read at
+half the rate.
+
+| family | values | branch | `rsq` lane 1 / lane 2 | model |
+|:--|:--|:--|:--|:--|
+| m = 1.5 | 0.09375, 0.1875, 0.375, 0.75, 1.5 | `2^32` | `D4` / `94` (all five) | `D4` / `94` |
+| m = 1.5 | 3.0, 6.0, 12.0, 24.0, 48.0 | `2^16` | `FF` / `D4` (all five) | `FF` / `D4` |
+| m = 1.25 | 0.15625 .. 1.25 | `2^32` | `D5` / `95` | `D5` / `95` |
+| m = 1.25 | 2.5 .. 40.0 | `2^16` | `FF` / `D5` | `FF` / `D5` |
+| m = 1.75 | 1.75 | `2^32` | `D3` / `93` | `D3` / `93` |
+| m = 1.75 | 3.5 .. 28.0 | `2^16` | `FF` / `D3` | `FF` / `D3` |
+| m = 1 | 0.0625 .. 1.0 | `2^32` | `D7` / `97` | `D7` / `97` |
+| m = 1 | 2.0, 4.0, 8.0, 16.0, 32.0 | `2^16` | `FF` / `D7` | `FF` / `D7` |
+| edge | 1.9990234375 | `2^32` | `D2` / `92` | `D2` / `92` |
+| edge | 2.0 | `2^16` | `FF` / `D7` | `FF` / `D7` |
+| edge | 2.0009765625 | `2^16` | `FF` / `D6` | `FF` / `D6` |
+
+`rcp` on the same values (`D7`/`97` for `2^16`, `D1`/`91` for `1.5 * 2^16`,
+`00`/`00` below `2.0` — 58.6's underflow) agrees cell for cell. 63 cells, 63
+within one code step, worst residual one step (`model_s59.py`).
+
+What each candidate predicts for the m = 1.5 family above 2.0 (`3.0`, `6.0`,
+`12.0`, `24.0`, `48.0`):
+
+| candidate | prediction for the five | verdict |
+|:--|:--|:--|
+| keep significand and sign, replace the exponent bit | one code, `B4` for `1.5` (here `D4` on the scaled lane) | **matches** |
+| saturating one-bit exponent | arithmetically the same function | **indistinguishable** |
+| shift/normalization ladder of `32 - 16 e` | one step per octave above 2.0, five different codes spanning 2.5 octaves | **disproved** |
+| fixed-point conversion with a threshold (`min(v, 2) * 2^32`, `v * 2^32`) | a value-scaled code, five different codes | **disproved** |
+
+The family test is what separates them, and it now spans nine octaves on each
+side of the boundary with three significands; the boundary itself is unchanged
+(`1.9990234375` in the low branch, `2.0` and `2.0009765625` in the high one).
+The mantissa-bit question the brief also raised (rounding versus truncation)
+stays unanswerable: the readback resolves one step ≈ 9% of the value, i.e. about
+four mantissa bits of a normalized significand, so a difference in the last bits
+is below the floor. Stated as uninformative rather than negative.
+
+Signs, at `|v| >= 2` where the gain makes the magnitude observable (row 3 =
+4096, `mul0: r2, sfu, r3`, read negated): `-2` → `D7`, `-3` → `D1`, `-4` → `D7`,
+`-6` → `D1`, `-8` → `D7`, i.e. the same-mantissa pairs `-2/-4/-8` and `-3/-6`
+agree again in the negative direction, and each equals its positive counterpart.
+Below `|v| = 2` the negative magnitude is still unobservable: `-0.5`, `-1`,
+`-1.5` all store `00`, and the `2^12` gain does not help because what reaches
+the multiplier is already zero (59.5's underflow). The magnitude is therefore
+**not** claimed below 2.0 in either sign.
+
+### 59.5 The sample position does not move selectors 5..7
+
+Note 58 saw `w = 4` move selectors 6 and 7 (row `0.25` gave `2^30` at `w != 1`)
+and could not say whether the unit or the moved sample was responsible. With
+rows `(0.0625, 1.0, 3.0, 0.75)` seeded by the ALU and the projected triangle
+moved by `offset` while the sample stays at the harness's pixel, four positions
+`(0,0)`, `(-0.5,-0.4)`, `(-0.25,-0.2)`, `(-0.75,-0.6)`, three selectors, two
+opcodes:
+
+| selector | `rcp` at p0 / p1 / p2 / p3 | `rsq` at p0 / p1 / p2 / p3 |
+|:--|:--|:--|
+| 5 (row 1 = 1.0) | `00` / `00` / `00` / `00` | `D7` / `D7` / `D7` / `D7` |
+| 6 (row 2 = 3.0) | `D1` / `D1` / `D1` / `D1` | `FF` / `FF` / `FF` / `FF` |
+| 7 (row 3 = 0.75) | `00` / `00` / `00` / `00` | `D4` / `D4` / `D4` / `D4` |
+
+Every cell is identical across the four positions, and every cell matches the
+significand model for its row (operand `1.0` → `2^32`, `3.0` → `2^16.58`,
+`0.75` → `2^32.58`, so `rsq` gives `D7`, `FF` and `D4` and `rcp` gives `00`,
+`D1` and `00` on the 2^12 scale). The sample point is therefore not an input to selectors 5..7: the
+`w = 4` motion note 58 saw is the clip-`w` state, which is what 58.5's constant
+`w` table (2^16 → 2^18 → 2^14 for `w` = 1 → 0.25 → 4 on row 1) already showed
+directly. What is still missing is a varying-`w` measurement of selectors 5..7
+with the row value held: this note does not add one, so the `w` dependence of 6
+and 7 remains characterised only at the level of 58.5.
+
+### 59.6 Interpolator-fed rows
+
+Rows written by the interpolator instead of by the ALU are the second input path
+the brief asked for. `IPL_WORD` is note 55's perspective word (`sfu: rcp r4`,
+two `bar` multiplies, `ipl: t0.fp20` ×4), and the word under test then runs
+`rsq r5`. To keep one fragment in one program, `ipl2` reads the row and the
+selector result *in the same word*: lane 1 = row 1 × 0.25 (so `v` = 4 × lane 1),
+lane 2 = `rsq` × 2^12.
+
+| cell | row `v` (lane 1 × 4) | selector 5 (lane 2) | model | residual |
+|:--|--:|:--|--:|--:|
+| q1-a-w1 | 0.354 | `D3` | `D4` | −1 |
+| q1-a-w4 | 0.545 | `D2` | `D6` | **−4** |
+| q1-b-w1 | 1.414 | `D3` | `D4` | −1 |
+| q1-b-w4 | 2.18 | `FF` | `FF` | 0 |
+| q2-a-w1 | 0.545 | `D5` | `D6` | −1 |
+| q2-a-w4 | 0.648 | `D8` | `D5` | **+3** |
+| q2-b-w1 | 2.18 | `FF` | `FF` | 0 |
+| q2-b-w4 | 2.59 | `FF` | `FF` | 0 |
+| q3-a-w1 | 0.5 | `D6` | `D7` | −1 |
+| q3-a-w4 | 0.5 | `D7` | `D6` | +1 |
+| q3-b-w1 | 2.0 | `FF` | `FF` | 0 |
+| q3-b-w4 | 2.0 | `FF` | `FF` | 0 |
+
+Three checks bound the anomaly rather than explain it:
+
+- **The row values are right.** Lane 1 matches the perspective-corrected
+  `sum(lambda_i A_i / W_i) / D` within one code step in all twelve cells, and the
+  separate-variant run (`ipl`, the earlier arm) gives the same values, so the
+  interpolator and its weights are behaving.
+- **It is not a pipeline latch.** `ipl3` repeats three cells with one and two
+  intervening MFU words: `D3`, `D3`; `D3`, `D3`; `D8`, `D8`, identical to the
+  zero-delay run, so the operand is stable, not stale.
+- **The four rows are replicas.** `ipl4` reads rows 0 and 1 of the same
+  interpolated fragment side by side: `DB`/`DB`, `EB`/`EB`, `E2`/`E2`, so the
+  selector is not reading a different component than lane 1.
+
+That leaves a real difference between what the ALU reads out of an
+interpolator-written row and what the sfu operand field sees, in the
+perspective-corrected (`w = 4`) cells only: at `w = 1` all six cells are within
+one step, at `w = 4` two of the four informative cells are off by +3 and −4
+steps. Because the deviations are opposite in sign they are not a scale or
+format factor, and because the `w = 1` cells are clean they are not a property of
+interpolated rows as such. This is the one result in the note that is neither
+confirmed nor bounded tightly enough to call: the transform is confirmed for
+ALU-seeded rows (63/63) and for affine interpolated rows, and there is an
+unexplained `w`-dependent discrepancy on perspective-corrected interpolated
+rows of up to half an octave in the significand.
+
+### 59.7 Superseded arms and wrong turns
+
+- **`wsel` round 1** used `MAD r0.lh, r4, u9, #0` as the ALU-side read of the
+  pipeline value and `mul0: r3, sfu, #1` as the sfu side. The sfu lane reproduced
+  `0.5/D` (this is the run that produced the same codes as `wsel2`'s lane 2), but
+  the `r4` lane read a stale row (59.3). The manifest is committed unchanged and
+  the numbers are quoted here only as the stale-row observation.
+- **The `wsel2` control lane** (`src4`) was meant to be the independent handle
+  and reads `08` everywhere: the multiplier's source slot 4 is not the sfu's
+  operand 4 (58.7).
+- **The `r4`-seeded control** (write row 4, see whether selector 4 follows) never
+  assembles: rows are `r0..r3`.
+- **Selector `rcp` below `|v| = 2`** cannot be scaled into the map: the sfu
+  result is already zero at the multiplier, so `2^12` does not rescue it
+  (`00`/`00` with a 4096 gain). Correctness of 58.3's store calibration is not in
+  question — the clamp here is upstream of the store.
+
+### 59.8 What this note establishes
+
+| claim | status |
+|:--|:--|
+| selector 4 carries the fragment's interpolated `2^16 D`, `D = sum lambda_i/W_i` | **confirmed** to two code steps over a 1.45-octave range, 15/16 cells within one |
+| selector 4 is per-fragment, not per-vertex or per-primitive | **confirmed** (one octave across three sample points at fixed `w`) |
+| selector 4 follows `1/D`, not `1/w` | **confirmed** (constant `w` control `EF`; per-vertex `1/w` would be position-independent) |
+| the ALU's row `r4` is selector 4, or holds `65536 D` | **disproved** (stale row, unchanged by `w`; rows are `r0..r3`) |
+| the multiplier's `src4` is another view of selector 4 | **disproved** here (`08` everywhere) |
+| selectors 5..7 = `sign(v) * m * 2^K`, `K = 32` below 2, 16 at or above | **confirmed** on new values, nine octaves each side, 63/63 cells within one step |
+| a per-octave shift ladder, or a value-scaled fixed-point operand | **disproved** (matched significands give one code across the family) |
+| "replace the exponent" and "saturating one-bit exponent" are different implementations | **indistinguishable** by output; no observation here separates them |
+| rounding vs truncation of the significand | **below the readback floor**, uninformative |
+| the negative magnitude below `|v| = 2` | **not established** (still `00` with a 4096 gain) |
+| the sample position moves selectors 5..7 | **disproved** (four positions, identical codes, three selectors, two opcodes) |
+| note 58's `w = 4` motion of 6 and 7 was a sample-point effect | **disproved**; it is clip-`w` state, still not quantified for varying `w` |
+| selectors 5..7 on perspective-corrected interpolator rows | **unresolved**: clean at `w = 1`, two cells off by +3 and −4 at `w = 4` |
+| selector 4 equals `65536 D` exactly | **unresolved**: two-step bound, set by the λ table's position precision |
+
+### 59.9 Runs and method notes
+
+| manifest | variants | runs | directory |
+|:--|--:|--:|:--|
+| `asm_characterize.s59_wsel.json` | 17 | 55 | `s59-wsel-20261125T203825Z` |
+| `asm_characterize.s59_fams.json` | 63 | 193 | `s59-fams-20261125T203833Z` |
+| `asm_characterize.s59_posdep.json` | 24 | 76 | `s59-posdep-20261125T203853Z` |
+| `asm_characterize.s59_ipl.json` | 24 | 76 | `s59-ipl-20261125T203902Z` |
+| `asm_characterize.s59_wsel2.json` | 16 | 52 | `s59-wsel2-20261125T204309Z` |
+| `asm_characterize.s59_ipl2.json` | 12 | 40 | `s59-ipl2-20261125T204316Z` |
+| `asm_characterize.s59_ipl3.json` | 6 | 22 | `s59-ipl3-20261125T204428Z` |
+| `asm_characterize.s59_ipl4.json` | 3 | 9 | `s59-ipl4-20261125T204500Z` |
+
+165 variants, 523 runs, none failed. All on `kusma-ac100`, the same Tegra 20
+harness as notes 53..58:
+
+    GRATE_ASSEMBLER=/home/freebuff/build/grate-exp/tools/assembler \
+      meson devenv -C /home/freebuff/build/grate-exp \
+      python3 /home/freebuff/src/grate-exp/tests/grate/asm_characterize.py <manifest>
+
+The eight manifests regenerate byte-identically from `make_s59.py <out>
+<section>`; `model_s59.py <results.tsv>` prints the model/measurement/residual
+table for `wsel2`, `fams` and `ipl2`; `check_s58.py <results.tsv>` decodes any of
+the eight. Constants are written as plain decimals: the assembler rejects
+exponent notation in `.constants` (`3.0517578125e-05` is a syntax error at the
+`[9] =` line, so 2^-15 is spelled `0.000030517578125`).
+
+Comparisons in this note are against `65536 * D` computed from note 55's weight
+table, which is itself a fit to the same geometry with an uncertainty of about
+0.05 in the largest weight; every "cell" is one fragment at one sample point,
+with the harness quantising the store to `0xF7 + 8*log2(value)` (0.125 octave,
+and a value quoted at a code is the top of a one-step band).
