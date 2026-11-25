@@ -487,17 +487,19 @@ a zero-valued weight.
 
 ##### mul0..1 source registers:
 
-The six-bit field at bits 58..63 selects the SFU operand register. The
-register named by `sfu: OPCODE rN` supplies the input and receives the result
-in place. Tests with FP20 values in several row registers show that the SFU
-operates on the named register and writes the result back to it. The opcode
-summaries below therefore use `rA` for this in-place operand.
+The six-bit field at bits 58..63 selects the SFU operand selector. For the
+ordinary selectors 0..3, the corresponding row supplies the SFU input and
+receives the result in place. Selector 10 is not an ordinary row-register
+reference: with `sfu: rcp r10`, it invokes the major-axis reciprocal
+described below. The notation `rN` is therefore a source-selector
+encoding; it does not imply that every selector names a general-purpose row.
 
-The SFU is evaluated before the multipliers in its MFU word. Hardware tests
-of all eleven decoded SFU opcodes show that each operation writes its named
-operand register in place, and that selector 10 exposes the SFU result to the
-multipliers in that same word. Both multipliers can read that result, including
-when one of them also writes the SFU operand register.
+The SFU is evaluated before the multipliers in its MFU word. The multiplier
+source `sfu` (multiplier source selector 10) exposes the SFU result to
+either multiplier in that same word. This multiplier-source selector is
+distinct from the six-bit SFU operand selector in `sfu: OPCODE rN`. The
+ordinary in-place SFU behavior described above does not apply to the special
+`rcp r10` operation below.
 
 |  Value | Meaning                 |
 |-------:|:------------------------|
@@ -525,6 +527,70 @@ second, in the triangle's index/draw order. Tests compared them with
 interpolated unit-vertex colours on both the (0, 1, 2) and (1, 2, 3) triangles
 at several sample positions. They do not require a varying fetch; omitting the
 interpolation operation leaves the selector readback unchanged.
+
+##### Major-axis reciprocal: `sfu: rcp r10`
+
+On Tegra 20 / AR20, the SFU operand selector value 10 has a special
+interpretation for RCP. It computes
+
+$$
+M = \max(|r0|, |r1|, |r2|), \qquad \mathrm{SFU} = \frac{1}{M}.
+$$
+
+The result is positive: the selector chooses by absolute magnitude and drops
+the selected component's sign. Component permutations, mixed-sign inputs,
+ties, zero, and non-power-of-two values were tested. Changing r3 and r5 while
+holding r0..r2 fixed did not change the result. The zero vector produced the
+positive maximum reciprocal result in the tested path. Store readback is
+quantised, so non-power-of-two results were compared with an ordinary RCP of
+the same selected magnitude rather than treated as exact high-precision
+measurements.
+
+This is a special meaning of the SFU operand selector in `rcp r10`;
+it must not be read as an operation on an ordinary row 10. The findings below
+are established for this encoding and tested RCP path, and should not be
+generalised to every other high selector without separate evidence.
+
+When this operation is active, the multiplier source selector for row 2
+supplies `1/M`, rather than the ordinary contents of row 2. The
+multiplier source `sfu` supplies the same reciprocal. Source selectors
+for rows 0, 1 and 3 supply their row values, and selector 13 (`#1`)
+supplies 1.0. A sweep of all 36 ordered source pairs in both multiplier slots,
+plus 54 destination variants, matched this model in the tested cases.
+
+This explains the compiler's uniform-coordinate MFU word:
+
+~~~text
+sfu:  rcp r10
+mul0: r0, r2, r0
+mul1: r1, r2, r1
+ipl:  nop, nop, nop, nop
+~~~
+
+The row-2 multiplier source supplies the common factor 1/M, so the two
+multipliers scale their row-0 and row-1 operands. The selected-maximum row has
+an additional, unresolved effect: in positive-dominant tests where that row
+was r0 or r1, its multiplier operand was observed as zero, suppressing the
+corresponding output lane. Post-word reads also show a register-level
+disturbance, not merely a render-target store artifact. However, the disturbed
+value is not established as a simple zeroing operation: negative-dominant
+tests observed a different value, and one read through abs() disagreed with a
+plain copy. Do not model the side effect as unconditional clearing, and avoid
+relying on r0..r2 after this special operation until the behavior is better
+understood.
+
+An existing captured compiler word for a uniform vec3 cube-sampler coordinate,
+`0x28689402 0x00000000`, decodes to the MFU word above. This supports
+the interpretation that the shader performs the major-axis reciprocal and
+multiplier scaling. It does **not** establish the rest of cube mapping:
+the corresponding TEX word is unavailable, no real cube-map sample was
+measured, and face selection plus face-coordinate orientation remain
+unresolved. In particular, this evidence does not establish that face
+selection is fixed-function.
+
+See [experiment note 55](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md#55-the-cube-coordinate-word-the-multipliers-work-row-2-carries-1m-and-the-major-axis-reads-zero)
+for the test matrices, register-disturbance observations, compiler-word
+decode, and tooling limitations.
 
 ##### Multiplier execution and interpolation-weight state:
 
@@ -583,6 +649,22 @@ normalization more precisely. The 43-variant barycentric and 38-variant
 perspective sweeps passed their pin and verification runs (133/133 and
 118/118 rows respectively, including controls) and reproduced from clean
 checkouts. See the [fragment hardware experiment notes](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md).
+
+##### IPL row mapping and same-word visibility
+
+The note 55 probes establish the following mapping for the tested FP20
+interpolator path: IPL operand slot k fetches varying component k into row k.
+For example, fetching x, y and z in the first three slots populates r0, r1
+and r2 respectively.
+
+There is also a same-word visibility constraint. If an IPL fetch and
+`sfu: rcp r10` occur in the same MFU word, the SFU uses the row values
+that were present before that word's fetch; the newly fetched values are
+visible to subsequent MFU words. This was distinguished with pre-seeded rows
+whose major-axis reciprocal differed from the reciprocal of the values being
+fetched. Treat this as a measured dependency for the tested FP20 IPL and
+special-RCP arrangement, not as a complete ordering specification for every
+MFU operation.
 
 #### Fragment w component
 
