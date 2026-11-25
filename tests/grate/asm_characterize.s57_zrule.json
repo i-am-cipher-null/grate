@@ -1,0 +1,3496 @@
+{
+  "name": "s57-zrule",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/mfu_s57_read.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "zrule-zp-oldp2-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp2-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp2-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp2-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp2-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp2-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp2-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn2-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn2-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn2-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn2-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn2-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn2-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn2-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp2-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp2-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp2-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp2-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp2-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp2-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp2-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn2-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn2-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn2-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn2-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn2-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn2-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn2-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp075-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp075-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp075-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp075-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp075-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp075-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp075-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn075-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn075-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn075-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn075-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn075-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn075-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn075-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp075-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp075-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp075-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp075-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp075-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp075-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp075-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn075-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn075-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn075-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn075-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn075-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn075-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn075-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-0.75",
+          "@V1@": "0.5",
+          "@V2@": "-8.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-old0-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-old0-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-old0-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-old0-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-old0-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-old0-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-old0-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-old0-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-old0-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-old0-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-old0-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-old0-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-old0-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-old0-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldp-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldp-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldp-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldp-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldp-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldp-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldp-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldn-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldn-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldn-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldn-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldn-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldn-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldn-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldp-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldp-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldp-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldp-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldp-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldp-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldp-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldn-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldn-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldn-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldn-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldn-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldn-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sm-oldn-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-4.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-r1neg-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "-0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-r1neg-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "-0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-r1neg-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "-0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-r1neg-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "-0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-r1neg-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "-0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-r1neg-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "-0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-r1neg-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "-0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zero-quarter0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.0",
+          "@V2@": "0.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, u9, #0",
+          "@PR1@": "MAD r1.lh, r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zero-quarter-neg0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.0",
+          "@V2@": "0.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r0, u9, #0",
+          "@PR1@": "MAD r1.lh, -r0, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zero-plain0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.0",
+          "@V2@": "0.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r0, #1, #0",
+          "@PR1@": "MAD r1.lh, r0, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zero-abs0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.0",
+          "@V2@": "0.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, abs(r0), #1, #0",
+          "@PR1@": "MAD r1.lh, abs(r0), #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zero-quarter1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.0",
+          "@V2@": "0.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r1, u9, #0",
+          "@PR1@": "MAD r1.lh, r1, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zero-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.0",
+          "@V2@": "0.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zero-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.0",
+          "@V2@": "0.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp2-lateabs",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r8.lh, abs(r0), #1, #0",
+          "@PR1@": "NOP",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "EXEC\n\tALU:\n\t\tALU0:\tMAD r0.lh, r8, #1, #0\n\t\tALU1:\tMAD r1.lh, r8, #1, #0\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp2-mulread-qn",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r3, u9, #0",
+          "@PR1@": "MAD r1.lh, -r3, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn2-lateabs",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r8.lh, abs(r0), #1, #0",
+          "@PR1@": "NOP",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "EXEC\n\tALU:\n\t\tALU0:\tMAD r0.lh, r8, #1, #0\n\t\tALU1:\tMAD r1.lh, r8, #1, #0\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldn2-mulread-qn",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r3, u9, #0",
+          "@PR1@": "MAD r1.lh, -r3, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp2-lateabs",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r8.lh, abs(r0), #1, #0",
+          "@PR1@": "NOP",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "EXEC\n\tALU:\n\t\tALU0:\tMAD r0.lh, r8, #1, #0\n\t\tALU1:\tMAD r1.lh, r8, #1, #0\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldp2-mulread-qn",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r3, u9, #0",
+          "@PR1@": "MAD r1.lh, -r3, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn2-lateabs",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r8.lh, abs(r0), #1, #0",
+          "@PR1@": "NOP",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "EXEC\n\tALU:\n\t\tALU0:\tMAD r0.lh, r8, #1, #0\n\t\tALU1:\tMAD r1.lh, r8, #1, #0\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n",
+          "@LATE@": "EXEC\n\tALU:\n\t\tALU0:\tNOP\n\t\tALU1:\tNOP\n\t\tALU2:\tNOP\n\t\tALU3:\tNOP\n;\n"
+        }
+      }
+    },
+    {
+      "name": "zrule-zn-oldn2-mulread-qn",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "-4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, -r3, u9, #0",
+          "@PR1@": "MAD r1.lh, -r3, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zp-oldp2-quarter3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, u9, #0",
+          "@PR1@": "MAD r1.lh, r3, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-t2-sp-oldp-quarter3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "4.0",
+          "@V1@": "0.5",
+          "@V2@": "4.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, u9, #0",
+          "@PR1@": "MAD r1.lh, r3, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zero-b-quarter2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.0",
+          "@V2@": "0.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r2, u9, #0",
+          "@PR1@": "MAD r1.lh, r2, u9, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "zrule-zero-b-mulread",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "0.0",
+          "@V1@": "0.0",
+          "@V2@": "0.0",
+          "@V3@": "1.0",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    }
+  ]
+}

@@ -8355,7 +8355,9 @@ is the baseline throughout; this note only adds to it.
 - **Confirmed:** after a normalization-family `rcp`, the ALU-visible rows 0..2
   hold a *descriptor* and a *negated operand* (the rule is in 56.7); rows 3..15
   keep their values, and the written rows stay unchanged across up to two later
-  MFU words and across later ALU batch boundaries.
+  MFU words and across later ALU batch boundaries. *(Refined by 57.6: the
+  descriptor/operand pair is written by any single-step sfu instruction whose
+  operand field has bit 3 set, not only by `rcp`.)*
 - **Disproved:** "the special selector is 10". For `rcp`, 8..15 are equivalent
   in the reciprocal and in the row writes; 10 is distinguished only by what a
   multiplier reads from row 2. Note 55's statement that a multiplier source
@@ -8427,7 +8429,9 @@ Reading it:
 - `0..3`: `1/r0`, `1/r1`, `1/r2`, `1/r3` -- X4 gives 0.25, 0.5, 1.0, 2.0 for
   those seeds and Y4/Z4 track the seeds as they move. Ordinary reciprocal.
 - `4..7`: constant across the three axes (`78`; `78/78/00`; `00/00/78`;
-  `00/00/00`), so not a function of the dominant axis. `s56_idx` shows they do not
+  `00/00/00`), so not a function of the dominant axis. *(Refined by 57.7: 5 and
+  6 are not axis-invariant -- `sel5-Z4` and `sel6-Z4` are the cells that move,
+  and 57.7 traces them to rows 1 and 2.)* `s56_idx` shows they do not
   change when the matching row is set to 0.5 or 4.0 either.
 - `8..15`: 0.25 for all three axes, i.e. `1/M`, and unchanged when every row is
   1.0 (`idx`: `F7` = 1.0 for both content tests), so the operand is ignored.
@@ -8495,7 +8499,13 @@ but row 0 and row 2 are not:
 
 So the source substitution note 55 found on row 2 is real and is *specific to
 index 10*; the other seven members of the family route the row-0 and row-2
-sources across each other instead. This is the one place where the eight values
+sources across each other instead.
+
+*(Corrected by 57.5: there is no crossed row port. Slot `r2` carries `M` and
+slot `reg & 7` carries the sfu result (`1/M` for `rcp`), with the result
+winning at slot 2, i.e. selector 10. The vectors used here all had `M = |r0|`
+and row 2 = `1/M`, so the two readings coincided; the X8 row of the table above
+already reports 0.125, which is `1/M`, not row 2's 0.5.)* This is the one place where the eight values
 are not interchangeable, and it is the reason the compiler's word works:
 `mul0: r0, r2, r0` / `mul1: r1, r2, r1` with `rcp r10` gets `1/M` from the `r2`
 field in both multiplier slots.
@@ -8534,7 +8544,10 @@ Rows 0..2 are written by a normalization-family `rcp`. With
 1. **row 2 <- the descriptor** `2d + (s < 0)`, as a floating-point number 0..5.
 2. **if d is 0 or 1: row d <- -s * (row 2 before the word)**, and the other of
    rows 0/1 keeps its value.
-3. **if d is 2: row 0 <- -(row 0 before the word)**, and row 1 keeps its value.
+3. **if d is 2: row 0 <- -(row 0 before the word)**, and row 1 keeps its
+   value. *(Corrected by 57.3: row 0 is multiplied by the **sign of row 2** --
+   unchanged for a positive dominant Z, negated for a negative one. The
+   measurement matrix below is right; this prose rule was not.)*
 4. rows 3..15 keep their values.
 
 Measured matrix, maximum 4.0, using the 0.25-scaled and the negated-scaled read
@@ -8764,3 +8777,414 @@ discrepancy (a negative row, not a read path), 55.6's "row holding a positive
 maximum delivers 0" (it delivers a negative operand; the store code hides the
 sign), and 55.3/55.4's "special index 10" (8..15 for the reciprocal, 10 only for
 the multiplier's r2 field).
+
+## 57. The dominant-Z row 0 is multiplied by the sign of Z, the multiplier sources carry M and 1/M instead of a crossed row port, and selectors 4..7 are not the row table
+
+Runs on the AC100 (Toshiba AC100, Tegra 20 / AR20, `armv7l`, kernel
+`7.2.0-gd1efa725955b`) at experiment-branch head
+`d1ca426d2dbec3ae7b897cbe9506f63537a85e26`, which is also
+`github/code/fragment-isa-experiments` at the first manifest. Note 56 is the
+baseline; the docs branch was left alone at `020afe5`. Every manifest declared
+`repeat: 3`, `timeout: 20`, and the two standard controls before and after the
+variants (`immediate-operand` expecting `0x000000FF`, `varying-pipeline`
+expecting `0xFF01FF00`).
+
+### 57.1 Verdicts
+
+- **Disproved:** note 56.7's prose rule "if `d` is 2: row 0 <- -(row 0 before the
+  word)". Twelve discriminating cells (57.3) contradict it in six of twelve; the
+  measured matrix printed in 56.7 already contradicted it in its `2, 0.5, 4`
+  cell. The matrix was right and the prose was not.
+- **Confirmed:** for a dominant row 2, **row 0 is multiplied by the sign of
+  row 2**: unchanged for a positive dominant Z, negated for a negative one. This
+  holds for positive and negative pre-word row 0 at four magnitudes, for both
+  tie cases that select `d = 2`, and after a later batch boundary. Row 1 and rows
+  3..15 keep their values; row 2 receives the descriptor 4 or 5.
+- **Confirmed:** the `d = 0` and `d = 1` rules of 56.7 stand: row `d` <-
+  `-sign(r_d) * (row 2 before the word)`, the other coordinate row unchanged,
+  the descriptor `2d + (s < 0)`. Rechecked with negative seed magnitudes, a
+  negative pre-word row 2, the 0/1 tie (goes to row 1), the 1/2 tie (goes to
+  `d = 2`) and a three-way tie (goes to `d = 2`).
+- **Confirmed:** the all-zero vector gives descriptor 4 with rows 0 and 1 at
+  0.0, in three separate manifests, three repeats each. It is stable and it is
+  the only descriptor the degenerate vector produces.
+- **Disproved:** note 56.5's source table. There is no crossed row port. Inside a
+  word whose selector is 8 or above, multiplier **source slot `r2` carries
+  `M = max(|r0|,|r1|,|r2|)`**, and source slot **`reg & 7` carries the sfu
+  result** (`1/M` for `rcp`). With 56's vectors the dominant row was row 0, so
+  `M` equalled row 0, and row 2 happened to equal `1/M`, which made the two
+  readings indistinguishable. 56's own X8 capture already contradicts the
+  row-2 reading: it is `DF` (0.125 = 1/8), not row 2's 0.5.
+- **Confirmed (new):** the multiplier's row sources read the row file **after**
+  the word's writes, for ordinary `rcp` (`rcp r0` makes slot `r0` read
+  `1/1.5 = 0.667` instead of the seed) and for the normalizing selectors
+  (slot `r0` reads the negated operand, i.e. negative).
+- **Confirmed (new):** the descriptor/operand row writes belong to operand-field
+  **bit 3**, not to `rcp`: `rsq r10`, `sqrt r11`, `lg2 r10` and `frc r9` write
+  row 0 = -1.0 and row 2 = 0 for the `4, 2, 1` vector, exactly like `rcp r10`.
+- **Confirmed (new):** the `M`/result injection is not `rcp`-only either: with
+  `rsq`, `sqrt`, `lg2` and `frc` at a selector of 8 or more, slot `r2` still
+  carries `M` and slot `reg & 7` carries that opcode's result (`rsq r8` puts
+  `1/sqrt(row 0)` in slot `r0` and 4.0 in slot `r2` for the `1.5, 4.0, 0.75,
+  0.5` vector). Only the *value* in the result slot differs from `rcp`.
+- **Unresolved:** why `d = 2` takes its operand from row 0 while `d = 0` and
+  `d = 1` take it from row 2; what selectors 4..7 read (57.7); and the
+  mechanism behind the descriptor, which is as unmeasured as it was in 56.
+
+### 57.2 Probe shapes and read paths
+
+One template, `tests/grate/asm/mfu_s57_read.in`, is the note 56 read template
+with two additions: uniforms 0..4 and the 0.25 scale are placeholders, so a
+variant can change the constant file without touching the seeds, and the `ipl`
+operands are a placeholder, so a variant can fetch a varying or leave the
+interpolator idle. An extra-batch placeholder writes rows 8..11 from the low
+uniforms. The note 56 template is unchanged, so every note 56 manifest still
+reproduces its own generated source.
+
+Eleven manifests, generated by `tests/grate/asm/make_s57.py` (section per
+manifest, `make_s57.py <out.json> <section>`). Seeds come from uniforms 5..8 as
+in note 56; the readback is `store rt1, r0, r1`, so byte 1 and byte 3 carry the
+code of one row read through the ALU.
+
+Most cells are read twice, once through the 0.25 scale (`MAD r0.lh, rN, u9,
+#0`) and once through the negated scale (`MAD r0.lh, -rN, u9, #0`). The pair
+gives the sign and the magnitude of every row without the plain read's clipping:
+a positive value lands only in the `q` lane, a negative one only in the `qn`
+lane, zero in neither. Two further paths were used for the sign-sensitive
+cells: a multiplier copy of the written row (`mul0: r3, r0, #1` after
+`rcp r10`, the note 56.5 index-10 shape) and a two-step `abs` read after an
+extra ALU batch boundary.
+
+One correction to the note 56.2 code table: `78` is not a floor. `rsq` of a
+source near 2^32 stores `75` (about 2^-16.25), so the store format reaches at
+least that far and a `78` in this note means "about 2^-15.9", not "capped".
+
+### 57.3 The dominant-Z row-0 rule
+
+Seeds `(r0, r1, r2, r3)` with row 2 dominant, read through `rcp r10` (the
+descriptor is then 4 for a positive and 5 for a negative dominant Z in every
+cell below). `q` and `qn` are the two store codes of the 0.25-scaled and the
+negated 0.25-scaled read of row 0; `abs` is the plain `abs` read. The three
+columns at the right are the candidate rules applied to the pre-word row 0 with
+`s = sign(r2)`; `ok` marks the cells the rule reproduces.
+
+| seeds r0, r1, r2 | q | qn | abs | row 0 | `-old` | `s*old` | `-s*old` |
+|:--|:--|:--|:--|:--|:--|:--|:--|
+| 2.0, 0.5, 4.0 | `EF` | `00` | `FF` | +2.0 | -2.0 | **+2.0 ok** | -2.0 |
+| -2.0, 0.5, 4.0 | `00` | `EF` | `FF` | -2.0 | +2.0 | **-2.0 ok** | +2.0 |
+| 2.0, 0.5, -4.0 | `00` | `EF` | `FF` | -2.0 | **-2.0 ok** | **-2.0 ok** | +2.0 |
+| -2.0, 0.5, -4.0 | `EF` | `00` | `FF` | +2.0 | **+2.0 ok** | **+2.0 ok** | -2.0 |
+| 0.75, 0.5, 8.0 | `E3` | `00` | `F3` | +0.75 | -0.75 | **+0.75 ok** | -0.75 |
+| -0.75, 0.5, 8.0 | `00` | `E3` | `F3` | -0.75 | +0.75 | **-0.75 ok** | +0.75 |
+| 0.75, 0.5, -8.0 | `00` | `E3` | `F3` | -0.75 | **-0.75 ok** | **-0.75 ok** | +0.75 |
+| -0.75, 0.5, -8.0 | `E3` | `00` | `F3` | +0.75 | **+0.75 ok** | **+0.75 ok** | -0.75 |
+| 4.0, 0.5, 4.0 (tie 0/2, s+) | `F7` | `00` | `FF` | +4.0 | -4.0 | **+4.0 ok** | -4.0 |
+| -4.0, 0.5, 4.0 (tie, s+) | `00` | `F7` | `FF` | -4.0 | +4.0 | **-4.0 ok** | +4.0 |
+| 4.0, 0.5, -4.0 (tie, s-) | `00` | `F7` | `FF` | -4.0 | **-4.0 ok** | **-4.0 ok** | +4.0 |
+| -4.0, 0.5, -4.0 (tie, s-) | `F7` | `00` | `FF` | +4.0 | **+4.0 ok** | **+4.0 ok** | -4.0 |
+
+`-old` reproduces 6 of 12 cells, `sign(r2)*old` 12 of 12, `-sign(r2)*old` 0 of
+12. The same matrix was repeated with magnitudes 0.5, 1.0, 4.0 and 2^-6
+(`zsweep`, 11 cells, quarter and negated reads plus a later-batch `abs` read):
+every cell follows `sign(r2)*old`, including row 0 = 4.0 without clipping
+(`q` = `F7`) and row 0 = 2^-6 (`q` = `B7`, `qn` = `00`).
+
+So the note 56.7 step 3 must read:
+
+> **if d is 2: row 0 <- sign(r2 before the word) * (row 0 before the word)**,
+> i.e. row 0 is left alone for a positive dominant Z and negated for a negative
+> one, and row 1 keeps its value.
+
+The descriptor is unchanged: 4 (`q` of row 2 = `F7`, 0.25 * 4.0) for a positive
+and 5 (`F9`, 0.25 * 5.0 truncated) for a negative dominant Z, in all 20 cells of
+`zrule` and `zsweep`.
+
+**Why this matters and why it is not the same statement.** For `d = 0` and
+`d = 1` the written row takes `-sign(r_d)` times the *pre-word row 2* -- a
+source row that is neither the dominant coordinate nor the row being written.
+For `d = 2` the written row takes `sign(r2)` times *itself*. The two rules do not
+collapse into one formula with `d` substituted, and no measurement here explains
+why the hardware does it. The row written is `d` for `d < 2` and row 0 for
+`d = 2`, so "the coordinate row" is the only common description; the value is
+not.
+
+### 57.4 The other write rules, ties and the zero vector
+
+`ztie` (47 variants) rechecks the rules the note 56.7 matrix established, with
+the fixed (unscaled) seeds on both sides of zero:
+
+| seeds r0, r1, r2 | row 0 | row 1 | row 2 | descriptor |
+|:--|:--|:--|:--|:--|
+| 4.0, 0.5, 2.0 | -2.0 (`qn` `EF`) | 0.5 | 0 | 0 |
+| -4.0, 0.5, 2.0 | +2.0 (`q` `EF`) | 0.5 | 0 | 0 |
+| 4.0, 0.5, -2.0 | +2.0 | 0.5 | 0 | 0 |
+| 2.0, 4.0, 0.5 | 2.0 | -0.5 (`qn` `DF`) | 2.0 (`q` `EF`) | 2 |
+| 2.0, -4.0, 0.5 | 2.0 | +0.5 (`q` `DF`) | 3.0 (`q` `F3`) | 3 |
+| 4.0, -4.0, 0.5 (tie 0/1) | 4.0 | +0.5 | 3.0 | 3 |
+| -4.0, -4.0, 0.5 (tie 0/1) | -4.0 | +0.5 | 3.0 | 3 |
+| 0.5, 4.0, -4.0 (tie 1/2) | -0.5 (`qn` `DF`) | 4.0 | 5.0 (`q` `F9`) | 5 |
+| -4.0, -4.0, -4.0 (three-way) | +4.0 (`q` `F7`) | -4.0 (`qn` `F7`) | 5.0 | 5 |
+| 0.0, 0.0, 0.0 | 0.0 | 0.0 | 4.0 (`q` `F7`) | 4 |
+
+The 1/2 tie is the cell that also settles the `d = 2` rule in a case where row 0
+is not the largest of the three: `0.5, 4.0, -4.0` gives row 0 = -0.5, i.e. the
+negation of the pre-word row 0, not `-row 2`.
+
+**Zero vector.** Descriptor 4 (row 2 = 4.0, `q` = `F7`), rows 0 and 1 = 0.0, in
+`zrule` (`zero`, `zero-b-quarter2`, `zero-b-mulread`) and `zsweep` (`zero-c`),
+nine runs, identical. With rows 0/1 at 0 and row 2 = +4.0 or -4.0 the descriptor
+is 4 or 5 and row 0 stays 0, so the degenerate case selects "axis 2, positive"
+even though no component is dominant. That is stable, not a one-off, but nothing
+here shows why 4 and not, say, 0.
+
+### 57.5 What the multiplier sources receive
+
+The decisive vector is `(1.5, 4.0, 0.75, 0.5)`: row 1 is dominant (`d = 1`,
+`s = +`), `M = 4.0`, `1/M = 0.25`, and after the word row 1 holds -0.75, row 2
+holds the descriptor 2.0, rows 0 and 3 are unchanged. Every candidate value has a
+different 0.25-scaled code, so one run per cell decides it: seed row 0 = 1.5
+(`EB`), row 1 = 4.0 (`F7`), row 2 = 0.75 (`E3`), row 3 = 0.5 (`DF`), `M` = 4.0
+(`F7`), `1/M` = 0.25 (`D7`), written row 1 = -0.75 (`00` plain, `E3` negated),
+descriptor 2.0 (`EF`).
+
+Exact instruction: the MFU word is word 14 of the generated fragment program.
+`sfu: rcp r8` / `mul0: r3, r0, #1` is `0x204007D0`; changing only the selector
+gives `rcp r9` `0x244007D0`, `rcp r10` `0x284007D0`, `rcp r11` `0x2C4007D0`,
+`rcp r15` `0x3C4007D0`, `rcp r50` `0xC84007D0`, `rcp r0` `0x004007D0`. The
+selector is word bits [31:26] (`50 << 26 = 0xC8000000`), and between two
+selector-only variants exactly that one word differs (word-by-word comparison of
+the 65-word programs).
+
+Sources, `mul0: r3, <source>, #1`, read as 0.25 * value in the next batch:
+
+| sfu | slot `r0` | slot `r1` | slot `r2` | slot `r3` |
+|:--|:--|:--|:--|:--|
+| `nop r0` | 1.5 (`EB`) | 4.0 (`F7`) | 0.75 (`E3`) | 0.5 (`DF`) |
+| `rcp r0` | 1/1.5 (`E1`, one step below the exact 0.667) | 4.0 | 0.75 | 0.5 |
+| `rcp r1` | 1.5 | 1/4.0 = 0.25 (`D7`) | 0.75 | 0.5 |
+| `rcp r8` | **1/M = 0.25** (`D7`) | -0.75 (`00`/`E3`) | **M = 4.0** (`F7`) | 0.5 |
+| `rcp r9` | 1.5 | **1/M = 0.25** | **M = 4.0** | 0.5 |
+| `rcp r10` | 1.5 | -0.75 | **1/M = 0.25** | 0.5 |
+| `rcp r11` | 1.5 | -0.75 | **M = 4.0** | **1/M = 0.25** |
+| `rcp r12` | 1.5 | -0.75 | **M = 4.0** | 0.5 |
+| `rcp r15` | 1.5 | -0.75 | **M = 4.0** | 0.5 |
+| `rcp r50` (residue 2) | 1.5 | 4.0 | 1/0.75 = 1.33 (`E9`) | 0.5 |
+| `rsq r10` | 1.5 | -0.75 | rsq(0.75) = 1.09 (`E8`) | 0.5 |
+
+Read it as two rules:
+
+1. Source slots read the row file **after** the writes: `rcp r0` makes slot `r0`
+   read the returned 0.667 (not the seed 1.5), and every selector of 8 or more
+   makes slot `r0` read the negated operand (negative, so `00` plain and `E3`
+   negated) and slot `r1` the same. Slot `r2` never reads the descriptor 2.0;
+   it reads `M` or the result.
+2. Two sfu values are injected into the slots: the **result into slot
+   `reg & 7`** and **`M` into slot `r2`**. They collide when `reg & 7 == 2`
+   (selector 10), and there the result wins: slot `r2` is `1/M` and `M` is not
+   visible at all. For selectors 12..15 `reg & 7` is 4..7 and no slot exists, so
+   only `M` appears.
+
+That is the "crossover": `rcp r9` and `rcp r11` put `1/M` into slot 1 and 3
+instead of slot 0, not into a different *row*. Both the earlier vectors and
+note 56's made `M = |r0|` and `1/M = row 2`, which made "slot 2 = M" look like
+"slot 2 = row 0" and "slot 0 = 1/M" look like "slot 0 = row 2".
+
+Confirmations with the dominant row elsewhere (`cross2`, 400 variants):
+
+| vector (r0, r1, r2, r3) | d, s | schema | slot `r0` | slot `r1` | slot `r2` | slot `r3` |
+|:--|:--|:--|:--|:--|:--|:--|
+| 1.5, 4.0, 0.75, 0.5 | 1, + | `rcp r8` | 0.25 | -0.75 | 4.0 | 0.5 |
+| -1.5, -4.0, 0.75, 0.5 | 1, - | `rcp r10` | -1.5 | 0.75 | 0.25 | 0.5 |
+| 1.5, 2.0, -4.0, 0.5 | 2, - | `rcp r8` | 0.25 | 2.0 | 4.0 | 0.5 |
+| 1.5, 2.0, -4.0, 0.5 | 2, - | `rcp r15` | -1.5 | 2.0 | 4.0 | 0.5 |
+
+In the `d = 2` vector, slot `r2` reads 4.0 (`F7`), not the descriptor 5.0
+(`F9`) and not row 0's 1.5 (`EB`); in the `d = 1` vector it reads 4.0, not the
+descriptor 2.0 (`EF`). Those two cells are the ones note 56.5 could not see.
+
+`mul0` and `mul1` agree in every cell measured in both (all 236 variants of
+`cross` and 16 of `cross2`), and the destination matters not at all: `r0`, `r1`
+and `r3` give identical codes for the same sfu and source (`cpos`, 24 variants).
+
+### 57.6 The other opcodes use the same slots and the same row writes
+
+`cross3` (160 variants) and `post2` (30) repeat the slot matrix and the row
+state for `rsq`, `sqrt`, `lg2` and `frc` at selectors 8..11:
+
+- Slot `reg & 7` carries the result: `rsq r8` puts rsq(row 0) = 0.771 (`E4`) in
+  slot `r0`; `sqrt r9` puts sqrt(row 1) = 2.0 in slot `r1` (0.5 through the 0.25
+  read, `EF`); `rsq r11` puts rsq(row 3) = 1.30 (`EA`) in slot `r3`; `lg2 r11`
+  puts a negative value (`00`) there.
+- Slot `r2` carries `M` (4.0, `F7`) for `rsq r8`, `rsq r9`, `rsq r11`,
+  `sqrt r8`, `sqrt r9`, `sqrt r11`, `lg2 r8`, `lg2 r9`, `lg2 r11`, `frc r8`
+  and `frc r11`, so the `M` injection is a property of bit 3 and not of `rcp`.
+- The rows are written: `post2` reads row 0 = -1.0 and row 2 = 0.0 after
+  `rsq r8`, `rsq r10`, `sqrt r11`, `lg2 r10` and `frc r9` on the `4, 2, 1, 0.5`
+  vector, i.e. the same descriptor and the same negated operand `rcp r10`
+  writes. So 56.1's "after a normalization-family `rcp`" is too narrow: the
+  descriptor/operand pair belongs to the operand field's bit 3, and `rcp` is
+  only the opcode that reads `1/M` out of it.
+- For selectors below 8 the result and the row an `rcp` writes back are the same
+  value, so a slot injection cannot be separated from a row read there; no
+  `rsq r2`-style probe was run.
+
+### 57.7 Selectors 4..7
+
+Facts first, all with three repeats:
+
+- **They do not write rows 0..3.** `post` reads rows 0, 1, 2 and 3 after
+  `rcp r4` .. `rcp r7` on the `4, 2, 1, 0.5` vector: every row is the seed
+  (row 0 = 4.0, row 1 = 2.0, row 2 = 1.0, row 3 = 0.5), whereas the same reads
+  after 8..15 show the descriptor and the operand.
+- **`rcp r4` is a constant.** 20 row vectors (one row at a time set to 0.5, 1.0,
+  1.5, 2.0 or 4.0 with the others at 1.0) and the three axis vectors all give
+  `78`; `rsq r4` gives `B7` in all 23, i.e. a source of exactly 2^16. Constants
+  `u0..u4`, the `ipl` operands, preceding sfu words and 1..2 delay words do not
+  change it.
+- **`rcp r5`, `r6`, `r7` do depend on rows 1, 2 and 3** and on nothing else that
+  was varied. `rsq` resolves the magnitude that `rcp`'s floor hides:
+
+| row k (others 1.0) | `rcp r(4+k)` | `rsq r(4+k)` | source from the `rsq` code |
+|:--|:--|:--|:--|
+| 0.5 | `00` | `78` | about 2^31.8 |
+| 1.0 | `00` | `78` | about 2^31.8 |
+| 1.5 | `00` | `75` | about 2^32.5 |
+| 2.0 | `78` | `B7` | 2^16 |
+| 4.0 | `78` | `B7` | 2^16 |
+
+(with `k = 1` shown for `r5`; `r6` keys on row 2 and `r7` on row 3 with the same
+codes, and `r4` is `78`/`B7` for every row and every magnitude.)
+
+- The axis vectors agree with that table: `X4 = 4, 2, 1, 0.5` gives `rsq r5` =
+  `B7` (row 1 = 2.0) and `rsq r6` = `78` (row 2 = 1.0); `Z4 = 2, 1, 4, 0.5`
+  gives the opposite. That is the source of the two cells in the note 56.3
+  screen that the surrounding prose called axis-invariant (`sel5-Z4` and
+  `sel6-Z4`), and those two cells were right while the gloss was not.
+- Invariant to: the low constant file (two alternative sets), `ipl` fetching
+  `t0`, a preceding `nop`/`rcp r0`/`rcp r8`/`rcp r10` word, one and two empty
+  words between the sfu and the capture, `mul0` versus `mul1`, the multiplier
+  destination (`r0` versus `r3`), and rows 8..11 written from the low uniforms.
+
+What they are is **unresolved**, and this note deliberately does not name them.
+The dependence is not the row value: the source is 2^16 for a row at 2.0 or
+above and about 2^32 below that, so a row of 1.5 gives a *larger* source than a
+row of 4.0, and `rcp` and `rsq` disagree about the sign for the same cell
+(`rcp r5` on `Z4` stores `00`, `rsq r5` stores `78`). A single scalar operand
+visible to both opcodes would not do that. Selector 4's flat 2^16 with no
+row-0 counterpart at any magnitude is the same kind of thing: real state that is
+not the seeded register file. A constant, a position or a hidden register cannot
+be assigned without a probe that moves the suspected state, and none of the
+state this harness can move does.
+
+### 57.8 Read paths and independent readbacks
+
+`zrule` reads row 0 four ways per cell (plain, `abs`, quarter, negated quarter)
+and the note 56.5 multiplier copy for all 16 cells; the four discriminating
+cells also get the negated multiplier copy and a two-step `abs` read after an
+extra batch. All agree once the sign is accounted for: for `zp-oldn2` the
+multiplier copy of written row 0 is `00` plain and `EF` negated (0.25 * 2.0 =
+0.5 magnitude, negative), which is the same -2.0 the ALU reads report.
+
+The `lateabs` reads (row read two ALU steps later, one extra batch) reproduce
+the magnitudes of the immediate reads in all 15 cells where they were run
+(`2.0`, `0.75`, `0.5`, `2^-6`, `4.0`), so the row-0 values are register
+contents and not a read-port artifact. The multiplier copies come from a
+different unit and a different word position, so the sign is confirmed twice
+over.
+
+### 57.9 What this note establishes, and what it does not
+
+Established by measurement:
+
+- the dominant-Z row-0 rule: `row 0 <- sign(r2) * old row 0`, which replaces the
+  prose of 56.7 step 3 and leaves the descriptor (4/5) and the other rows as
+  they were;
+- the d=0/d=1 rules, the tie order, and the zero vector's descriptor 4, all
+  rerun with new seeds;
+- the multiplier sources: `M` at slot `r2`, the sfu result at slot `reg & 7`,
+  rows read after the writes, no unit/destination/source-position dependence;
+- the row writes and the `M` injection belong to selector bit 3 for every
+  single-step opcode, not to `rcp`;
+- selectors 4..7 write no row, are invariant to everything else the harness can
+  move, and their dependence on rows 1/2/3 is non-monotone in a way that rules
+  out reading the row value.
+
+Not established: the mechanism of the descriptor/operand pair; why `d = 2`
+differs in *source row* from `d = 0`/`d = 1`; the identity of selectors 4..7;
+why `M` is visible at slot 2 rather than at a slot of its own; and anything
+about cube or face selection, which remains blocked exactly as 56.11 left it
+(no compiler blob, no cube binding path).
+
+**Documentation.** No change is proposed to the stable ISA text. The encoded
+field is six bits and stays six bits; what this note adds is decode behaviour
+(bit 3 selects the normalizing word; bits 5:4 are ignored, 56.3), and
+`docs_snap/fragment-shader-isa.md` lives on the docs branch, which this session
+was asked not to touch. If the docs owner wants one clarifying sentence, the
+candidate is: "operand-field bit 3 makes any single-step sfu instruction write
+the descriptor/operand pair to rows 2 and d, and makes `M` visible to the
+multiplier's `r2` source; the low three bits still select the operand or row."
+
+### 57.10 Runs and method notes
+
+Device: Toshiba AC100, Tegra 20 / AR20, `armv7l`, kernel
+`7.2.0-gd1efa725955b`, repository `i-am-cipher-null/grate`, branch
+`code/fragment-isa-experiments`, head `d1ca426` at the first manifest (equal to
+`github/code/fragment-isa-experiments`).
+
+| manifest | variants | runs | directory |
+|:--|--:|--:|:--|
+| `s57_zrule` | 124 | 376 | `s57-zrule-20261125T192337Z` |
+| `s57_ztie` | 47 | 145 | `s57-ztie-20261125T192415Z` |
+| `s57_zsweep` | 44 | 136 | `s57-zsweep-20261125T192432Z` |
+| `s57_post` | 106 | 322 | `s57-post-20261125T192449Z` |
+| `s57_cross` | 236 | 712 | `s57-cross-20261125T192527Z` |
+| `s57_cpos` | 24 | 76 | `s57-cpos-20261125T192637Z` |
+| `s57_internal` | 136 | 412 | `s57-internal-20261125T192647Z` |
+| `s57_cross2` | 400 | 1204 | `s57-cross2-20261125T193351Z` |
+| `s57_internal2` | 208 | 628 | `s57-internal2-20261125T193544Z` |
+| `s57_cross3` | 160 | 484 | `s57-cross3-20261125T193829Z` |
+| `s57_post2` | 30 | 94 | `s57-post2-20261125T194341Z` |
+
+4589 runs, all passed: no failures, no timeouts, no rejected variants, controls
+`0x000000FF` and `0xFF01FF00` in every manifest. No manifest was superseded by a
+rerun, but `s57_cross` is a **superseded analysis** rather than a superseded
+run: its vector `(2.0, 0.5, 1.0, 0.25)` has `M = |r0|` and `1/M = 0.5 = row 1`,
+so it cannot separate "slot 2 = M" from "slot 2 = row 0", and its codes are kept
+as the raw evidence that `cross2` reinterprets. `cross2` was written because
+`cross` (and note 56's `mulmap*`) could not answer the question, not because
+`cross` disagreed with anything.
+
+Method notes:
+
+- Every generated source was parse-checked with the tree's own assembler before
+  any run: `tests/grate/asm/check_all.py` materialises each variant and runs it
+  through `disasm_fs` (`717` variants in the first pass, `608` more for
+  `cross2`/`internal2`, `160` for `cross3`, `30` for `post2`; all parsed). One
+  variant family was dropped before running because the parser rejected it: a
+  multiplier operand cannot be a uniform (`mul0: r3, sfu, u4` is a syntax
+  error), so the "multiply by the constant 1.0" capture shape does not exist and
+  the unit check uses `mul0` versus `mul1` instead.
+- The encoded words were read with `tests/grate/asm/fs_words.c`, a helper over
+  `struct grate_shader.words`, so the selector bits in 57.5 are from the
+  assembled program and not from the assembler's source text.
+- Seeds are copied to shadow rows 4..7 in their own batch, and every cell that
+  reads a shadow row found it unchanged (row 3 = 1.0 -> `E7`, row 4 = seed).
+  `post`, `post2` and `cross2` read rows only through the ALU or through a
+  multiplier whose source fields are named in the variant, so no cell can be
+  explained by an unread row.
+
+The probe sources are committed with this note:
+`tests/grate/asm/mfu_s57_read.in`, the eleven manifests
+`tests/grate/asm_characterize.s57_*.json`, the generator
+`tests/grate/asm/make_s57.py` (which reproduces every one of them from its
+section name, checked by regenerating into a temporary directory and comparing),
+`tests/grate/asm/check_s57.py` (result decoding), `tests/grate/asm/check_all.py`
+(pre-run parse check), `tests/grate/asm/check_asm.py` (single-variant source
+dump) and `tests/grate/asm/fs_words.c`.
+
+Note 56 references updated where this note resolves or corrects them: 56.1 (the
+row writes belong to bit 3, not to `rcp`), 56.3 (the two `sel5`/`sel6` axis
+cells that the prose called invariant), 56.5 (the source table is `M` and `1/M`,
+not a crossed port), and 56.7 (the dominant-Z prose rule is `sign(r2) * old
+row 0`). The note 56.7 measurement matrix itself is preserved unchanged and
+agrees with note 57.

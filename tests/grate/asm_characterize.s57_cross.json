@@ -1,0 +1,6632 @@
+{
+  "name": "s57-cross",
+  "repeat": 3,
+  "timeout": 20,
+  "program": {
+    "vs": "tests/grate/asm/vs_mov.txt",
+    "fs": "tests/grate/asm/mfu_s57_read.in",
+    "lnk": "tests/grate/asm/linker_vs_tests.txt"
+  },
+  "controls": [
+    {
+      "name": "immediate-operand",
+      "fs": "tests/grate/asm/fs_alu_immediate_control.txt",
+      "expected": "0x000000FF"
+    },
+    {
+      "name": "varying-pipeline",
+      "fs": "tests/grate/asm/fs_vs_tests.txt",
+      "expected": "0xFF01FF00"
+    }
+  ],
+  "variants": [
+    {
+      "name": "cross-xp-nop-r0-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-nop-r0-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-nop-r0-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-nop-r0-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-nop-r0-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-nop-r0-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-nop-r0-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-nop-r0-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-nop-r0-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-nop-r0-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "nop r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r0-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r0-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r0-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r0-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r0-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r0-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r0-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r0-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r0-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r0-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r1-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r1",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r1-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r1",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r1-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r1",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r1-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r1",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r1-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r1",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r1-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r1",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r1-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r1",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r1-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r1",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r1-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r1",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r1-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r1",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r2-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r2",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r2-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r2",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r2-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r2",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r2-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r2",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r2-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r2",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r2-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r2",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r2-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r2",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r2-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r2",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r2-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r2",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r2-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r2",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r3-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r3",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r3-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r3",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r3-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r3",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r3-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r3",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r3-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r3",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r3-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r3",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r3-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r3",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r3-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r3",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r3-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r3",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r3-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r3",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r9-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r9",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r9-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r9",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r9-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r9",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r9-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r9",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r9-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r9",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r9-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r9",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r9-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r9",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r9-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r9",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r9-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r9",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r9-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r9",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r11-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r11",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r11-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r11",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r11-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r11",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r11-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r11",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r11-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r11",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r11-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r11",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r11-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r11",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r11-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r11",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r11-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r11",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r11-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r11",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r12-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r12",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r12-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r12",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r12-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r12",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r12-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r12",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r12-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r12",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r12-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r12",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r12-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r12",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r12-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r12",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r12-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r12",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r12-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r12",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r13-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r13",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r13-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r13",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r13-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r13",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r13-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r13",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r13-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r13",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r13-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r13",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r13-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r13",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r13-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r13",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r13-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r13",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r13-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r13",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r14-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r14",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r14-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r14",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r14-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r14",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r14-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r14",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r14-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r14",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r14-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r14",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r14-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r14",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r14-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r14",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r14-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r14",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r14-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r14",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r15-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r15",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r15-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r15",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r15-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r15",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r15-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r15",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r15-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r15",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r15-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r15",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r15-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r15",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r15-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r15",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r15-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r15",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r15-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r15",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r16-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r16",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r16-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r16",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r16-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r16",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r16-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r16",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r16-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r16",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r16-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r16",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r16-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r16",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r16-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r16",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r16-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r16",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r16-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r16",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r50-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r50",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r50-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r50",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r50-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r50",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r50-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r50",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r50-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r50",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r50-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r50",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r50-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r50",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r50-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r50",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r50-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r50",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r50-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r50",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r8-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r8",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r8-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r8-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r8",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r8-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r8-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r8",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r8-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r8-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r8",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r8-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r8-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r8",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r8-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r10-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r10-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r10-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r10",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r10-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r10-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r10",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r10-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r10-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r10",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r10-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r10-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r10",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rsq-r10-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rsq r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-sqrt-r10-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "sqrt r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-sqrt-r10-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "sqrt r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-sqrt-r10-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "sqrt r10",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-sqrt-r10-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "sqrt r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-sqrt-r10-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "sqrt r10",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-sqrt-r10-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "sqrt r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-sqrt-r10-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "sqrt r10",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-sqrt-r10-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "sqrt r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-sqrt-r10-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "sqrt r10",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-sqrt-r10-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "sqrt r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-lg2-r10-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "lg2 r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-lg2-r10-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "lg2 r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-lg2-r10-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "lg2 r10",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-lg2-r10-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "lg2 r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-lg2-r10-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "lg2 r10",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-lg2-r10-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "lg2 r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-lg2-r10-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "lg2 r10",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-lg2-r10-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "lg2 r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-lg2-r10-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "lg2 r10",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-lg2-r10-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "lg2 r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-frc-r10-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "frc r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-frc-r10-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "frc r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-frc-r10-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "frc r10",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-frc-r10-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "frc r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-frc-r10-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "frc r10",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-frc-r10-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "frc r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-frc-r10-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "frc r10",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-frc-r10-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "frc r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-frc-r10-mul0-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "frc r10",
+          "@MUL0@": "mul0: r3, sfu, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-frc-r10-mul1-sfu",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "frc r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, sfu, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul0-num1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, #1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul1-num1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, #1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul0-r0-pos2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, #1, r0",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul1-r0-pos2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, #1, r0",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul0-r2-pos2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, #1, r2",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r8-mul1-r2-pos2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, #1, r2",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul0-num1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, #1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul1-num1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, #1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul0-r0-pos2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, #1, r0",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul1-r0-pos2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, #1, r0",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul0-r2-pos2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, #1, r2",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xp-rcp-r10-mul1-r2-pos2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, #1, r2",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r0-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r0-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r0-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r0-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r0-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r0-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r0-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r0-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r0",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r8-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r8-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r8-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r8-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r8-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r8-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r8-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r8-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r8",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r10-mul0-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r0, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r10-mul1-r0",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r0, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r10-mul0-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r1, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r10-mul1-r1",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r1, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r10-mul0-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r2, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r10-mul1-r2",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r2, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r10-mul0-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "mul0: r3, r3, #1",
+          "@MUL1@": "",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    },
+    {
+      "name": "cross-xn-rcp-r10-mul1-r3",
+      "fs": "tests/grate/asm/mfu_s57_read.in",
+      "replace": {
+        "fs": {
+          "@C0@": "8.0",
+          "@C1@": "0.125",
+          "@C2@": "3.0",
+          "@C3@": "0.75",
+          "@C4@": "1.0",
+          "@V0@": "-2.0",
+          "@V1@": "0.5",
+          "@V2@": "1.0",
+          "@V3@": "0.25",
+          "@U9@": "0.25",
+          "@SFU@": "rcp r10",
+          "@MUL0@": "",
+          "@MUL1@": "mul1: r3, r3, #1",
+          "@IPL@": "NOP, NOP, NOP, NOP",
+          "@PR0@": "MAD r0.lh, r3, #1, #0",
+          "@PR1@": "MAD r1.lh, r3, #1, #0",
+          "@EXTRA@": "",
+          "@DELAY@": "",
+          "@MID@": "",
+          "@LATE@": ""
+        }
+      }
+    }
+  ]
+}
