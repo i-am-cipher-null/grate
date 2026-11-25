@@ -491,9 +491,10 @@ a zero-valued weight.
 
 ##### SFU operand and multiplier source selectors
 
-The six-bit field at bits 58..63 selects the SFU operand. In
-`sfu: OPCODE rN`, `rN` is an encoded operand selector; it is not always an
-ordinary row-register reference.
+**SFU operand selector (six-bit field, bits 58..63).** In
+`sfu: OPCODE rN`, the `rN` token names this selector. It is not necessarily
+a row-register reference. For example, the `r10` in `sfu: rcp r10` is
+**SFU operand selector 10**, not ordinary row-register 10.
 
 A full RCP sweep of all 64 encodings found that bits 5:4 are ignored by the
 tested RCP decode: selector values `n`, `n+16`, `n+32` and `n+48` produce
@@ -516,9 +517,26 @@ decode is `reg & 7`, and the normalization-family interpretation is RCP-only.
 The paired operations (`PREEX2/EX2`, `PRESIN/SIN` and `PRECOS/COS`) were not
 included in this selector sweep.
 
-The multiplier source selector is a separate four-bit field. In particular,
-the multiplier source named `sfu` is selector 10 in this field; that number
-does not refer to SFU operand selector 10 in `sfu: OPCODE rN`.
+**MFU multiplier input selector (separate four-bit field).** The source token
+in a `mul0` or `mul1` operand selects an input through a different mux.
+In this field, the token `sfu` is encoded as value **10** and means "use the
+SFU result as the multiplier input." It does **not** mean SFU operand
+selector 10, and it does not invoke the RCP normalization operation. For
+example, `mul0: r3, sfu, #1` captures the current SFU result in row 3.
+
+These are two independent fields that happen to use the numeric encoding
+10 for different meanings:
+
+| Field and assembly location | What its value 10 selects |
+|:--|:--|
+| **SFU operand selector**, `sfu: rcp r10` | The RCP normalization-family input: `1/M`, where `M = max(|r0|, |r1|, |r2|)`. |
+| **MFU multiplier input selector**, source token `sfu` in `mul0` or `mul1` | The output produced by the SFU operation in that MFU word. |
+
+The two meanings remain independent when both sub-units are active in the
+same MFU word. In particular, the special routing measured when the **SFU
+operand selector** is 10 makes the multiplier's ordinary source token
+`r2` deliver `1/M`; it does not change the meaning of multiplier input
+selector 10 (`sfu`).
 
 | Value | Meaning |
 |------:|:--------|
@@ -571,7 +589,7 @@ The multiplier source mux has a selector-dependent interaction with the
 normalization-family RCP. The table describes the measured sources in the same
 MFU word as the RCP:
 
-| Multiplier source | RCP selector 10 | RCP selectors 8, 9, 11..15 |
+| MFU multiplier input token | SFU operand selector 10 | SFU operand selectors 8, 9, 11..15 |
 |:------------------|:----------------|:-----------------------------|
 | `r0` | The written, post-RCP row 0 | Row 2's pre-word value |
 | `r1` | Row 1's pre-word value | Row 1's pre-word value |
@@ -581,7 +599,8 @@ MFU word as the RCP:
 | `#1` | 1.0 | 1.0 |
 
 Thus the row-2 source substitution measured in the compiler's word is
-specific to selector 10. For the other seven normalization-family selectors,
+specific to **SFU operand selector 10**. For the other seven
+normalization-family SFU operand selectors,
 the multiplier's `r0` and `r2` sources cross over: `r0` reads the
 pre-word row 2 and `r2` reads the pre-word row 0. Rows 1 and 3 retain their
 ordinary pre-word values. The multiplier source `sfu` provides `1/M` for
@@ -596,7 +615,8 @@ mul1: r1, r2, r1
 ipl:  nop, nop, nop, nop
 ~~~
 
-With selector 10, the `r2` multiplier source supplies `1/M`, but the
+With **SFU operand selector 10**, the `r2` multiplier source supplies
+`1/M`, but the
 `r0` multiplier source sees row 0 **after** the RCP's row write, not the
 original x coordinate. For the tested vector `(r0,r1,r2) = (4,2,0.5)`,
 the RCP leaves row 0 at -0.5, so the first product is
