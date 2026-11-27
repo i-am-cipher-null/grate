@@ -21,6 +21,7 @@ libgrate_sources = files(
 	'shader-cgc.c',
 	'vpe_vliw.h',
 	'fragment_disasm.c',
+	'shader_words.c',
 	'vertex_disasm.c',
 	'linker_disasm.c'
 )

@@ -103,7 +103,11 @@ The fragment assembler is defined by the fragment program parameters, the unifor
 
 Fragment program parameters must precede the .constants and .asm sections, they are:
 - alu_buffer_size = N, where N is 1..4 - somewhat defines the number of pixel packets (row registers r[i].xyzw) kept in the ALU buffer.
-- pseq_to_dw_exec_nb = N, where N is 0..? - the number of PSEQ instructions executed before the non-NOP DW operation.
+- pseq_to_dw_exec_nb = N, where N is 0..127 - the number of PSEQ instructions executed before the non-NOP DW operation. The field is 7 bits wide, so a larger N is rejected rather than wrapped.
+
+Out-of-range field values are rejected at parse time instead of being truncated: the MFU multiply destination (3 bits), multiply source (4 bits) and sfu register (6 bits), the TEX sampler and DW render target fields, and the ALU buffer size. A value the field cannot hold would otherwise alias another encoding - `src16` on `src0`, `dst8` on `dst0`, `sfu: rsq r64` on `r0`.
+
+Every fragment unit also accepts a raw hex word as a whole: `PSEQ: 0x...`, `MFU: 0x...` or `MFU: 0xHI, 0xLO`, `TEX: 0x...`, `DW: 0x...`, `ALU_COMPLEMENT: 0x...` and `ALU0..3: 0xW0, 0xW1`. The ALU hex form sets only the first two words of the eight-word packet; the rest come from the structured form. `tools/fsraw <file.asm>` prints the complete assembled command stream, every unit's raw words and its exec batch position, followed by the symbolic disassembly, so a probe can record the words themselves rather than only a reading of them. See `docs/assembler-audit.md` for what each form can and cannot reach.
 
 #### Constants
 

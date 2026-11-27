@@ -18,6 +18,8 @@ includes = include_directories(
 	'../../src/libgrate'
 )
 
+subdir('asm')
+
 foreach test : tests
 	src = test + '.c'
 	executable(

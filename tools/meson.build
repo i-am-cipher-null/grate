@@ -6,6 +6,7 @@ tools = [
 	'fx10',
 	'replay',
 	'reset3d',
+	'fsraw',
 ]
 
 includes = include_directories(

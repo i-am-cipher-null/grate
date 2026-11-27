@@ -256,7 +256,8 @@ static const char * mfu_opcode(unsigned opcode)
 
 static const char * disassemble_mfu(const mfu_instr *mfu)
 {
-	static char ret[128];
+	/* four field lines, then the raw halves and any unnamed padding */
+	static char ret[320];
 	char *buf = ret;
 
 	buf += sprintf(buf, "sfu: %s r%d\n\t\t",
@@ -265,9 +266,20 @@ static const char * disassemble_mfu(const mfu_instr *mfu)
 	buf += sprintf(buf, "mul0: %s\n\t\t", mfu_mul(mfu, 0));
 	buf += sprintf(buf, "mul1: %s\n\t\t", mfu_mul(mfu, 1));
 
-	sprintf(buf, "ipl: %s, %s, %s, %s",
-		mfu_var(mfu, 0), mfu_var(mfu, 1),
-		mfu_var(mfu, 2), mfu_var(mfu, 3));
+	buf += sprintf(buf, "ipl: %s, %s, %s, %s",
+		       mfu_var(mfu, 0), mfu_var(mfu, 1),
+		       mfu_var(mfu, 2), mfu_var(mfu, 3));
+
+	/*
+	 * The raw halves follow the reading of them, and any bit the reading does
+	 * not account for is named.  The padding nibble is not "reserved": it has
+	 * no measured meaning, so it is printed by value when it is set.
+	 */
+	buf += sprintf(buf, "\n\t\t; raw 0x%08X 0x%08X",
+		       mfu->part1, mfu->part0);
+
+	if (mfu->__pad)
+		buf += sprintf(buf, " unk_pad=0x%X", mfu->__pad);
 
 	return ret;
 }
@@ -621,7 +633,7 @@ static const char * disassemble_alu_imm(const alu_instr *alu__)
 
 static const char * disassemble_alus(const alu_instr *alu)
 {
-	static char ret[1024];
+	static char ret[1200];
 	char *buf = ret;
 
 	memset(imm_fp20, 0, sizeof(imm_fp20));
@@ -634,10 +646,23 @@ static const char * disassemble_alus(const alu_instr *alu)
 	buf += sprintf(buf, "\t\tALU2:\t%s\n", disassemble_alu(&alu->a[2]));
 
 	if (!alu_imm_used) {
-		sprintf(buf, "\t\tALU3:\t%s\n", disassemble_alu(&alu->a[3]));
+		buf += sprintf(buf, "\t\tALU3:\t%s\n", disassemble_alu(&alu->a[3]));
 	} else {
-		sprintf(buf, "\t\tALU3:\t%s\n", disassemble_alu_imm(alu));
+		buf += sprintf(buf, "\t\tALU3:\t%s\n", disassemble_alu_imm(alu));
 	}
+
+	/*
+	 * The packet is eight words, and only four of them are printed above, so
+	 * the whole packet is repeated raw in the order the stream carries it -
+	 * the emitter writes part1 before part0 for every pair, and an ALU3
+	 * immediate swaps part6/part7 - so the words can be matched to a run's
+	 * word dump without reordering.  Fields unnamed above (the rD
+	 * fixed-point bit, for one) can then still be compared between runs.
+	 */
+	sprintf(buf, "\t\t; raw 0x%08X 0x%08X 0x%08X 0x%08X"
+		     " 0x%08X 0x%08X 0x%08X 0x%08X",
+		alu->part1, alu->part0, alu->part3, alu->part2,
+		alu->part5, alu->part4, alu->part7, alu->part6);
 
 	return ret;
 }

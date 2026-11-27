@@ -328,7 +328,7 @@ sections:
 	|
 	T_ALU_BUFFER_SIZE '=' T_NUMBER
 	{
-		if ($3 != 0 && $3 > 4) {
+		if ($3 == 0 || $3 > 4) {
 			PARSE_ERROR("Invalid ALU buffer size, should be 1-4");
 		}
 
@@ -337,6 +337,10 @@ sections:
 	|
 	T_PSEQ_DW_EXEC_NB '=' T_NUMBER
 	{
+		if ($3 > 127) {
+			PARSE_ERROR("Invalid pseq_to_dw_exec_nb, the field is 7 bits (0-127)");
+		}
+
 		asm_pseq_to_dw_exec_nb = $3;
 	}
 	;
@@ -590,6 +594,10 @@ MFU_FUNC:
 	|
 	T_MFU_SFU MFU_OPCODE T_ROW_REGISTER
 	{
+		if ($3 > 63) {
+			PARSE_ERROR("Invalid sfu register, the field is 6 bits (r0-r63)");
+		}
+
 		asm_mfu_instructions[asm_mfu_instructions_nb].opcode = $2;
 		asm_mfu_instructions[asm_mfu_instructions_nb].reg = $3;
 	}
@@ -597,6 +605,13 @@ MFU_FUNC:
 
 MFU_MUL_DST:
 	T_MFU_MUL_DST
+	{
+		if ($1 > 7) {
+			PARSE_ERROR("Invalid multiply destination, the field is 3 bits (0-7)");
+		}
+
+		yyval.u = $1;
+	}
 	|
 	T_MFU_MUL_DST_BARYCENTRIC
 	{
@@ -648,6 +663,13 @@ MFU_MUL_SRC:
 	}
 	|
 	T_MUL_SRC
+	{
+		if ($1 > 15) {
+			PARSE_ERROR("Invalid multiply source, the field is 4 bits (0-15)");
+		}
+
+		yyval.u = $1;
+	}
 	;
 
 MFU_OPCODE:

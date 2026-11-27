@@ -115,6 +115,13 @@ struct grate_shader *grate_shader_parse_vertex_asm(const char *);
 const char *grate_shader_disasm_vs(struct grate_shader *shader);
 struct grate_shader *grate_shader_parse_fragment_asm(const char *);
 const char *grate_shader_disasm_fs(struct grate_shader *shader);
+
+/*
+ * Raw word dump: the complete fragment command stream, then every unit's raw
+ * words with its exec batch position.  The caller frees the result.  This is
+ * the evidence; grate_shader_disasm_fs() is only a reading of it.
+ */
+char *grate_shader_words_dump(struct grate_shader *shader);
 struct grate_shader *grate_shader_parse_linker_asm(const char *);
 const char *grate_shader_disasm_linker(struct grate_shader *shader);
 struct grate_shader *grate_shader_parse_vertex_asm_from_file(const char *path);
