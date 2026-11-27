@@ -10724,3 +10724,201 @@ in `s62-p1` as the negative result it is) — and `linker_vs_s62_zw.txt`
 An unexplained byte appears in some capture words (`0x41`, `0x57`, `0xB9`,
 `0xFF` in the second byte where most cells carry `00`); nothing above depends on
 it.
+
+## 63. The cross-manifest sfu readback shift: context, not operand
+
+Note 62 recorded the same ALU-seeded 3.0 cell as code 212 in several manifests and
+219 in another, each reproducible inside its own manifest, and noted that the
+difference is larger than the fetched-versus-seeded effect under investigation.
+This note asks whether the two execution contexts are actually identical, then
+separates within-manifest from between-manifest stability, and finally re-measures
+the fetched-versus-seeded difference only inside single manifests.
+
+The answer is that the contexts *are* identical — same shader sources, same
+arguments, same environment, same logs — and the shift still happens. It is a
+device state effect that outlives the assembler process, it can be reproduced
+inside a single manifest, and once the pairs are placed in one manifest the
+fetched-versus-seeded difference is small and clean.
+
+### 63.1 The complete contexts, compared rather than assumed
+
+The harness writes every generated source file into the run directory, so the
+comparison is not from remembered snippets:
+
+| item | `s62-cp` (219) | `s63-bridge` (212) |
+|:--|:--|:--|
+| fragment source | `a50b3e17…3163ed` | `a50b3e17…3163ed` (same) |
+| vertex source | `7cffdaa3…5eb51` | `7cffdaa3…5eb51` (same) |
+| link source | `8365e341…eee39f` | `8365e341…eee39f` (same) |
+| argv | identical except the `--fs` path | |
+| `--vs_uniform` set | offset, wdelta, cred, cgreen, cblue — identical | |
+| stdout | identical 35 lines, only `result` differs | |
+| stderr | identical (X11 unavailable, DRM fallback) | |
+| harness, assembler, link, controls | identical | |
+
+`s62-cp`'s `source_sha256` and `s63-bridge`'s differ in nothing: the fragment,
+vertex and link hashes agree, the uniform list agrees value for value, and the
+only textual difference in the whole command is the generated file's path.
+
+The same file was then run **by hand**, with the same arguments, from four
+different paths (the `s62-cp` generated file, the `s63-bridge` one, a copy in
+`/tmp`, a copy under another name in another directory), three times each:
+`0xD4418B00` — code 212 — twelve times out of twelve. So the path, the file name
+and the copy location are all ruled out, and the 219 only ever appears when the
+*s62-cp manifest* drives the assembler.
+
+Renaming the manifest does not change it: `s63_cpclone` is `s62_cp`'s manifest
+with only `name` rewritten (`s63-cpclone`), and it reproduces 219 (31/31 runs).
+Variant names are not the cause either: `s63_names` holds four byte-identical
+variants, one of them carrying the exact name `cp-seed-c-s5`, and all four read
+212.
+
+### 63.2 One manifest can produce both values
+
+`s63_ctx` puts a seeded 3.0 cell after each kind of predecessor, all in one
+manifest, all with the same quad program and the same `w = 4`:
+
+| cell | predecessor | seeded 3.0 |
+|:--|:--|--:|
+| `cx-s3-0` | (first variant) | `0xD4` (212) |
+| `cx-s3-after-1ple` | seeded 1.0 | `0xD4` (212) |
+| `cx-s3-after-rows` | rows 0/1 readback (one `ipl` word) | **`0xDB` (219)** |
+| `cx-s3-after-ipl5` | selector 5 fetch | **`0xDB`** |
+| `cx-s3-after-ipl6` | selector 6 fetch | **`0xDB`** |
+| `cx-s3-after-copy` | fetch + ALU copy | **`0xDB`** |
+| `cx-s3-after-ipl2` | two `ipl` words | **`0xDB`** |
+| `cx-s3-after-rows23` | rows 2/3 readback | **`0xDB`** |
+| `cx-s3-last` | another seeded 3.0 | **`0xDB`** |
+
+That single run contains both values for byte-identical cells, which settles two
+things at once: the difference is not in the program, and it is not a decode
+artifact. It also shows the state is *sticky* inside a run — once a variant that
+ran an `ipl` word has executed, every later seeded 3.0 cell reads 219, including
+`cx-s3-last`, whose immediate predecessor is another seeded cell.
+
+Stickiness is not warm-up: `s63_same` runs twelve byte-identical seeded 3.0 cells
+with nothing else and all twelve read 212. Twelve identical cells are stable; a
+predecessor that fetched is what moves them.
+
+The bridge contradicts the simple form of the rule, and it is reported rather
+than smoothed over: `s63_bridge` has `br-rows-w4` (a row readback, one `ipl`
+word) and `br-gain-x64` (a fetch) immediately before `br-b-again`, a seeded 3.0
+cell, and it reads 212. So "after any fetch, 219" is false as stated; the trigger
+is narrower than that and is not yet isolated. What the three experiments
+(`s63_ctx`, `s63_same`, `s62_cp` ×3) do establish is that the seeded 3.0 cell has
+two stable readings, 212 and 219, and that which one appears is a property of the
+run's history, not of the cell.
+
+The mechanism is visible in the results word itself. The store is
+`store rt1, r0, r1`: the four fx10 channels come from r0/r1, and only bytes 1 and
+3 carry the two codes. Bytes 0 and 2 come from the register halves the ALU batch
+never wrote, and they differ between runs (`0x41` in the 212 words, `0x00` in the
+219 ones, `0x8B` in some fetched cells). Unwritten register state therefore
+survives into the framebuffer and differs per run — direct evidence that device
+state outlives the assembler process here, which is exactly what a sticky
+readback needs.
+
+### 63.3 Ordering and duplicates inside one manifest
+
+`s63_order` alternates seeded 1.0 and seeded 3.0 cells (`3,1,3,1,3,3,1,3,1,3,3,3`):
+every 3.0 reads 212, before and after 1.0 cells. `s63_bridge` holds the two
+note-62 cases six times in the crossover order
+`B, A, B, A, B, A` and then in the rest order, with duplicates
+(`br-b1..br-b3`, `br-a1..br-a3`, `br-b-again`, `br-a-again`): all six B copies
+read 212 and all six A copies read 212, in three separate runs of the manifest
+(40/40 runs each). So position and repetition do not matter *within* a manifest;
+the manifest's own history does.
+
+### 63.4 The paired fetched-versus-seeded measurement
+
+Only now, with the pairs inside one manifest, are the two paths comparable.
+`s63_pair` runs each value twice fetched and twice seeded at `w = 1`;
+`s63_pair4` does the same at `w = 4`. Both are constant-varying arms, so the
+fetched row value equals the seeded value, and the row readbacks confirm it
+(`1.0`, `1.414`, `2.828`, `4.0`).
+
+| value | `w = 1` fetched | seeded | `w = 4` fetched | seeded | seeded − fetched at `w = 4` |
+|--:|--:|--:|--:|--:|--:|
+| 1.0 | `0x97` (151) | `0x97` (151) | `0x92` (146) | `0x96` (150) | +4 |
+| 1.5 | `0x94` (148) | `0x94` (148) | `0x92` (146) | `0x93` (147) | +1 |
+| 3.0 | `0xD4` (212) | `0xD4` (212) | `0xDA` (218) | `0xDB` (219) | +1 |
+| 4.0 | `0xD7` (215) | `0xD7` (215) | `0xDA` (218) | `0xDE` (222) | +4 |
+
+Each cell's duplicate is identical, and the gain pair in the same manifest is
+`0x94 → 0xA4` at `w = 1` and `0x92 → 0xA2` at `w = 4`: exactly 16 codes, so the
+capture path is linear in the range used and the pairs are locally repeatable.
+
+Two results follow, and they are the note's only statements about the hidden
+input:
+
+* **At `w = 1` the two paths are identical**, exactly, for all four values
+  (0 codes). Note 62's `w = 1` coincidences were therefore not luck — with the
+  fetched and seeded cells in one manifest they agree cell for cell.
+* **At `w = 4` the fetched code is 1 to 4 codes *below* the seeded code** for all
+  four values. The direction is consistent (fetched lower), the size is 0.125 to
+  0.5 octave, and it is measured entirely inside one manifest, so no cross-run
+  calibration is involved.
+
+The four-code cases are 1.0 and 4.0, the one-code cases 1.5 and 3.0. The two
+groupings correspond to the store branch at `w = 4` (1.0 and 1.5 are low branch,
+3.0 and 4.0 high) only for the 1.5/3.0 pair, so branch is not the explanation; the
+difference is simply not a function of the value's branch, which is consistent
+with note 62 finding it not a function of D either.
+
+### 63.5 What this note establishes
+
+| claim | status |
+|:--|:--|
+| the 212/219 difference is a difference in the shader program | **disproved** — fragment, vertex and link sources hash identically; argv, uniforms, stdout and stderr identical |
+| it follows the file path or file name | **disproved** — the same file reads 212 from four paths, twelve of twelve, by hand |
+| it follows the variant name or the manifest name | **disproved** — `s63_names` (exact name, 212) and `s63_cpclone` (renamed manifest, 219) |
+| it follows the cell's position among identical cells | **disproved** — twelve identical cells all 212 |
+| it follows the immediate predecessor being 1.0 or 3.0 | **disproved** — `s63_order` is 212 in every case |
+| one manifest can contain both values for byte-identical cells | **confirmed** — `s63_ctx` |
+| the reading is sticky after a fetch earlier in the run | **confirmed in `s63_ctx`**, **not reproduced in `s63_bridge`** |
+| device state outlives the assembler process | **confirmed** — the unwritten register halves in bytes 0/2 differ per run and track neither the code nor the value |
+| the result word's bytes 1 and 3 are the two codes | **confirmed** (reading template: `store rt1, r0, r1`), so the stray byte is not part of either code |
+| fetched and seeded agree at `w = 1` | **confirmed**, 0 codes for 1.0, 1.5, 3.0, 4.0 |
+| fetched is below seeded at `w = 4` | **confirmed**, +4/+1/+1/+4 codes seeded-minus-fetched |
+| what the hidden input is | **unresolved** — now bounded to 0.5 octave, direction consistent, measured only within a manifest |
+| whether the shift is a hardware operand effect | **not shown to be** — every recorded input is identical, and the same file reproduces either value by run history alone |
+
+### 63.6 Consequences for the earlier notes
+
+* Note 62's caveat is now demonstrated, not inferred: `s63_ctx` holds both codes
+  for one cell inside one manifest.
+* Note 62's fetched-versus-seeded numbers (146 against 150 for 1.0 at `w = 4`)
+  reproduce here in a controlled pair (+4), so that particular comparison
+  survives; its cross-manifest comparisons do not.
+* Any future comparison of two paths must place the cells in one manifest and
+  duplicate them; the harness cannot guarantee that a code is a function of the
+  program alone.
+
+### 63.7 Runs and method notes
+
+| manifest | variants | runs | directory |
+|:--|--:|--:|:--|
+| `asm_characterize.s63_bridge.json` | 18 | 40 | `s63-bridge-20261127T202415Z`, `…T202456Z`, `…T202505Z` |
+| `asm_characterize.s63_pair.json` | 22 | 70 | `s63-pair-20261127T203132Z` |
+| `asm_characterize.s63_pair4.json` | 22 | 70 | `s63-pair4-20261127T203204Z` |
+| `asm_characterize.s63_ctx.json` | 16 | 36 | `s63-ctx-20261127T203017Z` |
+| `asm_characterize.s63_order.json` | 12 | 28 | `s63-order-20261127T202813Z` |
+| `asm_characterize.s63_names.json` | 4 | 12 | `s63-names-20261127T202943Z` |
+| `asm_characterize.s63_same.json` | 12 | 28 | `s63-same-20261127T203107Z` |
+
+106 variants, 284 runs, none failed, all on `kusma-ac100` with the runner command
+of notes 53..62. The bridge manifest ran three times and produced identical
+variant results each time (checked with `diff` over name/code pairs).
+
+Also kept: `s62-cp-…T202513Z`, a third run of note 62's manifest (219 again), and
+`path_test.sh`, the by-hand assembler script that ran one fixed file from four
+paths. `s63_cpclone` was `s62_cp` with only the `name` field rewritten; it is a
+copy rather than generator output, so it is **not** committed — its result is
+recorded here and the file can be recreated with one `json.dump`.
+
+All seven committed manifests regenerate byte-identically from
+`make_s63.py <out.json> <section>` (`cmp`, all seven), and every variant
+assembled and linked before it ran (no failures). Every run's `results.tsv`
+carries the three `source_sha256` values and the full argv used above, so the
+context table in 63.1 can be re-checked from the runs themselves rather than from
+this text.
