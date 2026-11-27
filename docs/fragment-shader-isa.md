@@ -592,25 +592,25 @@ that same row. Selectors 4..7 are different internal inputs; notes 58..62
 subsequently characterized their observable behavior:
 
 - **Selector 4** supplies a per-fragment quantity proportional to
-  (2^{16}D), where
-  (D = \sum_i \lambda_i/W_i) is the perspective denominator. It is not a
-  constant (2^{16}), and it is not simply (2^{16}/W) for a single clip-W
+  `2^16 * D`, where
+  `D = sum(lambda_i / W_i)` is the perspective denominator. It is not a
+  constant `2^16`, and it is not simply `2^16 / W` for a single clip-W
   value.
 - **Selectors 5, 6 and 7** follow row registers 1, 2 and 3 respectively.
   They are row-indexed, not component-indexed. For an ALU-seeded row value
-  (v \ne 0), the measured input behavior follows its sign-preserving
+  `v != 0`, the measured input behavior follows its sign-preserving
   normalized significand
-  (m = |v|/2^{\lfloor\log_2 |v|\rfloor}), with
-  (1 \le m < 2), combined with a piecewise exponent:
-  (K=32) for (|v|<2), and (K=16) for (|v|\ge 2). The transition at
-  magnitude 2 is measured. The exact internal implementation of this
-  piecewise behavior is not established.
+  `m = abs(v) / 2^floor(log2(abs(v)))`, with `1 <= m < 2`,
+  combined with a piecewise exponent: `K = 32` for `abs(v) < 2`, and
+  `K = 16` for `abs(v) >= 2`. The transition at magnitude 2 is measured.
+  The exact internal implementation of this piecewise behavior is not
+  established.
 - These selectors do not write rows 0..3 in the tested arrangements.
 
 The perspective-interpolator fetch path is not fully explained by the
 ALU-visible row value alone. With the same ALU-visible value, varying clip W
 changes the selector 5..7 result. Tests ruled out the simple candidate inputs
-(N), (D), and (T_i), and a general function of (D) alone. The remaining
+`N`, `D`, and `T_i`, and a general function of `D` alone. The remaining
 fetch-associated contribution is bounded to about half an octave, but its
 source and mechanism remain unresolved (notes 59..63).
 
@@ -822,18 +822,18 @@ D = \sum_i \frac{\lambda_i}{W_i}.
 $
 
 Thus `sfu: rcp r4` produces approximately
-(1/(2^{16}D)), the common normalization factor for the barycentric
-selectors. When clip W is constant across the primitive, (D=1/W), so
-(Q_4=2^{16}/W). With unequal vertex W values, it follows the per-fragment
+`1 / (2^16 * D)`, the common normalization factor for the barycentric
+selectors. When clip W is constant across the primitive, `D = 1 / W`, so
+`Q_4 = 2^16 / W`. With unequal vertex W values, it follows the per-fragment
 perspective denominator instead of a single vertex's reciprocal clip W.
 A fit to the selector-4 measurements held over the tested range
-(D=0.125..3.3); the exact internal precision and implementation remain
+`D = 0.125..3.3`; the exact internal precision and implementation remain
 unresolved (notes 59 and 60).
 
 This result must not be confused with an ALU-visible row register `r4`.
 The tests did not find this per-fragment quantity captured in the ALU row
 file. The MFU multiplier-source field is another independent mux again:
-its source value 4 is not SFU selector 4 and did not expose (Q_4) in the
+its source value 4 is not SFU selector 4 and did not expose `Q_4` in the
 tested source sweep. The three uses of the spelling `r4` therefore must not
 be treated as interchangeable.
 
@@ -842,11 +842,12 @@ be treated as interchangeable.
 For selectors 5..7, an interpolator-fed value is not interchangeable with an
 ALU-seeded value that has the same ordinary row readback. The fetched path
 carries a small additional W-dependent contribution: in the paired note-63
-measurements the paths agreed at (W=1), while at (W=4) the fetched result
-was 1..4 capture codes below the seeded result for the four tested magnitudes.
+measurements the paths agreed at `W = 1`, while at `W = 4` the fetched
+result was 1..4 capture codes below the seeded result for the four tested
+magnitudes.
 The capture-path gain pair remained exactly 16 codes per octave. The additional
 contribution is bounded to about half an octave, but its source is unknown.
-It has not been shown to be a simple function of (D), (N), or (T_i).
+It has not been shown to be a simple function of `D`, `N`, or `T_i`.
 
 There is a separate repeatability hazard. Note 63 produced different codes
 (212 and 219) for byte-identical seeded cells within one manifest. The
