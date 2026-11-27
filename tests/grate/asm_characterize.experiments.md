@@ -10913,7 +10913,7 @@ variant results each time (checked with `diff` over name/code pairs).
 Also kept: `s62-cp-…T202513Z`, a third run of note 62's manifest (219 again), and
 `path_test.sh`, the by-hand assembler script that ran one fixed file from four
 paths. `s63_cpclone` was `s62_cp` with only the `name` field rewritten; it is a
-copy rather than generator output, so it is **not** committed — its result is
+copy rather than generator output, so the generator does not produce it; it is committed as `tests/grate/asm_characterize.s63_cpclone.json` (commit 36ae7f4) so the clone can be audited — its result is
 recorded here and the file can be recreated with one `json.dump`.
 
 All seven committed manifests regenerate byte-identically from
