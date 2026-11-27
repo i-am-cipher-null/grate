@@ -544,7 +544,8 @@ selector 10 (`sfu`).
 | Value | Meaning |
 |------:|:--------|
 | 0..3 | row register 0..3 |
-| 4..6 | unknown sources; tested values were nonzero and unchanged when the source field or sample position changed |
+| 4 | Separate multiplier-source input; tested readback was `0x08` (approximately `2^-30`), not SFU selector 4. |
+| 5..6 | Unknown sources; tested values were nonzero and unchanged when the source field or sample position changed. |
 | 7..8 | unknown; zero readback in the tested arrangements does not establish that these are reserved |
 | 9 | fetch-associated value; zero without a fetch and changed when a fetch was present |
 | 10 | SFU result (`sfu`) |
@@ -594,17 +595,18 @@ subsequently characterized their observable behavior:
 - **Selector 4** supplies a per-fragment quantity proportional to
   `2^16 * D`, where
   `D = sum(lambda_i / W_i)` is the perspective denominator. It is not a
-  constant `2^16`, and it is not simply `2^16 / W` for a single clip-W
-  value.
+  constant `2^16`. With uniform clip W it reduces to `2^16 / W`; with
+  unequal vertex W values it follows the per-fragment denominator, not any
+  single vertex's reciprocal W.
 - **Selectors 5, 6 and 7** follow row registers 1, 2 and 3 respectively.
   They are row-indexed, not component-indexed. For an ALU-seeded row value
   `v != 0`, the measured input behavior follows its sign-preserving
   normalized significand
   `m = abs(v) / 2^floor(log2(abs(v)))`, with `1 <= m < 2`,
   combined with a piecewise exponent: `K = 32` for `abs(v) < 2`, and
-  `K = 16` for `abs(v) >= 2`. The transition at magnitude 2 is measured.
-  The exact internal implementation of this piecewise behavior is not
-  established.
+  `K = 16` for `abs(v) >= 2`. Thus the measured operand model is
+  `sign(v) * m * 2^K`. The transition at magnitude 2 is measured. The exact
+  internal implementation of this piecewise behavior is not established.
 - These selectors do not write rows 0..3 in the tested arrangements.
 
 The perspective-interpolator fetch path is not fully explained by the
@@ -816,10 +818,8 @@ The token `r4` in `sfu: rcp r4` is the six-bit **SFU operand selector 4**;
 it does not identify an ordinary ALU row-register input. On AR20, this
 selector supplies a per-fragment quantity proportional to
 
-$
-Q_4 = 2^{16} D, \qquad
-D = \sum_i \frac{\lambda_i}{W_i}.
-$
+`Q_4 = 2^16 * D`, where
+`D = sum(lambda_i / W_i)`.
 
 Thus `sfu: rcp r4` produces approximately
 `1 / (2^16 * D)`, the common normalization factor for the barycentric
@@ -833,8 +833,8 @@ unresolved (notes 59 and 60).
 This result must not be confused with an ALU-visible row register `r4`.
 The tests did not find this per-fragment quantity captured in the ALU row
 file. The MFU multiplier-source field is another independent mux again:
-its source value 4 is not SFU selector 4 and did not expose `Q_4` in the
-tested source sweep. The three uses of the spelling `r4` therefore must not
+its source value 4 is not SFU selector 4; in the tested source sweep it
+returned `0x08` (approximately `2^-30`), not `Q_4`. The three uses of the spelling `r4` therefore must not
 be treated as interchangeable.
 
 ##### Fetch-path and run-history caveats (notes 60..63)
