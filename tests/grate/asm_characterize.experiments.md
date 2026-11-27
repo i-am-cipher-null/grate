@@ -10468,3 +10468,259 @@ the capture lane is `c[4] = 16.0`.
 
 One cell reports an unexplained byte: `ws-ipl-w2` has `0xB9` in the second byte
 where the other seven `ws` cells have `00`. Nothing in this note depends on it.
+
+## 62. The interpolator-dependent sfu input: what it is not
+
+Note 61 left one row open: the sfu's extra input appears only when the source row
+was written by the perspective interpolator, but which quantity it carries was
+unknown, and the `D/LSUM` factor that fitted note 61's `ws` series had no
+independent test. This note runs the configurations that separate the candidates
+(V, N, D, the per-vertex terms T_i, and the `D/LSUM` factor), closes the z/w
+half of the row-index question, and measures the transfer function itself at
+three clip `w` with ALU-seeded rows. The answer is negative: none of the
+candidates survives, and the extra input turns out to be small enough that the
+run-to-run spread of the measurement path bounds it.
+
+### 62.1 Cells, predictions, and the instrument checks
+
+Geometry, sample and read paths are note 61's: quad corners `(-1, 1)`,
+`(-1, -1)`, `(1, 1)`, `(1, -1)`, `result = fb_data[0]`, `offset = (-1.75,
+-1.45)` (`x = 0.75, y = 0.45`), lane 1 an ALU row readback at `u9 = 2^-15`, lane 2
+the sfu result through `mul0: r3, sfu, #1` at `c[4]`. Selector 5..7 cells capture
+at `2^4` and the selector-4 cells at `2^12`.
+
+Every configuration was written down with its predicted code *before* the run,
+from note 60's weights (`blue 0.70, green 0.13, red 0.15`, sum 0.98) and no
+per-cell fit:
+
+    D = sum lambda_i/W_i    N = sum lambda_i A_i/W_i    V = N/D
+    T_i = lambda_i A_i/W_i  rowD = V*D/LSUM              LSUM = 0.98
+
+`rowD` is note 61's candidate written out: because the row value at the measured
+sample *is* V, "the row times a `D/LSUM` factor" is the same number as `N/LSUM`,
+i.e. the candidate factor and "the numerator" are one hypothesis, not two. That
+identity is what makes 62.5 decisive.
+
+Two instrument checks come first, because every conclusion below is a few code
+steps wide:
+
+* **Gain pair.** The same cell captured at `2^4` and `2^6`: `0x97` and `0xA7` at
+  every `w`, in both the fetched and the seeded arm. Difference exactly 16 codes
+  = one octave of gain, so the capture/store path is linear over the range used.
+* **Seeded ladder.** Eight values (0.25 .. 4.0) seeded into row 1 at `w = 1, 2,
+  4`: **all three columns are byte-identical** —
+
+  | v | 0.25 | 0.5 | 0.75 | 1.0 | 1.5 | 2.0 | 3.0 | 4.0 |
+  |:--|--:|--:|--:|--:|--:|--:|--:|--:|
+  | code | `97` | `97` | `94` | `97` | `94` | `D7` | `D4` | `D7` |
+
+  So neither the note 58 map nor the ALU input path has any clip-`w` dependence,
+  and the transfer function is a clean reference at every `w` this note uses.
+
+### 62.2 The z/w exchange closes the row-index question
+
+`tram0.xywz` moves z and w between row 2 and row 3 and leaves x and y alone.
+Values `(x, y, z, w) = (1.0, 1.5, 3.0, 0.5625)`; the default link fills
+`r0..r3 = y, x, z, w`, the plain link `= x, y, z, w`, and the new one `= x, y, w,
+z`, which the row readbacks confirm without any sfu in the word:
+
+| link | rows 0, 1 | rows 2, 3 | s6 | s7 |
+|:--|:--|:--|--:|--:|
+| `tram0.xyzw` (plain) | `1.0`, `1.414` | `2.828` (z), `0.5946` (w) | `0xD4` | `0x96` |
+| `tram0.xywz` | `1.0`, `1.414` | `0.5946` (w), `2.828` (z) | **`0x96`** | **`0xD4`** |
+
+Selector 6 reads 212 while row 2 holds z and 150 while row 2 holds w; selector 7
+does the opposite. The two codes are the two *values'* codes, exchanged exactly
+with the rows. With 61.3's x/y result, **selectors 5, 6 and 7 name rows 1, 2 and
+3 under every fill order tested**, and no selector follows a varying component
+through a slot change. The ALU-seeded controls for both values reproduce the
+same two codes (`0xD4` for 3.0, `0x96` for 0.5625), so the interpolated cells at
+`w = 1` match the ALU path cell for cell.
+
+### 62.3 Redistributing the vertices changes nothing
+
+Three distributions with the clip `w` fixed at 1, chosen so the weighted sum
+stays near 1 while the individual terms move by 2x and to zero:
+
+| set | `(ar, ag, ab)` | `T_red, T_green, T_blue` | N | V | row 1 | s5 | s6 |
+|:--|:--|:--|--:|--:|--:|--:|--:|
+| s1 | 1, 1, 1 | 0.15, 0.13, 0.70 | 0.98 | 1.00 | `1.0` | `0x97` | `0x97` |
+| s2 | 0.5, 1.5, 1.0 | 0.075, 0.195, 0.70 | 0.97 | 0.99 | `1.0` | `0x92` | `0x92` |
+| s3 | 2.0, 0.0, 1.0 | 0.30, 0, 0.70 | 1.00 | 1.02 | `1.0` | `0x96` | `0x96` |
+
+Measured D is `0xD7` (code 215, i.e. `D = 1.0`) in all three, and the row
+readback is 1.0 in all three. Against the calibrated map, `cap(V)` is 151, 147 and
+151 while the measured codes are 151, 146 and 150 — every cell within one step.
+The green term falls from 0.13 to zero between s1 and s3 and the red term doubles
+between s2 and s3, with no measurable effect beyond what V predicts. **The sfu
+input retains no information about individual per-vertex contributions.**
+
+### 62.4 The constant-varying series: V and N are too close to separate
+
+A constant varying of 1.0 gives `V = 1.0` for every clip `w`, so N = D/LSUM and
+the two candidates are 0 to 4 codes apart, while D itself moves by 1.2 octaves:
+
+| arm | `w` | D (measured) | s5 | s6 | `cap(V)` | `cap(N)` |
+|:--|--:|--:|--:|--:|--:|--:|
+| blue-`w` | 1 | `0xD7` = 1.00 | `0x97` | `0x97` | 151 | 151 |
+| blue-`w` | 2 | `0xDB` = 0.71 | `0x95` | `0x95` | 151 | 149 |
+| blue-`w` | 4 | `0xDF` = 0.50 | `0x92` | `0x92` | 151 | 147 |
+| blue-`w` | 8 | `0xE1` = 0.42 | `0x94` | `0x94` | 151 | 148 |
+| green-`w` | 2 | `0xD7` (computed 0.92) | `0x92` | `0x92` | 151 | 147 |
+| green-`w` | 4 | `0xD7` (0.88) | `0x92` | `0x92` | 151 | 147 |
+| green-`w` | 8 | `0xD7` (0.87) | `0x92` | `0x92` | 151 | 147 |
+| uniform `w` | 1..8 | 1.00 .. 0.125 | `0x97` x4 | `0x97` x4 | 151 | 151 |
+
+`model_s62.py` scores these cells as V off by 0 to +5 codes and N off by 0 to +3,
+so the series *looks* like N — but the largest V-to-N separation anywhere in it
+is four codes, which is the size of the fetch-path wobble measured in 62.7. A
+four-code gap inside a four-code wobble cannot identify anything, and the green
+arm makes the same point from the other side: it carries `D ≈ 0.88` and still
+reads `0x92`, the code the blue arm reaches only at `D = 0.5`. Nothing here is a
+function of D.
+
+The decisive arm is 62.5.
+
+### 62.5 The numerator is excluded, and with it `D/LSUM`
+
+`vs_persp_wnum.txt` sets the vertex value proportional to the clip `w`, so
+`N = C*sum(lambda) = 1.86` is constant while `V = 1.83, 2.59, 4.09, 4.2` crosses
+the `|v| = 2` store boundary between `w = 1` and `w = 2`:
+
+| `w` | V | N | `cap(V)` | `cap(N)` | measured |
+|--:|--:|--:|--:|--:|--:|
+| 1 | 1.83 | 1.86 | 147 | 147 | `0x92` (146) |
+| 2 | 2.59 | 1.86 | 213 | 147 | `0xD8` (216) |
+| 4 | 4.09 | 1.86 | 215 | 147 | `0xDA` (218) |
+| 8 | 4.20 | 1.86 | 215 | 147 | `0xDC` (220) |
+
+The code leaves the low branch exactly where V crosses 2 and lands 69-73 codes
+away from `cap(N)`; N cannot cross because it never reaches 2. **The numerator is
+excluded**, and since `rowD = N/LSUM`, note 61's candidate factor is excluded
+with it — it was a four-code fit to a series where the alternative was four codes
+away, and the first arm that separates the two by more than the wobble rejects
+it. Note 61's refusal to treat it as established was the right call.
+
+What survives: at `w = 1` the code is within one step of `cap(V)` (146 against
+147), and the branch boundary sits at `|V| = 2`. Where V and N are far apart, the
+sfu follows V; where they are close, the measurement cannot tell, and the four
+fetched cells at `w >= 2` are 3-6 codes above `cap(V)` — the same wobble, now
+visible on the high branch.
+
+### 62.6 The boundary: what the extra input is attached to
+
+At `w = 4`, where the fetch path differs from the ALU path, with row 1 = 1.0 and
+row 2 = 3.0 (61 codes apart, different branches):
+
+| cell | row 1 after the word | sfu |
+|:--|:--|--:|
+| `cp-s5` (row 1 = 1.0 fetched) | `1.0` | `0x92` (146) |
+| `cp-seed-a-s5` (row 1 = 1.0 seeded) | `1.0` | `0x96` (150) |
+| `cp-s6` (row 2 = 3.0 fetched) | `1.0` | `0xDA` (218) |
+| `cp-seed-c-s5` (row 1 = 3.0 seeded) | `2.828` | `0xDB` (219) |
+| `cp-cp21-s5` (row 2 copied into row 1) | `2.828` | `0xDA` (218) |
+| `cp-ipl2-s6` (second interpolator word) | `1.0` | `0xDA` (218) |
+
+* A copy of the fetched 3.0 into row 1 reads 218, the same code the fetch put in
+  row 2, so **the extra input travels with the value**, not with the row or the
+  fetch that produced it.
+* A second interpolator word does not change it (218 again), and in the earlier
+  `t4` arm the same held for 1.0 (146 before and after).
+* The fetched and seeded 3.0 differ by 1 code (218/219) — i.e. at this value the
+  two paths agree within the one-step tolerance, while the fetched and seeded 1.0
+  differ by 4 codes (146/150).
+
+So the extra input is per-fragment, follows the value, survives a second fetch,
+and is worth at most half an octave — and it is *not* a scaled copy of the row in
+any of the senses tested: at `w = 4` it moves the 1.0 cell by 4 codes and the 3.0
+cell by 1.
+
+### 62.7 The run-to-run spread bounds the whole question
+
+One cell exists in five separate manifests: the ALU-seeded 3.0 (`q`, `dup` at
+`w = 4`, `cp` at `w = 4`, and `lk`'s ladder at `w = 1, 2, 4`). Measured:
+
+| manifest | cell | result |
+|:--|:--|--:|
+| `s62_q` | `q-dsc-v3-w4` | `0xD4` (212) |
+| `s62_dup` | `dup-a`, `dup-b`, `dup-c`, `dup-z-last` | `0xD4` (212), four times |
+| `s62_cp` | `cp-seed-c-s5` | `0xDB` (219) |
+| `s62_lk` (scalar program, `w = 1, 2, 4`) | `lk-w1-v3`, `lk-w2-v3`, `lk-w4-v3` | `0xD4` (212), three times |
+
+The variant entries are byte-identical — `make_s62.py` regenerates all ten
+manifests byte-identically and the diff between the `cp` and `q` entries is the
+`name` field alone — yet one manifest reads `0xDB` reproducibly (three repeats)
+and four others read `0xD4` reproducibly (three repeats each). Re-running `cp`
+reproduces `0xDB`, and its four-copy duplicate in one manifest agrees with
+itself.
+
+This is the single most important measurement in the note: **codes are
+reproducible within a run and can shift by up to 7 codes between runs for the
+same words.** The wobble that 62.4-62.6 chase is therefore at the edge of what
+this path resolves, which is why every discrimination above is made at 60+ codes
+(the branch) or by comparing cells inside one manifest, and why the `D/LSUM`
+hypothesis — a four-code effect — should never have been a candidate on its own.
+
+Note 61's `ws`-versus-`bnd` comparison crossed two manifests and is hereby
+qualified: its 4-5 code difference is within this spread and should be read as
+"fetched and seeded differ", not as a specific code offset.
+
+### 62.8 What this note establishes
+
+| claim | status |
+|:--|:--|
+| selector 6 names row 2 and selector 7 names row 3 | **confirmed** — z/w exchanged through `tram0.xywz`, codes `0xD4`/`0x96` exchange with them |
+| a selector follows a varying component rather than a row | **disproved** for all three selectors |
+| the interpolated code equals the ALU-seeded code for the same value at `w = 1` | **confirmed** (212/212 and 150/150 in the `zw`/`zwp` pair) |
+| individual per-vertex terms `T_i` reach the sfu input | **disproved** — three distributions, 2x change in `T`, all within 1 step of `cap(V)` |
+| the operand is `N`, or note 61's `D/LSUM` factor (the same number `/0.98`) | **disproved** — the `w`-proportional arm puts the code on the branch V crosses and 69-73 codes from `cap(N)` |
+| the operand is `D` | **disproved** — the uniform-`w` arm goes to `D = 0.125` with flat codes, and the green-`w` arm has `D ≈ 0.88` with the same code as blue-`w` at `D = 0.5` |
+| the transfer map or the ALU path depends on clip `w` | **disproved** — eight seeded values, byte-identical codes at `w = 1, 2, 4` |
+| the capture path is linear in gain over the range used | **confirmed** — exactly 16 codes per octave, fetched and seeded |
+| the extra input travels with the value into another row | **confirmed** — a copied fetched 3.0 reads the fetched code, not the seeded one |
+| the extra input survives a second interpolator fetch | **confirmed** |
+| which quantity the extra input is | **still unresolved** — bounded to `<= 5` codes, not a function of D, N or `T_i` |
+| the extra input is a stable, repeatable code offset | **disproved** — identical words read 212 or 219 depending on the manifest, reproducibly within each |
+
+### 62.9 Runs and method notes
+
+| manifest | variants | runs | directory |
+|:--|--:|--:|:--|
+| `asm_characterize.s62_p1.json` | 56 | 116 | `s62-p1-20261127T200740Z` |
+| `asm_characterize.s62_zw.json` | 9 | 22 | `s62-zw-20261127T200842Z` |
+| `asm_characterize.s62_zwp.json` | 9 | 22 | `s62-zwp-20261127T200755Z` |
+| `asm_characterize.s62_t4.json` | 9 | 31 | `s62-t4-20261127T200802Z` |
+| `asm_characterize.s62_w.json` | 24 | 52 | `s62-w-20261127T201058Z` |
+| `asm_characterize.s62_cp.json` | 9 | 31 | `s62-cp-20261127T201105Z` |
+| `asm_characterize.s62_lk.json` | 24 | 52 | `s62-lk-20261127T201159Z` |
+| `asm_characterize.s62_q.json` | 6 | 22 | `s62-q-20261127T201306Z` |
+| `asm_characterize.s62_dup.json` | 4 | 16 | `s62-dup-20261127T201426Z` |
+| `asm_characterize.s62_bn.json` | 24 | 48 | `s62-bn-20261127T201643Z` |
+
+174 variants, 412 runs, none failed, all on `kusma-ac100` with the runner command
+of notes 53..61. `s62-cp-…T201332Z` and `s62-lk-…T201339Z` are immediate re-runs
+kept as the repeatability evidence; `s62-zw-…T200752Z` aborted on the
+`varying-pipeline` control before its variants ran and is superseded.
+
+The `tram0.xywz` link needs its own control expectation: the control reads the
+tram back, so the same program reads `0x01FF00FF` instead of `0xFF01FF00` (a
+one-byte rotation of the default link's word). That expectation is measured, not
+assumed, and the `immediate-operand` control is unchanged in every manifest. The
+plain-link manifests keep note 61's measured `0xFF0100FF`.
+
+All ten manifests regenerate byte-identically from
+`make_s62.py <out.json> <section>` and were parse-checked by the run itself (no
+variant failed to assemble or link). `model_s62.py <results.tsv>` reproduces
+every residual quoted above, including the D readback, with the weights and
+`LSUM = 0.98` taken from note 60 and no per-cell parameter.
+
+Two shader files are new: `vs_persp_wgreen2.txt` is `vs_persp_col.txt` with only
+the `wdelta` source moved to `a[1].yyyy` — `vs_persp_wgreen.txt` cannot produce a
+constant varying because its last `MAD` applies the `ab` weight to the green
+vertex (that arm was run, read `0x6E` in the row lane instead of 1.0, and is kept
+in `s62-p1` as the negative result it is) — and `linker_vs_s62_zw.txt`
+(`tram0.xywz`).
+
+An unexplained byte appears in some capture words (`0x41`, `0x57`, `0xB9`,
+`0xFF` in the second byte where most cells carry `00`); nothing above depends on
+it.

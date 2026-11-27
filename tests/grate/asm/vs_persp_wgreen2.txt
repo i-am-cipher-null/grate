@@ -1,0 +1,57 @@
+/*
+ * Perspective probe, scalar varying, clip w on the green vertex.
+ *
+ * vs_persp_col.txt with one change: the position premultiply takes wdelta from
+ * a[1].yyyy, so `w` sits on the green vertex and the projected quad still does
+ * not move.  The varying terms are note 55's (ar on the red vertices, ag on
+ * green, ab on blue), so a constant varying is reachable by setting all three
+ * uniforms equal - which vs_persp_wgreen.txt cannot do, because its last MAD
+ * puts the ab weight on the green vertex too.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vscalar";
+
+.uniforms
+	[100] = "offset";
+	[101] = "wdelta";
+	[104] = "ag";
+	[105] = "ab";
+	[106] = "ar";
+
+.asm
+
+EXEC
+	ADDv r10.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;
+
+EXEC
+	MULv r11.xyzw, a[1].yyyy, c[101].xxxx
+	NOPs
+;
+
+EXEC(export[0]=vector)
+	MADv r63.xyzw, r10.xyzw, r11.xxxx, r10.xyzw
+	NOPs
+;
+
+EXEC
+	MULv r14.xyzw, a[1].xxxx, c[106].xxxx
+	NOPs
+;
+
+EXEC
+	MADv r15.xyzw, a[1].yyyy, c[104].xxxx, r14.xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MADv r63.xyzw, a[1].zzzz, c[105].xxxx, r15.xyzw
+	NOPs
+;
