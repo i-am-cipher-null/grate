@@ -588,12 +588,31 @@ the side effects are not. The paired operations
 these bit-3 effects.
 
 Ordinary RCP selectors 0..3 read a row and write their reciprocal back into
-that same row. Selectors 4..7 use internal sources that are still unidentified.
-The bounded follow-up in note 57 found that selector 4 is independent of the
-seeded rows and has a constant source corresponding to (2^{16}), while
-selectors 5..7 depend on rows 1..3 in a non-monotone way that is not explained
-by reading those row values. They do not write rows 0..3. The source identity
-for all four selectors remains unresolved.
+that same row. Selectors 4..7 are different internal inputs; notes 58..62
+subsequently characterized their observable behavior:
+
+- **Selector 4** supplies a per-fragment quantity proportional to
+  (2^{16}D), where
+  (D = \sum_i \lambda_i/W_i) is the perspective denominator. It is not a
+  constant (2^{16}), and it is not simply (2^{16}/W) for a single clip-W
+  value.
+- **Selectors 5, 6 and 7** follow row registers 1, 2 and 3 respectively.
+  They are row-indexed, not component-indexed. For an ALU-seeded row value
+  (v \ne 0), the measured input behavior follows its sign-preserving
+  normalized significand
+  (m = |v|/2^{\lfloor\log_2 |v|\rfloor}), with
+  (1 \le m < 2), combined with a piecewise exponent:
+  (K=32) for (|v|<2), and (K=16) for (|v|\ge 2). The transition at
+  magnitude 2 is measured. The exact internal implementation of this
+  piecewise behavior is not established.
+- These selectors do not write rows 0..3 in the tested arrangements.
+
+The perspective-interpolator fetch path is not fully explained by the
+ALU-visible row value alone. With the same ALU-visible value, varying clip W
+changes the selector 5..7 result. Tests ruled out the simple candidate inputs
+(N), (D), and (T_i), and a general function of (D) alone. The remaining
+fetch-associated contribution is bounded to about half an octave, but its
+source and mechanism remain unresolved (notes 59..63).
 
 ##### Multiplier row-source slots when SFU operand bit 3 is set
 
@@ -709,9 +728,11 @@ The tested TEX instruction and 2D sampler descriptors expose no demonstrated
 dimension or face selector. Face selection therefore remains unresolved;
 these measurements do not show whether it is fixed-function or shader-side.
 
-See [experiment notes 56 and 57](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md)
-for the selector sweep, multiplier source-slot routing, row-write measurements,
-read-path calibration and bounded cube/TEX reconnaissance.
+See [experiment notes 56..58](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md)
+for the selector sweep, multiplier source-slot routing, row-write measurements
+and the characterization of selectors 4..7. Notes 59..63 in the same file
+cover the perspective-interpolator input path and its repeatability caveats.
+The cube/TEX face-selection question remains unresolved.
 
 ##### Multiplier execution and interpolation-weight state:
 
@@ -753,8 +774,10 @@ $$
 D = \sum_i \frac{\lambda_i}{W_i}.
 $$
 
-Multiplying a selector by `rcp(r4)` gives the corresponding perspective-correct
-weight, `(lambda_i / W_i) / D`, within the precision of the hardware readback.
+Multiplying a selector by `sfu: rcp r4` gives the corresponding
+perspective-correct weight, `(lambda_i / W_i) / D`, within the precision of
+the hardware readback. Here `r4` names **SFU operand selector 4**, not an
+ordinary ALU row-register read.
 The third normalized weight is the remainder after the first two. An
 interpolated varying follows the weighted sum of its vertex values using these
 perspective-correct weights, rather than a screen-space barycentric sum.
@@ -787,16 +810,58 @@ fetched. Treat this as a measured dependency for the tested FP20 IPL and
 special-RCP arrangement, not as a complete ordering specification for every
 MFU operation.
 
-#### Fragment w component
+#### SFU selector 4 and the perspective denominator
 
-Hardware tests show that `r4` carries the interpolated reciprocal clip W,
-not clip W itself. It is approximately `65536 * D` on a 16.16-style scale,
-where `D = sum(lambda_i / W_i)` is the perspective denominator. With a
-constant clip W across the primitive this reduces to approximately
-`65536 / W`; when vertex W values differ, `r4` tracks the per-fragment
-perspective denominator. The probe's `src13 x rcp(r4)` anchor matched
-`1 / (65536 * D)`. Thus `sfu: rcp r4` supplies the common normalization
-factor used with selectors 11 and 12.
+The token `r4` in `sfu: rcp r4` is the six-bit **SFU operand selector 4**;
+it does not identify an ordinary ALU row-register input. On AR20, this
+selector supplies a per-fragment quantity proportional to
+
+$
+Q_4 = 2^{16} D, \qquad
+D = \sum_i \frac{\lambda_i}{W_i}.
+$
+
+Thus `sfu: rcp r4` produces approximately
+(1/(2^{16}D)), the common normalization factor for the barycentric
+selectors. When clip W is constant across the primitive, (D=1/W), so
+(Q_4=2^{16}/W). With unequal vertex W values, it follows the per-fragment
+perspective denominator instead of a single vertex's reciprocal clip W.
+A fit to the selector-4 measurements held over the tested range
+(D=0.125..3.3); the exact internal precision and implementation remain
+unresolved (notes 59 and 60).
+
+This result must not be confused with an ALU-visible row register `r4`.
+The tests did not find this per-fragment quantity captured in the ALU row
+file. The MFU multiplier-source field is another independent mux again:
+its source value 4 is not SFU selector 4 and did not expose (Q_4) in the
+tested source sweep. The three uses of the spelling `r4` therefore must not
+be treated as interchangeable.
+
+##### Fetch-path and run-history caveats (notes 60..63)
+
+For selectors 5..7, an interpolator-fed value is not interchangeable with an
+ALU-seeded value that has the same ordinary row readback. The fetched path
+carries a small additional W-dependent contribution: in the paired note-63
+measurements the paths agreed at (W=1), while at (W=4) the fetched result
+was 1..4 capture codes below the seeded result for the four tested magnitudes.
+The capture-path gain pair remained exactly 16 codes per octave. The additional
+contribution is bounded to about half an octave, but its source is unknown.
+It has not been shown to be a simple function of (D), (N), or (T_i).
+
+There is a separate repeatability hazard. Note 63 produced different codes
+(212 and 219) for byte-identical seeded cells within one manifest. The
+difference followed run history, not the shader sources, arguments, paths,
+variant names or cell positions. In one sequence the value changed after a
+row-readback variant; a separate bridge sequence did not reproduce that
+specific transition, so the trigger is not isolated. The evidence indicates
+that relevant device state outlives the assembler process, but does not identify
+the state or explain the fetched-path contribution.
+
+Consequently, comparisons between fetched and seeded inputs should be adjacent
+and made within the same manifest, with duplicate cells and standard controls.
+Preserve the complete source context and raw assembled stream for each run.
+Do not interpret a cross-manifest code shift as an operand property without
+a within-manifest replication.
 
 #### Fragment z component
 
@@ -843,6 +908,24 @@ recover exact lane values or distinguish negative z from zero. The w = 2
 measurement used uniform w, so varying-w interpolation is not characterized
 here. See the [fragment hardware experiment notes](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/tests/grate/asm_characterize.experiments.md),
 note 52, for the probe setup and results.
+
+## Experimental evidence and tooling
+
+For fragment-ISA experiments, preserve the complete generated source context
+and the raw assembled command stream alongside the hardware result. The
+`tools/fsraw` diagnostic prints the Host1x stream with word offsets and the
+per-batch PSEQ, MFU schedule, TEX, ALU schedule, complement and DW words; it
+also prints each MFU word and all eight words of each ALU packet. Its symbolic
+disassembly is deliberately labelled a hypothesis. The raw dump describes
+what the assembler generated for submission; it is not a GPU readback.
+
+Neither the assembler nor the disassembler is yet a complete, lossless ISA
+interface. In particular, the existing raw ALU syntax does not author all
+eight packet words, and schedule words are generated by the assembler rather
+than directly specified in source. The disassembler still omits some fields,
+so its symbolic text must not replace the raw words. The separate
+[assembler/disassembler audit](https://github.com/i-am-cipher-null/grate/blob/code/fragment-isa-experiments/docs/assembler-audit.md)
+records the measured coverage and remaining limitations.
 
 ## TEX instruction word encoding
 
