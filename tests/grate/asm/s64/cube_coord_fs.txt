@@ -1,0 +1,40 @@
+/*
+ * Fragment shader for the cube-coordinate probe (/probe_tex_cube.sh).
+ *
+ * S and T come from the varying (ipl); R is computed per fragment from posx so
+ * a sampler that selects a cube face from the coordinate vector has something
+ * to select with.  R = posx * rslope + rbias: the probe binds rslope = 0,
+ * rbias = 0 for the "no third coordinate" control, and rslope = 1/256,
+ * rbias = -32 for R sweeping 0..1 across the frame.
+ *
+ * The TEX reads its coordinates one batch after the ALU writes them, which is
+ * the documented latency for ALU-written texture coordinates; a TEX cannot take
+ * them from the same batch.  Batch 2 also clears r3, the bias register, to keep
+ * the sample identical to the shipped `filter_quad_fs` (`txb`, bias 0).
+ */
+
+pseq_to_dw_exec_nb = 2
+alu_buffer_size = 1
+
+.uniforms
+	[0] = "rslope";
+	[1] = "rbias";
+
+.asm
+EXEC
+	MFU:	sfu: rcp r4
+		mul0: bar, sfu, bar0
+		mul1: bar, sfu, bar1
+		ipl: t0.fp20, t0.fp20, NOP, NOP
+;
+
+EXEC
+	ALU:
+		ALU0:	MAD r2.lh, posx, u0, u1
+		ALU1:	MAD r3.lh, u0, #0, #0
+;
+
+EXEC
+	TEX:	txb r2, r3, tex0, r0, r1, r2, r3
+	DW:	store rt1, r2, r3
+;
