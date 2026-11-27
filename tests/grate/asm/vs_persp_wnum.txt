@@ -1,0 +1,60 @@
+/*
+ * Perspective probe whose varying is proportional to the clip w.
+ *
+ * The clip position is premultiplied by a per-vertex w (as in
+ * vs_persp_col.txt), so the projected triangle is the same for every w.  The
+ * varying is built from the *same* w factor, so the vertex value is
+ *
+ *     A_i = cbase + cwd * isW_i = C * W_i
+ *
+ * with cbase = C and cwd = C * (w - 1).  The point of the arm is that the
+ * perspective numerator
+ *
+ *     N = sum lambda_i * A_i / W_i = C * sum lambda_i
+ *
+ * is then independent of w while the corrected varying V = N / D is not, so a
+ * measurement that follows one and not the other separates them.
+ *
+ * w sits on the blue vertex (a[1].z), following vs_persp_col.txt.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vscalar";
+
+.uniforms
+	[100] = "offset";
+	[101] = "wdelta";
+	[102] = "cwd";
+	[103] = "cbase";
+
+.asm
+
+EXEC
+	ADDv r10.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;
+
+EXEC
+	MULv r11.xyzw, a[1].zzzz, c[101].xxxx
+	NOPs
+;
+
+EXEC(export[0]=vector)
+	MADv r63.xyzw, r10.xyzw, r11.xxxx, r10.xyzw
+	NOPs
+;
+
+EXEC
+	MULv r12.xyzw, a[1].zzzz, c[102].xxxx
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	ADDv r63.xyzw, r12.xyzw, c[103].xyzw
+	NOPs
+;

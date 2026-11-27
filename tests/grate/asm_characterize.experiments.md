@@ -10211,3 +10211,260 @@ the note 55/59 sample point is `offset = (-1.75, -1.45)` — i.e. the harness
 uniform `["offset"] = (-1.75, -1.45, 0, 0)`, which the generator writes as
 `x = 0.75, y = 0.45`. Offsets at or beyond `(-2.0, -1.6)` move the first pixel
 out of the quad.
+
+## 61. The hidden operand: row index, fetch path, and what the sfu does not read
+
+Note 60 closed with one row unresolved: the clip-`w` dependence of selectors 5..7
+sits in the sfu's *input path* rather than in the row value, but which
+`w`-dependent quantity reaches the sfu — and whether it is an interpolator slot
+at all — was left open, because the operand was not a scaled copy of the row
+(`m < 1` at q1 with `w = 2`) and the sequence was not monotone in `w`. This note
+separates four questions that note 60 ran together: *which row* a selector
+names, *when* the sfu reads it, *what the interpolator adds* to it, and whether
+the operand is the corrected varying `V`, the numerator `N`, the denominator
+`D`, or one of the per-vertex terms `T_i`.
+
+### 61.1 Cells, capture scale, and what was deliberately not repeated
+
+Every cell is one `mfu` word. A fetched cell runs a preceding `ipl` word that
+fills rows 0..3 from the four TRAM components, then one sfu word; an ALU-seeded
+cell writes the value straight into the row it names with no interpolator. Lane
+1 is always an ALU row readback (`MAD r0.lh, rN, u9`, `u9 = 2^-15`), lane 2 is
+the capture through the explicit multiplier token (`mul0: r3, sfu, #1`) scaled by
+`c[4]`.
+
+The capture scale is `2^4` (`c[4] = 16.0`) on every selector 5..7 cell. At that
+gain both branches of note 58's transfer function land inside the store map, 64
+codes apart:
+
+    rsq(v) = m^-1/2 * 2^-16   for |v| < 2    code = 151 - 4*log2(m)
+    rsq(v) = m^-1/2 * 2^-8    for |v| >= 2    code = 215 - 4*log2(m)
+
+so one reading carries the branch bit and the significand separately. Note 60's
+selector cells used `2^12` on some arms; those codes are 64 higher and are not
+mixed with these. One code step is 1/8 octave and the store truncates, so a
+match is +-1 step.
+
+Nothing here repeats note 56..60's sweeps: no 0..63 selector sweep, no
+multiplier source-slot matrix, no significand sweep across selectors 5..7, no
+sample-position control (note 59's `posdep` covered it), no `src4` recovery, and
+no Cube/TEX arms.
+
+Six new shader/link files back the arms:
+
+* `vs_persp_quad.txt` exports four independently settable varying components
+  (`a[1].x`/`.y`/`.z` select the red, green and blue vertices, one uniform per
+  component) so one `ipl` fills four *different* rows.
+* `vs_persp_wnum.txt` makes the varying proportional to the clip `w`
+  (`A_i = C*W_i`): `N = C*sum lambda_i` is constant while `V = N/D` moves.
+* `vs_scalar_u.txt` scales the whole clip position, so `w` is uniform and
+  `D = 1/w` exactly, with no fitted weight anywhere.
+* `linker_vs_s61_plain.txt` (`LINK fp20, fp20, fp20, fp20, tram0.xyzw, export1`)
+  is the same link *without* the default's component exchange, which is what
+  moves components between row slots (61.3).
+* `vs_persp_col.txt`/`vs_scale_w.txt` are notes 55/59's, unchanged, and carry the
+  `num`/`bnd`/`ws` arms.
+
+Both standard controls run in every manifest. Under the plain link the
+`varying-pipeline` control reads `0xFF0100FF` instead of `0xFF01FF00` — the same
+green/blue exchange the link performs — so the `swz` manifest keeps the control
+with that *measured* expectation rather than dropping it, and the
+`immediate-operand` control is unchanged and passes untouched. The first `swz`
+attempt aborted on that control (2 runs, 1 failed) precisely because it still
+carried the default link's expectation; that run is kept and superseded.
+
+### 61.2 The interpolator fill order, read without the sfu
+
+Two words per arm, no sfu and no multiplier, so the row claim never depends on
+the capture path. Values `(x, y, z, w) = (1.0, 1.5, 3.0, 0.5625)` give four
+different significands and both store branches; the row lane reads a value
+within one row code (1/8 octave) of the nominal one.
+
+| link | rows 0, 1 | rows 2, 3 |
+|:--|:--|:--|
+| default | `1.414` (y = 1.5), `1.0` (x) | `2.828` (z = 3.0), `0.5946` (w = 0.5625) |
+| plain | `1.0` (x), `1.414` (y = 1.5) | `2.828` (z), `0.5946` (w) |
+
+So the default link fills `r0..r3 = y, x, z, w` and the plain link fills
+`r0..r3 = x, y, z, w`. Only the x/y pair moves; z and w stay in rows 2 and 3
+under both links.
+
+### 61.3 Which row a selector names
+
+One component changed at a time, one sfu word per selector, same clip `w`, same
+sample. Codes are the capture lane; `0x97` = 151 is the `m = 1` code of the low
+branch, `0xD4` = 212 the `m = 1.5` code of the high one.
+
+| arm (default link) | rows 0, 1 | rows 2, 3 | s5 | s6 | s7 |
+|:--|:--|:--|--:|--:|--:|
+| base `x .25 y .5 z 1 w 1.5` | `0.5453`, `0.2726` | `1.0`, `1.414` | `0x97` | `0x97` | `0x94` |
+| x -> 3.0 | `0.5453`, `2.828` | `1.0`, `1.414` | **`0xD4`** | `0x97` | `0x94` |
+| w -> 3.0 | `0.5453`, `0.2726` | `1.0`, `2.828` | `0x97` | `0x97` | **`0xD4`** |
+| base, `w = 4` | `0.5453`, `0.2726` | `1.0`, `1.414` | `0x9A` | `0x92` | `0x92` |
+
+Changing x moves only s5, changing w moves only s7, and neither moves s6 — with
+the row readbacks showing the change landing in row 1 and row 3 respectively.
+Combined with 61.2 that gives s5 -> row 1, s6 -> row 2, s7 -> row 3 under the
+default link, the same mapping the ALU-seeded cells have always shown.
+
+The decisive arm puts x and y in *opposite* rows under the two links with
+different significands (`x = 1.0` -> code 151, `y = 1.5` -> code 148):
+
+| arm | link | rows 0, 1 | s5 | s6 | s7 |
+|:--|:--|:--|--:|--:|--:|
+| `dsc` | default | `1.414` (y), `1.0` (x) | `0x97` (x) | `0xD4` (z) | `0x96` (w) |
+| `dsc` | plain | `1.0` (x), `1.414` (y) | **`0x94` (y)** | `0xD4` (z) | `0x96` (w) |
+
+s5's code follows row 1 through the permutation: 151 when row 1 holds x, 148 when
+row 1 holds y. It does not stay on the x *component*. So selectors 5..7 are
+row-indexed, and the earlier `sig` arm (`x .3 y .6`) could not show this because
+0.3 and 0.6 share a significand and give the same code (149) either way — that
+arm is kept in the manifest as the negative result it is.
+
+s6 and s7 do not discriminate here, because z and w keep their rows under both
+links; the z/w axis is untested rather than confirmed.
+
+### 61.4 When the sfu reads the row
+
+The `bnd` copy arm from the pilots was vacuous: it held one scalar in all four
+rows, so copying a row could not move anything. This section uses the four
+distinct values of 61.2 and inserts one ALU batch between the `ipl` word and the
+sfu word.
+
+| cell | row 1 readback | sfu code |
+|:--|:--|--:|
+| `p3-s5` (no rewrite) | `1.0` | `0x97` |
+| `p3-rw21-s5` (row 1 <- row 2) | `2.828` | **`0xD4`** |
+| `p3-rw21-row1` (integrity) | `2.828` | -- |
+| `p3-s7` (no copy) | `1.0` | `0x96` |
+| `p3-cp23-s7` (row 3 <- row 2) | `1.0` | **`0xD4`** |
+| `p3-cp23-row3` (integrity) | `2.828` | -- |
+| `p3-seed-s5` (ALU seed 3.0) | `2.828` | `0xD4` |
+| `p3-seed-s7` (ALU seed 3.0) | `1.0` | `0xD4` |
+
+Overwriting row 1 with row 2 moves s5 from the `1.0` code to the `3.0` code
+(151 -> 212, the branch flip), and copying row 2 into row 3 does the same for
+s7 (150 -> 212), while the integrity words show the copy landing. The
+ALU-seeded cells with 3.0 return the identical `0xD4`. The sfu therefore reads
+the row at the sfu word, live — not a copy latched at fetch time, and not an
+interpolator-side slot that the ALU cannot reach.
+
+### 61.5 The fetch path adds something the ALU path does not
+
+`ws` runs one value, `A = 1.0` at every vertex, at four clip `w`, twice: fetched
+by the interpolator and seeded by the ALU. For a constant varying the
+perspective-corrected value is exactly `A` for every `w`, and the row readback
+confirms it (`1.0`, all eight cells).
+
+| w | ALU-seeded 1.0 | ipl-fetched A = 1.0 | D(w) |
+|--:|--:|--:|--:|
+| 1 | `0x97` (151) | `0x97` (151) | 0.98 |
+| 2 | `0x97` (151) | `0x95` (149) | 0.63 |
+| 4 | `0x96` (150) | `0x92` (146) | 0.455 |
+| 8 | `0x96` (150) | `0x94` (148) | 0.3675 |
+
+The ALU-seeded path is flat to one code; the fetched path moves by up to five
+codes with the row held at the same value. That is note 60's open row, now with
+the row itself measured in the same word: the `w`-dependent factor is *not* in
+the row. Note 60's constant-varying arm inferred the same thing indirectly; this
+pair does it from one value, one program, four `w`, with the seeded half as the
+control.
+
+The same split shows up in note 60's `bnd` section, which is superseded here:
+`bnd-ipl-s5-w4` reads `0x92` while `bnd-seed-s5-w4` reads `0x96`, and at `w = 1`
+both read `0x97`. The identity rewrite arm (`bnd-rw-s5`, byte-identical) is also
+explained: at `w = 1` the extra factor is 1.0, so a rewrite that changes nothing
+changes nothing.
+
+The sequence is not monotone in `D`: 151, 149, 146, 148 for `w = 1, 2, 4, 8`.
+A single `D`-power factor (say row times `D/LSUM`) fits all four within one code
+(151, 149, 147, 148) but has no independent support, so it is stated here as an
+observation and not as the answer to note 60's question.
+
+### 61.6 Scoring V, N, D and the per-vertex terms
+
+Weights are note 60's selector-4 fit, `lambda = (blue 0.70, green 0.13, red
+0.15)`, sum 0.98, with `D(w) = 0.28 + 0.70/w`. Model cells use the calibrated map
+of 61.1; a cell counts as matched at +-1 code step.
+
+| family | what moves | measured codes | reading |
+|:--|:--|:--|:--|
+| `num-a1p9` `w` = 1, 2, 4, 8 | `N` x8, `D` x2.7, `V` fixed 1.9 | `0x92` x4 | follows `V` |
+| `num-b1p9` `w` = 1, 2, 4, 8 | `N` fixed 1.86, `V` 1.83 -> 4.76 | `0x92`, `0xD8`, `0xDA`, `0xDC` | follows `V` across the branch |
+| `num-lad` `w = 1`, `c` = .25/.5/1/2 | significand 1 then 2 | `0x97` x3, `0xD7` | significand rule, branch at 2.0 |
+| `num-ua` `w` = 1, 2, 4, 8 | uniform `w`, `V` fixed | `0x97`, `0x9A`, `0x97`, `0x9A` | follows `V` within 3 codes |
+| `num-ub` `w` = 1, 2, 4, 8 | uniform `w`, `V = w/2` | `0x97`, `0x97`, `0xDF`, `0xDF` | follows `V` across the branch |
+| `vtx-*` `w = 1, 4` | one vertex at a time | r `0x95`/`0x9A`, g `0x92`/`0x9A`, b `0x94`/`0x9A` | row = `V`, see below |
+
+`b1p9` is the discriminating family: `N` is constant there, so an operand equal
+to `N` cannot cross the `|v| = 2` boundary; the measured codes cross it at
+`w = 2`, exactly where the row readback says `V` crossed 2 (1.834, 2.594, 4.0,
+4.757). `a1p9` is the complementary arm: `V` is fixed while `N` and `D` both
+move, and the code is flat. `D` and the individual `T_i` are excluded by both.
+
+The `vtx` arms also settle what the row holds: with one vertex lit and `w = 4`,
+row 1 reads `0.3242` = `0.15/0.455`, i.e. `T_r/D`, not the uncorrected `0.15`.
+So the rows carry the perspective-corrected value, which is why a
+constant-varying arm has `w`-independent rows (61.5).
+
+Against the calibrated map, the single-value cells land within one step
+(`0x97`/`0x94`/`0xD4`/`0x96` for 1.0/1.5/3.0/0.5625). Cells whose operand
+crosses the branch or changes exponent with `w` land 3..8 codes away
+(`0x9A` at `base w = 4`, `0xD8`..`0xDC` in `b1p9`, `0xDF` in `ub`). Note 58's
+modulation is the standing explanation for that band and this note does not
+close it; no conclusion below rests on an absolute code of that kind, only on
+paired comparisons.
+
+### 61.7 What this note establishes
+
+| claim | status |
+|:--|:--|
+| default-link fill order `r0..r3 = y, x, z, w` | **confirmed** (row readbacks, 61.2) |
+| plain-link fill order `r0..r3 = x, y, z, w` | **confirmed**; only x/y move |
+| selectors 5, 6, 7 name rows 1, 2, 3 | **confirmed** under the default link |
+| a selector follows a row index, not a TRAM component | **confirmed** — s5 moves 151 -> 148 when the link puts y in row 1 |
+| the same under the plain link for z and w | **not tested** — z and w keep rows 2 and 3 under both links |
+| the sfu reads the row live, at the sfu word | **confirmed** — rewrite 151 -> 212, copy 150 -> 212, seeded 212 |
+| an ALU-seeded 3.0 and an interpolated 3.0 give the same code | **confirmed** at `w = 1` (`0xD4` both) |
+| the operand is the numerator `N` | **disproved** — `b1p9` holds `N` fixed and the code crosses the branch |
+| the operand is `D`, or one `T_i` | **disproved** — `a1p9` and `ua` hold `V` fixed while those move, and the codes are flat |
+| the operand is the corrected varying `V` | **partly** — branch and significand follow `V` in every family; but see the next row |
+| the fetched operand is exactly the row value | **disproved** — row fixed at 1.0, codes 151, 149, 146, 148 over `w = 1..8`; ALU-seeded control flat |
+| note 60's "the mismatch is not a scaled copy of the row" | **confirmed, and sharpened** — the factor is absent from the row, not merely scaled out of it |
+| which `w`-dependent quantity the fetch path adds | **unresolved** (not monotone in `w`; the `D/LSUM` fit is a candidate, not a measurement) |
+| the `sig` arm discriminates x from y | **disproved** — 0.3 and 0.6 share a significand; `dsc` replaces it |
+
+### 61.8 Runs and method notes
+
+| manifest | variants | runs | directory |
+|:--|--:|--:|:--|
+| `asm_characterize.s61_num.json` | 41 | 86 | `s61-num-20261127T194835Z` |
+| `asm_characterize.s61_vtx.json` | 16 | 36 | `s61-vtx-20261127T194852Z` |
+| `asm_characterize.s61_comp.json` | 31 | 66 | `s61-comp-20261127T195355Z` |
+| `asm_characterize.s61_swz.json` | 15 | 34 | `s61-swz-20261127T195404Z` |
+| `asm_characterize.s61_bnd.json` | 12 | 28 | `s61-bnd-20261127T194908Z` |
+| `asm_characterize.s61_p3.json` | 10 | 24 | `s61-p3-20261127T195350Z` |
+| `asm_characterize.s61_ws.json` | 8 | 20 | `s61-ws-20261127T195601Z` |
+
+133 variants, 294 runs, none failed, all on `kusma-ac100` with the same runner
+command as notes 53..60. Superseded runs are kept: `s61-comp-…T194858Z` (26
+variants, before `dsc`) and `s61-swz-…T194905Z` (aborted on the control) and
+`…T195013Z` (before `dsc`). The three pilot manifests `s61_pilot*.json` are
+preliminary and not part of this note's tables.
+
+Every manifest was generated on the device with
+`python3 tests/grate/asm/make_s61.py <out.json> <section>` and regenerates
+byte-identically (checked with `cmp` for all seven sections). Each section ran
+with both standard controls before and after the variants, at repeat 2.
+
+Readback facts this note relies on: the quad is the harness's, corners
+`(-1, 1)`, `(-1, -1)`, `(1, 1)`, `(1, -1)`, 256x256, and the measurement is
+`fb_data[0]`, i.e. the note 55/59 sample point `offset = (-1.75, -1.45)` written
+by the generator as `x = 0.75, y = 0.45`. `w` sits on the blue vertex
+(`a[1].z`), premultiplied into the clip position, so the projected quad does not
+move and only the weights change. The row lane is `u9 = 2^-15` and truncates to
+1/8 octave (`3.0` reads `2.828`, `1.5` reads `1.414`, `0.5625` reads `0.5946`);
+the capture lane is `c[4] = 16.0`.
+
+One cell reports an unexplained byte: `ws-ipl-w2` has `0xB9` in the second byte
+where the other seven `ws` cells have `00`. Nothing in this note depends on it.

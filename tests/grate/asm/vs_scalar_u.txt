@@ -1,0 +1,46 @@
+/*
+ * Scalar varying with a *uniform* clip w.
+ *
+ * The clip position is scaled by one uniform, so the projection does not move
+ * and w is the same at every vertex; the varying is the same three-uniform
+ * scalar mix vs_persp_col.txt uses.  With no per-vertex W asymmetry the
+ * perspective denominator is exactly D = 1/w, the corrected varying V is a
+ * constant for a constant vertex value, and the numerator N = C/w changes only
+ * by octaves.  That makes the arm free of every fitted weight.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vscalar";
+
+.uniforms
+	[100] = "clip_scale";
+	[104] = "ag";
+	[105] = "ab";
+	[106] = "ar";
+
+.asm
+
+EXEC(export[0]=vector)
+	MULv r63.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;
+
+EXEC
+	MULv r14.xyzw, a[1].xxxx, c[106].xxxx
+	NOPs
+;
+
+EXEC
+	MADv r15.xyzw, a[1].yyyy, c[104].xxxx, r14.xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MADv r63.xyzw, a[1].zzzz, c[105].xxxx, r15.xyzw
+	NOPs
+;

@@ -1,0 +1,62 @@
+/*
+ * Perspective probe with four independent varying components.
+ *
+ * The clip position is premultiplied by a per-vertex w on the blue vertex, so
+ * the projected triangle does not move and only the interpolation weights
+ * change.  Each of the four exported components is set per vertex from its own
+ * uniform:
+ *
+ *     varying.xyzw = a[1].x * cred + a[1].y * cgreen + a[1].z * cblue
+ *
+ * a[1].x selects the red vertices (v0 and v3), a[1].y the green one (v1) and
+ * a[1].z the blue one (v2), which is the layout vs_persp_col.txt uses.  All
+ * four components are carried through the link, so an `ipl` that reads all four
+ * TRAM components fills rows 0..3 with four separately controllable varyings.
+ */
+
+.attributes
+	[0] = "position";
+	[1] = "color";
+
+.exports
+	[0] = "gl_Position";
+	[7] = "vquad";
+
+.uniforms
+	[100] = "offset";
+	[101] = "wdelta";
+	[110] = "cred";
+	[111] = "cgreen";
+	[112] = "cblue";
+
+.asm
+
+EXEC
+	ADDv r10.xyzw, a[0].xyzw, c[100].xyzw
+	NOPs
+;
+
+EXEC
+	MULv r11.xyzw, a[1].zzzz, c[101].xxxx
+	NOPs
+;
+
+EXEC(export[0]=vector)
+	MADv r63.xyzw, r10.xyzw, r11.xxxx, r10.xyzw
+	NOPs
+;
+
+EXEC
+	MULv r14.xyzw, a[1].xxxx, c[110].xyzw
+	NOPs
+;
+
+EXEC
+	MADv r15.xyzw, a[1].yyyy, c[111].xyzw, r14.xyzw
+	NOPs
+;
+
+EXEC(export[7]=vector)
+	MADv r63.xyzw, a[1].zzzz, c[112].xyzw, r15.xyzw
+	NOPs
+;
